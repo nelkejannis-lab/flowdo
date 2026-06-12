@@ -148,7 +148,7 @@ export const useProjectTasksStore = create<ProjectTasksState>()((set, get) => ({
       .single()
 
     if (error || !data) return { error: error?.message ?? 'Fehler beim Erstellen' }
-    await get().fetchTasks(input.boardId)
+    await Promise.all([get().fetchTasks(input.boardId), get().fetchMyTasks()])
     return { id: data.id }
   },
 
