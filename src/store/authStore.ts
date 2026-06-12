@@ -7,7 +7,15 @@ export interface Profile {
   username: string
   display_name: string
   avatar_color: string
+  avatar_url?: string | null
   created_at: string
+}
+
+interface ProfileUpdate {
+  username?: string
+  display_name?: string
+  avatar_color?: string
+  avatar_url?: string | null
 }
 
 interface AuthState {
@@ -20,6 +28,9 @@ interface AuthState {
   signUp: (email: string, password: string, username: string, displayName: string) => Promise<string | null>
   signIn: (email: string, password: string) => Promise<string | null>
   signOut: () => Promise<void>
+  updateProfile: (updates: ProfileUpdate) => Promise<string | null>
+  updatePassword: (newPassword: string) => Promise<string | null>
+  requestPasswordReset: (email: string) => Promise<string | null>
 }
 
 export const useAuthStore = create<AuthState>()((set, get) => ({
@@ -70,5 +81,38 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   signOut: async () => {
     await supabase.auth.signOut()
     set({ session: null, user: null, profile: null })
+  },
+
+  updateProfile: async (updates) => {
+    const userId = get().user?.id
+    if (!userId) return 'Nicht angemeldet'
+
+    if (updates.username !== undefined) {
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', updates.username)
+        .neq('id', userId)
+        .maybeSingle()
+      if (existing) return 'Benutzername ist bereits vergeben'
+    }
+
+    const { error } = await supabase.from('profiles').update(updates).eq('id', userId)
+    if (error) return error.message
+
+    await get().fetchProfile()
+    return null
+  },
+
+  updatePassword: async (newPassword) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    return error?.message ?? null
+  },
+
+  requestPasswordReset: async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    })
+    return error?.message ?? null
   },
 }))

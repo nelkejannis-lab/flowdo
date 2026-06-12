@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { isSupabaseConfigured } from '../lib/supabase'
 import Logo from '../components/layout/Logo'
@@ -6,15 +7,26 @@ import Logo from '../components/layout/Logo'
 export default function LoginPage() {
   const signIn = useAuthStore((s) => s.signIn)
   const signUp = useAuthStore((s) => s.signUp)
+  const requestPasswordReset = useAuthStore((s) => s.requestPasswordReset)
 
-  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [username, setUsername] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  function switchMode(next: 'login' | 'signup' | 'forgot') {
+    setMode(next)
+    setError(null)
+    setInfo(null)
+    setPassword('')
+    setConfirmPassword('')
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -22,16 +34,26 @@ export default function LoginPage() {
     setInfo(null)
     setLoading(true)
     try {
+      if (mode === 'forgot') {
+        const err = await requestPasswordReset(email)
+        if (err) setError(err)
+        else setInfo('Falls ein Konto mit dieser E-Mail existiert, wurde eine Mail zum Zurücksetzen des Passworts versendet.')
+        return
+      }
       if (mode === 'login') {
         const err = await signIn(email, password)
         if (err) setError(err)
       } else {
+        if (password !== confirmPassword) {
+          setError('Passwörter stimmen nicht überein')
+          return
+        }
         const err = await signUp(email, password, username, displayName || username)
         if (err) {
           setError(err)
         } else {
           setInfo('Konto erstellt! Falls eine Bestätigungsmail aktiviert ist, prüfe dein Postfach. Du kannst dich sonst direkt anmelden.')
-          setMode('login')
+          switchMode('login')
         }
       }
     } finally {
@@ -56,8 +78,14 @@ export default function LoginPage() {
         )}
 
         <h1 className="mb-4 text-xl font-semibold">
-          {mode === 'login' ? 'Anmelden' : 'Konto erstellen'}
+          {mode === 'login' ? 'Anmelden' : mode === 'signup' ? 'Konto erstellen' : 'Passwort vergessen'}
         </h1>
+
+        {mode === 'forgot' && (
+          <p className="mb-4 text-sm text-gray-500">
+            Gib deine E-Mail-Adresse ein. Wir senden dir einen Link zum Zurücksetzen deines Passworts.
+          </p>
+        )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           {mode === 'signup' && (
@@ -94,18 +122,56 @@ export default function LoginPage() {
               className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
             />
           </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500">Passwort</label>
-            <input
-              required
-              type="password"
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
-            />
-          </div>
+
+          {mode !== 'forgot' && (
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-500">Passwort</label>
+              <div className="relative">
+                <input
+                  required
+                  type={showPassword ? 'text' : 'password'}
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 pr-9 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {mode === 'signup' && (
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-500">Passwort bestätigen</label>
+              <input
+                required
+                type={showPassword ? 'text' : 'password'}
+                minLength={6}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+              />
+            </div>
+          )}
+
+          {mode === 'login' && (
+            <button
+              type="button"
+              onClick={() => switchMode('forgot')}
+              className="self-end text-xs font-medium text-accent hover:underline"
+            >
+              Passwort vergessen?
+            </button>
+          )}
 
           {error && <p className="text-sm text-red-500">{error}</p>}
           {info && <p className="text-sm text-emerald-500">{info}</p>}
@@ -115,23 +181,33 @@ export default function LoginPage() {
             disabled={loading}
             className="mt-1 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
           >
-            {loading ? 'Bitte warten…' : mode === 'login' ? 'Anmelden' : 'Konto erstellen'}
+            {loading
+              ? 'Bitte warten…'
+              : mode === 'login'
+                ? 'Anmelden'
+                : mode === 'signup'
+                  ? 'Konto erstellen'
+                  : 'Link senden'}
           </button>
         </form>
 
-        <p className="mt-4 text-center text-sm text-gray-400">
-          {mode === 'login' ? 'Noch kein Konto?' : 'Bereits ein Konto?'}{' '}
-          <button
-            onClick={() => {
-              setMode(mode === 'login' ? 'signup' : 'login')
-              setError(null)
-              setInfo(null)
-            }}
-            className="font-medium text-accent hover:underline"
-          >
-            {mode === 'login' ? 'Registrieren' : 'Anmelden'}
-          </button>
-        </p>
+        {mode === 'forgot' ? (
+          <p className="mt-4 text-center text-sm text-gray-400">
+            <button onClick={() => switchMode('login')} className="font-medium text-accent hover:underline">
+              Zurück zur Anmeldung
+            </button>
+          </p>
+        ) : (
+          <p className="mt-4 text-center text-sm text-gray-400">
+            {mode === 'login' ? 'Noch kein Konto?' : 'Bereits ein Konto?'}{' '}
+            <button
+              onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')}
+              className="font-medium text-accent hover:underline"
+            >
+              {mode === 'login' ? 'Registrieren' : 'Anmelden'}
+            </button>
+          </p>
+        )}
       </div>
     </div>
   )

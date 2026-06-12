@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
 import { deleteAttachment, uploadAttachment } from '../lib/attachments'
-import type { Attachment, Board, BoardColumn, ProjectMember } from '../types'
+import type { Attachment, Board, BoardColumn, BoardFolder, ProjectMember } from '../types'
 
 interface NewBoardInput {
   title: string
@@ -10,6 +10,25 @@ interface NewBoardInput {
   deadline?: string
   internalLaunch?: string
   externalLaunch?: string
+  folderId?: string | null
+}
+
+interface BoardFolderRow {
+  id: string
+  owner_id: string
+  title: string
+  position: number
+  created_at: string
+}
+
+function toFolder(row: BoardFolderRow): BoardFolder {
+  return {
+    id: row.id,
+    ownerId: row.owner_id,
+    title: row.title,
+    position: row.position,
+    createdAt: row.created_at,
+  }
 }
 
 const defaultColumnTitles = ['To Do', 'In Arbeit', 'Erledigt']
@@ -27,6 +46,7 @@ interface BoardRow {
   board_columns: { id: string; title: string; position: number }[] | null
   board_members: { user_id: string; role: 'owner' | 'member'; profile: ProjectMember['profile'] | ProjectMember['profile'][] }[] | null
   attachments: Attachment[] | null
+  folder_id: string | null
 }
 
 interface TaskStats {
@@ -57,6 +77,7 @@ function toBoard(row: BoardRow): Board {
     deadline: row.deadline ?? undefined,
     internalLaunch: row.internal_launch ?? undefined,
     externalLaunch: row.external_launch ?? undefined,
+    folderId: row.folder_id ?? undefined,
     columns,
     members,
     attachments: row.attachments ?? [],
@@ -66,10 +87,12 @@ function toBoard(row: BoardRow): Board {
 
 interface BoardsState {
   boards: Board[]
+  folders: BoardFolder[]
   taskStats: Record<string, TaskStats>
   loading: boolean
   error: string | null
   fetchBoards: () => Promise<void>
+  fetchFolders: () => Promise<void>
   addBoard: (input: NewBoardInput) => Promise<Board | null>
   updateBoard: (id: string, updates: Partial<NewBoardInput>) => Promise<void>
   deleteBoard: (id: string) => Promise<string | null>
@@ -79,10 +102,15 @@ interface BoardsState {
   removeMember: (boardId: string, userId: string) => Promise<void>
   addAttachment: (boardId: string, file: File) => Promise<{ attachment?: Attachment; error?: string }>
   removeAttachment: (boardId: string, attachmentId: string) => Promise<void>
+  addFolder: (title: string) => Promise<void>
+  renameFolder: (id: string, title: string) => Promise<void>
+  deleteFolder: (id: string) => Promise<void>
+  moveBoardToFolder: (boardId: string, folderId: string | null) => Promise<void>
 }
 
 export const useBoardsStore = create<BoardsState>()((set, get) => ({
   boards: [],
+  folders: [],
   taskStats: {},
   loading: false,
   error: null,
@@ -123,6 +151,16 @@ export const useBoardsStore = create<BoardsState>()((set, get) => ({
     set({ boards, taskStats, loading: false })
   },
 
+  fetchFolders: async () => {
+    const { data, error } = await supabase
+      .from('board_folders')
+      .select('*')
+      .order('position', { ascending: true })
+
+    if (error) return
+    set({ folders: ((data ?? []) as unknown as BoardFolderRow[]).map(toFolder) })
+  },
+
   addBoard: async (input) => {
     const { data: userData } = await supabase.auth.getUser()
     const userId = userData.user?.id
@@ -138,6 +176,7 @@ export const useBoardsStore = create<BoardsState>()((set, get) => ({
         deadline: input.deadline ?? null,
         internal_launch: input.internalLaunch ?? null,
         external_launch: input.externalLaunch ?? null,
+        folder_id: input.folderId ?? null,
       })
       .select('id')
       .single()
@@ -162,6 +201,7 @@ export const useBoardsStore = create<BoardsState>()((set, get) => ({
         ...(updates.deadline !== undefined ? { deadline: updates.deadline ?? null } : {}),
         ...(updates.internalLaunch !== undefined ? { internal_launch: updates.internalLaunch ?? null } : {}),
         ...(updates.externalLaunch !== undefined ? { external_launch: updates.externalLaunch ?? null } : {}),
+        ...(updates.folderId !== undefined ? { folder_id: updates.folderId || null } : {}),
       })
       .eq('id', id)
 
@@ -224,6 +264,41 @@ export const useBoardsStore = create<BoardsState>()((set, get) => ({
     const attachments = board.attachments.filter((a) => a.id !== attachmentId)
     await supabase.from('boards').update({ attachments }).eq('id', boardId)
     set((state) => ({ boards: state.boards.map((b) => (b.id === boardId ? { ...b, attachments } : b)) }))
+  },
+
+  addFolder: async (title) => {
+    const { data: userData } = await supabase.auth.getUser()
+    const userId = userData.user?.id
+    if (!userId) return
+    const position = get().folders.length
+    const { data, error } = await supabase
+      .from('board_folders')
+      .insert({ owner_id: userId, title, position })
+      .select('*')
+      .single()
+    if (error || !data) return
+    set((state) => ({ folders: [...state.folders, toFolder(data as unknown as BoardFolderRow)] }))
+  },
+
+  renameFolder: async (id, title) => {
+    await supabase.from('board_folders').update({ title }).eq('id', id)
+    set((state) => ({ folders: state.folders.map((f) => (f.id === id ? { ...f, title } : f)) }))
+  },
+
+  deleteFolder: async (id) => {
+    await supabase.from('boards').update({ folder_id: null }).eq('folder_id', id)
+    await supabase.from('board_folders').delete().eq('id', id)
+    set((state) => ({
+      folders: state.folders.filter((f) => f.id !== id),
+      boards: state.boards.map((b) => (b.folderId === id ? { ...b, folderId: undefined } : b)),
+    }))
+  },
+
+  moveBoardToFolder: async (boardId, folderId) => {
+    await supabase.from('boards').update({ folder_id: folderId }).eq('id', boardId)
+    set((state) => ({
+      boards: state.boards.map((b) => (b.id === boardId ? { ...b, folderId: folderId ?? undefined } : b)),
+    }))
   },
 }))
 

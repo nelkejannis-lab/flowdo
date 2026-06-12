@@ -59,6 +59,14 @@ export interface ProjectMember {
   }
 }
 
+export interface BoardFolder {
+  id: string
+  ownerId: string
+  title: string
+  position: number
+  createdAt: string
+}
+
 export interface Board {
   id: string
   ownerId: string
@@ -68,6 +76,7 @@ export interface Board {
   deadline?: string
   internalLaunch?: string
   externalLaunch?: string
+  folderId?: string
   columns: BoardColumn[]
   members: ProjectMember[]
   attachments: Attachment[]

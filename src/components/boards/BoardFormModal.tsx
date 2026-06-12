@@ -15,6 +15,7 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
   const deleteBoard = useBoardsStore((s) => s.deleteBoard)
   const addAttachment = useBoardsStore((s) => s.addAttachment)
   const removeAttachment = useBoardsStore((s) => s.removeAttachment)
+  const folders = useBoardsStore((s) => s.folders)
 
   const [title, setTitle] = useState(board?.title ?? '')
   const [description, setDescription] = useState(board?.description ?? '')
@@ -22,6 +23,7 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
   const [color, setColor] = useState(board?.color ?? BOARD_COLORS[0])
   const [internalLaunch, setInternalLaunch] = useState(board?.internalLaunch ?? '')
   const [externalLaunch, setExternalLaunch] = useState(board?.externalLaunch ?? '')
+  const [folderId, setFolderId] = useState(board?.folderId ?? '')
   const [error, setError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [attachments, setAttachments] = useState<Attachment[]>(board?.attachments ?? [])
@@ -38,6 +40,7 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
         color,
         internalLaunch: internalLaunch || undefined,
         externalLaunch: externalLaunch || undefined,
+        folderId: folderId || null,
       })
     } else {
       await addBoard({
@@ -47,6 +50,7 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
         color,
         internalLaunch: internalLaunch || undefined,
         externalLaunch: externalLaunch || undefined,
+        folderId: folderId || null,
       })
     }
     onClose()
@@ -69,14 +73,33 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
           rows={2}
           className="rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
         />
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">Deadline</label>
-          <input
-            type="date"
-            value={deadline}
-            onChange={(e) => setDeadline(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
-          />
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-500">Deadline</label>
+            <input
+              type="date"
+              value={deadline}
+              onChange={(e) => setDeadline(e.target.value)}
+              className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+            />
+          </div>
+          {folders.length > 0 && (
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-500">Ordner</label>
+              <select
+                value={folderId}
+                onChange={(e) => setFolderId(e.target.value)}
+                className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+              >
+                <option value="">Kein Ordner</option>
+                {folders.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-gray-500">Farbe</label>
