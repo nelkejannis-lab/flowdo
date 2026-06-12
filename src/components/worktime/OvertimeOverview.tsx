@@ -1,0 +1,64 @@
+import { Minus, Plus } from 'lucide-react'
+import { useWorkTimeStore } from '../../store/workTimeStore'
+import { computeOverview, formatHM } from '../../utils/worktime'
+
+export default function OvertimeOverview() {
+  const entries = useWorkTimeStore((s) => s.entries)
+  const settings = useWorkTimeStore((s) => s.settings)
+  const settledWeekendDays = useWorkTimeStore((s) => s.settledWeekendDays)
+  const incrementSettledWeekendDays = useWorkTimeStore((s) => s.incrementSettledWeekendDays)
+  const decrementSettledWeekendDays = useWorkTimeStore((s) => s.decrementSettledWeekendDays)
+
+  const { totalDiffMinutes, totalDiffDays, weekendDaysWorked } = computeOverview(entries, settings)
+  const positive = totalDiffMinutes >= 0
+  const openWeekendDays = weekendDaysWorked - settledWeekendDays
+
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+        <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Überstunden gesamt</p>
+        <p className={`mt-1 text-3xl font-bold ${positive ? 'text-emerald-500' : 'text-red-500'}`}>
+          {positive ? '+' : ''}
+          {formatHM(totalDiffMinutes)}
+        </p>
+      </div>
+      <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+        <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Überstunden in Tagen</p>
+        <p className={`mt-1 text-3xl font-bold ${positive ? 'text-emerald-500' : 'text-red-500'}`}>
+          {positive ? '+' : ''}
+          {totalDiffDays.toFixed(1)}
+        </p>
+      </div>
+      <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+        <p className="text-xs font-medium uppercase tracking-wide text-gray-400">An Wochenenden gearbeitet</p>
+        <div className="mt-1 flex items-center gap-3">
+          <button
+            onClick={decrementSettledWeekendDays}
+            disabled={settledWeekendDays <= 0}
+            title="Ausgleichstag abrechnen"
+            className="rounded-full border border-gray-200 p-1 text-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-30 dark:border-racing-700 dark:hover:bg-racing-800"
+          >
+            <Minus size={16} />
+          </button>
+          <div className="flex-1 text-center">
+            <p className="text-3xl font-bold">{weekendDaysWorked}</p>
+            <p className="text-xs text-gray-400">Tag{weekendDaysWorked === 1 ? '' : 'e'} gearbeitet</p>
+          </div>
+          <button
+            onClick={incrementSettledWeekendDays}
+            disabled={settledWeekendDays >= weekendDaysWorked}
+            title="Ausgleichstag hinzufügen"
+            className="rounded-full border border-gray-200 p-1 text-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-30 dark:border-racing-700 dark:hover:bg-racing-800"
+          >
+            <Plus size={16} />
+          </button>
+        </div>
+        {settledWeekendDays > 0 && (
+          <p className="mt-1 text-center text-xs text-gray-400">
+            {settledWeekendDays} abgerechnet · {openWeekendDays} offen
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
