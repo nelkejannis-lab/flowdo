@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Settings } from 'lucide-react'
 import TimeClock from '../components/worktime/TimeClock'
 import OvertimeOverview from '../components/worktime/OvertimeOverview'
@@ -6,6 +6,7 @@ import WorkWeekView from '../components/worktime/WorkWeekView'
 import WorkMonthView from '../components/worktime/WorkMonthView'
 import Modal from '../components/layout/Modal'
 import { useWorkTimeStore } from '../store/workTimeStore'
+import { isSupabaseConfigured } from '../lib/supabase'
 
 function WorkTimeSettingsModal({ onClose }: { onClose: () => void }) {
   const settings = useWorkTimeStore((s) => s.settings)
@@ -61,6 +62,11 @@ function WorkTimeSettingsModal({ onClose }: { onClose: () => void }) {
 export default function ArbeitszeitPage() {
   const [showSettings, setShowSettings] = useState(false)
   const [view, setView] = useState<'week' | 'month'>('week')
+  const fetchAll = useWorkTimeStore((s) => s.fetchAll)
+
+  useEffect(() => {
+    if (isSupabaseConfigured) fetchAll()
+  }, [fetchAll])
 
   return (
     <div>
