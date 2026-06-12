@@ -73,7 +73,6 @@ interface BoardsState {
   addColumn: (boardId: string, title: string) => Promise<void>
   updateColumn: (boardId: string, columnId: string, title: string) => Promise<void>
   deleteColumn: (boardId: string, columnId: string) => Promise<void>
-  addMember: (boardId: string, userId: string) => Promise<string | null>
   removeMember: (boardId: string, userId: string) => Promise<void>
 }
 
@@ -194,16 +193,6 @@ export const useBoardsStore = create<BoardsState>()((set, get) => ({
         b.id === boardId ? { ...b, columns: b.columns.filter((c) => c.id !== columnId) } : b
       ),
     }))
-  },
-
-  addMember: async (boardId, userId) => {
-    const { error } = await supabase.from('board_members').insert({ board_id: boardId, user_id: userId, role: 'member' })
-    if (error) {
-      if (error.code === '23505') return 'Diese Person ist bereits Mitglied'
-      return error.message
-    }
-    await get().fetchBoards()
-    return null
   },
 
   removeMember: async (boardId, userId) => {

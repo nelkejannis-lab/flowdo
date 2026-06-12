@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { DndContext, type DragEndEvent } from '@dnd-kit/core'
 import { ArrowLeft, Building2, Globe, Pencil, Plus, UserPlus, Users, X } from 'lucide-react'
 import { useBoardsStore } from '../store/boardsStore'
+import { useBoardInvitesStore } from '../store/boardInvitesStore'
 import { useProjectTasksStore } from '../store/projectTasksStore'
 import { useFriendsStore } from '../store/friendsStore'
 import { useAuthStore } from '../store/authStore'
@@ -20,8 +21,8 @@ export default function BoardDetailPage() {
   const board = useBoardsStore((s) => s.boards.find((b) => b.id === boardId))
   const boards = useBoardsStore((s) => s.boards)
   const fetchBoards = useBoardsStore((s) => s.fetchBoards)
-  const addMember = useBoardsStore((s) => s.addMember)
   const removeMember = useBoardsStore((s) => s.removeMember)
+  const inviteMember = useBoardInvitesStore((s) => s.inviteMember)
 
   const tasks = useProjectTasksStore((s) => s.tasks)
   const fetchTasks = useProjectTasksStore((s) => s.fetchTasks)
@@ -39,6 +40,7 @@ export default function BoardDetailPage() {
   const [newTaskColumnId, setNewTaskColumnId] = useState<string | null>(null)
   const [showMembers, setShowMembers] = useState(false)
   const [memberError, setMemberError] = useState<string | null>(null)
+  const [invitedIds, setInvitedIds] = useState<string[]>([])
   const [progressFilter, setProgressFilter] = useState<ProgressFilter>('all')
 
   useEffect(() => {
@@ -96,8 +98,9 @@ export default function BoardDetailPage() {
   async function handleAddMember(userId: string) {
     if (!board) return
     setMemberError(null)
-    const err = await addMember(board.id, userId)
+    const err = await inviteMember(board.id, board.title, board.color, userId)
     if (err) setMemberError(err)
+    else setInvitedIds((prev) => [...prev, userId])
   }
 
   return (
@@ -190,21 +193,26 @@ export default function BoardDetailPage() {
                       <p className="text-xs text-gray-400">Keine weiteren Kollegen verfügbar.</p>
                     ) : (
                       <div className="flex flex-col gap-1">
-                        {availableFriends.map((f) => (
-                          <button
-                            key={f.profile.id}
-                            onClick={() => handleAddMember(f.profile.id)}
-                            className="flex items-center gap-2 rounded-lg px-1.5 py-1 text-left text-sm hover:bg-gray-50 dark:hover:bg-racing-800"
-                          >
-                            <span
-                              className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white"
-                              style={{ backgroundColor: f.profile.avatar_color }}
+                        {availableFriends.map((f) => {
+                          const invited = invitedIds.includes(f.profile.id)
+                          return (
+                            <button
+                              key={f.profile.id}
+                              onClick={() => handleAddMember(f.profile.id)}
+                              disabled={invited}
+                              className="flex items-center gap-2 rounded-lg px-1.5 py-1 text-left text-sm hover:bg-gray-50 disabled:cursor-default disabled:opacity-60 dark:hover:bg-racing-800"
                             >
-                              {f.profile.display_name.slice(0, 2).toUpperCase()}
-                            </span>
-                            <span className="truncate">{f.profile.display_name}</span>
-                          </button>
-                        ))}
+                              <span
+                                className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white"
+                                style={{ backgroundColor: f.profile.avatar_color }}
+                              >
+                                {f.profile.display_name.slice(0, 2).toUpperCase()}
+                              </span>
+                              <span className="truncate">{f.profile.display_name}</span>
+                              {invited && <span className="ml-auto text-xs text-gray-400">Eingeladen</span>}
+                            </button>
+                          )
+                        })}
                       </div>
                     )}
                     {memberError && <p className="mt-1 text-xs text-red-500">{memberError}</p>}
