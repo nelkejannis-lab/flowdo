@@ -2,6 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --accent: 71 114 250;
+  --accent-light: 110 143 255;
+  --accent-dark: 52 87 213;
+
+  --racing-50: 230 239 234;
+  --racing-100: 194 217 204;
+  --racing-200: 143 185 161;
+  --racing-300: 92 154 119;
+  --racing-400: 47 119 82;
+  --racing-500: 27 94 60;
+  --racing-600: 21 80 52;
+  --racing-700: 15 61 41;
+  --racing-800: 11 46 31;
+  --racing-900: 8 34 24;
+  --racing-950: 4 20 14;
+}
+
+.pink {
+  --accent: 236 72 153;
+  --accent-light: 244 114 182;
+  --accent-dark: 219 39 119;
+
+  --racing-50: 254 240 248;
+  --racing-100: 251 214 236;
+  --racing-200: 242 168 212;
+  --racing-300: 224 102 184;
+  --racing-400: 194 70 158;
+  --racing-500: 153 51 122;
+  --racing-600: 122 41 96;
+  --racing-700: 92 31 71;
+  --racing-800: 61 21 48;
+  --racing-900: 42 15 32;
+  --racing-950: 26 10 20;
+}
+
 html, body, #root {
   height: 100%;
 }

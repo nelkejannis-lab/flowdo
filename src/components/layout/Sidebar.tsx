@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
+import Logo from './Logo'
 import {
   LayoutDashboard,
   ListTodo,
@@ -8,6 +9,7 @@ import {
   Clock,
   Sun,
   Moon,
+  Sparkles,
   Plus,
   Inbox,
   CheckCircle2,
@@ -15,6 +17,7 @@ import {
   Users,
   LogOut,
   Instagram,
+  X,
 } from 'lucide-react'
 import { useBoardsStore } from '../../store/boardsStore'
 import { useSettingsStore } from '../../store/settingsStore'
@@ -28,11 +31,16 @@ const navItemClass = ({ isActive }: { isActive: boolean }) =>
       : 'text-gray-600 hover:bg-gray-100 dark:text-racing-100 dark:hover:bg-racing-800'
   }`
 
-export default function Sidebar() {
+interface SidebarProps {
+  isOpen: boolean
+  onClose: () => void
+}
+
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const boards = useBoardsStore((s) => s.boards)
   const fetchBoards = useBoardsStore((s) => s.fetchBoards)
   const theme = useSettingsStore((s) => s.theme)
-  const toggleTheme = useSettingsStore((s) => s.toggleTheme)
+  const setTheme = useSettingsStore((s) => s.setTheme)
   const profile = useAuthStore((s) => s.profile)
   const signOut = useAuthStore((s) => s.signOut)
 
@@ -41,15 +49,34 @@ export default function Sidebar() {
   }, [fetchBoards])
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-gray-200 bg-white px-3 py-4 dark:border-racing-800 dark:bg-racing-900">
-      <div className="mb-6 flex items-center gap-2 px-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-white font-bold">
-          F
+    <>
+      {isOpen && (
+        <div
+          onClick={onClose}
+          className="fixed inset-0 z-40 bg-black/40 sm:hidden"
+          aria-hidden="true"
+        />
+      )}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex h-full w-64 flex-col overflow-y-auto border-r border-gray-200 bg-white px-3 py-4 transition-transform duration-200 dark:border-racing-800 dark:bg-racing-900 sm:static sm:translate-x-0 ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+      <div className="mb-6 flex items-center justify-between gap-2 px-2">
+        <div className="flex items-center gap-2">
+          <Logo />
+          <span className="text-lg font-semibold">Mooncrew</span>
         </div>
-        <span className="text-lg font-semibold">Flowdo</span>
+        <button
+          onClick={onClose}
+          className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800 sm:hidden"
+          aria-label="Menü schließen"
+        >
+          <X size={18} />
+        </button>
       </div>
 
-      <nav className="flex flex-col gap-1">
+      <nav onClick={onClose} className="flex flex-col gap-1">
         <NavLink to="/" end className={navItemClass}>
           <LayoutDashboard size={18} />
           Dashboard
@@ -92,7 +119,7 @@ export default function Sidebar() {
         )}
       </nav>
 
-      <div className="mt-6">
+      <div onClick={onClose} className="mt-6">
         <div className="mb-2 flex items-center justify-between px-2">
           <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
             Projekte
@@ -144,14 +171,46 @@ export default function Sidebar() {
             </button>
           </div>
         )}
-        <button
-          onClick={toggleTheme}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 dark:text-racing-100 dark:hover:bg-racing-800"
-        >
-          {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-          {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
-        </button>
+        <div className="flex items-center gap-1 rounded-lg bg-gray-100 p-1 dark:bg-racing-800">
+          <button
+            onClick={() => setTheme('light')}
+            title="Light Mode"
+            aria-label="Light Mode"
+            className={`flex flex-1 items-center justify-center rounded-md py-1.5 transition-colors ${
+              theme === 'light'
+                ? 'bg-white text-gray-700 shadow-sm dark:bg-racing-700 dark:text-white'
+                : 'text-gray-400 hover:text-gray-600 dark:hover:text-racing-100'
+            }`}
+          >
+            <Sun size={16} />
+          </button>
+          <button
+            onClick={() => setTheme('dark')}
+            title="Dark Mode"
+            aria-label="Dark Mode"
+            className={`flex flex-1 items-center justify-center rounded-md py-1.5 transition-colors ${
+              theme === 'dark'
+                ? 'bg-white text-gray-700 shadow-sm dark:bg-racing-700 dark:text-white'
+                : 'text-gray-400 hover:text-gray-600 dark:hover:text-racing-100'
+            }`}
+          >
+            <Moon size={16} />
+          </button>
+          <button
+            onClick={() => setTheme('pink')}
+            title="Pink Mode"
+            aria-label="Pink Mode"
+            className={`flex flex-1 items-center justify-center rounded-md py-1.5 transition-colors ${
+              theme === 'pink'
+                ? 'bg-white text-gray-700 shadow-sm dark:bg-racing-700 dark:text-white'
+                : 'text-gray-400 hover:text-gray-600 dark:hover:text-racing-100'
+            }`}
+          >
+            <Sparkles size={16} />
+          </button>
+        </div>
       </div>
-    </aside>
+      </aside>
+    </>
   )
 }

@@ -24,7 +24,9 @@ export default function App() {
   const session = useAuthStore((s) => s.session)
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark')
+    const root = document.documentElement
+    root.classList.toggle('dark', theme === 'dark' || theme === 'pink')
+    root.classList.toggle('pink', theme === 'pink')
   }, [theme])
 
   useEffect(() => {

@@ -68,7 +68,7 @@ export default function AddSocialAccountModal({ onClose }: { onClose: () => void
 
         <div className="rounded-lg bg-gray-50 p-3 text-xs text-gray-500 dark:bg-racing-800 dark:text-racing-200">
           <p className="mb-1 font-medium text-gray-600 dark:text-racing-100">So findest du diese Daten:</p>
-          <ol className="list-decimal space-y-1 pl-4">
+          <ol className="list-decimal space-y-1 break-words pl-4">
             <li>Erstelle eine App im Meta Developer Portal und füge das Produkt „Instagram Graph API" hinzu.</li>
             <li>Verknüpfe deinen Instagram-Account (Business/Creator) mit einer Facebook-Seite.</li>
             <li>Erzeuge im Graph API Explorer einen Access Token mit den Berechtigungen
