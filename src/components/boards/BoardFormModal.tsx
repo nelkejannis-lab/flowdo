@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import Modal from '../layout/Modal'
+import AttachmentsField from '../shared/AttachmentsField'
 import { useBoardsStore, BOARD_COLORS } from '../../store/boardsStore'
-import type { Board } from '../../types'
+import type { Attachment, Board } from '../../types'
 
 interface BoardFormModalProps {
   board?: Board
@@ -12,6 +13,8 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
   const addBoard = useBoardsStore((s) => s.addBoard)
   const updateBoard = useBoardsStore((s) => s.updateBoard)
   const deleteBoard = useBoardsStore((s) => s.deleteBoard)
+  const addAttachment = useBoardsStore((s) => s.addAttachment)
+  const removeAttachment = useBoardsStore((s) => s.removeAttachment)
 
   const [title, setTitle] = useState(board?.title ?? '')
   const [description, setDescription] = useState(board?.description ?? '')
@@ -21,6 +24,7 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
   const [externalLaunch, setExternalLaunch] = useState(board?.externalLaunch ?? '')
   const [error, setError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [attachments, setAttachments] = useState<Attachment[]>(board?.attachments ?? [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -109,6 +113,21 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
             />
           </div>
         </div>
+
+        {board && (
+          <AttachmentsField
+            attachments={attachments}
+            onUpload={async (file) => {
+              const result = await addAttachment(board.id, file)
+              if (result.attachment) setAttachments((prev) => [...prev, result.attachment as Attachment])
+              return result
+            }}
+            onDelete={(attachmentId) => {
+              setAttachments((prev) => prev.filter((a) => a.id !== attachmentId))
+              removeAttachment(board.id, attachmentId)
+            }}
+          />
+        )}
 
         {error && <p className="text-sm text-red-500">{error}</p>}
 

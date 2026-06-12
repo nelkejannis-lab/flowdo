@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Plus, Trash2, Check, X } from 'lucide-react'
 import Modal from '../layout/Modal'
+import AttachmentsField from '../shared/AttachmentsField'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
-import type { Board, Priority, Task } from '../../types'
+import type { Attachment, Board, Priority, Task } from '../../types'
 
 const quadrants: { urgent: boolean; important: boolean; label: string; activeClass: string }[] = [
   { urgent: true, important: true, label: 'Dringend & Wichtig', activeClass: 'border-red-400 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
@@ -25,6 +26,8 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, onC
   const addSubtask = useProjectTasksStore((s) => s.addSubtask)
   const toggleSubtask = useProjectTasksStore((s) => s.toggleSubtask)
   const deleteSubtask = useProjectTasksStore((s) => s.deleteSubtask)
+  const addAttachment = useProjectTasksStore((s) => s.addAttachment)
+  const removeAttachment = useProjectTasksStore((s) => s.removeAttachment)
 
   const [title, setTitle] = useState(task?.title ?? '')
   const [description, setDescription] = useState(task?.description ?? '')
@@ -37,6 +40,7 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, onC
   const [localSubtasks, setLocalSubtasks] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [attachments, setAttachments] = useState<Attachment[]>(task?.attachments ?? [])
 
   function addLocalSubtask() {
     if (newSubtask.trim()) {
@@ -262,6 +266,21 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, onC
             </button>
           </div>
         </div>
+
+        {task && (
+          <AttachmentsField
+            attachments={attachments}
+            onUpload={async (file) => {
+              const result = await addAttachment(task.id, file)
+              if (result.attachment) setAttachments((prev) => [...prev, result.attachment as Attachment])
+              return result
+            }}
+            onDelete={(attachmentId) => {
+              setAttachments((prev) => prev.filter((a) => a.id !== attachmentId))
+              removeAttachment(task.id, attachmentId)
+            }}
+          />
+        )}
 
         {error && <p className="text-sm text-red-500">{error}</p>}
 

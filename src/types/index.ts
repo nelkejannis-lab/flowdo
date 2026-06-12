@@ -6,6 +6,15 @@ export interface Subtask {
   completed: boolean
 }
 
+export interface Attachment {
+  id: string
+  name: string
+  url: string
+  path: string
+  size: number
+  createdAt: string
+}
+
 export interface Task {
   id: string
   title: string
@@ -28,6 +37,7 @@ export interface Task {
     avatar_color: string
   }
   subtasks: Subtask[]
+  attachments: Attachment[]
   createdAt: string
 }
 
@@ -60,6 +70,7 @@ export interface Board {
   externalLaunch?: string
   columns: BoardColumn[]
   members: ProjectMember[]
+  attachments: Attachment[]
   createdAt: string
 }
 

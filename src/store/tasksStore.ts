@@ -1,8 +1,9 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Task, Priority, Subtask } from '../types'
+import type { Attachment, Task, Priority, Subtask } from '../types'
 import { createId } from '../utils/id'
 import { todayISO } from '../utils/date'
+import { deleteAttachment, uploadAttachment } from '../lib/attachments'
 
 interface NewTaskInput {
   title: string
@@ -25,6 +26,8 @@ interface TasksState {
   addSubtask: (taskId: string, title: string) => void
   toggleSubtask: (taskId: string, subtaskId: string) => void
   deleteSubtask: (taskId: string, subtaskId: string) => void
+  addAttachment: (taskId: string, file: File) => Promise<{ attachment?: Attachment; error?: string }>
+  removeAttachment: (taskId: string, attachmentId: string) => Promise<void>
   moveTaskToColumn: (taskId: string, boardId: string, columnId: string) => void
 }
 
@@ -47,6 +50,7 @@ export const useTasksStore = create<TasksState>()(
           boardId: input.boardId,
           columnId: input.columnId,
           subtasks: [],
+          attachments: [],
           createdAt: new Date().toISOString(),
         }
         set((state) => ({ tasks: [task, ...state.tasks] }))
@@ -111,10 +115,37 @@ export const useTasksStore = create<TasksState>()(
         }))
       },
 
+      addAttachment: async (taskId, file) => {
+        const task = get().tasks.find((t) => t.id === taskId)
+        if (!task) return { error: 'Aufgabe nicht gefunden' }
+        const { attachment, error } = await uploadAttachment(`personal-tasks/${taskId}`, file)
+        if (error || !attachment) return { error: error ?? 'Fehler beim Hochladen' }
+        get().updateTask(taskId, { attachments: [...task.attachments, attachment] })
+        return { attachment }
+      },
+
+      removeAttachment: async (taskId, attachmentId) => {
+        const task = get().tasks.find((t) => t.id === taskId)
+        if (!task) return
+        const attachment = task.attachments.find((a) => a.id === attachmentId)
+        if (attachment) await deleteAttachment(attachment.path)
+        get().updateTask(taskId, { attachments: task.attachments.filter((a) => a.id !== attachmentId) })
+      },
+
       moveTaskToColumn: (taskId, boardId, columnId) => {
         get().updateTask(taskId, { boardId, columnId })
       },
     }),
-    { name: 'flowdo-tasks' }
+    {
+      name: 'flowdo-tasks',
+      version: 1,
+      migrate: (persisted) => {
+        const state = persisted as TasksState
+        return {
+          ...state,
+          tasks: (state.tasks ?? []).map((t) => ({ ...t, attachments: t.attachments ?? [] })),
+        }
+      },
+    }
   )
 )

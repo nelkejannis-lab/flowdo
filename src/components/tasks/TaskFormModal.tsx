@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Plus, Trash2, Check, X } from 'lucide-react'
 import Modal from '../layout/Modal'
+import AttachmentsField from '../shared/AttachmentsField'
 import { useTasksStore } from '../../store/tasksStore'
 import { useFriendsStore } from '../../store/friendsStore'
 import { useTaskSharesStore } from '../../store/taskSharesStore'
@@ -10,7 +11,7 @@ import { useProjectTasksStore } from '../../store/projectTasksStore'
 import { isSupabaseConfigured } from '../../lib/supabase'
 import { eachEntryDate } from '../../utils/events'
 import { todayISO } from '../../utils/date'
-import type { Priority, Task } from '../../types'
+import type { Attachment, Priority, Task } from '../../types'
 
 const quadrants: { urgent: boolean; important: boolean; label: string; activeClass: string }[] = [
   { urgent: true, important: true, label: 'Dringend & Wichtig', activeClass: 'border-red-400 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
@@ -50,6 +51,10 @@ export default function TaskFormModal({
   const addProjectTask = useProjectTasksStore((s) => s.addTask)
   const addProjectSubtask = useProjectTasksStore((s) => s.addSubtask)
   const toggleProjectSubtask = useProjectTasksStore((s) => s.toggleSubtask)
+  const addAttachment = useTasksStore((s) => s.addAttachment)
+  const removeAttachment = useTasksStore((s) => s.removeAttachment)
+  const addProjectAttachment = useProjectTasksStore((s) => s.addAttachment)
+  const removeProjectAttachment = useProjectTasksStore((s) => s.removeAttachment)
 
   const [title, setTitle] = useState(task?.title ?? '')
   const [description, setDescription] = useState(task?.description ?? '')
@@ -65,6 +70,7 @@ export default function TaskFormModal({
   const [projectId, setProjectId] = useState('')
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
+  const [attachments, setAttachments] = useState<Attachment[]>(task?.attachments ?? [])
 
   useEffect(() => {
     if (isSupabaseConfigured) {
@@ -451,6 +457,24 @@ export default function TaskFormModal({
             </button>
           </div>
         </div>
+
+        {task && (
+          <AttachmentsField
+            attachments={attachments}
+            onUpload={async (file) => {
+              const result = task.boardId
+                ? await addProjectAttachment(task.id, file)
+                : await addAttachment(task.id, file)
+              if (result.attachment) setAttachments((prev) => [...prev, result.attachment as Attachment])
+              return result
+            }}
+            onDelete={(attachmentId) => {
+              setAttachments((prev) => prev.filter((a) => a.id !== attachmentId))
+              if (task.boardId) removeProjectAttachment(task.id, attachmentId)
+              else removeAttachment(task.id, attachmentId)
+            }}
+          />
+        )}
 
         <div className="mt-2 flex items-center justify-between">
           {task ? (

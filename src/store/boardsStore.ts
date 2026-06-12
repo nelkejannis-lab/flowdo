@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
-import type { Board, BoardColumn, ProjectMember } from '../types'
+import { deleteAttachment, uploadAttachment } from '../lib/attachments'
+import type { Attachment, Board, BoardColumn, ProjectMember } from '../types'
 
 interface NewBoardInput {
   title: string
@@ -25,6 +26,7 @@ interface BoardRow {
   created_at: string
   board_columns: { id: string; title: string; position: number }[] | null
   board_members: { user_id: string; role: 'owner' | 'member'; profile: ProjectMember['profile'] | ProjectMember['profile'][] }[] | null
+  attachments: Attachment[] | null
 }
 
 interface TaskStats {
@@ -57,6 +59,7 @@ function toBoard(row: BoardRow): Board {
     externalLaunch: row.external_launch ?? undefined,
     columns,
     members,
+    attachments: row.attachments ?? [],
     createdAt: row.created_at,
   }
 }
@@ -74,6 +77,8 @@ interface BoardsState {
   updateColumn: (boardId: string, columnId: string, title: string) => Promise<void>
   deleteColumn: (boardId: string, columnId: string) => Promise<void>
   removeMember: (boardId: string, userId: string) => Promise<void>
+  addAttachment: (boardId: string, file: File) => Promise<{ attachment?: Attachment; error?: string }>
+  removeAttachment: (boardId: string, attachmentId: string) => Promise<void>
 }
 
 export const useBoardsStore = create<BoardsState>()((set, get) => ({
@@ -198,6 +203,27 @@ export const useBoardsStore = create<BoardsState>()((set, get) => ({
   removeMember: async (boardId, userId) => {
     await supabase.from('board_members').delete().eq('board_id', boardId).eq('user_id', userId)
     await get().fetchBoards()
+  },
+
+  addAttachment: async (boardId, file) => {
+    const board = get().boards.find((b) => b.id === boardId)
+    if (!board) return { error: 'Projekt nicht gefunden' }
+    const { attachment, error } = await uploadAttachment(`boards/${boardId}`, file)
+    if (error || !attachment) return { error: error ?? 'Fehler beim Hochladen' }
+    const attachments = [...board.attachments, attachment]
+    await supabase.from('boards').update({ attachments }).eq('id', boardId)
+    set((state) => ({ boards: state.boards.map((b) => (b.id === boardId ? { ...b, attachments } : b)) }))
+    return { attachment }
+  },
+
+  removeAttachment: async (boardId, attachmentId) => {
+    const board = get().boards.find((b) => b.id === boardId)
+    if (!board) return
+    const attachment = board.attachments.find((a) => a.id === attachmentId)
+    if (attachment) await deleteAttachment(attachment.path)
+    const attachments = board.attachments.filter((a) => a.id !== attachmentId)
+    await supabase.from('boards').update({ attachments }).eq('id', boardId)
+    set((state) => ({ boards: state.boards.map((b) => (b.id === boardId ? { ...b, attachments } : b)) }))
   },
 }))
 

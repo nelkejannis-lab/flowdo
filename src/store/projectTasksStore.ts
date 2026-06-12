@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
-import type { Priority, Subtask, Task } from '../types'
+import { deleteAttachment, uploadAttachment } from '../lib/attachments'
+import type { Attachment, Priority, Subtask, Task } from '../types'
 
 interface NewProjectTaskInput {
   title: string
@@ -31,6 +32,7 @@ interface ProjectTaskRow {
   board_id: string | null
   column_id: string | null
   subtasks: Subtask[]
+  attachments: Attachment[]
   created_at: string
   assignee: Task['assignee'] | Task['assignee'][] | null
 }
@@ -57,6 +59,7 @@ function toTask(row: ProjectTaskRow): Task {
     assignedTo: row.assigned_to ?? undefined,
     assignee: row.assignee ? single(row.assignee) : undefined,
     subtasks: row.subtasks ?? [],
+    attachments: row.attachments ?? [],
     createdAt: row.created_at,
   }
 }
@@ -77,6 +80,8 @@ interface ProjectTasksState {
   addSubtask: (taskId: string, title: string) => Promise<void>
   toggleSubtask: (taskId: string, subtaskId: string) => Promise<void>
   deleteSubtask: (taskId: string, subtaskId: string) => Promise<void>
+  addAttachment: (taskId: string, file: File) => Promise<{ attachment?: Attachment; error?: string }>
+  removeAttachment: (taskId: string, attachmentId: string) => Promise<void>
   moveTaskToColumn: (taskId: string, boardId: string, columnId: string) => Promise<void>
 }
 
@@ -166,6 +171,7 @@ export const useProjectTasksStore = create<ProjectTasksState>()((set, get) => ({
     if (updates.columnId !== undefined) payload.column_id = updates.columnId ?? null
     if (updates.assignedTo !== undefined) payload.assigned_to = updates.assignedTo ?? null
     if (updates.subtasks !== undefined) payload.subtasks = updates.subtasks
+    if (updates.attachments !== undefined) payload.attachments = updates.attachments
 
     await supabase.from('tasks').update(payload).eq('id', id)
 
@@ -222,6 +228,23 @@ export const useProjectTasksStore = create<ProjectTasksState>()((set, get) => ({
     if (!task) return
     const subtasks = task.subtasks.filter((s) => s.id !== subtaskId)
     await get().updateTask(taskId, { subtasks })
+  },
+
+  addAttachment: async (taskId, file) => {
+    const task = get().tasks.find((t) => t.id === taskId) ?? get().myTasks.find((t) => t.id === taskId)
+    if (!task) return { error: 'Aufgabe nicht gefunden' }
+    const { attachment, error } = await uploadAttachment(`tasks/${taskId}`, file)
+    if (error || !attachment) return { error: error ?? 'Fehler beim Hochladen' }
+    await get().updateTask(taskId, { attachments: [...task.attachments, attachment] })
+    return { attachment }
+  },
+
+  removeAttachment: async (taskId, attachmentId) => {
+    const task = get().tasks.find((t) => t.id === taskId) ?? get().myTasks.find((t) => t.id === taskId)
+    if (!task) return
+    const attachment = task.attachments.find((a) => a.id === attachmentId)
+    if (attachment) await deleteAttachment(attachment.path)
+    await get().updateTask(taskId, { attachments: task.attachments.filter((a) => a.id !== attachmentId) })
   },
 
   moveTaskToColumn: async (taskId, _boardId, columnId) => {
