@@ -14,6 +14,7 @@ interface FriendsState {
   loading: boolean
   error: string | null
   fetchAll: () => Promise<void>
+  searchUsers: (query: string) => Promise<Profile[]>
   sendRequest: (username: string) => Promise<string | null>
   acceptRequest: (friendshipId: string) => Promise<void>
   declineOrCancel: (friendshipId: string) => Promise<void>
@@ -71,6 +72,32 @@ export const useFriendsStore = create<FriendsState>()((set, get) => ({
     }
 
     set({ friends, incoming, outgoing, loading: false })
+  },
+
+  searchUsers: async (query) => {
+    const cleanQuery = query.trim().toLowerCase().replace(/^@/, '')
+    if (!cleanQuery) return []
+
+    const { data: userData } = await supabase.auth.getUser()
+    const userId = userData.user?.id
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .or(`username.ilike.%${cleanQuery}%,display_name.ilike.%${cleanQuery}%`)
+      .neq('id', userId ?? '')
+      .limit(5)
+
+    if (error || !data) return []
+
+    const { friends, incoming, outgoing } = get()
+    const excludedIds = new Set([
+      ...friends.map((f) => f.profile.id),
+      ...incoming.map((f) => f.profile.id),
+      ...outgoing.map((f) => f.profile.id),
+    ])
+
+    return (data as Profile[]).filter((p) => !excludedIds.has(p.id))
   },
 
   sendRequest: async (username) => {

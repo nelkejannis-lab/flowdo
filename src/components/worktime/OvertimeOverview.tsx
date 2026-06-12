@@ -1,6 +1,6 @@
 import { Minus, Plus } from 'lucide-react'
 import { useWorkTimeStore } from '../../store/workTimeStore'
-import { computeOverview, formatHM } from '../../utils/worktime'
+import { WEEKEND_COMP_DAY_THRESHOLD_MINUTES, computeOverview, formatHM } from '../../utils/worktime'
 
 export default function OvertimeOverview() {
   const entries = useWorkTimeStore((s) => s.entries)
@@ -30,34 +30,36 @@ export default function OvertimeOverview() {
         </p>
       </div>
       <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-        <p className="text-xs font-medium uppercase tracking-wide text-gray-400">An Wochenenden gearbeitet</p>
+        <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Ausgleichstage (Wochenende)</p>
         <div className="mt-1 flex items-center gap-3">
           <button
             onClick={decrementSettledWeekendDays}
             disabled={settledWeekendDays <= 0}
-            title="Ausgleichstag abrechnen"
+            title="Ausgleichstag rückgängig machen"
             className="rounded-full border border-gray-200 p-1 text-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-30 dark:border-racing-700 dark:hover:bg-racing-800"
           >
             <Minus size={16} />
           </button>
           <div className="flex-1 text-center">
-            <p className="text-3xl font-bold">{weekendDaysWorked}</p>
-            <p className="text-xs text-gray-400">Tag{weekendDaysWorked === 1 ? '' : 'e'} gearbeitet</p>
+            <p className="text-3xl font-bold">{openWeekendDays}</p>
+            <p className="text-xs text-gray-400">offene{openWeekendDays === 1 ? 'r' : ''} Ausgleichstag{openWeekendDays === 1 ? '' : 'e'}</p>
           </div>
           <button
             onClick={incrementSettledWeekendDays}
             disabled={settledWeekendDays >= weekendDaysWorked}
-            title="Ausgleichstag hinzufügen"
+            title="Ausgleichstag als genommen markieren"
             className="rounded-full border border-gray-200 p-1 text-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-30 dark:border-racing-700 dark:hover:bg-racing-800"
           >
             <Plus size={16} />
           </button>
         </div>
-        {settledWeekendDays > 0 && (
-          <p className="mt-1 text-center text-xs text-gray-400">
-            {settledWeekendDays} abgerechnet · {openWeekendDays} offen
-          </p>
-        )}
+        <p className="mt-1 text-center text-xs text-gray-400">
+          {weekendDaysWorked} verdient · {settledWeekendDays} genommen
+        </p>
+        <p className="mt-2 text-center text-xs text-gray-400">
+          Ab {formatHM(WEEKEND_COMP_DAY_THRESHOLD_MINUTES)} an einem Wochenendtag gibt es einen Ausgleichstag, alles
+          darüber zählt als Überstunden.
+        </p>
       </div>
     </div>
   )

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Check, UserPlus, X } from 'lucide-react'
 import { useFriendsStore } from '../store/friendsStore'
+import type { Profile } from '../store/authStore'
 
 function Avatar({ name, color }: { name: string; color: string }) {
   return (
@@ -14,28 +15,64 @@ function Avatar({ name, color }: { name: string; color: string }) {
 }
 
 export default function FriendsPage() {
-  const { friends, incoming, outgoing, loading, fetchAll, sendRequest, acceptRequest, declineOrCancel, removeFriend } =
-    useFriendsStore()
+  const {
+    friends,
+    incoming,
+    outgoing,
+    loading,
+    fetchAll,
+    searchUsers,
+    sendRequest,
+    acceptRequest,
+    declineOrCancel,
+    removeFriend,
+  } = useFriendsStore()
   const [username, setUsername] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
+  const [suggestions, setSuggestions] = useState<Profile[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     fetchAll()
   }, [fetchAll])
+
+  useEffect(() => {
+    if (searchTimeout.current) clearTimeout(searchTimeout.current)
+    if (!username.trim()) {
+      setSuggestions([])
+      return
+    }
+    searchTimeout.current = setTimeout(async () => {
+      const results = await searchUsers(username)
+      setSuggestions(results)
+    }, 250)
+    return () => {
+      if (searchTimeout.current) clearTimeout(searchTimeout.current)
+    }
+  }, [username, searchUsers])
+
+  function selectSuggestion(profile: Profile) {
+    setUsername(profile.username)
+    setSuggestions([])
+    setShowSuggestions(false)
+  }
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setSuccess(null)
     setSending(true)
+    setShowSuggestions(false)
     const err = await sendRequest(username)
     setSending(false)
     if (err) setError(err)
     else {
       setSuccess(`Anfrage an @${username.trim().toLowerCase()} gesendet`)
       setUsername('')
+      setSuggestions([])
     }
   }
 
@@ -46,12 +83,34 @@ export default function FriendsPage() {
       <div className="mb-6 rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
         <h2 className="mb-2 text-sm font-semibold">Person hinzufügen</h2>
         <form onSubmit={handleSend} className="flex gap-2">
-          <input
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="Benutzername (z. B. max123)"
-            className="flex-1 rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
-          />
+          <div className="relative flex-1">
+            <input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 100)}
+              placeholder="Benutzername oder Name suchen"
+              className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+            />
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-racing-700 dark:bg-racing-900">
+                {suggestions.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => selectSuggestion(p)}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-racing-800"
+                  >
+                    <Avatar name={p.display_name} color={p.avatar_color} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium">{p.display_name}</p>
+                      <p className="truncate text-xs text-gray-400">@{p.username}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <button
             type="submit"
             disabled={sending || !username.trim()}

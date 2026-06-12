@@ -35,6 +35,10 @@ export function hoursValueToMinutes(hours: number): number {
   return Math.round(hours * 60)
 }
 
+// Ab dieser Arbeitszeit an einem Wochenendtag gibt es einen vollen Ausgleichstag,
+// alles darüber zählt zusätzlich als Überstunden (7 Stunden 42 Minuten).
+export const WEEKEND_COMP_DAY_THRESHOLD_MINUTES = 7 * 60 + 42
+
 export interface OvertimeOverview {
   totalDiffMinutes: number
   totalDiffDays: number
@@ -52,8 +56,17 @@ export function computeOverview(
     const date = parseISO(entry.date)
     const target = dayTargetMinutes(date, settings)
     const net = netMinutes(entry)
-    totalDiffMinutes += net - target
-    if (isWeekend(date) && net > 0) weekendDaysWorked++
+
+    if (isWeekend(date)) {
+      if (net >= WEEKEND_COMP_DAY_THRESHOLD_MINUTES) {
+        weekendDaysWorked++
+        totalDiffMinutes += net - WEEKEND_COMP_DAY_THRESHOLD_MINUTES
+      } else {
+        totalDiffMinutes += net
+      }
+    } else {
+      totalDiffMinutes += net - target
+    }
   }
 
   const dailyTarget = dailyTargetMinutes(settings)
