@@ -1,6 +1,7 @@
 import { Check } from 'lucide-react'
 import type { Task } from '../../types'
 import { useTasksStore } from '../../store/tasksStore'
+import { useProjectTasksStore } from '../../store/projectTasksStore'
 import { formatFriendlyDate, isOverdue } from '../../utils/date'
 import BoardBadge from '../boards/BoardBadge'
 
@@ -11,6 +12,7 @@ interface EisenhowerTaskRowProps {
 
 export default function EisenhowerTaskRow({ task, onClick }: EisenhowerTaskRowProps) {
   const toggleTaskCompleted = useTasksStore((s) => s.toggleTaskCompleted)
+  const toggleProjectTaskCompleted = useProjectTasksStore((s) => s.toggleTaskCompleted)
   const overdue = isOverdue(task.dueDate) && !task.completed
 
   return (
@@ -21,7 +23,11 @@ export default function EisenhowerTaskRow({ task, onClick }: EisenhowerTaskRowPr
       <button
         onClick={(e) => {
           e.stopPropagation()
-          toggleTaskCompleted(task.id)
+          if (task.boardId) {
+            toggleProjectTaskCompleted(task.id)
+          } else {
+            toggleTaskCompleted(task.id)
+          }
         }}
         className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-sm border-2 ${
           task.completed ? 'border-accent bg-accent text-white' : 'border-gray-300 dark:border-racing-600'

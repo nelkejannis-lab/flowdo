@@ -204,21 +204,21 @@ export const useProjectTasksStore = create<ProjectTasksState>()((set, get) => ({
   },
 
   addSubtask: async (taskId, title) => {
-    const task = get().tasks.find((t) => t.id === taskId)
+    const task = get().tasks.find((t) => t.id === taskId) ?? get().myTasks.find((t) => t.id === taskId)
     if (!task) return
     const subtask: Subtask = { id: crypto.randomUUID(), title, completed: false }
     await get().updateTask(taskId, { subtasks: [...task.subtasks, subtask] })
   },
 
   toggleSubtask: async (taskId, subtaskId) => {
-    const task = get().tasks.find((t) => t.id === taskId)
+    const task = get().tasks.find((t) => t.id === taskId) ?? get().myTasks.find((t) => t.id === taskId)
     if (!task) return
     const subtasks = task.subtasks.map((s) => (s.id === subtaskId ? { ...s, completed: !s.completed } : s))
     await get().updateTask(taskId, { subtasks })
   },
 
   deleteSubtask: async (taskId, subtaskId) => {
-    const task = get().tasks.find((t) => t.id === taskId)
+    const task = get().tasks.find((t) => t.id === taskId) ?? get().myTasks.find((t) => t.id === taskId)
     if (!task) return
     const subtasks = task.subtasks.filter((s) => s.id !== subtaskId)
     await get().updateTask(taskId, { subtasks })

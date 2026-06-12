@@ -1,26 +1,36 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-export type Theme = 'light' | 'dark' | 'pink'
+export type Mode = 'light' | 'dark'
 
 interface SettingsState {
-  theme: Theme
-  setTheme: (theme: Theme) => void
-  toggleTheme: () => void
+  mode: Mode
+  pinkAccent: boolean
+  setMode: (mode: Mode) => void
+  togglePinkAccent: () => void
 }
 
-const order: Theme[] = ['light', 'dark', 'pink']
+interface LegacyState {
+  theme?: 'light' | 'dark' | 'pink'
+}
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
-    (set, get) => ({
-      theme: 'dark',
-      setTheme: (theme) => set({ theme }),
-      toggleTheme: () => {
-        const next = order[(order.indexOf(get().theme) + 1) % order.length]
-        set({ theme: next })
-      },
+    (set) => ({
+      mode: 'dark',
+      pinkAccent: false,
+      setMode: (mode) => set({ mode }),
+      togglePinkAccent: () => set((s) => ({ pinkAccent: !s.pinkAccent })),
     }),
-    { name: 'flowdo-settings' }
+    {
+      name: 'flowdo-settings',
+      version: 1,
+      migrate: (persisted) => {
+        const legacy = persisted as LegacyState
+        if (legacy.theme === 'pink') return { mode: 'dark', pinkAccent: true }
+        if (legacy.theme === 'light') return { mode: 'light', pinkAccent: false }
+        return { mode: 'dark', pinkAccent: false }
+      },
+    }
   )
 )

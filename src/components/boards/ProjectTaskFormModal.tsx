@@ -4,6 +4,13 @@ import Modal from '../layout/Modal'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
 import type { Board, Priority, Task } from '../../types'
 
+const quadrants: { urgent: boolean; important: boolean; label: string; activeClass: string }[] = [
+  { urgent: true, important: true, label: 'Dringend & Wichtig', activeClass: 'border-red-400 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
+  { urgent: false, important: true, label: 'Nicht dringend & Wichtig', activeClass: 'border-amber-400 bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' },
+  { urgent: true, important: false, label: 'Dringend & Unwichtig', activeClass: 'border-blue-400 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
+  { urgent: false, important: false, label: 'Nicht dringend & Unwichtig', activeClass: 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' },
+]
+
 interface ProjectTaskFormModalProps {
   board: Board
   task?: Task
@@ -24,6 +31,8 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, onC
   const [dueDate, setDueDate] = useState(task?.dueDate ?? '')
   const [priority, setPriority] = useState<Priority>(task?.priority ?? 'medium')
   const [assignedTo, setAssignedTo] = useState(task?.assignedTo ?? '')
+  const [urgent, setUrgent] = useState(task?.urgent ?? false)
+  const [important, setImportant] = useState(task?.important ?? false)
   const [newSubtask, setNewSubtask] = useState('')
   const [localSubtasks, setLocalSubtasks] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
@@ -53,6 +62,8 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, onC
         description: description.trim() || undefined,
         dueDate: dueDate || undefined,
         priority,
+        urgent,
+        important,
         assignedTo: assignedTo || undefined,
       })
       setSaving(false)
@@ -62,6 +73,8 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, onC
         description: description.trim() || undefined,
         dueDate: dueDate || undefined,
         priority,
+        urgent,
+        important,
         boardId: board.id,
         columnId: defaultColumnId ?? board.columns[0]?.id,
         assignedTo: assignedTo || undefined,
@@ -126,6 +139,30 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, onC
               <option value="medium">Mittel</option>
               <option value="high">Hoch</option>
             </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-500">Eisenhower-Matrix</label>
+          <div className="grid grid-cols-2 gap-2">
+            {quadrants.map((q) => {
+              const active = q.urgent === urgent && q.important === important
+              return (
+                <button
+                  type="button"
+                  key={q.label}
+                  onClick={() => {
+                    setUrgent(q.urgent)
+                    setImportant(q.important)
+                  }}
+                  className={`rounded-lg border px-2 py-1.5 text-left text-xs font-medium transition-colors ${
+                    active ? q.activeClass : 'border-gray-200 text-gray-500 hover:border-gray-300 dark:border-racing-700 dark:text-racing-200'
+                  }`}
+                >
+                  {q.label}
+                </button>
+              )
+            })}
           </div>
         </div>
 

@@ -18,16 +18,17 @@ import { useAuthStore } from './store/authStore'
 import { isSupabaseConfigured } from './lib/supabase'
 
 export default function App() {
-  const theme = useSettingsStore((s) => s.theme)
+  const mode = useSettingsStore((s) => s.mode)
+  const pinkAccent = useSettingsStore((s) => s.pinkAccent)
   const init = useAuthStore((s) => s.init)
   const loading = useAuthStore((s) => s.loading)
   const session = useAuthStore((s) => s.session)
 
   useEffect(() => {
     const root = document.documentElement
-    root.classList.toggle('dark', theme === 'dark' || theme === 'pink')
-    root.classList.toggle('pink', theme === 'pink')
-  }, [theme])
+    root.classList.toggle('dark', mode === 'dark')
+    root.classList.toggle('pink', pinkAccent)
+  }, [mode, pinkAccent])
 
   useEffect(() => {
     const unsubscribe = init()

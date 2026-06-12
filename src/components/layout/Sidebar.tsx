@@ -39,8 +39,10 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const boards = useBoardsStore((s) => s.boards)
   const fetchBoards = useBoardsStore((s) => s.fetchBoards)
-  const theme = useSettingsStore((s) => s.theme)
-  const setTheme = useSettingsStore((s) => s.setTheme)
+  const mode = useSettingsStore((s) => s.mode)
+  const setMode = useSettingsStore((s) => s.setMode)
+  const pinkAccent = useSettingsStore((s) => s.pinkAccent)
+  const togglePinkAccent = useSettingsStore((s) => s.togglePinkAccent)
   const profile = useAuthStore((s) => s.profile)
   const signOut = useAuthStore((s) => s.signOut)
 
@@ -173,11 +175,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         )}
         <div className="flex items-center gap-1 rounded-lg bg-gray-100 p-1 dark:bg-racing-800">
           <button
-            onClick={() => setTheme('light')}
+            onClick={() => setMode('light')}
             title="Light Mode"
             aria-label="Light Mode"
             className={`flex flex-1 items-center justify-center rounded-md py-1.5 transition-colors ${
-              theme === 'light'
+              mode === 'light'
                 ? 'bg-white text-gray-700 shadow-sm dark:bg-racing-700 dark:text-white'
                 : 'text-gray-400 hover:text-gray-600 dark:hover:text-racing-100'
             }`}
@@ -185,11 +187,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <Sun size={16} />
           </button>
           <button
-            onClick={() => setTheme('dark')}
+            onClick={() => setMode('dark')}
             title="Dark Mode"
             aria-label="Dark Mode"
             className={`flex flex-1 items-center justify-center rounded-md py-1.5 transition-colors ${
-              theme === 'dark'
+              mode === 'dark'
                 ? 'bg-white text-gray-700 shadow-sm dark:bg-racing-700 dark:text-white'
                 : 'text-gray-400 hover:text-gray-600 dark:hover:text-racing-100'
             }`}
@@ -197,11 +199,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <Moon size={16} />
           </button>
           <button
-            onClick={() => setTheme('pink')}
+            onClick={togglePinkAccent}
             title="Pink Mode"
             aria-label="Pink Mode"
             className={`flex flex-1 items-center justify-center rounded-md py-1.5 transition-colors ${
-              theme === 'pink'
+              pinkAccent
                 ? 'bg-white text-gray-700 shadow-sm dark:bg-racing-700 dark:text-white'
                 : 'text-gray-400 hover:text-gray-600 dark:hover:text-racing-100'
             }`}
