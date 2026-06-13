@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import Logo from './Logo'
 import {
@@ -19,6 +19,8 @@ import {
   Instagram,
   Settings,
   X,
+  Folder,
+  ChevronDown,
 } from 'lucide-react'
 import { useBoardsStore } from '../../store/boardsStore'
 import { useSettingsStore } from '../../store/settingsStore'
@@ -39,7 +41,10 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const boards = useBoardsStore((s) => s.boards)
+  const folders = useBoardsStore((s) => s.folders)
   const fetchBoards = useBoardsStore((s) => s.fetchBoards)
+  const fetchFolders = useBoardsStore((s) => s.fetchFolders)
+  const [openFolders, setOpenFolders] = useState<Set<string>>(new Set())
   const mode = useSettingsStore((s) => s.mode)
   const setMode = useSettingsStore((s) => s.setMode)
   const pinkAccent = useSettingsStore((s) => s.pinkAccent)
@@ -48,8 +53,17 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const signOut = useAuthStore((s) => s.signOut)
 
   useEffect(() => {
-    if (isSupabaseConfigured) fetchBoards()
-  }, [fetchBoards])
+    if (isSupabaseConfigured) { fetchBoards(); fetchFolders() }
+    else fetchBoards()
+  }, [fetchBoards, fetchFolders])
+
+  function toggleFolder(id: string) {
+    setOpenFolders((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
 
   return (
     <>
@@ -128,13 +142,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         )}
       </nav>
 
-      <div onClick={onClose} className="mt-6">
+      <div className="mt-6">
         <div className="mb-2 flex items-center justify-between px-2">
           <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
             Projekte
           </span>
           <NavLink
             to="/projekte"
+            onClick={onClose}
             className="text-gray-400 hover:text-accent"
             title="Projekte verwalten"
           >
@@ -142,16 +157,51 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </NavLink>
         </div>
         <div className="flex flex-col gap-1">
-          <NavLink to="/projekte" end className={navItemClass}>
+          <NavLink to="/projekte" end className={navItemClass} onClick={onClose}>
             <Trello size={18} />
             Alle Projekte
           </NavLink>
-          {boards.map((board) => (
-            <NavLink key={board.id} to={`/projekte/${board.id}`} className={navItemClass}>
-              <span
-                className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
-                style={{ backgroundColor: board.color }}
-              />
+
+          {/* Folders with their boards */}
+          {folders.map((folder) => {
+            const folderBoards = boards.filter((b) => b.folderId === folder.id)
+            const isOpen = openFolders.has(folder.id)
+            return (
+              <div key={folder.id}>
+                <button
+                  onClick={() => toggleFolder(folder.id)}
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 dark:text-racing-100 dark:hover:bg-racing-800"
+                >
+                  <Folder size={18} className="flex-shrink-0" />
+                  <span className="flex-1 truncate text-left">{folder.title}</span>
+                  <span className="text-xs text-gray-400">{folderBoards.length}</span>
+                  <ChevronDown
+                    size={14}
+                    className={`flex-shrink-0 text-gray-400 transition-transform ${isOpen ? '' : '-rotate-90'}`}
+                  />
+                </button>
+                {isOpen && (
+                  <div className="ml-4 flex flex-col gap-1 border-l border-gray-100 pl-2 dark:border-racing-800">
+                    {folderBoards.length === 0 ? (
+                      <span className="px-3 py-1.5 text-xs text-gray-400">Leer</span>
+                    ) : (
+                      folderBoards.map((board) => (
+                        <NavLink key={board.id} to={`/projekte/${board.id}`} className={navItemClass} onClick={onClose}>
+                          <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: board.color }} />
+                          <span className="truncate">{board.title}</span>
+                        </NavLink>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+
+          {/* Boards without folder */}
+          {boards.filter((b) => !b.folderId).map((board) => (
+            <NavLink key={board.id} to={`/projekte/${board.id}`} className={navItemClass} onClick={onClose}>
+              <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: board.color }} />
               <span className="truncate">{board.title}</span>
             </NavLink>
           ))}
