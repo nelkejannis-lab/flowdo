@@ -220,7 +220,11 @@ export const useProjectTasksStore = create<ProjectTasksState>()((set, get) => ({
     const task = get().tasks.find((t) => t.id === taskId) ?? get().myTasks.find((t) => t.id === taskId)
     if (!task) return
     const subtasks = task.subtasks.map((s) => (s.id === subtaskId ? { ...s, completed: !s.completed } : s))
-    await get().updateTask(taskId, { subtasks })
+    const allDone = subtasks.length > 0 && subtasks.every((s) => s.completed)
+    await get().updateTask(taskId, {
+      subtasks,
+      ...(allDone && !task.completed ? { completed: true, completedAt: new Date().toISOString() } : {}),
+    })
   },
 
   deleteSubtask: async (taskId, subtaskId) => {

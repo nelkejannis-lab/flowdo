@@ -92,16 +92,20 @@ export const useTasksStore = create<TasksState>()(
 
       toggleSubtask: (taskId, subtaskId) => {
         set((state) => ({
-          tasks: state.tasks.map((t) =>
-            t.id === taskId
-              ? {
-                  ...t,
-                  subtasks: t.subtasks.map((s) =>
-                    s.id === subtaskId ? { ...s, completed: !s.completed } : s
-                  ),
-                }
-              : t
-          ),
+          tasks: state.tasks.map((t) => {
+            if (t.id !== taskId) return t
+            const subtasks = t.subtasks.map((s) =>
+              s.id === subtaskId ? { ...s, completed: !s.completed } : s
+            )
+            const allDone = subtasks.length > 0 && subtasks.every((s) => s.completed)
+            return {
+              ...t,
+              subtasks,
+              ...(allDone && !t.completed
+                ? { completed: true, completedAt: todayISO() }
+                : {}),
+            }
+          }),
         }))
       },
 

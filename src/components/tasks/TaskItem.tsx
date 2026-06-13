@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, ChevronDown, ChevronRight, ListChecks, MessageSquare } from 'lucide-react'
+import { Check, ChevronDown, ListChecks, MessageSquare } from 'lucide-react'
 import type { Task } from '../../types'
 import { useTasksStore } from '../../store/tasksStore'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
@@ -96,14 +96,11 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
         )}
         {hasSubtasks && (
           <button
-            onClick={(e) => {
-              e.stopPropagation()
-              setExpanded((v) => !v)
-            }}
-            className="flex-shrink-0 rounded p-1 text-gray-300 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
+            onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v) }}
+            className="flex flex-shrink-0 items-center gap-1 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
             title={expanded ? 'Unteraufgaben einklappen' : 'Unteraufgaben anzeigen'}
           >
-            {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+            <ChevronDown size={16} className={`transition-transform ${expanded ? '' : '-rotate-90'}`} />
           </button>
         )}
       </div>
@@ -115,29 +112,38 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
       )}
 
       {expanded && hasSubtasks && (
-        <div className="flex flex-col gap-1 border-t border-gray-100 px-3 py-2 pl-10 dark:border-racing-800">
-          {task.subtasks.map((s) => (
-            <div key={s.id} className="flex items-center gap-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  if (task.boardId) {
-                    toggleProjectSubtask(task.id, s.id)
-                  } else {
-                    toggleSubtask(task.id, s.id)
-                  }
-                }}
-                className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 ${
-                  s.completed ? 'border-accent bg-accent text-white' : 'border-gray-300 dark:border-racing-600'
-                }`}
-              >
-                {s.completed && <Check size={10} />}
-              </button>
-              <span className={`flex-1 text-sm ${s.completed ? 'text-gray-400 line-through' : ''}`}>
-                {s.title}
-              </span>
+        <div className="border-t border-gray-100 px-3 py-2 pl-11 dark:border-racing-800">
+          {/* Progress bar */}
+          <div className="mb-2 flex items-center gap-2">
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-racing-800">
+              <div
+                className="h-full rounded-full bg-accent transition-all"
+                style={{ width: `${task.subtasks.length ? (subtaskDone / task.subtasks.length) * 100 : 0}%` }}
+              />
             </div>
-          ))}
+            <span className="text-[10px] text-gray-400">{subtaskDone}/{task.subtasks.length}</span>
+          </div>
+          <div className="flex flex-col gap-1">
+            {task.subtasks.map((s) => (
+              <div key={s.id} className="flex items-center gap-2 py-0.5">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (task.boardId) toggleProjectSubtask(task.id, s.id)
+                    else toggleSubtask(task.id, s.id)
+                  }}
+                  className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                    s.completed ? 'border-accent bg-accent text-white' : 'border-gray-300 dark:border-racing-600'
+                  }`}
+                >
+                  {s.completed && <Check size={10} />}
+                </button>
+                <span className={`flex-1 text-sm ${s.completed ? 'text-gray-400 line-through' : ''}`}>
+                  {s.title}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
