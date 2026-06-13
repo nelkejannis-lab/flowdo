@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { Sparkles, Wand2, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react'
+import { Sparkles, Wand2, CheckCircle2, AlertTriangle, Loader2, Calendar, Users } from 'lucide-react'
 import { useFriendsStore } from '../store/friendsStore'
-import { useAiSchedulerStore, type ParsedAppointment, type ColleagueAvailability } from '../store/aiSchedulerStore'
+import { useAiSchedulerStore, type ParsedAppointment, type ColleagueAvailability, type BestSlotResult } from '../store/aiSchedulerStore'
 import { useCalendarEntriesStore } from '../store/calendarEntriesStore'
 import { isSupabaseConfigured } from '../lib/supabase'
 
@@ -31,6 +31,19 @@ export default function AiSchedulerPage() {
   const [availability, setAvailability] = useState<ColleagueAvailability[]>([])
   const [checkingAvailability, setCheckingAvailability] = useState(false)
   const [creating, setCreating] = useState(false)
+
+  // Best slot finder
+  const getBusySlots = useAiSchedulerStore((s) => s.getBusySlots)
+  const findBestSlot = useAiSchedulerStore((s) => s.findBestSlot)
+  const [finderColleagues, setFinderColleagues] = useState<string[]>([])
+  const [finderFromDate, setFinderFromDate] = useState('')
+  const [finderToDate, setFinderToDate] = useState('')
+  const [finderDuration, setFinderDuration] = useState('60')
+  const [finderPrefStart, setFinderPrefStart] = useState('09:00')
+  const [finderPrefEnd, setFinderPrefEnd] = useState('18:00')
+  const [findingSlot, setFindingSlot] = useState(false)
+  const [bestSlot, setBestSlot] = useState<BestSlotResult | null>(null)
+  const [finderError, setFinderError] = useState<string | null>(null)
 
   // @-mention autocomplete
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -79,6 +92,46 @@ export default function AiSchedulerPage() {
 
   function toggleColleague(id: string) {
     setSelectedColleagues((ids) => ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id])
+  }
+
+  function toggleFinderColleague(id: string) {
+    setFinderColleagues((ids) => ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id])
+  }
+
+  async function handleFindBestSlot() {
+    if (finderColleagues.length === 0 || !finderFromDate || !finderToDate) return
+    setFindingSlot(true)
+    setFinderError(null)
+    setBestSlot(null)
+    try {
+      const colleagues = friends
+        .filter((f) => finderColleagues.includes(f.profile.id))
+        .map((f) => ({ id: f.profile.id, name: f.profile.display_name }))
+      const busySlots = await getBusySlots(finderColleagues, finderFromDate, finderToDate, colleagues)
+      const result = await findBestSlot(
+        colleagues,
+        busySlots,
+        finderFromDate,
+        finderToDate,
+        parseInt(finderDuration) || 60,
+        finderPrefStart || null,
+        finderPrefEnd || null,
+      )
+      setBestSlot(result)
+    } catch (err) {
+      setFinderError(err instanceof Error ? err.message : 'Unbekannter Fehler')
+    } finally {
+      setFindingSlot(false)
+    }
+  }
+
+  function applyBestSlot() {
+    if (!bestSlot) return
+    setDate(bestSlot.date)
+    setStartTime(bestSlot.startTime)
+    setEndTime(bestSlot.endTime)
+    setSelectedColleagues(finderColleagues)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   async function runAvailabilityCheck(ids: string[], d: string, ed: string, st: string, et: string) {
@@ -207,6 +260,124 @@ export default function AiSchedulerPage() {
         {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
         {success && <p className="mt-2 text-sm text-emerald-500">{success}</p>}
       </div>
+
+      {friends.length > 0 && (
+        <div className="mb-6 rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+            <Users size={15} />
+            Besten gemeinsamen Termin finden
+          </h2>
+
+          <div className="mb-3">
+            <label className="mb-1 block text-xs font-medium text-gray-500">Beteiligte Personen</label>
+            <div className="flex flex-wrap gap-2">
+              {friends.map((f) => {
+                const active = finderColleagues.includes(f.profile.id)
+                return (
+                  <button
+                    key={f.profile.id}
+                    type="button"
+                    onClick={() => toggleFinderColleague(f.profile.id)}
+                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                      active
+                        ? 'border-accent bg-accent/10 text-accent'
+                        : 'border-gray-200 text-gray-500 hover:border-gray-300 dark:border-racing-700 dark:text-racing-200'
+                    }`}
+                  >
+                    {f.profile.display_name}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="mb-3 flex gap-2">
+            <div className="flex-1">
+              <label className="mb-1 block text-xs font-medium text-gray-500">Zeitraum von</label>
+              <input
+                type="date"
+                value={finderFromDate}
+                onChange={(e) => setFinderFromDate(e.target.value)}
+                className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="mb-1 block text-xs font-medium text-gray-500">bis</label>
+              <input
+                type="date"
+                value={finderToDate}
+                min={finderFromDate}
+                onChange={(e) => setFinderToDate(e.target.value)}
+                className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+              />
+            </div>
+          </div>
+
+          <div className="mb-3 flex gap-2">
+            <div className="flex-1">
+              <label className="mb-1 block text-xs font-medium text-gray-500">Dauer (Minuten)</label>
+              <input
+                type="number"
+                value={finderDuration}
+                min={15}
+                step={15}
+                onChange={(e) => setFinderDuration(e.target.value)}
+                className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="mb-1 block text-xs font-medium text-gray-500">Bevorzugt ab</label>
+              <input
+                type="time"
+                value={finderPrefStart}
+                onChange={(e) => setFinderPrefStart(e.target.value)}
+                className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="mb-1 block text-xs font-medium text-gray-500">bis</label>
+              <input
+                type="time"
+                value={finderPrefEnd}
+                onChange={(e) => setFinderPrefEnd(e.target.value)}
+                className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+              />
+            </div>
+          </div>
+
+          <button
+            onClick={handleFindBestSlot}
+            disabled={findingSlot || finderColleagues.length === 0 || !finderFromDate || !finderToDate}
+            className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
+          >
+            {findingSlot ? <Loader2 size={16} className="animate-spin" /> : <Calendar size={16} />}
+            {findingSlot ? 'Suche läuft…' : 'Besten Termin finden'}
+          </button>
+
+          {finderError && <p className="mt-2 text-sm text-red-500">{finderError}</p>}
+
+          {bestSlot && (
+            <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-900 dark:bg-emerald-950/30">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                    <CheckCircle2 size={14} className="mr-1 inline" />
+                    {new Date(bestSlot.date).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long' })}
+                    {' · '}{bestSlot.startTime} – {bestSlot.endTime} Uhr
+                  </p>
+                  <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-500">{bestSlot.explanation}</p>
+                </div>
+                <button
+                  onClick={applyBestSlot}
+                  className="flex-shrink-0 rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:bg-transparent dark:text-emerald-400"
+                >
+                  Übernehmen
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {result && (
         <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">

@@ -19,6 +19,23 @@ export interface ColleagueAvailability {
   conflictTitle: string | null
 }
 
+export interface BusySlot {
+  userId: string
+  userName: string
+  title: string
+  date: string
+  endDate?: string
+  startTime?: string
+  endTime?: string
+}
+
+export interface BestSlotResult {
+  date: string
+  startTime: string
+  endTime: string
+  explanation: string
+}
+
 interface AvailabilityRow {
   user_id: string
   busy: boolean
@@ -39,6 +56,21 @@ interface AiSchedulerState {
     startTime: string | null,
     endTime: string | null
   ) => Promise<ColleagueAvailability[]>
+  getBusySlots: (
+    userIds: string[],
+    fromDate: string,
+    toDate: string,
+    colleagues: { id: string; name: string }[]
+  ) => Promise<BusySlot[]>
+  findBestSlot: (
+    colleagues: { id: string; name: string }[],
+    busySlots: BusySlot[],
+    fromDate: string,
+    toDate: string,
+    durationMinutes: number,
+    preferredStartTime: string | null,
+    preferredEndTime: string | null
+  ) => Promise<BestSlotResult>
 }
 
 export const useAiSchedulerStore = create<AiSchedulerState>()(() => ({
@@ -129,5 +161,61 @@ Regeln:
       busy: row.busy,
       conflictTitle: row.conflict_title,
     }))
+  },
+
+  getBusySlots: async (userIds, fromDate, toDate, colleagues) => {
+    if (userIds.length === 0) return []
+
+    const { data, error } = await supabase.rpc('get_colleague_busy_slots', {
+      p_user_ids: userIds,
+      p_from_date: fromDate,
+      p_to_date: toDate,
+    })
+
+    if (error) throw new Error(error.message)
+
+    return ((data ?? []) as Array<{
+      user_id: string
+      title: string
+      date: string
+      end_date: string | null
+      start_time: string | null
+      end_time: string | null
+    }>).map((row) => ({
+      userId: row.user_id,
+      userName: colleagues.find((c) => c.id === row.user_id)?.name ?? row.user_id,
+      title: row.title,
+      date: row.date,
+      endDate: row.end_date ?? undefined,
+      startTime: row.start_time ?? undefined,
+      endTime: row.end_time ?? undefined,
+    }))
+  },
+
+  findBestSlot: async (colleagues, busySlots, fromDate, toDate, durationMinutes, preferredStartTime, preferredEndTime) => {
+    const { data, error } = await supabase.functions.invoke('ai-scheduler', {
+      body: {
+        action: 'find-best-slot',
+        colleagues,
+        busySlots,
+        fromDate,
+        toDate,
+        durationMinutes,
+        preferredStartTime,
+        preferredEndTime,
+      },
+    })
+
+    if (error) throw new Error(error.message ?? 'Anfrage fehlgeschlagen')
+    if (data?.error) throw new Error(typeof data.error === 'string' ? data.error : data.error.message ?? 'Unbekannter Fehler')
+
+    const raw: string = data?.content?.[0]?.text ?? ''
+    const jsonMatch = raw.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) throw new Error('KI-Antwort konnte nicht gelesen werden.')
+
+    const parsed = JSON.parse(jsonMatch[0]) as Partial<BestSlotResult>
+    if (!parsed.date || !parsed.startTime || !parsed.endTime) throw new Error('KI konnte keinen passenden Termin finden.')
+
+    return parsed as BestSlotResult
   },
 }))
