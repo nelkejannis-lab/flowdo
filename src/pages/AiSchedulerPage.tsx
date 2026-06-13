@@ -36,6 +36,7 @@ export default function AiSchedulerPage() {
   const getBusySlots = useAiSchedulerStore((s) => s.getBusySlots)
   const findBestSlot = useAiSchedulerStore((s) => s.findBestSlot)
   const [finderColleagues, setFinderColleagues] = useState<string[]>([])
+  const [finderSearch, setFinderSearch] = useState('')
   const [finderFromDate, setFinderFromDate] = useState('')
   const [finderToDate, setFinderToDate] = useState('')
   const [finderDuration, setFinderDuration] = useState('60')
@@ -94,9 +95,23 @@ export default function AiSchedulerPage() {
     setSelectedColleagues((ids) => ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id])
   }
 
-  function toggleFinderColleague(id: string) {
-    setFinderColleagues((ids) => ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id])
+  function addFinderColleague(id: string) {
+    setFinderColleagues((ids) => ids.includes(id) ? ids : [...ids, id])
+    setFinderSearch('')
   }
+
+  function removeFinderColleague(id: string) {
+    setFinderColleagues((ids) => ids.filter((x) => x !== id))
+  }
+
+  const finderSearchResults = finderSearch.trim()
+    ? friends.filter(
+        (f) =>
+          !finderColleagues.includes(f.profile.id) &&
+          (f.profile.display_name.toLowerCase().includes(finderSearch.toLowerCase()) ||
+            f.profile.username.toLowerCase().includes(finderSearch.toLowerCase()))
+      ).slice(0, 5)
+    : []
 
   async function handleFindBestSlot() {
     if (finderColleagues.length === 0 || !finderFromDate || !finderToDate) return
@@ -270,25 +285,50 @@ export default function AiSchedulerPage() {
 
           <div className="mb-3">
             <label className="mb-1 block text-xs font-medium text-gray-500">Beteiligte Personen</label>
-            <div className="flex flex-wrap gap-2">
-              {friends.map((f) => {
-                const active = finderColleagues.includes(f.profile.id)
-                return (
-                  <button
-                    key={f.profile.id}
-                    type="button"
-                    onClick={() => toggleFinderColleague(f.profile.id)}
-                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                      active
-                        ? 'border-accent bg-accent/10 text-accent'
-                        : 'border-gray-200 text-gray-500 hover:border-gray-300 dark:border-racing-700 dark:text-racing-200'
-                    }`}
-                  >
-                    {f.profile.display_name}
-                  </button>
-                )
-              })}
+            <div className="relative">
+              <input
+                type="text"
+                value={finderSearch}
+                onChange={(e) => setFinderSearch(e.target.value)}
+                placeholder="Kollegen suchen und hinzufügen…"
+                className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+              />
+              {finderSearchResults.length > 0 && (
+                <div className="absolute left-0 top-full z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg dark:border-racing-700 dark:bg-racing-900">
+                  {finderSearchResults.map((f) => (
+                    <button
+                      key={f.profile.id}
+                      type="button"
+                      onMouseDown={(e) => { e.preventDefault(); addFinderColleague(f.profile.id) }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-racing-800"
+                    >
+                      <span
+                        className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
+                        style={{ backgroundColor: f.profile.avatar_color }}
+                      >
+                        {f.profile.display_name.slice(0, 2).toUpperCase()}
+                      </span>
+                      <span className="font-medium">{f.profile.display_name}</span>
+                      <span className="ml-auto text-xs text-gray-400">@{f.profile.username}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
+            {finderColleagues.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {finderColleagues.map((id) => {
+                  const f = friends.find((x) => x.profile.id === id)
+                  if (!f) return null
+                  return (
+                    <span key={id} className="flex items-center gap-1 rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent">
+                      {f.profile.display_name}
+                      <button type="button" onClick={() => removeFinderColleague(id)} className="ml-0.5 hover:text-red-500">×</button>
+                    </span>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           <div className="mb-3 flex gap-2">
