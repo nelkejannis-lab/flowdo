@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Sparkles, Wand2, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react'
 import { useFriendsStore } from '../store/friendsStore'
 import { useAiSchedulerStore, type ParsedAppointment, type ColleagueAvailability } from '../store/aiSchedulerStore'
@@ -32,12 +32,66 @@ export default function AiSchedulerPage() {
   const [checkingAvailability, setCheckingAvailability] = useState(false)
   const [creating, setCreating] = useState(false)
 
+  // @-mention autocomplete
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null)
+  const [mentionStart, setMentionStart] = useState(0)
+
+  const mentionSuggestions = mentionQuery !== null
+    ? friends.filter((f) =>
+        f.profile.display_name.toLowerCase().includes(mentionQuery.toLowerCase()) ||
+        f.profile.username.toLowerCase().includes(mentionQuery.toLowerCase())
+      ).slice(0, 5)
+    : []
+
   useEffect(() => {
     if (isSupabaseConfigured) fetchFriends()
   }, [fetchFriends])
 
+  function handleTextChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    const val = e.target.value
+    setText(val)
+
+    const cursor = e.target.selectionStart ?? val.length
+    const textUpToCursor = val.slice(0, cursor)
+    const atMatch = textUpToCursor.match(/@(\w*)$/)
+    if (atMatch) {
+      setMentionQuery(atMatch[1])
+      setMentionStart(cursor - atMatch[0].length)
+    } else {
+      setMentionQuery(null)
+    }
+  }
+
+  function insertMention(displayName: string) {
+    const cursor = textareaRef.current?.selectionStart ?? text.length
+    const before = text.slice(0, mentionStart)
+    const after = text.slice(cursor)
+    const newText = `${before}@${displayName} ${after}`
+    setText(newText)
+    setMentionQuery(null)
+    setTimeout(() => {
+      const pos = mentionStart + displayName.length + 2
+      textareaRef.current?.setSelectionRange(pos, pos)
+      textareaRef.current?.focus()
+    }, 0)
+  }
+
   function toggleColleague(id: string) {
-    setSelectedColleagues((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]))
+    setSelectedColleagues((ids) => ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id])
+  }
+
+  async function runAvailabilityCheck(ids: string[], d: string, ed: string, st: string, et: string) {
+    if (ids.length === 0 || !d) return
+    setCheckingAvailability(true)
+    try {
+      const avail = await checkAvailability(ids, d, ed || null, st || null, et || null)
+      setAvailability(avail)
+    } catch {
+      // non-blocking, ignore
+    } finally {
+      setCheckingAvailability(false)
+    }
   }
 
   async function handleAnalyze() {
@@ -58,24 +112,15 @@ export default function AiSchedulerPage() {
       setStartTime(parsed.startTime ?? '')
       setEndTime(parsed.endTime ?? '')
       setSelectedColleagues(parsed.colleagueIds)
+
+      // Automatically check availability for detected colleagues
+      if (parsed.colleagueIds.length > 0 && parsed.date) {
+        await runAvailabilityCheck(parsed.colleagueIds, parsed.date, parsed.endDate ?? '', parsed.startTime ?? '', parsed.endTime ?? '')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unbekannter Fehler')
     } finally {
       setParsing(false)
-    }
-  }
-
-  async function handleCheckAvailability() {
-    if (selectedColleagues.length === 0 || !date) return
-    setCheckingAvailability(true)
-    setError(null)
-    try {
-      const avail = await checkAvailability(selectedColleagues, date, endDate || null, startTime || null, endTime || null)
-      setAvailability(avail)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unbekannter Fehler')
-    } finally {
-      setCheckingAvailability(false)
     }
   }
 
@@ -114,13 +159,43 @@ export default function AiSchedulerPage() {
 
       <div className="mb-6 rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
         <h2 className="mb-2 text-sm font-semibold">Termin beschreiben</h2>
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="z. B. „Team-Meeting mit Jannis nächsten Dienstag um 14 Uhr, eine Stunde“"
-          rows={3}
-          className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
-        />
+        <div className="relative">
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={handleTextChange}
+            onKeyDown={(e) => {
+              if (mentionQuery !== null && mentionSuggestions.length > 0 && e.key === 'Escape') {
+                setMentionQuery(null)
+              }
+            }}
+            placeholder={`z. B. „Team-Meeting mit @Jannis nächsten Dienstag um 14 Uhr, eine Stunde"`}
+            rows={3}
+            className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+          />
+          {mentionQuery !== null && mentionSuggestions.length > 0 && (
+            <div className="absolute left-0 top-full z-10 mt-1 w-56 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-racing-700 dark:bg-racing-900">
+              {mentionSuggestions.map((f) => (
+                <button
+                  key={f.profile.id}
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); insertMention(f.profile.display_name) }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-racing-800"
+                >
+                  <span
+                    className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
+                    style={{ backgroundColor: f.profile.avatar_color }}
+                  >
+                    {f.profile.display_name.slice(0, 2).toUpperCase()}
+                  </span>
+                  <span className="font-medium">{f.profile.display_name}</span>
+                  <span className="ml-auto text-xs text-gray-400">@{f.profile.username}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <p className="mt-1.5 text-xs text-gray-400">Tipp: Mit @ Kollegen erwähnen</p>
         <button
           onClick={handleAnalyze}
           disabled={parsing || !text.trim()}
@@ -199,14 +274,20 @@ export default function AiSchedulerPage() {
               <div>
                 <div className="mb-1 flex items-center justify-between">
                   <label className="block text-xs font-medium text-gray-500">Kollegen einladen</label>
-                  <button
-                    type="button"
-                    onClick={handleCheckAvailability}
-                    disabled={selectedColleagues.length === 0 || !date || checkingAvailability}
-                    className="text-xs font-medium text-accent hover:underline disabled:opacity-60"
-                  >
-                    {checkingAvailability ? 'Prüfe…' : 'Verfügbarkeit prüfen'}
-                  </button>
+                  {checkingAvailability && (
+                    <span className="flex items-center gap-1 text-xs text-gray-400">
+                      <Loader2 size={12} className="animate-spin" /> Verfügbarkeit wird geprüft…
+                    </span>
+                  )}
+                  {!checkingAvailability && selectedColleagues.length > 0 && date && (
+                    <button
+                      type="button"
+                      onClick={() => runAvailabilityCheck(selectedColleagues, date, endDate, startTime, endTime)}
+                      className="text-xs font-medium text-accent hover:underline"
+                    >
+                      Erneut prüfen
+                    </button>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {friends.map((f) => {

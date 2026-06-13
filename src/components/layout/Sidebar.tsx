@@ -109,6 +109,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           Arbeitszeit
         </NavLink>
         {isSupabaseConfigured && (
+          <NavLink to="/ki-termine" className={navItemClass}>
+            <Sparkles size={18} />
+            KI-Termine
+          </NavLink>
+        )}
+        {isSupabaseConfigured && (
           <NavLink to="/friends" className={navItemClass}>
             <Users size={18} />
             Kollegen
