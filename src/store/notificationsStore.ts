@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 
 export interface Notification {
   id: string
-  type: 'mention' | 'task_share' | 'board_invite'
+  type: 'mention' | 'task_share' | 'board_invite' | 'birthday'
   title: string
   body: string | null
   link: string | null
@@ -15,6 +15,7 @@ interface NotificationsState {
   notifications: Notification[]
   unreadCount: number
   fetch: () => Promise<void>
+  checkBirthdays: () => Promise<void>
   markRead: (id: string) => Promise<void>
   markAllRead: () => Promise<void>
 }
@@ -45,6 +46,10 @@ export const useNotificationsStore = create<NotificationsState>()((set, get) => 
         unreadCount: notifications.filter((n) => !n.read).length,
       })
     }
+  },
+
+  checkBirthdays: async () => {
+    await supabase.rpc('create_birthday_notifications_for_today')
   },
 
   markRead: async (id) => {

@@ -55,6 +55,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const fetchBoardIncoming = useBoardInvitesStore((s) => s.fetchIncoming)
   const unreadNotifications = useNotificationsStore((s) => s.unreadCount)
   const fetchNotifications = useNotificationsStore((s) => s.fetch)
+  const checkBirthdays = useNotificationsStore((s) => s.checkBirthdays)
   const notificationCount = taskIncoming.length + boardIncoming.length + unreadNotifications
   const mode = useSettingsStore((s) => s.mode)
   const setMode = useSettingsStore((s) => s.setMode)
@@ -69,11 +70,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       fetchFolders()
       fetchTaskIncoming()
       fetchBoardIncoming()
-      fetchNotifications()
+      checkBirthdays().then(() => fetchNotifications())
     } else {
       fetchBoards()
     }
-  }, [fetchBoards, fetchFolders, fetchTaskIncoming, fetchBoardIncoming, fetchNotifications])
+  }, [fetchBoards, fetchFolders, fetchTaskIncoming, fetchBoardIncoming, fetchNotifications, checkBirthdays])
 
   function toggleFolder(id: string) {
     setOpenFolders((prev) => {

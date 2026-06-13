@@ -98,11 +98,49 @@ export default function TasksPage() {
 
       {smartList === 'inbox' ? (
         <div>
-          {boardInvites.length === 0 && incoming.length === 0 && notifications.length === 0 && (
-            <p className="py-12 text-center text-sm text-gray-400">Alles gelesen. Keine neuen Benachrichtigungen.</p>
+          {boardInvites.length === 0 && incoming.length === 0 && notifications.filter((n) => !n.read || n.type === 'birthday').length === 0 && (
+            <p className="py-12 text-center text-sm text-gray-400">Alles erledigt. Keine neuen Benachrichtigungen.</p>
           )}
 
-          {notifications.length > 0 && (
+          {notifications.filter((n) => n.type === 'birthday').length > 0 && (
+            <div className="mb-6">
+              <h2 className="mb-3 flex items-center gap-2 text-base font-semibold">
+                🎂 Geburtstage heute
+              </h2>
+              <div className="flex flex-col gap-2">
+                {notifications.filter((n) => n.type === 'birthday').map((n) => (
+                  <div
+                    key={n.id}
+                    className={`flex items-center gap-3 rounded-xl border p-3 ${
+                      n.read
+                        ? 'border-gray-100 bg-white dark:border-racing-800 dark:bg-racing-900'
+                        : 'border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20'
+                    }`}
+                  >
+                    <span className="text-2xl">🎂</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">{n.title.replace('🎂 ', '')}</p>
+                      {n.body && <p className="text-xs text-gray-400">{n.body}</p>}
+                    </div>
+                    {!n.read ? (
+                      <button
+                        onClick={() => markRead(n.id)}
+                        className="flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600"
+                      >
+                        <Check size={13} /> Gratuliert!
+                      </button>
+                    ) : (
+                      <span className="flex flex-shrink-0 items-center gap-1 rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-400 dark:bg-racing-800">
+                        <Check size={13} /> Erledigt
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {notifications.filter((n) => n.type !== 'birthday').length > 0 && (
             <div className="mb-6">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="flex items-center gap-2 text-base font-semibold">
@@ -112,7 +150,7 @@ export default function TasksPage() {
                 <button onClick={markAllRead} className="text-xs text-accent hover:underline">Alle gelesen</button>
               </div>
               <div className="flex flex-col gap-2">
-                {notifications.map((n) => (
+                {notifications.filter((n) => n.type !== 'birthday').map((n) => (
                   <div
                     key={n.id}
                     onClick={() => { markRead(n.id); if (n.link) navigate(n.link) }}
