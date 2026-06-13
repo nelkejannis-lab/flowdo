@@ -13,6 +13,7 @@ export default function SettingsPage() {
 
   const [displayName, setDisplayName] = useState(profile?.display_name ?? '')
   const [username, setUsername] = useState(profile?.username ?? '')
+  const [birthday, setBirthday] = useState(profile?.birthday ?? '')
   const [profileError, setProfileError] = useState<string | null>(null)
   const [profileSuccess, setProfileSuccess] = useState<string | null>(null)
   const [savingProfile, setSavingProfile] = useState(false)
@@ -31,6 +32,7 @@ export default function SettingsPage() {
     if (profile) {
       setDisplayName(profile.display_name)
       setUsername(profile.username)
+      setBirthday(profile.birthday ?? '')
     }
   }, [profile])
 
@@ -44,6 +46,7 @@ export default function SettingsPage() {
     const err = await updateProfile({
       display_name: displayName.trim(),
       username: username.trim(),
+      birthday: birthday || null,
     })
     setSavingProfile(false)
     if (err) setProfileError(err)
@@ -181,6 +184,16 @@ export default function SettingsPage() {
           <input
             value={username}
             onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ''))}
+            className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-500">Geburtsdatum</label>
+          <input
+            type="date"
+            value={birthday}
+            onChange={(e) => setBirthday(e.target.value)}
+            max={new Date().toISOString().split('T')[0]}
             className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
           />
         </div>

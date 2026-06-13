@@ -17,6 +17,7 @@ interface ProfileUpdate {
   display_name?: string
   avatar_color?: string
   avatar_url?: string | null
+  birthday?: string | null
 }
 
 interface AuthState {
