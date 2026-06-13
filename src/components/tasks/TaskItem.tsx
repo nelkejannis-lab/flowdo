@@ -30,26 +30,22 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
 
   return (
     <div className="rounded-lg border border-gray-100 bg-white transition-colors hover:border-gray-200 dark:border-racing-800 dark:bg-racing-900 dark:hover:border-racing-700">
-      <div onClick={onClick} className="flex cursor-pointer items-center gap-3 px-3 py-2.5">
+      <div className="flex items-center gap-3 px-3 py-2.5">
+        {/* Complete toggle */}
         <button
-          onClick={(e) => {
-            e.stopPropagation()
-            if (task.boardId) {
-              toggleProjectTaskCompleted(task.id)
-            } else {
-              toggleTaskCompleted(task.id)
-            }
+          onClick={() => {
+            if (task.boardId) toggleProjectTaskCompleted(task.id)
+            else toggleTaskCompleted(task.id)
           }}
           className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 ${
-            task.completed
-              ? 'border-accent bg-accent text-white'
-              : 'border-gray-300 dark:border-racing-600'
+            task.completed ? 'border-accent bg-accent text-white' : 'border-gray-300 dark:border-racing-600'
           }`}
         >
           {task.completed && <Check size={12} />}
         </button>
 
-        <div className="min-w-0 flex-1">
+        {/* Title — clickable to open modal */}
+        <div className="min-w-0 flex-1 cursor-pointer" onClick={onClick}>
           <p className={`truncate text-sm font-medium ${task.completed ? 'text-gray-400 line-through' : ''}`}>
             {task.title}
           </p>
@@ -73,10 +69,7 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
         {task.tags.length > 0 && (
           <div className="hidden items-center gap-1 sm:flex">
             {task.tags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-racing-800 dark:text-racing-200"
-              >
+              <span key={tag} className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-racing-800 dark:text-racing-200">
                 #{tag}
               </span>
             ))}
@@ -84,9 +77,11 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
         )}
         <PriorityBadge priority={task.priority} />
         {showBoard && task.boardId && <BoardBadge boardId={task.boardId} />}
+
+        {/* Kommentare */}
         {isSupabaseConfigured && (
           <button
-            onClick={(e) => { e.stopPropagation(); setShowComments((v) => !v) }}
+            onClick={() => setShowComments((v) => !v)}
             className={`flex flex-shrink-0 items-center gap-1 rounded p-1 text-xs hover:bg-gray-100 dark:hover:bg-racing-800 ${showComments ? 'text-accent' : 'text-gray-300'}`}
             title="Kommentare"
           >
@@ -94,13 +89,15 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
             {commentCount > 0 && <span className="text-[10px]">{commentCount}</span>}
           </button>
         )}
+
+        {/* Expand-Button für Unteraufgaben */}
         {hasSubtasks && (
           <button
-            onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v) }}
+            onClick={() => setExpanded((v) => !v)}
             className="flex flex-shrink-0 items-center gap-1 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
-            title={expanded ? 'Unteraufgaben einklappen' : 'Unteraufgaben anzeigen'}
+            title={expanded ? 'Einklappen' : 'Unteraufgaben anzeigen'}
           >
-            <ChevronDown size={16} className={`transition-transform ${expanded ? '' : '-rotate-90'}`} />
+            <ChevronDown size={16} className={`transition-transform duration-150 ${expanded ? '' : '-rotate-90'}`} />
           </button>
         )}
       </div>
