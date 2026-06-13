@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [username, setUsername] = useState('')
   const [displayName, setDisplayName] = useState('')
+  const [birthday, setBirthday] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -48,7 +49,7 @@ export default function LoginPage() {
           setError('Passwörter stimmen nicht überein')
           return
         }
-        const err = await signUp(email, password, username, displayName || username)
+        const err = await signUp(email, password, username, displayName || username, birthday || undefined)
         if (err) {
           setError(err)
         } else {
@@ -106,6 +107,17 @@ export default function LoginPage() {
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   placeholder="Max Mustermann"
+                  className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500">Geburtsdatum</label>
+                <input
+                  required
+                  type="date"
+                  value={birthday}
+                  onChange={(e) => setBirthday(e.target.value)}
+                  max={new Date().toISOString().split('T')[0]}
                   className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
                 />
               </div>

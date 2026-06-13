@@ -8,6 +8,7 @@ export interface Profile {
   display_name: string
   avatar_color: string
   avatar_url?: string | null
+  birthday?: string | null
   created_at: string
 }
 
@@ -25,7 +26,7 @@ interface AuthState {
   loading: boolean
   init: () => () => void
   fetchProfile: () => Promise<void>
-  signUp: (email: string, password: string, username: string, displayName: string) => Promise<string | null>
+  signUp: (email: string, password: string, username: string, displayName: string, birthday?: string) => Promise<string | null>
   signIn: (email: string, password: string) => Promise<string | null>
   signOut: () => Promise<void>
   updateProfile: (updates: ProfileUpdate) => Promise<string | null>
@@ -64,13 +65,18 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     if (data) set({ profile: data as Profile })
   },
 
-  signUp: async (email, password, username, displayName) => {
-    const { error } = await supabase.auth.signUp({
+  signUp: async (email, password, username, displayName, birthday) => {
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { username, display_name: displayName } },
     })
-    return error?.message ?? null
+    if (error) return error.message
+    // Save birthday to profile after signup
+    if (birthday && data.user) {
+      await supabase.from('profiles').update({ birthday }).eq('id', data.user.id)
+    }
+    return null
   },
 
   signIn: async (email, password) => {
