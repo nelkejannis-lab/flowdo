@@ -1,11 +1,14 @@
 import { useState } from 'react'
-import { Check, ChevronDown, ChevronRight, ListChecks } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, ListChecks, MessageSquare } from 'lucide-react'
 import type { Task } from '../../types'
 import { useTasksStore } from '../../store/tasksStore'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
+import { useCommentsStore } from '../../store/commentsStore'
 import { formatFriendlyDate, isOverdue } from '../../utils/date'
 import BoardBadge from '../boards/BoardBadge'
 import PriorityBadge from './PriorityBadge'
+import CommentSection from '../shared/CommentSection'
+import { isSupabaseConfigured } from '../../lib/supabase'
 
 interface TaskItemProps {
   task: Task
@@ -19,6 +22,8 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
   const toggleSubtask = useTasksStore((s) => s.toggleSubtask)
   const toggleProjectSubtask = useProjectTasksStore((s) => s.toggleSubtask)
   const [expanded, setExpanded] = useState(false)
+  const [showComments, setShowComments] = useState(false)
+  const commentCount = useCommentsStore((s) => (s.comments[task.id] ?? []).length)
   const overdue = isOverdue(task.dueDate) && !task.completed
   const hasSubtasks = task.subtasks.length > 0
   const subtaskDone = task.subtasks.filter((s) => s.completed).length
@@ -79,6 +84,16 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
         )}
         <PriorityBadge priority={task.priority} />
         {showBoard && task.boardId && <BoardBadge boardId={task.boardId} />}
+        {isSupabaseConfigured && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowComments((v) => !v) }}
+            className={`flex flex-shrink-0 items-center gap-1 rounded p-1 text-xs hover:bg-gray-100 dark:hover:bg-racing-800 ${showComments ? 'text-accent' : 'text-gray-300'}`}
+            title="Kommentare"
+          >
+            <MessageSquare size={14} />
+            {commentCount > 0 && <span className="text-[10px]">{commentCount}</span>}
+          </button>
+        )}
         {hasSubtasks && (
           <button
             onClick={(e) => {
@@ -92,6 +107,12 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
           </button>
         )}
       </div>
+
+      {showComments && (
+        <div className="border-t border-gray-100 px-3 py-3 dark:border-racing-800">
+          <CommentSection taskId={task.id} />
+        </div>
+      )}
 
       {expanded && hasSubtasks && (
         <div className="flex flex-col gap-1 border-t border-gray-100 px-3 py-2 pl-10 dark:border-racing-800">

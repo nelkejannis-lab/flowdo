@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { Check, Plus, Trello, X } from 'lucide-react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { AtSign, Bell, Check, Plus, Trello, X } from 'lucide-react'
 import { useTasksStore } from '../store/tasksStore'
 import { useTaskSharesStore } from '../store/taskSharesStore'
 import { useProjectTasksStore } from '../store/projectTasksStore'
 import { useBoardsStore } from '../store/boardsStore'
 import { useBoardInvitesStore } from '../store/boardInvitesStore'
+import { useNotificationsStore } from '../store/notificationsStore'
 import { isSupabaseConfigured } from '../lib/supabase'
 import TaskList from '../components/tasks/TaskList'
 import TaskFormModal from '../components/tasks/TaskFormModal'
@@ -34,13 +35,19 @@ export default function TasksPage() {
   const fetchBoardInvites = useBoardInvitesStore((s) => s.fetchIncoming)
   const acceptInvite = useBoardInvitesStore((s) => s.acceptInvite)
   const declineInvite = useBoardInvitesStore((s) => s.declineInvite)
+  const notifications = useNotificationsStore((s) => s.notifications)
+  const fetchNotifications = useNotificationsStore((s) => s.fetch)
+  const markRead = useNotificationsStore((s) => s.markRead)
+  const markAllRead = useNotificationsStore((s) => s.markAllRead)
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (isSupabaseConfigured && smartList === 'inbox') {
       fetchIncoming()
       fetchBoardInvites()
+      fetchNotifications()
     }
-  }, [fetchIncoming, fetchBoardInvites, smartList])
+  }, [fetchIncoming, fetchBoardInvites, fetchNotifications, smartList])
 
   useEffect(() => {
     if (isSupabaseConfigured) {
@@ -91,8 +98,42 @@ export default function TasksPage() {
 
       {smartList === 'inbox' ? (
         <div>
-          {boardInvites.length === 0 && incoming.length === 0 && (
-            <p className="py-12 text-center text-sm text-gray-400">Keine neuen Einladungen.</p>
+          {boardInvites.length === 0 && incoming.length === 0 && notifications.length === 0 && (
+            <p className="py-12 text-center text-sm text-gray-400">Alles gelesen. Keine neuen Benachrichtigungen.</p>
+          )}
+
+          {notifications.length > 0 && (
+            <div className="mb-6">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="flex items-center gap-2 text-base font-semibold">
+                  <Bell size={16} className="text-gray-400" />
+                  Benachrichtigungen
+                </h2>
+                <button onClick={markAllRead} className="text-xs text-accent hover:underline">Alle gelesen</button>
+              </div>
+              <div className="flex flex-col gap-2">
+                {notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    onClick={() => { markRead(n.id); if (n.link) navigate(n.link) }}
+                    className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors hover:bg-gray-50 dark:hover:bg-racing-800 ${
+                      n.read
+                        ? 'border-gray-100 bg-white dark:border-racing-800 dark:bg-racing-900'
+                        : 'border-accent/20 bg-accent/5 dark:border-accent/20 dark:bg-accent/5'
+                    }`}
+                  >
+                    <span className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${n.read ? 'bg-gray-100 dark:bg-racing-800' : 'bg-accent/10'}`}>
+                      <AtSign size={14} className={n.read ? 'text-gray-400' : 'text-accent'} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-sm font-medium ${n.read ? '' : 'text-accent'}`}>{n.title}</p>
+                      {n.body && <p className="mt-0.5 truncate text-xs text-gray-400">„{n.body}"</p>}
+                    </div>
+                    {!n.read && <span className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-accent" />}
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
           {boardInvites.length > 0 && (

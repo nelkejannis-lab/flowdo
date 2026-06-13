@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { DndContext, type DragEndEvent } from '@dnd-kit/core'
-import { ArrowLeft, Building2, Globe, Pencil, Plus, UserPlus, Users, X } from 'lucide-react'
+import { ArrowLeft, Building2, Globe, MessageSquare, Pencil, Plus, UserPlus, Users, X } from 'lucide-react'
 import { useBoardsStore } from '../store/boardsStore'
 import { useBoardInvitesStore } from '../store/boardInvitesStore'
 import { useProjectTasksStore } from '../store/projectTasksStore'
 import { useFriendsStore } from '../store/friendsStore'
 import { useAuthStore } from '../store/authStore'
+import { useCommentsStore } from '../store/commentsStore'
 import KanbanColumn from '../components/boards/KanbanColumn'
 import BoardFormModal from '../components/boards/BoardFormModal'
 import ProjectTaskFormModal from '../components/boards/ProjectTaskFormModal'
+import CommentSection from '../components/shared/CommentSection'
 import type { Task } from '../types'
 import { formatFriendlyDate, isOverdue } from '../utils/date'
+import { isSupabaseConfigured } from '../lib/supabase'
 
 type ProgressFilter = 'all' | 'mine'
 
@@ -42,6 +45,8 @@ export default function BoardDetailPage() {
   const [memberError, setMemberError] = useState<string | null>(null)
   const [invitedIds, setInvitedIds] = useState<string[]>([])
   const [progressFilter, setProgressFilter] = useState<ProgressFilter>('all')
+  const [showDiscussion, setShowDiscussion] = useState(false)
+  const boardCommentCount = useCommentsStore((s) => boardId ? (s.comments[boardId] ?? []).length : 0)
 
   useEffect(() => {
     if (boards.length === 0) fetchBoards()
@@ -141,6 +146,19 @@ export default function BoardDetailPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          {isSupabaseConfigured && (
+            <button
+              onClick={() => setShowDiscussion((v) => !v)}
+              className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors ${
+                showDiscussion
+                  ? 'border-accent bg-accent/10 text-accent'
+                  : 'border-gray-200 hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800'
+              }`}
+            >
+              <MessageSquare size={15} />
+              {boardCommentCount > 0 && <span className="text-xs">{boardCommentCount}</span>}
+            </button>
+          )}
           <div className="relative">
             <button
               onClick={() => setShowMembers((s) => !s)}
@@ -268,28 +286,49 @@ export default function BoardDetailPage() {
         </button>
       </div>
 
-      <DndContext onDragEnd={handleDragEnd}>
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {board.columns.map((column) => (
-            <KanbanColumn
-              key={column.id}
-              column={column}
-              tasks={visibleTasks.filter((t) => t.columnId === column.id)}
-              onTaskClick={(task) => setEditingTask(task)}
-              onAddTask={() => setNewTaskColumnId(column.id)}
-              onRenameColumn={(title) => updateColumn(board.id, column.id, title)}
-              onDeleteColumn={() => deleteColumn(board.id, column.id)}
-            />
-          ))}
-          <button
-            onClick={() => addColumn(board.id, 'Neue Spalte')}
-            className="flex h-fit w-72 flex-shrink-0 items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-gray-200 py-3 text-sm text-gray-400 hover:border-gray-300 hover:text-gray-600 dark:border-racing-800 dark:hover:border-racing-700"
-          >
-            <Plus size={14} />
-            Spalte hinzufügen
-          </button>
+      <div className="flex gap-4">
+        <div className="min-w-0 flex-1">
+          <DndContext onDragEnd={handleDragEnd}>
+            <div className="flex gap-4 overflow-x-auto pb-4">
+              {board.columns.map((column) => (
+                <KanbanColumn
+                  key={column.id}
+                  column={column}
+                  tasks={visibleTasks.filter((t) => t.columnId === column.id)}
+                  onTaskClick={(task) => setEditingTask(task)}
+                  onAddTask={() => setNewTaskColumnId(column.id)}
+                  onRenameColumn={(title) => updateColumn(board.id, column.id, title)}
+                  onDeleteColumn={() => deleteColumn(board.id, column.id)}
+                />
+              ))}
+              <button
+                onClick={() => addColumn(board.id, 'Neue Spalte')}
+                className="flex h-fit w-72 flex-shrink-0 items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-gray-200 py-3 text-sm text-gray-400 hover:border-gray-300 hover:text-gray-600 dark:border-racing-800 dark:hover:border-racing-700"
+              >
+                <Plus size={14} />
+                Spalte hinzufügen
+              </button>
+            </div>
+          </DndContext>
         </div>
-      </DndContext>
+
+        {isSupabaseConfigured && showDiscussion && (
+          <div className="w-72 flex-shrink-0">
+            <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="flex items-center gap-2 text-sm font-semibold">
+                  <MessageSquare size={14} />
+                  Diskussion
+                </h3>
+                <button onClick={() => setShowDiscussion(false)} className="text-gray-400 hover:text-gray-600">
+                  <X size={14} />
+                </button>
+              </div>
+              <CommentSection boardId={board.id} />
+            </div>
+          </div>
+        )}
+      </div>
 
       {editingBoard && <BoardFormModal board={board} onClose={() => setEditingBoard(false)} />}
       {editingTask && <ProjectTaskFormModal board={board} task={editingTask} onClose={() => setEditingTask(null)} />}

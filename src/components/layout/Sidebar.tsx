@@ -28,6 +28,7 @@ import { useSettingsStore } from '../../store/settingsStore'
 import { useAuthStore } from '../../store/authStore'
 import { useTaskSharesStore } from '../../store/taskSharesStore'
 import { useBoardInvitesStore } from '../../store/boardInvitesStore'
+import { useNotificationsStore } from '../../store/notificationsStore'
 import { isSupabaseConfigured } from '../../lib/supabase'
 
 const navItemClass = ({ isActive }: { isActive: boolean }) =>
@@ -52,7 +53,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const fetchTaskIncoming = useTaskSharesStore((s) => s.fetchIncoming)
   const boardIncoming = useBoardInvitesStore((s) => s.incoming)
   const fetchBoardIncoming = useBoardInvitesStore((s) => s.fetchIncoming)
-  const notificationCount = taskIncoming.length + boardIncoming.length
+  const unreadNotifications = useNotificationsStore((s) => s.unreadCount)
+  const fetchNotifications = useNotificationsStore((s) => s.fetch)
+  const notificationCount = taskIncoming.length + boardIncoming.length + unreadNotifications
   const mode = useSettingsStore((s) => s.mode)
   const setMode = useSettingsStore((s) => s.setMode)
   const pinkAccent = useSettingsStore((s) => s.pinkAccent)
@@ -66,10 +69,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       fetchFolders()
       fetchTaskIncoming()
       fetchBoardIncoming()
+      fetchNotifications()
     } else {
       fetchBoards()
     }
-  }, [fetchBoards, fetchFolders, fetchTaskIncoming, fetchBoardIncoming])
+  }, [fetchBoards, fetchFolders, fetchTaskIncoming, fetchBoardIncoming, fetchNotifications])
 
   function toggleFolder(id: string) {
     setOpenFolders((prev) => {
