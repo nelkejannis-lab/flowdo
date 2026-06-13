@@ -21,10 +21,13 @@ import {
   X,
   Folder,
   ChevronDown,
+  Bell,
 } from 'lucide-react'
 import { useBoardsStore } from '../../store/boardsStore'
 import { useSettingsStore } from '../../store/settingsStore'
 import { useAuthStore } from '../../store/authStore'
+import { useTaskSharesStore } from '../../store/taskSharesStore'
+import { useBoardInvitesStore } from '../../store/boardInvitesStore'
 import { isSupabaseConfigured } from '../../lib/supabase'
 
 const navItemClass = ({ isActive }: { isActive: boolean }) =>
@@ -45,6 +48,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const fetchBoards = useBoardsStore((s) => s.fetchBoards)
   const fetchFolders = useBoardsStore((s) => s.fetchFolders)
   const [openFolders, setOpenFolders] = useState<Set<string>>(new Set())
+  const taskIncoming = useTaskSharesStore((s) => s.incoming)
+  const fetchTaskIncoming = useTaskSharesStore((s) => s.fetchIncoming)
+  const boardIncoming = useBoardInvitesStore((s) => s.incoming)
+  const fetchBoardIncoming = useBoardInvitesStore((s) => s.fetchIncoming)
+  const notificationCount = taskIncoming.length + boardIncoming.length
   const mode = useSettingsStore((s) => s.mode)
   const setMode = useSettingsStore((s) => s.setMode)
   const pinkAccent = useSettingsStore((s) => s.pinkAccent)
@@ -53,9 +61,15 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const signOut = useAuthStore((s) => s.signOut)
 
   useEffect(() => {
-    if (isSupabaseConfigured) { fetchBoards(); fetchFolders() }
-    else fetchBoards()
-  }, [fetchBoards, fetchFolders])
+    if (isSupabaseConfigured) {
+      fetchBoards()
+      fetchFolders()
+      fetchTaskIncoming()
+      fetchBoardIncoming()
+    } else {
+      fetchBoards()
+    }
+  }, [fetchBoards, fetchFolders, fetchTaskIncoming, fetchBoardIncoming])
 
   function toggleFolder(id: string) {
     setOpenFolders((prev) => {
@@ -84,13 +98,28 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <Logo />
           <span className="text-lg font-semibold">Mooncrew</span>
         </div>
-        <button
-          onClick={onClose}
-          className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800 sm:hidden"
-          aria-label="Menü schließen"
-        >
-          <X size={18} />
-        </button>
+        <div className="flex items-center gap-1">
+          <NavLink
+            to="/tasks/inbox"
+            onClick={onClose}
+            className="relative rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
+            aria-label="Inbox"
+          >
+            <Bell size={18} />
+            {notificationCount > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                {notificationCount > 9 ? '9+' : notificationCount}
+              </span>
+            )}
+          </NavLink>
+          <button
+            onClick={onClose}
+            className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800 sm:hidden"
+            aria-label="Menü schließen"
+          >
+            <X size={18} />
+          </button>
+        </div>
       </div>
 
       <nav onClick={onClose} className="flex flex-col gap-1">
