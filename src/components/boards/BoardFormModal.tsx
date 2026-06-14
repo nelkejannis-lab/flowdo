@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Modal from '../layout/Modal'
 import AttachmentsField from '../shared/AttachmentsField'
 import { useBoardsStore, BOARD_COLORS } from '../../store/boardsStore'
+import { useFriendsStore } from '../../store/friendsStore'
+import { useAuthStore } from '../../store/authStore'
 import type { Attachment, Board } from '../../types'
 
 interface BoardFormModalProps {
@@ -16,6 +18,11 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
   const addAttachment = useBoardsStore((s) => s.addAttachment)
   const removeAttachment = useBoardsStore((s) => s.removeAttachment)
   const folders = useBoardsStore((s) => s.folders)
+  const friends = useFriendsStore((s) => s.friends)
+  const fetchFriends = useFriendsStore((s) => s.fetchAll)
+  const currentUser = useAuthStore((s) => s.profile)
+
+  useEffect(() => { if (friends.length === 0) fetchFriends() }, []) // eslint-disable-line
 
   const [title, setTitle] = useState(board?.title ?? '')
   const [description, setDescription] = useState(board?.description ?? '')
@@ -24,6 +31,7 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
   const [internalLaunch, setInternalLaunch] = useState(board?.internalLaunch ?? '')
   const [externalLaunch, setExternalLaunch] = useState(board?.externalLaunch ?? '')
   const [folderId, setFolderId] = useState(board?.folderId ?? '')
+  const [responsibleUserId, setResponsibleUserId] = useState(board?.responsibleUserId ?? '')
   const [error, setError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [attachments, setAttachments] = useState<Attachment[]>(board?.attachments ?? [])
@@ -41,6 +49,7 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
         internalLaunch: internalLaunch || undefined,
         externalLaunch: externalLaunch || undefined,
         folderId: folderId || null,
+        responsibleUserId: responsibleUserId || null,
       })
     } else {
       await addBoard({
@@ -51,6 +60,7 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
         internalLaunch: internalLaunch || undefined,
         externalLaunch: externalLaunch || undefined,
         folderId: folderId || null,
+        responsibleUserId: responsibleUserId || null,
       })
     }
     onClose()
@@ -73,6 +83,24 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
           rows={2}
           className="rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
         />
+
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-500">Verantwortlicher</label>
+          <select
+            value={responsibleUserId}
+            onChange={(e) => setResponsibleUserId(e.target.value)}
+            className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+          >
+            <option value="">Keiner festgelegt</option>
+            {currentUser && (
+              <option value={currentUser.id}>{currentUser.display_name} (ich)</option>
+            )}
+            {friends.map((f) => (
+              <option key={f.profile.id} value={f.profile.id}>{f.profile.display_name}</option>
+            ))}
+          </select>
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-500">Deadline</label>

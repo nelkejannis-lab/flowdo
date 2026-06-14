@@ -11,6 +11,7 @@ interface NewBoardInput {
   internalLaunch?: string
   externalLaunch?: string
   folderId?: string | null
+  responsibleUserId?: string | null
 }
 
 interface BoardFolderRow {
@@ -47,6 +48,7 @@ interface BoardRow {
   board_members: { user_id: string; role: 'owner' | 'member'; profile: ProjectMember['profile'] | ProjectMember['profile'][] }[] | null
   attachments: Attachment[] | null
   folder_id: string | null
+  responsible_user_id: string | null
 }
 
 interface TaskStats {
@@ -78,6 +80,7 @@ function toBoard(row: BoardRow): Board {
     internalLaunch: row.internal_launch ?? undefined,
     externalLaunch: row.external_launch ?? undefined,
     folderId: row.folder_id ?? undefined,
+    responsibleUserId: row.responsible_user_id ?? undefined,
     columns,
     members,
     attachments: row.attachments ?? [],
@@ -177,6 +180,7 @@ export const useBoardsStore = create<BoardsState>()((set, get) => ({
         internal_launch: input.internalLaunch ?? null,
         external_launch: input.externalLaunch ?? null,
         folder_id: input.folderId ?? null,
+        responsible_user_id: input.responsibleUserId ?? null,
       })
       .select('id')
       .single()
@@ -202,6 +206,7 @@ export const useBoardsStore = create<BoardsState>()((set, get) => ({
         ...(updates.internalLaunch !== undefined ? { internal_launch: updates.internalLaunch ?? null } : {}),
         ...(updates.externalLaunch !== undefined ? { external_launch: updates.externalLaunch ?? null } : {}),
         ...(updates.folderId !== undefined ? { folder_id: updates.folderId || null } : {}),
+        ...(updates.responsibleUserId !== undefined ? { responsible_user_id: updates.responsibleUserId || null } : {}),
       })
       .eq('id', id)
 

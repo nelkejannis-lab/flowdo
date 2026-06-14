@@ -35,6 +35,16 @@ export default function BoardCard({ board }: { board: Board }) {
       <div className="flex items-center justify-between text-xs text-gray-400">
         <span>{done}/{total} Aufgaben</span>
         <div className="flex items-center gap-2">
+          {board.responsibleUserId && (() => {
+            const r = board.members.find((m) => m.userId === board.responsibleUserId)?.profile
+            return r ? (
+              <span className="flex items-center gap-1" title={`Verantwortlich: ${r.display_name}`}>
+                <span className="flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold text-white" style={{ backgroundColor: r.avatar_color }}>
+                  {r.display_name.slice(0, 2).toUpperCase()}
+                </span>
+              </span>
+            ) : null
+          })()}
           {board.members.length > 0 && (
             <span className="flex items-center gap-1">
               <Users size={12} />

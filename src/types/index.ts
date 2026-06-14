@@ -77,6 +77,7 @@ export interface Board {
   internalLaunch?: string
   externalLaunch?: string
   folderId?: string
+  responsibleUserId?: string
   columns: BoardColumn[]
   members: ProjectMember[]
   attachments: Attachment[]

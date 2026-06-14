@@ -124,8 +124,22 @@ export default function BoardDetailPage() {
           <div>
             <h1 className="text-2xl font-semibold">{board.title}</h1>
             {board.description && (
-              <p className="text-sm text-gray-500 dark:text-racing-200">{board.description}</p>
+              <p className="mt-0.5 text-sm text-gray-500 dark:text-racing-200">{board.description}</p>
             )}
+            {board.responsibleUserId && (() => {
+              const responsible = board.members.find((m) => m.userId === board.responsibleUserId)?.profile
+              return responsible ? (
+                <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-400">
+                  <span
+                    className="flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold text-white"
+                    style={{ backgroundColor: responsible.avatar_color }}
+                  >
+                    {responsible.display_name.slice(0, 2).toUpperCase()}
+                  </span>
+                  <span>Verantwortlich: <span className="font-medium text-gray-600 dark:text-racing-200">{responsible.display_name}</span></span>
+                </div>
+              ) : null
+            })()}
             {(board.internalLaunch || board.externalLaunch) && (
               <div className="mt-1 flex flex-wrap items-center gap-3">
                 {board.internalLaunch && (
