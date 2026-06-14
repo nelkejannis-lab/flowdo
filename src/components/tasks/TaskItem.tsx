@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Check, ChevronDown, HelpCircle, ListChecks, MessageSquare, Send } from 'lucide-react'
 import type { Task } from '../../types'
 import { useTasksStore } from '../../store/tasksStore'
@@ -24,7 +24,12 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
   const toggleSubtask = useTasksStore((s) => s.toggleSubtask)
   const toggleProjectSubtask = useProjectTasksStore((s) => s.toggleSubtask)
   const friends = useFriendsStore((s) => s.friends)
+  const fetchFriends = useFriendsStore((s) => s.fetchAll)
   const askQuestion = useNotificationsStore((s) => s.askQuestion)
+
+  useEffect(() => {
+    if (isSupabaseConfigured && friends.length === 0) fetchFriends()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [expanded, setExpanded] = useState(false)
   const [showComments, setShowComments] = useState(false)
   const [showAsk, setShowAsk] = useState(false)
@@ -101,7 +106,7 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
         )}
 
         {/* Frage stellen */}
-        {isSupabaseConfigured && friends.length > 0 && (
+        {isSupabaseConfigured && (
           <div className="relative" ref={askRef}>
             <button
               onClick={() => { setShowAsk((v) => !v); setAskDone(false) }}
@@ -114,6 +119,8 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
               <div className="absolute right-0 top-full z-30 mt-1 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-lg dark:border-racing-700 dark:bg-racing-900">
                 {askDone ? (
                   <p className="py-2 text-center text-xs text-emerald-500">✓ Frage gesendet!</p>
+                ) : friends.length === 0 ? (
+                  <p className="py-2 text-center text-xs text-gray-400">Füge zuerst Kollegen hinzu.</p>
                 ) : (
                   <>
                     <p className="mb-2 text-xs font-semibold text-gray-600 dark:text-racing-200">Frage zu dieser Aufgabe stellen</p>
