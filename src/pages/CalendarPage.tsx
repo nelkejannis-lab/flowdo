@@ -9,8 +9,10 @@ import {
   subWeeks,
 } from 'date-fns'
 import { de } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Users, X } from 'lucide-react'
 import { useFriendsStore } from '../store/friendsStore'
+import { useTeamsStore } from '../store/teamsStore'
+import { supabase } from '../lib/supabase'
 import MonthView from '../components/calendar/MonthView'
 import WeekView from '../components/calendar/WeekView'
 import DayView from '../components/calendar/DayView'
@@ -43,20 +45,43 @@ export default function CalendarPage() {
   const friends = useFriendsStore((s) => s.friends)
   const fetchFriends = useFriendsStore((s) => s.fetchAll)
 
-  useEffect(() => {
-    if (isSupabaseConfigured) { fetchEntries(); fetchFriends() }
-  }, [fetchEntries, fetchFriends])
+  // Team filter
+  const [teamFilterId, setTeamFilterId] = useState<string | null>(null)
+  const [teamEntries, setTeamEntries] = useState<CalendarEntry[]>([])
+  const [showTeamFilter, setShowTeamFilter] = useState(false)
+  const teamFilterRef = useRef<HTMLDivElement>(null)
+  const teams = useTeamsStore((s) => s.teams)
+  const fetchTeams = useTeamsStore((s) => s.fetch)
 
-  // Close birthday dropdown on outside click
+  useEffect(() => {
+    if (isSupabaseConfigured) { fetchEntries(); fetchFriends(); fetchTeams() }
+  }, [fetchEntries, fetchFriends, fetchTeams])
+
+  // Close dropdowns on outside click
   useEffect(() => {
     function handle(e: MouseEvent) {
-      if (birthdayRef.current && !birthdayRef.current.contains(e.target as Node)) {
-        setShowBirthdays(false)
-      }
+      if (birthdayRef.current && !birthdayRef.current.contains(e.target as Node)) setShowBirthdays(false)
+      if (teamFilterRef.current && !teamFilterRef.current.contains(e.target as Node)) setShowTeamFilter(false)
     }
     document.addEventListener('mousedown', handle)
     return () => document.removeEventListener('mousedown', handle)
   }, [])
+
+  // Load team entries (reise + urlaub) when a team filter is selected
+  useEffect(() => {
+    if (!teamFilterId) { setTeamEntries([]); return }
+    const team = teams.find((t) => t.id === teamFilterId)
+    if (!team || team.members.length === 0) { setTeamEntries([]); return }
+    const memberIds = team.members.map((m) => m.id)
+    supabase
+      .from('calendar_entries')
+      .select('*, owner:profiles!calendar_entries_owner_id_fkey(*)')
+      .in('owner_id', memberIds)
+      .in('type', ['reise', 'urlaub'])
+      .then(({ data }) => {
+        if (data) setTeamEntries(data as unknown as CalendarEntry[])
+      })
+  }, [teamFilterId, teams])
 
   // Compute next 10 upcoming birthdays from friends
   const upcomingBirthdays = (() => {
@@ -130,6 +155,38 @@ export default function CalendarPage() {
           ))}
         </div>
         <div className="flex items-center gap-2">
+          {isSupabaseConfigured && teams.length > 0 && (
+            <div className="relative" ref={teamFilterRef}>
+              <button
+                onClick={() => setShowTeamFilter((v) => !v)}
+                className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors ${teamFilterId ? 'border-accent bg-accent/10 text-accent' : 'border-gray-200 hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800'}`}
+              >
+                <Users size={14} />
+                {teamFilterId ? teams.find((t) => t.id === teamFilterId)?.name : 'Team'}
+                {teamFilterId && (
+                  <span onClick={(e) => { e.stopPropagation(); setTeamFilterId(null) }} className="ml-1 hover:text-red-500">
+                    <X size={12} />
+                  </span>
+                )}
+              </button>
+              {showTeamFilter && (
+                <div className="absolute right-0 top-full z-20 mt-2 w-52 rounded-xl border border-gray-100 bg-white shadow-lg dark:border-racing-800 dark:bg-racing-900">
+                  <p className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">Team auswählen</p>
+                  {teams.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => { setTeamFilterId(t.id === teamFilterId ? null : t.id); setShowTeamFilter(false) }}
+                      className={`flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-racing-800 ${t.id === teamFilterId ? 'font-semibold text-accent' : ''}`}
+                    >
+                      <Users size={14} className="flex-shrink-0 text-gray-400" />
+                      {t.name}
+                      <span className="ml-auto text-xs text-gray-400">{t.members.length}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {isSupabaseConfigured && (
             <div className="relative" ref={birthdayRef}>
               <button
@@ -233,6 +290,46 @@ export default function CalendarPage() {
 
         {isSupabaseConfigured && <TeamAvailabilitySidebar entries={entries} />}
       </div>
+
+      {/* Team reise/urlaub panel */}
+      {teamFilterId && (
+        <div className="mt-6 rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+            <Users size={15} className="text-gray-400" />
+            {teams.find((t) => t.id === teamFilterId)?.name} — Auswärts & Urlaub
+          </h2>
+          {teamEntries.length === 0 ? (
+            <p className="text-sm text-gray-400">Keine Auswärts- oder Urlaubseinträge im Team.</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {teamEntries.map((e) => {
+                const owner = (e as CalendarEntry & { owner?: { display_name: string; avatar_color: string } }).owner
+                return (
+                  <div key={e.id} className="flex items-center gap-3 rounded-lg border border-gray-100 px-3 py-2 dark:border-racing-800">
+                    {owner && (
+                      <span
+                        className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white"
+                        style={{ backgroundColor: owner.avatar_color }}
+                      >
+                        {owner.display_name.slice(0, 2).toUpperCase()}
+                      </span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{e.title}</p>
+                      <p className="text-xs text-gray-400">
+                        {owner?.display_name} · {e.date}{e.endDate ? ` – ${e.endDate}` : ''}
+                      </p>
+                    </div>
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${e.type === 'urlaub' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}`}>
+                      {e.type === 'urlaub' ? '🌴 Urlaub' : '✈️ Reise'}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {editingTask && <TaskFormModal task={editingTask} onClose={() => setEditingTask(null)} />}
       {newTaskDate && (

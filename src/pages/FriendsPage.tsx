@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { Check, UserPlus, X } from 'lucide-react'
+import { Check, ChevronDown, Pencil, Plus, Trash2, UserPlus, Users, X } from 'lucide-react'
 import { useFriendsStore } from '../store/friendsStore'
+import { useTeamsStore } from '../store/teamsStore'
 import type { Profile } from '../store/authStore'
 
 function Avatar({ name, color }: { name: string; color: string }) {
@@ -27,6 +28,20 @@ export default function FriendsPage() {
     declineOrCancel,
     removeFriend,
   } = useFriendsStore()
+  const teams = useTeamsStore((s) => s.teams)
+  const fetchTeams = useTeamsStore((s) => s.fetch)
+  const createTeam = useTeamsStore((s) => s.create)
+  const renameTeam = useTeamsStore((s) => s.rename)
+  const removeTeam = useTeamsStore((s) => s.remove)
+  const addMember = useTeamsStore((s) => s.addMember)
+  const removeMember = useTeamsStore((s) => s.removeMember)
+
+  const [newTeamName, setNewTeamName] = useState('')
+  const [showNewTeam, setShowNewTeam] = useState(false)
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null)
+  const [editingTeamName, setEditingTeamName] = useState('')
+  const [openTeamId, setOpenTeamId] = useState<string | null>(null)
+
   const [username, setUsername] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -37,7 +52,8 @@ export default function FriendsPage() {
 
   useEffect(() => {
     fetchAll()
-  }, [fetchAll])
+    fetchTeams()
+  }, [fetchAll, fetchTeams])
 
   useEffect(() => {
     if (searchTimeout.current) clearTimeout(searchTimeout.current)
@@ -213,6 +229,140 @@ export default function FriendsPage() {
                 </button>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Teams */}
+      <div className="mt-8">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <Users size={18} />
+            Teams
+          </h2>
+          <button
+            onClick={() => setShowNewTeam((v) => !v)}
+            className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-racing-700 dark:text-racing-100 dark:hover:bg-racing-800"
+          >
+            <Plus size={15} />
+            Team erstellen
+          </button>
+        </div>
+
+        {showNewTeam && (
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault()
+              if (!newTeamName.trim()) return
+              await createTeam(newTeamName.trim())
+              setNewTeamName('')
+              setShowNewTeam(false)
+            }}
+            className="mb-4 flex items-center gap-2"
+          >
+            <input
+              autoFocus
+              value={newTeamName}
+              onChange={(e) => setNewTeamName(e.target.value)}
+              placeholder="Teamname"
+              className="flex-1 rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700 sm:w-64 sm:flex-none"
+            />
+            <button type="submit" className="rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-dark">Erstellen</button>
+            <button type="button" onClick={() => setShowNewTeam(false)} className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 dark:border-racing-700">Abbrechen</button>
+          </form>
+        )}
+
+        {teams.length === 0 ? (
+          <p className="text-sm text-gray-400">Noch keine Teams erstellt.</p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {teams.map((team) => {
+              const isOpen = openTeamId === team.id
+              const isEditing = editingTeamId === team.id
+              const teamMemberIds = team.members.map((m) => m.id)
+              const availableFriends = friends.filter((f) => !teamMemberIds.includes(f.profile.id))
+
+              return (
+                <div key={team.id} className="rounded-xl border border-gray-100 bg-white dark:border-racing-800 dark:bg-racing-900">
+                  <div className="flex items-center gap-2 px-4 py-3">
+                    <button
+                      onClick={() => setOpenTeamId(isOpen ? null : team.id)}
+                      className="rounded p-0.5 text-gray-400 hover:text-gray-600"
+                    >
+                      <ChevronDown size={16} className={`transition-transform ${isOpen ? '' : '-rotate-90'}`} />
+                    </button>
+
+                    {isEditing ? (
+                      <>
+                        <input
+                          autoFocus
+                          value={editingTeamName}
+                          onChange={(e) => setEditingTeamName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') { renameTeam(team.id, editingTeamName.trim()); setEditingTeamId(null) }
+                            if (e.key === 'Escape') setEditingTeamId(null)
+                          }}
+                          className="flex-1 rounded-lg border border-gray-200 bg-transparent px-2 py-1 text-sm font-semibold focus:border-accent focus:outline-none dark:border-racing-700"
+                        />
+                        <button onClick={() => { renameTeam(team.id, editingTeamName.trim()); setEditingTeamId(null) }} className="text-gray-400 hover:text-emerald-500"><Check size={15} /></button>
+                        <button onClick={() => setEditingTeamId(null)} className="text-gray-400 hover:text-red-500"><X size={15} /></button>
+                      </>
+                    ) : (
+                      <>
+                        <span className="flex-1 text-sm font-semibold">{team.name}</span>
+                        <span className="text-xs text-gray-400">{team.members.length} Mitglieder</span>
+                        <button onClick={() => { setEditingTeamId(team.id); setEditingTeamName(team.name) }} className="rounded p-1 text-gray-400 hover:text-accent"><Pencil size={13} /></button>
+                        <button onClick={() => { if (confirm(`Team „${team.name}" löschen?`)) removeTeam(team.id) }} className="rounded p-1 text-gray-400 hover:text-red-500"><Trash2 size={13} /></button>
+                      </>
+                    )}
+                  </div>
+
+                  {isOpen && (
+                    <div className="border-t border-gray-100 px-4 py-3 dark:border-racing-800">
+                      {/* Current members */}
+                      {team.members.length > 0 && (
+                        <div className="mb-3 flex flex-wrap gap-2">
+                          {team.members.map((m) => (
+                            <span key={m.id} className="flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 pl-1 pr-2 py-0.5">
+                              <span className="flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold text-white" style={{ backgroundColor: m.avatar_color }}>
+                                {m.display_name.slice(0, 2).toUpperCase()}
+                              </span>
+                              <span className="text-xs font-medium text-accent">{m.display_name}</span>
+                              <button onClick={() => removeMember(team.id, m.id)} className="ml-0.5 text-accent/60 hover:text-red-500">
+                                <X size={11} />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Add friend to team */}
+                      {availableFriends.length > 0 && (
+                        <div>
+                          <p className="mb-1.5 text-xs text-gray-400">Kollegen hinzufügen:</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {availableFriends.map((f) => (
+                              <button
+                                key={f.profile.id}
+                                onClick={() => addMember(team.id, f.profile.id)}
+                                className="flex items-center gap-1 rounded-full border border-gray-200 px-2.5 py-1 text-xs text-gray-500 hover:border-accent hover:text-accent dark:border-racing-700 dark:text-racing-200"
+                              >
+                                <Plus size={11} />
+                                {f.profile.display_name}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {friends.length === 0 && (
+                        <p className="text-xs text-gray-400">Keine Kollegen vorhanden.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
       </div>
