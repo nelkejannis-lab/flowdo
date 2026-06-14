@@ -7,10 +7,11 @@ export default function Logo({ size = 'md' }: LogoProps) {
   return (
     <img
       src="/icon.svg"
-      alt="Mooncrew"
+      alt="MoonCrew"
       width={px}
       height={px}
-      className="flex-shrink-0 rounded-lg"
+      className="flex-shrink-0 rounded-xl"
+      style={{ imageRendering: 'auto' }}
     />
   )
 }

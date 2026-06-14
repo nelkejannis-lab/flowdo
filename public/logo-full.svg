@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 440" fill="none">
+  <!-- Crescent moon: outer arc minus inner arc, opens to the right -->
+  <path d="
+    M 242 48
+    A 172 172 0 1 0 242 352
+    A 118 126 0 0 1 242 48
+    Z
+  " fill="#1c1c1c"/>
+
+  <!-- Left person -->
+  <circle cx="204" cy="178" r="21" fill="#1c1c1c"/>
+  <path d="M 178 252 Q 178 218 204 218 Q 230 218 230 252 Z" fill="#1c1c1c"/>
+
+  <!-- Center person (taller) -->
+  <circle cx="252" cy="160" r="26" fill="#1c1c1c"/>
+  <path d="M 220 252 Q 220 214 252 214 Q 284 214 284 252 Z" fill="#1c1c1c"/>
+
+  <!-- Right person -->
+  <circle cx="300" cy="178" r="21" fill="#1c1c1c"/>
+  <path d="M 274 252 Q 274 218 300 218 Q 326 218 326 252 Z" fill="#1c1c1c"/>
+
+  <!-- MoonCrew text -->
+  <text x="200" y="400" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="58" font-weight="700" text-anchor="middle" fill="#1c1c1c" letter-spacing="-1">MoonCrew</text>
+</svg>
