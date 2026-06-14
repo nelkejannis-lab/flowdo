@@ -255,7 +255,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="-mx-4 -my-4 flex h-[calc(100vh-64px)] overflow-hidden sm:-mx-6 sm:-my-6">
+    <div className="flex h-[calc(100vh-120px)] overflow-hidden sm:h-[calc(100vh-96px)]">
 
       {/* MOBILE: list or chat */}
       {!active ? (
