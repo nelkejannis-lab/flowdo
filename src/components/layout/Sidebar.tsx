@@ -185,6 +185,19 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </NavLink>
         )}
         {isSupabaseConfigured && (
+          <NavLink to="/chat" className={navItemClass} onClick={onClose}>
+            <span className="relative">
+              <MessageCircle size={18} />
+              {unreadMessages > 0 && (
+                <span className="absolute -right-1.5 -top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-accent text-[8px] font-bold text-white">
+                  {unreadMessages > 9 ? '9+' : unreadMessages}
+                </span>
+              )}
+            </span>
+            Chat
+          </NavLink>
+        )}
+        {isSupabaseConfigured && (
           <NavLink to="/friends" className={navItemClass}>
             <Users size={18} />
             Kollegen
