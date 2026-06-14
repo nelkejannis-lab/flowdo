@@ -77,6 +77,7 @@ export const useTeamsStore = create<TeamsState>()((set, get) => ({
   },
 
   addMember: async (teamId, userId) => {
+    // Now handled via invites — direct add only for owner themselves
     await supabase.from('team_members').insert({ team_id: teamId, user_id: userId })
     await get().fetch()
   },

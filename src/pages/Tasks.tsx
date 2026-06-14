@@ -6,6 +6,8 @@ import { useTaskSharesStore } from '../store/taskSharesStore'
 import { useProjectTasksStore } from '../store/projectTasksStore'
 import { useBoardsStore } from '../store/boardsStore'
 import { useBoardInvitesStore } from '../store/boardInvitesStore'
+import { useTeamInvitesStore } from '../store/teamInvitesStore'
+import { Users } from 'lucide-react'
 import { useNotificationsStore } from '../store/notificationsStore'
 import { isSupabaseConfigured } from '../lib/supabase'
 import TaskList from '../components/tasks/TaskList'
@@ -35,6 +37,10 @@ export default function TasksPage() {
   const fetchBoardInvites = useBoardInvitesStore((s) => s.fetchIncoming)
   const acceptInvite = useBoardInvitesStore((s) => s.acceptInvite)
   const declineInvite = useBoardInvitesStore((s) => s.declineInvite)
+  const teamInvites = useTeamInvitesStore((s) => s.incoming)
+  const fetchTeamInvites = useTeamInvitesStore((s) => s.fetchIncoming)
+  const acceptTeamInvite = useTeamInvitesStore((s) => s.acceptInvite)
+  const declineTeamInvite = useTeamInvitesStore((s) => s.declineInvite)
   const notifications = useNotificationsStore((s) => s.notifications)
   const fetchNotifications = useNotificationsStore((s) => s.fetch)
   const markRead = useNotificationsStore((s) => s.markRead)
@@ -45,6 +51,7 @@ export default function TasksPage() {
     if (isSupabaseConfigured && smartList === 'inbox') {
       fetchIncoming()
       fetchBoardInvites()
+      fetchTeamInvites()
       fetchNotifications()
     }
   }, [fetchIncoming, fetchBoardInvites, fetchNotifications, smartList])
@@ -98,7 +105,7 @@ export default function TasksPage() {
 
       {smartList === 'inbox' ? (
         <div>
-          {boardInvites.length === 0 && incoming.length === 0 && notifications.filter((n) => !n.read || n.type === 'birthday').length === 0 && (
+          {boardInvites.length === 0 && teamInvites.length === 0 && incoming.length === 0 && notifications.filter((n) => !n.read || n.type === 'birthday').length === 0 && (
             <p className="py-12 text-center text-sm text-gray-400">Alles erledigt. Keine neuen Benachrichtigungen.</p>
           )}
 
@@ -194,6 +201,34 @@ export default function TasksPage() {
                       <Check size={14} /> Annehmen
                     </button>
                     <button onClick={() => declineInvite(invite.id)} className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800">
+                      <X size={14} /> Ablehnen
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {teamInvites.length > 0 && (
+            <div className="mb-6">
+              <h2 className="mb-3 flex items-center gap-2 text-base font-semibold">
+                <Users size={16} className="text-gray-400" />
+                Team-Einladungen
+              </h2>
+              <div className="flex flex-col gap-2">
+                {teamInvites.map((invite) => (
+                  <div key={invite.id} className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 dark:border-racing-800 dark:bg-racing-900">
+                    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">
+                      <Users size={16} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{invite.teamName}</p>
+                      <p className="truncate text-xs text-gray-400">von {invite.fromUser.display_name}</p>
+                    </div>
+                    <button onClick={() => acceptTeamInvite(invite.id)} className="flex items-center gap-1 rounded-lg bg-accent px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark">
+                      <Check size={14} /> Annehmen
+                    </button>
+                    <button onClick={() => declineTeamInvite(invite.id)} className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800">
                       <X size={14} /> Ablehnen
                     </button>
                   </div>

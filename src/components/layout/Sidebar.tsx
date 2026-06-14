@@ -28,6 +28,7 @@ import { useSettingsStore } from '../../store/settingsStore'
 import { useAuthStore } from '../../store/authStore'
 import { useTaskSharesStore } from '../../store/taskSharesStore'
 import { useBoardInvitesStore } from '../../store/boardInvitesStore'
+import { useTeamInvitesStore } from '../../store/teamInvitesStore'
 import { useNotificationsStore } from '../../store/notificationsStore'
 import { isSupabaseConfigured } from '../../lib/supabase'
 
@@ -53,10 +54,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const fetchTaskIncoming = useTaskSharesStore((s) => s.fetchIncoming)
   const boardIncoming = useBoardInvitesStore((s) => s.incoming)
   const fetchBoardIncoming = useBoardInvitesStore((s) => s.fetchIncoming)
+  const teamIncoming = useTeamInvitesStore((s) => s.incoming)
+  const fetchTeamIncoming = useTeamInvitesStore((s) => s.fetchIncoming)
   const unreadNotifications = useNotificationsStore((s) => s.unreadCount)
   const fetchNotifications = useNotificationsStore((s) => s.fetch)
   const checkBirthdays = useNotificationsStore((s) => s.checkBirthdays)
-  const notificationCount = taskIncoming.length + boardIncoming.length + unreadNotifications
+  const notificationCount = taskIncoming.length + boardIncoming.length + teamIncoming.length + unreadNotifications
   const mode = useSettingsStore((s) => s.mode)
   const setMode = useSettingsStore((s) => s.setMode)
   const pinkAccent = useSettingsStore((s) => s.pinkAccent)
@@ -70,11 +73,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       fetchFolders()
       fetchTaskIncoming()
       fetchBoardIncoming()
+      fetchTeamIncoming()
       checkBirthdays().then(() => fetchNotifications())
     } else {
       fetchBoards()
     }
-  }, [fetchBoards, fetchFolders, fetchTaskIncoming, fetchBoardIncoming, fetchNotifications, checkBirthdays])
+  }, [fetchBoards, fetchFolders, fetchTaskIncoming, fetchBoardIncoming, fetchTeamIncoming, fetchNotifications, checkBirthdays])
 
   function toggleFolder(id: string) {
     setOpenFolders((prev) => {

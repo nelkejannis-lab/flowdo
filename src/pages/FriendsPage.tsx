@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Check, ChevronDown, Pencil, Plus, Trash2, UserPlus, Users, X } from 'lucide-react'
 import { useFriendsStore } from '../store/friendsStore'
 import { useTeamsStore } from '../store/teamsStore'
+import { useTeamInvitesStore } from '../store/teamInvitesStore'
 import type { Profile } from '../store/authStore'
 
 function Avatar({ name, color }: { name: string; color: string }) {
@@ -33,8 +34,9 @@ export default function FriendsPage() {
   const createTeam = useTeamsStore((s) => s.create)
   const renameTeam = useTeamsStore((s) => s.rename)
   const removeTeam = useTeamsStore((s) => s.remove)
-  const addMember = useTeamsStore((s) => s.addMember)
   const removeMember = useTeamsStore((s) => s.removeMember)
+  const sendInvite = useTeamInvitesStore((s) => s.sendInvite)
+  const [inviteSent, setInviteSent] = useState<Record<string, boolean>>({})
 
   const [newTeamName, setNewTeamName] = useState('')
   const [showNewTeam, setShowNewTeam] = useState(false)
@@ -339,18 +341,31 @@ export default function FriendsPage() {
                       {/* Add friend to team */}
                       {availableFriends.length > 0 && (
                         <div>
-                          <p className="mb-1.5 text-xs text-gray-400">Kollegen hinzufügen:</p>
+                          <p className="mb-1.5 text-xs text-gray-400">Einladen:</p>
                           <div className="flex flex-wrap gap-1.5">
-                            {availableFriends.map((f) => (
-                              <button
-                                key={f.profile.id}
-                                onClick={() => addMember(team.id, f.profile.id)}
-                                className="flex items-center gap-1 rounded-full border border-gray-200 px-2.5 py-1 text-xs text-gray-500 hover:border-accent hover:text-accent dark:border-racing-700 dark:text-racing-200"
-                              >
-                                <Plus size={11} />
-                                {f.profile.display_name}
-                              </button>
-                            ))}
+                            {availableFriends.map((f) => {
+                              const key = `${team.id}:${f.profile.id}`
+                              const sent = inviteSent[key]
+                              return (
+                                <button
+                                  key={f.profile.id}
+                                  disabled={sent}
+                                  onClick={async () => {
+                                    const err = await sendInvite(team.id, team.name, f.profile.id)
+                                    if (!err) setInviteSent((s) => ({ ...s, [key]: true }))
+                                  }}
+                                  className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-colors ${
+                                    sent
+                                      ? 'border-emerald-300 bg-emerald-50 text-emerald-600 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400'
+                                      : 'border-gray-200 text-gray-500 hover:border-accent hover:text-accent dark:border-racing-700 dark:text-racing-200'
+                                  }`}
+                                >
+                                  {sent ? <Check size={11} /> : <Plus size={11} />}
+                                  {f.profile.display_name}
+                                  {sent && ' eingeladen'}
+                                </button>
+                              )
+                            })}
                           </div>
                         </div>
                       )}
