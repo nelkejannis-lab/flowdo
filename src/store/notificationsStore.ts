@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 
 export interface Notification {
   id: string
-  type: 'mention' | 'task_share' | 'board_invite' | 'birthday'
+  type: 'mention' | 'task_share' | 'board_invite' | 'birthday' | 'question'
   title: string
   body: string | null
   link: string | null
@@ -16,6 +16,7 @@ interface NotificationsState {
   unreadCount: number
   fetch: () => Promise<void>
   checkBirthdays: () => Promise<void>
+  askQuestion: (toUserId: string, taskId: string, taskTitle: string, question: string) => Promise<string | null>
   markRead: (id: string) => Promise<void>
   markAllRead: () => Promise<void>
 }
@@ -50,6 +51,35 @@ export const useNotificationsStore = create<NotificationsState>()((set, get) => 
 
   checkBirthdays: async () => {
     await supabase.rpc('create_birthday_notifications_for_today')
+  },
+
+  askQuestion: async (toUserId, taskId, taskTitle, question) => {
+    const { data: userData } = await supabase.auth.getUser()
+    const userId = userData.user?.id
+    if (!userId) return 'Nicht angemeldet'
+
+    const { data: profile } = await supabase.from('profiles').select('display_name').eq('id', userId).single()
+    const fromName = (profile as { display_name: string } | null)?.display_name ?? 'Jemand'
+
+    const { error } = await supabase.from('notifications').insert({
+      user_id: toUserId,
+      type: 'question',
+      title: `${fromName} hat eine Frage zu „${taskTitle}"`,
+      body: question,
+      link: `/tasks`,
+      read: false,
+    })
+
+    if (error) return error.message
+
+    // Also post as comment so it's visible on the task
+    await supabase.from('comments').insert({
+      author_id: userId,
+      task_id: taskId,
+      body: `❓ @Frage: ${question}`,
+    })
+
+    return null
   },
 
   markRead: async (id) => {

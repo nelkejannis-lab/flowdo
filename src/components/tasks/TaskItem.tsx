@@ -1,9 +1,11 @@
-import { useState } from 'react'
-import { Check, ChevronDown, ListChecks, MessageSquare } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Check, ChevronDown, HelpCircle, ListChecks, MessageSquare, Send } from 'lucide-react'
 import type { Task } from '../../types'
 import { useTasksStore } from '../../store/tasksStore'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
 import { useCommentsStore } from '../../store/commentsStore'
+import { useFriendsStore } from '../../store/friendsStore'
+import { useNotificationsStore } from '../../store/notificationsStore'
 import { formatFriendlyDate, isOverdue } from '../../utils/date'
 import BoardBadge from '../boards/BoardBadge'
 import PriorityBadge from './PriorityBadge'
@@ -21,8 +23,16 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
   const toggleProjectTaskCompleted = useProjectTasksStore((s) => s.toggleTaskCompleted)
   const toggleSubtask = useTasksStore((s) => s.toggleSubtask)
   const toggleProjectSubtask = useProjectTasksStore((s) => s.toggleSubtask)
+  const friends = useFriendsStore((s) => s.friends)
+  const askQuestion = useNotificationsStore((s) => s.askQuestion)
   const [expanded, setExpanded] = useState(false)
   const [showComments, setShowComments] = useState(false)
+  const [showAsk, setShowAsk] = useState(false)
+  const [askTo, setAskTo] = useState('')
+  const [askText, setAskText] = useState('')
+  const [askSending, setAskSending] = useState(false)
+  const [askDone, setAskDone] = useState(false)
+  const askRef = useRef<HTMLDivElement>(null)
   const commentCount = useCommentsStore((s) => (s.comments[task.id] ?? []).length)
   const overdue = isOverdue(task.dueDate) && !task.completed
   const hasSubtasks = task.subtasks.length > 0
@@ -88,6 +98,63 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
             <MessageSquare size={14} />
             {commentCount > 0 && <span className="text-[10px]">{commentCount}</span>}
           </button>
+        )}
+
+        {/* Frage stellen */}
+        {isSupabaseConfigured && friends.length > 0 && (
+          <div className="relative" ref={askRef}>
+            <button
+              onClick={() => { setShowAsk((v) => !v); setAskDone(false) }}
+              className={`flex flex-shrink-0 items-center gap-1 rounded p-1 text-xs hover:bg-gray-100 dark:hover:bg-racing-800 ${showAsk ? 'text-accent' : 'text-gray-300'}`}
+              title="Frage stellen"
+            >
+              <HelpCircle size={14} />
+            </button>
+            {showAsk && (
+              <div className="absolute right-0 top-full z-30 mt-1 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-lg dark:border-racing-700 dark:bg-racing-900">
+                {askDone ? (
+                  <p className="py-2 text-center text-xs text-emerald-500">✓ Frage gesendet!</p>
+                ) : (
+                  <>
+                    <p className="mb-2 text-xs font-semibold text-gray-600 dark:text-racing-200">Frage zu dieser Aufgabe stellen</p>
+                    <select
+                      value={askTo}
+                      onChange={(e) => setAskTo(e.target.value)}
+                      className="mb-2 w-full rounded-lg border border-gray-200 bg-transparent px-2 py-1.5 text-xs focus:border-accent focus:outline-none dark:border-racing-700"
+                    >
+                      <option value="">Kollegen wählen…</option>
+                      {friends.map((f) => (
+                        <option key={f.profile.id} value={f.profile.id}>{f.profile.display_name}</option>
+                      ))}
+                    </select>
+                    <textarea
+                      value={askText}
+                      onChange={(e) => setAskText(e.target.value)}
+                      placeholder="Deine Frage…"
+                      rows={2}
+                      className="mb-2 w-full rounded-lg border border-gray-200 bg-transparent px-2 py-1.5 text-xs focus:border-accent focus:outline-none dark:border-racing-700"
+                    />
+                    <button
+                      disabled={!askTo || !askText.trim() || askSending}
+                      onClick={async () => {
+                        setAskSending(true)
+                        await askQuestion(askTo, task.id, task.title, askText.trim())
+                        setAskSending(false)
+                        setAskDone(true)
+                        setAskText('')
+                        setAskTo('')
+                        setTimeout(() => setShowAsk(false), 1500)
+                      }}
+                      className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark disabled:opacity-50"
+                    >
+                      <Send size={11} />
+                      {askSending ? 'Sende…' : 'Frage senden'}
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         )}
 
         {/* Expand-Button für Unteraufgaben */}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { AtSign, Bell, Check, Plus, Trello, X } from 'lucide-react'
+import { AtSign, Bell, Check, HelpCircle, Plus, Trello, X } from 'lucide-react'
 import { useTasksStore } from '../store/tasksStore'
 import { useTaskSharesStore } from '../store/taskSharesStore'
 import { useProjectTasksStore } from '../store/projectTasksStore'
@@ -157,26 +157,40 @@ export default function TasksPage() {
                 <button onClick={markAllRead} className="text-xs text-accent hover:underline">Alle gelesen</button>
               </div>
               <div className="flex flex-col gap-2">
-                {notifications.filter((n) => n.type !== 'birthday').map((n) => (
-                  <div
-                    key={n.id}
-                    onClick={() => { markRead(n.id); if (n.link) navigate(n.link) }}
-                    className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors hover:bg-gray-50 dark:hover:bg-racing-800 ${
-                      n.read
-                        ? 'border-gray-100 bg-white dark:border-racing-800 dark:bg-racing-900'
-                        : 'border-accent/20 bg-accent/5 dark:border-accent/20 dark:bg-accent/5'
-                    }`}
-                  >
-                    <span className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${n.read ? 'bg-gray-100 dark:bg-racing-800' : 'bg-accent/10'}`}>
-                      <AtSign size={14} className={n.read ? 'text-gray-400' : 'text-accent'} />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className={`text-sm font-medium ${n.read ? '' : 'text-accent'}`}>{n.title}</p>
-                      {n.body && <p className="mt-0.5 truncate text-xs text-gray-400">„{n.body}"</p>}
+                {notifications.filter((n) => n.type !== 'birthday').map((n) => {
+                  const isQuestion = n.type === 'question'
+                  return (
+                    <div
+                      key={n.id}
+                      onClick={() => { markRead(n.id); if (n.link) navigate(n.link) }}
+                      className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors hover:bg-gray-50 dark:hover:bg-racing-800 ${
+                        n.read
+                          ? 'border-gray-100 bg-white dark:border-racing-800 dark:bg-racing-900'
+                          : isQuestion
+                            ? 'border-violet-200 bg-violet-50 dark:border-violet-900/40 dark:bg-violet-950/20'
+                            : 'border-accent/20 bg-accent/5 dark:border-accent/20 dark:bg-accent/5'
+                      }`}
+                    >
+                      <span className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${
+                        n.read ? 'bg-gray-100 dark:bg-racing-800' : isQuestion ? 'bg-violet-100 dark:bg-violet-900/30' : 'bg-accent/10'
+                      }`}>
+                        {isQuestion
+                          ? <HelpCircle size={14} className={n.read ? 'text-gray-400' : 'text-violet-500'} />
+                          : <AtSign size={14} className={n.read ? 'text-gray-400' : 'text-accent'} />
+                        }
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className={`text-sm font-medium ${n.read ? '' : isQuestion ? 'text-violet-700 dark:text-violet-400' : 'text-accent'}`}>{n.title}</p>
+                        {n.body && (
+                          <p className={`mt-0.5 text-xs ${isQuestion ? 'italic text-gray-600 dark:text-racing-300' : 'truncate text-gray-400'}`}>
+                            {isQuestion ? `„${n.body}"` : `„${n.body}"`}
+                          </p>
+                        )}
+                      </div>
+                      {!n.read && <span className={`mt-1.5 h-2 w-2 flex-shrink-0 rounded-full ${isQuestion ? 'bg-violet-500' : 'bg-accent'}`} />}
                     </div>
-                    {!n.read && <span className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-accent" />}
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}
