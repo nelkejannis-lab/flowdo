@@ -9,10 +9,10 @@ import {
   subWeeks,
 } from 'date-fns'
 import { de } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Link2, Plus, Users, X } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { ChevronLeft, ChevronRight, Plus, Users, X } from 'lucide-react'
 import { useFriendsStore } from '../store/friendsStore'
 import { useTeamsStore } from '../store/teamsStore'
+import { useCalendarConnectionsStore } from '../store/calendarConnectionsStore'
 import { supabase } from '../lib/supabase'
 import MonthView from '../components/calendar/MonthView'
 import WeekView from '../components/calendar/WeekView'
@@ -46,6 +46,13 @@ export default function CalendarPage() {
   const friends = useFriendsStore((s) => s.friends)
   const fetchFriends = useFriendsStore((s) => s.fetchAll)
 
+  // External calendar toggles
+  const connections = useCalendarConnectionsStore((s) => s.connections)
+  const fetchConnections = useCalendarConnectionsStore((s) => s.fetch)
+  const [disabledCalendars, setDisabledCalendars] = useState<Set<string>>(new Set())
+  const [showCalendarMenu, setShowCalendarMenu] = useState(false)
+  const calendarMenuRef = useRef<HTMLDivElement>(null)
+
   // Team filter
   const [teamFilterId, setTeamFilterId] = useState<string | null>(null)
   const [teamEntries, setTeamEntries] = useState<CalendarEntry[]>([])
@@ -55,18 +62,40 @@ export default function CalendarPage() {
   const fetchTeams = useTeamsStore((s) => s.fetch)
 
   useEffect(() => {
-    if (isSupabaseConfigured) { fetchEntries(); fetchFriends(); fetchTeams() }
-  }, [fetchEntries, fetchFriends, fetchTeams])
+    if (isSupabaseConfigured) { fetchEntries(); fetchFriends(); fetchTeams(); fetchConnections() }
+  }, [fetchEntries, fetchFriends, fetchTeams, fetchConnections])
 
   // Close dropdowns on outside click
   useEffect(() => {
     function handle(e: MouseEvent) {
       if (birthdayRef.current && !birthdayRef.current.contains(e.target as Node)) setShowBirthdays(false)
       if (teamFilterRef.current && !teamFilterRef.current.contains(e.target as Node)) setShowTeamFilter(false)
+      if (calendarMenuRef.current && !calendarMenuRef.current.contains(e.target as Node)) setShowCalendarMenu(false)
     }
     document.addEventListener('mousedown', handle)
     return () => document.removeEventListener('mousedown', handle)
   }, [])
+
+  function toggleCalendar(provider: string) {
+    setDisabledCalendars((prev) => {
+      const next = new Set(prev)
+      next.has(provider) ? next.delete(provider) : next.add(provider)
+      return next
+    })
+  }
+
+  // Filter entries based on disabled calendars
+  const providerPrefixes: Record<string, string> = {
+    google: '[Google]',
+    microsoft: '[Outlook]',
+    ical: '[iCal]',
+  }
+  const filteredEntries = entries.filter((e) => {
+    for (const [provider, prefix] of Object.entries(providerPrefixes)) {
+      if (e.title.startsWith(prefix) && disabledCalendars.has(provider)) return false
+    }
+    return true
+  })
 
   // Load team entries (reise + urlaub) when a team filter is selected
   useEffect(() => {
@@ -237,14 +266,45 @@ export default function CalendarPage() {
               )}
             </div>
           )}
-          <Link
-            to="/einstellungen?tab=kalender"
-            className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 dark:border-racing-700 dark:text-racing-100 dark:hover:bg-racing-800"
-            title="Externe Kalender verbinden"
-          >
-            <Link2 size={14} />
-            Kalender verbinden
-          </Link>
+          {isSupabaseConfigured && connections.length > 0 && (
+            <div className="relative" ref={calendarMenuRef}>
+              <button
+                onClick={() => setShowCalendarMenu((v) => !v)}
+                className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors ${showCalendarMenu ? 'border-accent bg-accent/10 text-accent' : 'border-gray-200 hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800'}`}
+              >
+                📅 Kalender
+                {disabledCalendars.size > 0 && (
+                  <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-gray-400 text-[10px] font-bold text-white">
+                    {disabledCalendars.size}
+                  </span>
+                )}
+              </button>
+              {showCalendarMenu && (
+                <div className="absolute right-0 top-full z-20 mt-2 w-56 rounded-xl border border-gray-100 bg-white shadow-lg dark:border-racing-800 dark:bg-racing-900">
+                  <p className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Kalender ein-/ausblenden</p>
+                  {connections.map((conn) => {
+                    const label = conn.provider === 'google' ? '📅 Google Calendar'
+                      : conn.provider === 'microsoft' ? '📧 Outlook'
+                      : '☁️ iCal'
+                    const active = !disabledCalendars.has(conn.provider)
+                    return (
+                      <button
+                        key={conn.provider}
+                        onClick={() => toggleCalendar(conn.provider)}
+                        className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-gray-50 dark:hover:bg-racing-800"
+                      >
+                        <span className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border-2 transition-colors ${active ? 'border-accent bg-accent' : 'border-gray-300 dark:border-racing-600'}`}>
+                          {active && <span className="text-white text-[10px] font-bold">✓</span>}
+                        </span>
+                        <span className={active ? '' : 'text-gray-400 line-through'}>{label}</span>
+                        {conn.email && <span className="ml-auto truncate text-xs text-gray-400 max-w-[80px]">{conn.email.split('@')[0]}</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
           <button
             onClick={() => setShowAddForm(true)}
             className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:bg-accent-dark"
@@ -262,7 +322,7 @@ export default function CalendarPage() {
               currentDate={currentDate}
               tasks={tasks}
               events={events}
-              entries={entries}
+              entries={filteredEntries}
               onDayClick={(date) => {
                 setCurrentDate(date)
                 setView('day')
@@ -277,7 +337,7 @@ export default function CalendarPage() {
               currentDate={currentDate}
               tasks={tasks}
               events={events}
-              entries={entries}
+              entries={filteredEntries}
               onTaskClick={(task) => setEditingTask(task)}
               onAddTask={(date) => setNewTaskDate(toISODate(date))}
               onEventClick={(event) => setEditingEvent(event)}
@@ -289,7 +349,7 @@ export default function CalendarPage() {
               currentDate={currentDate}
               tasks={tasks}
               events={events}
-              entries={entries}
+              entries={filteredEntries}
               onAddTask={() => setNewTaskDate(toISODate(currentDate))}
               onEventClick={(event) => setEditingEvent(event)}
               onEntryClick={(entry) => setEditingEntry(entry)}
@@ -297,7 +357,7 @@ export default function CalendarPage() {
           )}
         </div>
 
-        {isSupabaseConfigured && <TeamAvailabilitySidebar entries={entries} />}
+        {isSupabaseConfigured && <TeamAvailabilitySidebar entries={filteredEntries} />}
       </div>
 
       {/* Team reise/urlaub panel */}
