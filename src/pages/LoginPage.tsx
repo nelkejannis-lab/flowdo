@@ -65,9 +65,8 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-racing-950">
       <div className="w-full max-w-sm rounded-xl border border-gray-100 bg-white p-6 shadow-sm dark:border-racing-800 dark:bg-racing-900">
-        <div className="mb-6 flex items-center gap-2">
-          <Logo />
-          <span className="text-lg font-semibold">Mooncrew</span>
+        <div className="mb-6 flex items-center justify-center">
+          <img src="/logo-full.svg" alt="MoonCrew" className="h-20 w-auto" />
         </div>
 
         {!isSupabaseConfigured && (
