@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Send } from 'lucide-react'
+import { ArrowLeft, Send } from 'lucide-react'
 import { useMessagesStore } from '../store/messagesStore'
 import { useFriendsStore } from '../store/friendsStore'
 import { useAuthStore } from '../store/authStore'
@@ -29,7 +29,6 @@ export default function ChatPage() {
     fetchConversations()
   }, [fetchFriends, fetchConversations])
 
-  // Real-time subscription
   useEffect(() => {
     if (!currentUserId || !isSupabaseConfigured) return
     const unsub = subscribeToMessages(currentUserId, () => {
@@ -58,7 +57,6 @@ export default function ChatPage() {
     inputRef.current?.focus()
   }
 
-  // All people to chat with = friends + existing conversations
   const allContacts = [
     ...friends.map((f) => f.profile),
     ...conversations
@@ -75,132 +73,235 @@ export default function ChatPage() {
     const isToday = d.toDateString() === now.toDateString()
     return isToday
       ? d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
-      : d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) + ' ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+      : d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })
+  }
+
+  function formatLastTime(iso: string) {
+    const d = new Date(iso)
+    const now = new Date()
+    const isToday = d.toDateString() === now.toDateString()
+    return isToday
+      ? d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+      : d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' })
+  }
+
+  // Group messages by date
+  function groupByDate(msgs: typeof activeMessages) {
+    const groups: { label: string; messages: typeof activeMessages }[] = []
+    let currentLabel = ''
+    for (const msg of msgs) {
+      const d = new Date(msg.createdAt)
+      const now = new Date()
+      const isToday = d.toDateString() === now.toDateString()
+      const isYesterday = new Date(now.getTime() - 86400000).toDateString() === d.toDateString()
+      const label = isToday ? 'Heute' : isYesterday ? 'Gestern' : d.toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
+      if (label !== currentLabel) {
+        currentLabel = label
+        groups.push({ label, messages: [] })
+      }
+      groups[groups.length - 1].messages.push(msg)
+    }
+    return groups
   }
 
   return (
-    <div className="flex h-[calc(100vh-120px)] overflow-hidden rounded-xl border border-gray-100 bg-white dark:border-racing-800 dark:bg-racing-900">
-      {/* Sidebar — conversations */}
-      <div className="flex w-64 flex-shrink-0 flex-col border-r border-gray-100 dark:border-racing-800">
-        <div className="border-b border-gray-100 px-4 py-3 dark:border-racing-800">
-          <h2 className="text-sm font-semibold">Nachrichten</h2>
+    // Full viewport height, no outer padding
+    <div className="-mx-4 -my-4 flex h-[calc(100vh-64px)] flex-col overflow-hidden sm:-mx-6 sm:-my-6 sm:h-[calc(100vh-64px)]">
+
+      {/* === CONVERSATION LIST (shown when no active chat on mobile) === */}
+      <div className={`flex flex-col bg-white dark:bg-racing-950 ${activeId ? 'hidden sm:flex sm:w-72 sm:flex-shrink-0 sm:border-r sm:border-gray-100 sm:dark:border-racing-800' : 'flex-1'}`}>
+
+        {/* Header */}
+        <div className="bg-accent px-4 py-3 pt-safe">
+          <h1 className="text-base font-semibold text-white">Chats</h1>
         </div>
-        <div className="flex-1 overflow-y-auto">
+
+        {/* List */}
+        <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-racing-800">
           {allContacts.length === 0 && (
-            <p className="px-4 py-6 text-xs text-gray-400">Füge zuerst Kollegen hinzu.</p>
+            <p className="px-4 py-8 text-center text-sm text-gray-400">
+              Füge zuerst Kollegen hinzu um zu chatten.
+            </p>
           )}
           {allContacts.map((profile) => {
             const conv = conversations.find((c) => c.profile.id === profile.id)
             const unread = conv?.unreadCount ?? 0
-            const active = activeId === profile.id
             return (
               <button
                 key={profile.id}
                 onClick={() => setActiveId(profile.id)}
-                className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors ${
-                  active ? 'bg-accent/10' : 'hover:bg-gray-50 dark:hover:bg-racing-800'
-                }`}
+                className="flex w-full items-center gap-3 px-4 py-3 text-left active:bg-gray-50 dark:active:bg-racing-800"
               >
+                {/* Avatar */}
                 <span
-                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
+                  className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
                   style={{ backgroundColor: profile.avatar_color }}
                 >
                   {profile.display_name.slice(0, 2).toUpperCase()}
                 </span>
+
                 <div className="min-w-0 flex-1">
-                  <p className={`truncate text-sm font-medium ${active ? 'text-accent' : ''}`}>
-                    {profile.display_name}
-                  </p>
-                  {conv?.lastMessage && (
-                    <p className="truncate text-xs text-gray-400">
-                      {conv.lastMessage.fromUserId === currentUserId ? 'Du: ' : ''}
-                      {conv.lastMessage.body}
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="truncate text-[15px] font-medium">{profile.display_name}</p>
+                    {conv?.lastMessage && (
+                      <span className={`flex-shrink-0 text-xs ${unread > 0 ? 'font-semibold text-accent' : 'text-gray-400'}`}>
+                        {formatLastTime(conv.lastMessage.createdAt)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="truncate text-sm text-gray-500 dark:text-racing-300">
+                      {conv?.lastMessage
+                        ? (conv.lastMessage.fromUserId === currentUserId ? '✓ ' : '') + conv.lastMessage.body
+                        : 'Noch keine Nachrichten'}
                     </p>
-                  )}
+                    {unread > 0 && (
+                      <span className="flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-accent px-1 text-[11px] font-bold text-white">
+                        {unread}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                {unread > 0 && (
-                  <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-white">
-                    {unread}
-                  </span>
-                )}
               </button>
             )
           })}
         </div>
       </div>
 
-      {/* Chat area */}
-      <div className="flex flex-1 flex-col">
-        {!activeId ? (
-          <div className="flex flex-1 items-center justify-center text-sm text-gray-400">
-            Wähle einen Kollegen um zu chatten
+      {/* === CHAT VIEW (shown when active chat) === */}
+      {activeId && (
+        <div className="flex flex-1 flex-col overflow-hidden sm:flex-row">
+          {/* Sidebar on desktop */}
+          <div className="hidden sm:flex sm:w-72 sm:flex-shrink-0 sm:flex-col sm:border-r sm:border-gray-100 sm:dark:border-racing-800">
+            <div className="bg-accent px-4 py-3">
+              <h1 className="text-base font-semibold text-white">Chats</h1>
+            </div>
+            <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-racing-800">
+              {allContacts.map((profile) => {
+                const conv = conversations.find((c) => c.profile.id === profile.id)
+                const unread = conv?.unreadCount ?? 0
+                const isActive = profile.id === activeId
+                return (
+                  <button
+                    key={profile.id}
+                    onClick={() => setActiveId(profile.id)}
+                    className={`flex w-full items-center gap-3 px-4 py-3 text-left ${isActive ? 'bg-accent/10' : 'hover:bg-gray-50 dark:hover:bg-racing-800'}`}
+                  >
+                    <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-white" style={{ backgroundColor: profile.avatar_color }}>
+                      {profile.display_name.slice(0, 2).toUpperCase()}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between">
+                        <p className={`truncate text-sm font-medium ${isActive ? 'text-accent' : ''}`}>{profile.display_name}</p>
+                        {conv?.lastMessage && <span className="text-[11px] text-gray-400">{formatLastTime(conv.lastMessage.createdAt)}</span>}
+                      </div>
+                      <p className="truncate text-xs text-gray-400">{conv?.lastMessage?.body ?? ''}</p>
+                    </div>
+                    {unread > 0 && <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-white">{unread}</span>}
+                  </button>
+                )
+              })}
+            </div>
           </div>
-        ) : (
-          <>
-            {/* Header */}
-            <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-3 dark:border-racing-800">
+
+          {/* Chat column */}
+          <div className="flex flex-1 flex-col overflow-hidden bg-white dark:bg-racing-950">
+            {/* Chat header */}
+            <div className="flex items-center gap-3 bg-accent px-4 py-3">
+              <button onClick={() => setActiveId(null)} className="mr-1 text-white/80 hover:text-white sm:hidden">
+                <ArrowLeft size={22} />
+              </button>
               {activeProfile && (
                 <>
-                  <span
-                    className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
-                    style={{ backgroundColor: activeProfile.avatar_color }}
-                  >
+                  <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white/20 text-sm font-bold text-white">
                     {activeProfile.display_name.slice(0, 2).toUpperCase()}
                   </span>
-                  <span className="text-sm font-semibold">{activeProfile.display_name}</span>
+                  <div>
+                    <p className="text-[15px] font-semibold text-white">{activeProfile.display_name}</p>
+                    <p className="text-xs text-white/70">@{activeProfile.username}</p>
+                  </div>
                 </>
               )}
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-4 py-4">
+            {/* Messages — WhatsApp-style bg */}
+            <div
+              className="flex-1 overflow-y-auto px-4 py-3"
+              style={{
+                backgroundImage: 'radial-gradient(circle, #e5e5e5 1px, transparent 1px)',
+                backgroundSize: '20px 20px',
+              }}
+            >
+              <div className="dark:hidden" />
               {activeMessages.length === 0 && (
-                <p className="text-center text-xs text-gray-400">Noch keine Nachrichten. Schreib etwas!</p>
+                <div className="flex h-full items-center justify-center">
+                  <p className="rounded-xl bg-white/80 px-4 py-2 text-xs text-gray-500 shadow-sm dark:bg-racing-800/80 dark:text-racing-300">
+                    Noch keine Nachrichten — schreib etwas! 👋
+                  </p>
+                </div>
               )}
-              <div className="flex flex-col gap-2">
-                {activeMessages.map((msg) => {
-                  const isMe = msg.fromUserId === currentUserId
-                  return (
-                    <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[70%] rounded-2xl px-3 py-2 text-sm ${
-                        isMe
-                          ? 'rounded-tr-sm bg-accent text-white'
-                          : 'rounded-tl-sm bg-gray-100 text-gray-800 dark:bg-racing-800 dark:text-racing-100'
-                      }`}>
-                        <p className="leading-relaxed">{msg.body}</p>
-                        <p className={`mt-0.5 text-right text-[10px] ${isMe ? 'text-white/60' : 'text-gray-400'}`}>
-                          {formatTime(msg.createdAt)}
-                          {isMe && msg.read && ' ✓✓'}
-                        </p>
-                      </div>
-                    </div>
-                  )
-                })}
-                <div ref={bottomRef} />
-              </div>
+
+              {groupByDate(activeMessages).map((group) => (
+                <div key={group.label}>
+                  {/* Date divider */}
+                  <div className="my-3 flex items-center justify-center">
+                    <span className="rounded-full bg-white/80 px-3 py-0.5 text-[11px] text-gray-500 shadow-sm dark:bg-racing-800/80 dark:text-racing-300">
+                      {group.label}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    {group.messages.map((msg, i) => {
+                      const isMe = msg.fromUserId === currentUserId
+                      const prevMsg = group.messages[i - 1]
+                      const isSameSender = prevMsg && prevMsg.fromUserId === msg.fromUserId
+                      return (
+                        <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${isSameSender ? 'mt-0.5' : 'mt-2'}`}>
+                          <div className={`relative max-w-[78%] rounded-2xl px-3 py-2 shadow-sm ${
+                            isMe
+                              ? 'rounded-tr-sm bg-accent text-white'
+                              : 'rounded-tl-sm bg-white text-gray-800 dark:bg-racing-800 dark:text-racing-100'
+                          }`}>
+                            <p className="text-[15px] leading-relaxed">{msg.body}</p>
+                            <div className={`mt-0.5 flex items-center justify-end gap-1 ${isMe ? 'text-white/60' : 'text-gray-400'}`}>
+                              <span className="text-[11px]">{formatTime(msg.createdAt)}</span>
+                              {isMe && (
+                                <span className="text-[11px]">{msg.read ? '✓✓' : '✓'}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+              <div ref={bottomRef} />
             </div>
 
-            {/* Input */}
-            <form onSubmit={handleSend} className="flex items-center gap-2 border-t border-gray-100 px-4 py-3 dark:border-racing-800">
+            {/* Input bar */}
+            <form
+              onSubmit={handleSend}
+              className="flex items-center gap-2 border-t border-gray-100 bg-white px-3 py-2 dark:border-racing-800 dark:bg-racing-900"
+            >
               <input
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Nachricht schreiben…"
-                className="flex-1 rounded-full border border-gray-200 bg-transparent px-4 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
-                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e) } }}
+                placeholder="Nachricht…"
+                className="flex-1 rounded-full bg-gray-100 px-4 py-2.5 text-[15px] focus:outline-none dark:bg-racing-800 dark:text-racing-100"
               />
               <button
                 type="submit"
                 disabled={!input.trim() || sending}
-                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-accent text-white hover:bg-accent-dark disabled:opacity-50"
+                className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-accent text-white transition-opacity disabled:opacity-40"
               >
-                <Send size={15} />
+                <Send size={17} />
               </button>
             </form>
-          </>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
