@@ -9,7 +9,8 @@ import {
   subWeeks,
 } from 'date-fns'
 import { de } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Plus, Users, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Link2, Plus, Users, X } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useFriendsStore } from '../store/friendsStore'
 import { useTeamsStore } from '../store/teamsStore'
 import { supabase } from '../lib/supabase'
@@ -236,6 +237,14 @@ export default function CalendarPage() {
               )}
             </div>
           )}
+          <Link
+            to="/einstellungen?tab=kalender"
+            className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 dark:border-racing-700 dark:text-racing-100 dark:hover:bg-racing-800"
+            title="Externe Kalender verbinden"
+          >
+            <Link2 size={14} />
+            Kalender verbinden
+          </Link>
           <button
             onClick={() => setShowAddForm(true)}
             className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:bg-accent-dark"
