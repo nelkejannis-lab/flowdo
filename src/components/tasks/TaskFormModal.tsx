@@ -68,6 +68,7 @@ export default function TaskFormModal({
   const [localSubtasks, setLocalSubtasks] = useState<string[]>([])
   const [assigneeId, setAssigneeId] = useState('')
   const [projectId, setProjectId] = useState('')
+  const [shareMessage, setShareMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
   const [attachments, setAttachments] = useState<Attachment[]>(task?.attachments ?? [])
@@ -199,6 +200,7 @@ export default function TaskFormModal({
         tags,
         urgent,
         important,
+        message: shareMessage.trim() || undefined,
       })
       setSending(false)
       if (err) {
@@ -308,10 +310,22 @@ export default function TaskFormModal({
               ))}
             </select>
             {assigneeId && (
-              <p className="mt-1 text-xs text-gray-400">
-                Diese Aufgabe wird an {friends.find((f) => f.profile.id === assigneeId)?.profile.display_name} gesendet
-                und erscheint dort in der Inbox.
-              </p>
+              <>
+                <p className="mt-1 text-xs text-gray-400">
+                  Diese Aufgabe wird an {friends.find((f) => f.profile.id === assigneeId)?.profile.display_name} gesendet
+                  und erscheint dort in der Inbox.
+                </p>
+                <div className="mt-2">
+                  <label className="mb-1 block text-xs font-medium text-gray-500">Nachricht dazu (optional)</label>
+                  <textarea
+                    value={shareMessage}
+                    onChange={(e) => setShareMessage(e.target.value)}
+                    placeholder={'z. B. "Bitte bis Freitag erledigen - danke!"'}
+                    rows={2}
+                    className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+                  />
+                </div>
+              </>
             )}
             {assigneeOnVacation && (
               <p className="mt-1 text-xs text-amber-500">

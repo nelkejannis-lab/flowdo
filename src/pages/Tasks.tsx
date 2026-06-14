@@ -210,7 +210,8 @@ export default function TasksPage() {
               </h2>
               <div className="flex flex-col gap-2">
                 {incoming.map((share) => (
-                  <div key={share.id} className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 dark:border-racing-800 dark:bg-racing-900">
+                  <div key={share.id} className="rounded-xl border border-gray-100 bg-white p-3 dark:border-racing-800 dark:bg-racing-900">
+                    <div className="flex items-center gap-3">
                     <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white" style={{ backgroundColor: share.fromUser.avatar_color }}>
                       {share.fromUser.display_name.slice(0, 2).toUpperCase()}
                     </span>
@@ -228,6 +229,12 @@ export default function TasksPage() {
                     <button onClick={() => declineShare(share.id)} className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800">
                       <X size={14} /> Ablehnen
                     </button>
+                    </div>
+                    {share.message && (
+                      <div className="mt-2 ml-12 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-racing-800 dark:text-racing-200">
+                        💬 {share.message}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

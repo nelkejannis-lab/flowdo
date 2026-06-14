@@ -16,6 +16,7 @@ interface SharedTaskRow {
 export interface IncomingShare {
   id: string
   suggestedPriority: Priority | null
+  message: string | null
   task: SharedTaskRow
   fromUser: Profile
 }
@@ -23,6 +24,7 @@ export interface IncomingShare {
 interface TaskShareRow {
   id: string
   suggested_priority: Priority | null
+  message: string | null
   task: SharedTaskRow | SharedTaskRow[]
   from_user: Profile | Profile[]
 }
@@ -35,6 +37,7 @@ interface NewSharedTaskInput {
   tags: string[]
   urgent: boolean
   important: boolean
+  message?: string
 }
 
 interface TaskSharesState {
@@ -67,7 +70,7 @@ export const useTaskSharesStore = create<TaskSharesState>()((set, get) => ({
 
     const { data, error } = await supabase
       .from('task_shares')
-      .select('id, suggested_priority, task:tasks(id, title, description, due_date, priority, tags), from_user:profiles!task_shares_from_user_id_fkey(*)')
+      .select('id, suggested_priority, message, task:tasks(id, title, description, due_date, priority, tags), from_user:profiles!task_shares_from_user_id_fkey(*)')
       .eq('to_user_id', userId)
       .eq('status', 'pending')
       .order('created_at', { ascending: false })
@@ -82,6 +85,7 @@ export const useTaskSharesStore = create<TaskSharesState>()((set, get) => ({
       .map((row) => ({
         id: row.id,
         suggestedPriority: row.suggested_priority,
+        message: row.message,
         task: single(row.task),
         fromUser: single(row.from_user),
       }))
@@ -119,6 +123,7 @@ export const useTaskSharesStore = create<TaskSharesState>()((set, get) => ({
       to_user_id: toUserId,
       status: 'pending',
       suggested_priority: input.priority,
+      message: input.message ?? null,
     })
 
     if (shareError) return shareError.message
