@@ -22,7 +22,9 @@ import {
   Folder,
   ChevronDown,
   Bell,
+  MessageCircle,
 } from 'lucide-react'
+import { useMessagesStore } from '../../store/messagesStore'
 import { useBoardsStore } from '../../store/boardsStore'
 import { useSettingsStore } from '../../store/settingsStore'
 import { useAuthStore } from '../../store/authStore'
@@ -56,6 +58,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const fetchBoardIncoming = useBoardInvitesStore((s) => s.fetchIncoming)
   const teamIncoming = useTeamInvitesStore((s) => s.incoming)
   const fetchTeamIncoming = useTeamInvitesStore((s) => s.fetchIncoming)
+  const unreadMessages = useMessagesStore((s) => s.unreadTotal)
+  const fetchConversations = useMessagesStore((s) => s.fetchConversations)
   const unreadNotifications = useNotificationsStore((s) => s.unreadCount)
   const fetchNotifications = useNotificationsStore((s) => s.fetch)
   const checkBirthdays = useNotificationsStore((s) => s.checkBirthdays)
@@ -74,11 +78,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       fetchTaskIncoming()
       fetchBoardIncoming()
       fetchTeamIncoming()
+      fetchConversations()
       checkBirthdays().then(() => fetchNotifications())
     } else {
       fetchBoards()
     }
-  }, [fetchBoards, fetchFolders, fetchTaskIncoming, fetchBoardIncoming, fetchTeamIncoming, fetchNotifications, checkBirthdays])
+  }, [fetchBoards, fetchFolders, fetchTaskIncoming, fetchBoardIncoming, fetchTeamIncoming, fetchConversations, fetchNotifications, checkBirthdays])
 
   function toggleFolder(id: string) {
     setOpenFolders((prev) => {
@@ -108,6 +113,19 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <span className="text-lg font-semibold">Mooncrew</span>
         </div>
         <div className="flex items-center gap-1">
+          <NavLink
+            to="/chat"
+            onClick={onClose}
+            className="relative rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
+            aria-label="Chat"
+          >
+            <MessageCircle size={18} />
+            {unreadMessages > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-white">
+                {unreadMessages > 9 ? '9+' : unreadMessages}
+              </span>
+            )}
+          </NavLink>
           <NavLink
             to="/tasks/inbox"
             onClick={onClose}

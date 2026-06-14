@@ -13,6 +13,7 @@ import FriendsPage from './pages/FriendsPage'
 import SocialMediaPage from './pages/SocialMediaPage'
 import SocialAccountDetailPage from './pages/SocialAccountDetailPage'
 import AiSchedulerPage from './pages/AiSchedulerPage'
+import ChatPage from './pages/ChatPage'
 import SettingsPage from './pages/SettingsPage'
 import { useSettingsStore } from './store/settingsStore'
 import { useAuthStore } from './store/authStore'
@@ -63,6 +64,7 @@ export default function App() {
         <Route path="/social" element={<SocialMediaPage />} />
         <Route path="/social/:accountId" element={<SocialAccountDetailPage />} />
         <Route path="/ki-termine" element={<AiSchedulerPage />} />
+        <Route path="/chat" element={<ChatPage />} />
         <Route path="/einstellungen" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
