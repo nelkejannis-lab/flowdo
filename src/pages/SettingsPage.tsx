@@ -265,15 +265,12 @@ export default function SettingsPage() {
             )}
           </div>
 
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-400">
-            <p className="font-semibold mb-1">⚙️ Setup erforderlich</p>
-            <p>Für Google und Outlook müssen OAuth-Apps eingerichtet werden. Füge folgende Secrets in Supabase hinzu:</p>
-            <ul className="mt-1.5 list-disc pl-4 space-y-0.5">
-              <li><code>GOOGLE_CLIENT_ID</code> + <code>GOOGLE_CLIENT_SECRET</code> → <a href="https://console.cloud.google.com" className="underline" target="_blank">Google Cloud Console</a></li>
-              <li><code>MICROSOFT_CLIENT_ID</code> + <code>MICROSOFT_CLIENT_SECRET</code> → <a href="https://portal.azure.com" className="underline" target="_blank">Azure Portal</a></li>
-              <li>Redirect URI: <code className="break-all">https://tewjuxtauxstdjvpodjh.supabase.co/functions/v1/calendar-oauth-callback</code></li>
-            </ul>
-          </div>
+          {connections.length < 2 && (
+            <div className="rounded-xl border border-gray-100 bg-gray-50 p-3 text-xs text-gray-500 dark:border-racing-800 dark:bg-racing-800/50 dark:text-racing-300">
+              💡 Verbinde Google oder Outlook über den jeweiligen „Verbinden"-Button oben.
+              iCloud geht sofort per Kalender-Link (kein Setup nötig).
+            </div>
+          )}
         </div>
       )}
 
