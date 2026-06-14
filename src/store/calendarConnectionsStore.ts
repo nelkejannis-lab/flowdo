@@ -79,9 +79,22 @@ export const useCalendarConnectionsStore = create<CalendarConnectionsState>()((s
     const userId = userData.user?.id
     if (!userId) return
 
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
+    const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string).replace(/^﻿/, '').trim()
     const oauthUrl = `${supabaseUrl}/functions/v1/calendar-oauth-start?provider=${provider}&user_id=${userId}`
-    window.location.href = oauthUrl
+
+    // Test if edge function responds before redirecting
+    try {
+      const res = await fetch(oauthUrl, { redirect: 'manual' })
+      if (res.type === 'opaqueredirect' || res.status === 302 || res.status === 0) {
+        window.location.href = oauthUrl
+      } else {
+        const text = await res.text()
+        alert(`Verbindung fehlgeschlagen: ${text}`)
+      }
+    } catch {
+      // fetch throws on redirect in some browsers — just navigate
+      window.location.href = oauthUrl
+    }
   },
 
   sync: async () => {
