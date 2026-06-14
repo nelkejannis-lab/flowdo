@@ -58,25 +58,21 @@ export const useNotificationsStore = create<NotificationsState>()((set, get) => 
     const userId = userData.user?.id
     if (!userId) return 'Nicht angemeldet'
 
-    const { data: profile } = await supabase.from('profiles').select('display_name').eq('id', userId).single()
-    const fromName = (profile as { display_name: string } | null)?.display_name ?? 'Jemand'
-
-    const { error } = await supabase.from('notifications').insert({
-      user_id: toUserId,
-      type: 'question',
-      title: `${fromName} hat eine Frage zu „${taskTitle}"`,
-      body: question,
-      link: `/tasks`,
-      read: false,
+    // Use security definer function to bypass RLS
+    const { error } = await supabase.rpc('send_question_notification', {
+      p_to_user_id: toUserId,
+      p_task_id: taskId,
+      p_task_title: taskTitle,
+      p_question: question,
     })
 
     if (error) return error.message
 
-    // Also post as comment so it's visible on the task
+    // Also post as comment on the task so it's visible there too
     await supabase.from('comments').insert({
       author_id: userId,
       task_id: taskId,
-      body: `❓ @Frage: ${question}`,
+      body: `❓ ${question}`,
     })
 
     return null
