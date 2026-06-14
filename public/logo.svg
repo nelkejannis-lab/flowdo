@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220" fill="none">
+  <!-- Crescent moon shape -->
+  <path d="M104 15 C56 15 16 55 16 103 C16 151 56 185 104 185 C85 182 72 168 68 150 C62 126 66 96 80 76 C94 56 100 44 104 15Z" fill="#1a1a1a"/>
+  <!-- People figures inside crescent -->
+  <!-- Left person -->
+  <circle cx="70" cy="88" r="9" fill="white"/>
+  <path d="M56 120 C56 108 62 101 70 101 C78 101 84 108 84 120Z" fill="white"/>
+  <!-- Center person -->
+  <circle cx="97" cy="81" r="11" fill="white"/>
+  <path d="M82 120 C82 106 89 97 97 97 C105 97 112 106 112 120Z" fill="white"/>
+  <!-- Right person -->
+  <circle cx="124" cy="88" r="9" fill="white"/>
+  <path d="M110 120 C110 108 116 101 124 101 C132 101 138 108 138 120Z" fill="white"/>
+</svg>

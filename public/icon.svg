@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Blue background -->
+  <rect width="512" height="512" rx="115" fill="#4772FA"/>
+  <!-- Crescent moon -->
+  <path d="M266 60 C148 60 56 152 56 270 C56 388 148 460 266 460 C222 454 188 430 176 398 C160 356 168 296 196 258 C224 220 248 192 266 60Z" fill="white"/>
+  <!-- People figures -->
+  <!-- Left -->
+  <circle cx="185" cy="232" r="24" fill="#4772FA"/>
+  <path d="M148 316 C148 286 164 264 185 264 C206 264 222 286 222 316Z" fill="#4772FA"/>
+  <!-- Center -->
+  <circle cx="256" cy="214" r="29" fill="#4772FA"/>
+  <path d="M216 316 C216 280 234 254 256 254 C278 254 296 280 296 316Z" fill="#4772FA"/>
+  <!-- Right -->
+  <circle cx="327" cy="232" r="24" fill="#4772FA"/>
+  <path d="M290 316 C290 286 306 264 327 264 C348 264 364 286 364 316Z" fill="#4772FA"/>
+</svg>
