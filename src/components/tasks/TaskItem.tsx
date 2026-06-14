@@ -97,7 +97,7 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
         {isSupabaseConfigured && (
           <button
             onClick={() => setShowComments((v) => !v)}
-            className={`flex flex-shrink-0 items-center gap-1 rounded p-1 text-xs hover:bg-gray-100 dark:hover:bg-racing-800 ${showComments ? 'text-accent' : 'text-gray-300'}`}
+            className={`flex flex-shrink-0 items-center gap-1 rounded p-1 text-xs hover:bg-gray-100 dark:hover:bg-racing-800 ${showComments ? 'text-accent' : 'text-gray-400 hover:text-gray-600'}`}
             title="Kommentare"
           >
             <MessageSquare size={14} />
@@ -110,8 +110,8 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
           <div className="relative" ref={askRef}>
             <button
               onClick={() => { setShowAsk((v) => !v); setAskDone(false) }}
-              className={`flex flex-shrink-0 items-center gap-1 rounded p-1 text-xs hover:bg-gray-100 dark:hover:bg-racing-800 ${showAsk ? 'text-accent' : 'text-gray-300'}`}
-              title="Frage stellen"
+              className={`flex flex-shrink-0 items-center gap-1 rounded p-1 text-xs hover:bg-violet-50 dark:hover:bg-racing-800 ${showAsk ? 'text-violet-500' : 'text-gray-400 hover:text-violet-500'}`}
+              title="Kollegen fragen"
             >
               <HelpCircle size={14} />
             </button>
@@ -168,7 +168,7 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
         {hasSubtasks && (
           <button
             onClick={() => setExpanded((v) => !v)}
-            className="flex flex-shrink-0 items-center gap-1 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
+            className="flex flex-shrink-0 items-center gap-1 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-racing-800"
             title={expanded ? 'Einklappen' : 'Unteraufgaben anzeigen'}
           >
             <ChevronDown size={16} className={`transition-transform duration-150 ${expanded ? '' : '-rotate-90'}`} />
