@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { Eye, EyeOff, Upload } from 'lucide-react'
+import { Eye, EyeOff, Loader2, RefreshCw, Upload, X } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { uploadAvatar } from '../lib/avatar'
 import { BOARD_COLORS } from '../store/boardsStore'
+import { useCalendarConnectionsStore } from '../store/calendarConnectionsStore'
+import { useSearchParams } from 'react-router-dom'
 
 export default function SettingsPage() {
   const profile = useAuthStore((s) => s.profile)
@@ -27,6 +29,27 @@ export default function SettingsPage() {
   const [passwordError, setPasswordError] = useState<string | null>(null)
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null)
   const [savingPassword, setSavingPassword] = useState(false)
+
+  const [searchParams] = useSearchParams()
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') === 'kalender' ? 'kalender' : 'profil')
+  const connections = useCalendarConnectionsStore((s) => s.connections)
+  const fetchConnections = useCalendarConnectionsStore((s) => s.fetch)
+  const disconnectCalendar = useCalendarConnectionsStore((s) => s.disconnect)
+  const connectIcal = useCalendarConnectionsStore((s) => s.connectIcal)
+  const startOAuth = useCalendarConnectionsStore((s) => s.startOAuth)
+  const syncCalendars = useCalendarConnectionsStore((s) => s.sync)
+  const syncing = useCalendarConnectionsStore((s) => s.syncing)
+  const [icalUrl, setIcalUrl] = useState('')
+  const [icalError, setIcalError] = useState<string | null>(null)
+  const [syncResult, setSyncResult] = useState<string | null>(null)
+  const connectedParam = searchParams.get('connected')
+  const errorParam = searchParams.get('error')
+
+  useEffect(() => { fetchConnections() }, [fetchConnections])
+  useEffect(() => {
+    if (connectedParam) setSyncResult(`✓ ${connectedParam === 'google' ? 'Google Calendar' : 'Outlook'} verbunden!`)
+    if (errorParam) setSyncResult(`Fehler: ${decodeURIComponent(errorParam)}`)
+  }, [connectedParam, errorParam])
 
   useEffect(() => {
     if (profile) {
@@ -106,6 +129,155 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6">
       <h1 className="text-2xl font-semibold">Einstellungen</h1>
+
+      {/* Tabs */}
+      <div className="flex gap-1 rounded-lg border border-gray-200 p-1 dark:border-racing-700 w-fit">
+        {(['profil', 'kalender'] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`rounded-md px-4 py-1.5 text-sm font-medium capitalize ${activeTab === tab ? 'bg-accent text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'}`}
+          >
+            {tab === 'profil' ? 'Profil' : 'Kalender'}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'kalender' && (
+        <div className="flex flex-col gap-4">
+          <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+            <h2 className="mb-1 text-sm font-semibold">Externe Kalender</h2>
+            <p className="mb-4 text-xs text-gray-400">Verbinde deine Kalender — Ereignisse werden automatisch in Flowdo importiert.</p>
+
+            {syncResult && (
+              <p className={`mb-3 rounded-lg px-3 py-2 text-xs font-medium ${syncResult.startsWith('Fehler') ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                {syncResult}
+              </p>
+            )}
+
+            <div className="flex flex-col gap-3">
+              {/* Google */}
+              {(() => {
+                const conn = connections.find((c) => c.provider === 'google')
+                return (
+                  <div className="flex items-center gap-3 rounded-lg border border-gray-100 p-3 dark:border-racing-800">
+                    <span className="text-xl">📅</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Google Calendar</p>
+                      {conn ? <p className="text-xs text-emerald-500">✓ Verbunden{conn.email ? ` · ${conn.email}` : ''}</p>
+                             : <p className="text-xs text-gray-400">Nicht verbunden</p>}
+                    </div>
+                    {conn
+                      ? <button onClick={() => disconnectCalendar('google')} className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-500 hover:border-red-300 hover:text-red-500 dark:border-racing-700"><X size={12} /> Trennen</button>
+                      : <button onClick={() => startOAuth('google')} className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark">Verbinden</button>
+                    }
+                  </div>
+                )
+              })()}
+
+              {/* Microsoft */}
+              {(() => {
+                const conn = connections.find((c) => c.provider === 'microsoft')
+                return (
+                  <div className="flex items-center gap-3 rounded-lg border border-gray-100 p-3 dark:border-racing-800">
+                    <span className="text-xl">📧</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Outlook / Microsoft 365</p>
+                      {conn ? <p className="text-xs text-emerald-500">✓ Verbunden{conn.email ? ` · ${conn.email}` : ''}</p>
+                             : <p className="text-xs text-gray-400">Nicht verbunden</p>}
+                    </div>
+                    {conn
+                      ? <button onClick={() => disconnectCalendar('microsoft')} className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-500 hover:border-red-300 hover:text-red-500 dark:border-racing-700"><X size={12} /> Trennen</button>
+                      : <button onClick={() => startOAuth('microsoft')} className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark">Verbinden</button>
+                    }
+                  </div>
+                )
+              })()}
+
+              {/* iCloud / iCal */}
+              {(() => {
+                const conn = connections.find((c) => c.provider === 'ical')
+                return (
+                  <div className="rounded-lg border border-gray-100 p-3 dark:border-racing-800">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">☁️</span>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">iCloud / iCal / Andere (URL)</p>
+                        {conn ? <p className="text-xs text-emerald-500">✓ Verbunden</p>
+                               : <p className="text-xs text-gray-400">ICS- oder Webcal-Link einfügen</p>}
+                      </div>
+                      {conn && <button onClick={() => disconnectCalendar('ical')} className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-500 hover:border-red-300 hover:text-red-500 dark:border-racing-700"><X size={12} /> Trennen</button>}
+                    </div>
+                    {!conn && (
+                      <div className="mt-2 flex gap-2">
+                        <input
+                          value={icalUrl}
+                          onChange={(e) => setIcalUrl(e.target.value)}
+                          placeholder="https://... oder webcal://..."
+                          className="flex-1 rounded-lg border border-gray-200 bg-transparent px-3 py-1.5 text-xs focus:border-accent focus:outline-none dark:border-racing-700"
+                        />
+                        <button
+                          onClick={async () => {
+                            setIcalError(null)
+                            const err = await connectIcal(icalUrl)
+                            if (err) setIcalError(err)
+                            else setIcalUrl('')
+                          }}
+                          className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark"
+                        >
+                          Hinzufügen
+                        </button>
+                      </div>
+                    )}
+                    {icalError && <p className="mt-1 text-xs text-red-500">{icalError}</p>}
+                    <p className="mt-2 text-xs text-gray-400">
+                      iCloud: Einstellungen → Kalender → Kalender freigeben → Link kopieren
+                    </p>
+                  </div>
+                )
+              })()}
+            </div>
+
+            {connections.length > 0 && (
+              <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4 dark:border-racing-800">
+                <div>
+                  <p className="text-xs text-gray-400">
+                    Zuletzt synchronisiert: {connections.find((c) => c.lastSyncedAt)
+                      ? new Date(connections.find((c) => c.lastSyncedAt)!.lastSyncedAt!).toLocaleString('de-DE')
+                      : 'Noch nie'}
+                  </p>
+                </div>
+                <button
+                  onClick={async () => {
+                    setSyncResult(null)
+                    const result = await syncCalendars()
+                    setSyncResult(result.errors.length > 0
+                      ? `Fehler: ${result.errors.join(', ')}`
+                      : `✓ Synchronisiert: ${result.synced.join(', ')}`)
+                  }}
+                  disabled={syncing}
+                  className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
+                >
+                  {syncing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                  {syncing ? 'Synchronisiere…' : 'Jetzt synchronisieren'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-400">
+            <p className="font-semibold mb-1">⚙️ Setup erforderlich</p>
+            <p>Für Google und Outlook müssen OAuth-Apps eingerichtet werden. Füge folgende Secrets in Supabase hinzu:</p>
+            <ul className="mt-1.5 list-disc pl-4 space-y-0.5">
+              <li><code>GOOGLE_CLIENT_ID</code> + <code>GOOGLE_CLIENT_SECRET</code> → <a href="https://console.cloud.google.com" className="underline" target="_blank">Google Cloud Console</a></li>
+              <li><code>MICROSOFT_CLIENT_ID</code> + <code>MICROSOFT_CLIENT_SECRET</code> → <a href="https://portal.azure.com" className="underline" target="_blank">Azure Portal</a></li>
+              <li>Redirect URI: <code className="break-all">https://tewjuxtauxstdjvpodjh.supabase.co/functions/v1/calendar-oauth-callback</code></li>
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'profil' && (<>
 
       <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
         <h2 className="mb-3 text-sm font-semibold">Profilbild</h2>
@@ -263,6 +435,7 @@ export default function SettingsPage() {
           {savingPassword ? 'Speichere…' : 'Passwort ändern'}
         </button>
       </form>
+      </>)}
     </div>
   )
 }
