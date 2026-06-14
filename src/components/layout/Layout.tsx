@@ -11,7 +11,7 @@ export default function Layout() {
     <div className="flex h-screen w-full overflow-hidden">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex items-center gap-2 border-b border-gray-200 px-4 py-3 dark:border-racing-800 sm:hidden">
+        <div className="flex items-center gap-2 border-b border-gray-200 px-4 py-3 dark:border-racing-800 sm:hidden" style={{ paddingTop: 'max(12px, calc(12px + env(safe-area-inset-top)))' }}>
           <button
             onClick={() => setSidebarOpen(true)}
             className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 dark:text-racing-100 dark:hover:bg-racing-800"

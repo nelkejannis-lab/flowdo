@@ -103,7 +103,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         />
       )}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex h-full w-64 flex-col overflow-y-auto border-r border-gray-200 bg-white px-3 py-4 transition-transform duration-200 dark:border-racing-800 dark:bg-racing-900 sm:static sm:translate-x-0 ${
+        style={{ paddingTop: 'max(16px, calc(16px + env(safe-area-inset-top)))', paddingBottom: 'max(16px, calc(16px + env(safe-area-inset-bottom)))' }}
+        className={`fixed inset-y-0 left-0 z-50 flex h-full w-64 flex-col overflow-y-auto border-r border-gray-200 bg-white px-3 transition-transform duration-200 dark:border-racing-800 dark:bg-racing-900 sm:static sm:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
