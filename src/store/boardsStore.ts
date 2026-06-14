@@ -49,6 +49,7 @@ interface BoardRow {
   attachments: Attachment[] | null
   folder_id: string | null
   responsible_user_id: string | null
+  responsible: { id: string; display_name: string; avatar_color: string } | { id: string; display_name: string; avatar_color: string }[] | null
 }
 
 interface TaskStats {
@@ -81,6 +82,9 @@ function toBoard(row: BoardRow): Board {
     externalLaunch: row.external_launch ?? undefined,
     folderId: row.folder_id ?? undefined,
     responsibleUserId: row.responsible_user_id ?? undefined,
+    responsibleProfile: row.responsible
+      ? (single(row.responsible as { id: string; display_name: string; avatar_color: string } | { id: string; display_name: string; avatar_color: string }[]) as { id: string; display_name: string; avatar_color: string })
+      : undefined,
     columns,
     members,
     attachments: row.attachments ?? [],
@@ -123,7 +127,7 @@ export const useBoardsStore = create<BoardsState>()((set, get) => ({
     const { data, error } = await supabase
       .from('boards')
       .select(
-        '*, board_columns(id, title, position), board_members(user_id, role, profile:profiles!board_members_user_id_fkey(id, username, display_name, avatar_color))'
+        '*, board_columns(id, title, position), board_members(user_id, role, profile:profiles!board_members_user_id_fkey(id, username, display_name, avatar_color)), responsible:profiles!boards_responsible_user_id_fkey(id, username, display_name, avatar_color)'
       )
       .order('created_at', { ascending: false })
 
