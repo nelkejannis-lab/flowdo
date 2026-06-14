@@ -44,7 +44,7 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
   const subtaskDone = task.subtasks.filter((s) => s.completed).length
 
   return (
-    <div className="rounded-lg border border-gray-100 bg-white transition-colors hover:border-gray-200 dark:border-racing-800 dark:bg-racing-900 dark:hover:border-racing-700">
+    <div className="rounded-2xl bg-white transition-all duration-200 hover:shadow-apple-sm dark:bg-racing-900" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.05)' }}>
       <div className="flex items-center gap-3 px-3 py-2.5">
         {/* Complete toggle */}
         <button
