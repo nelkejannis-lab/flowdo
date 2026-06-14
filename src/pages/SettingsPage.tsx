@@ -156,24 +156,7 @@ export default function SettingsPage() {
             )}
 
             <div className="flex flex-col gap-3">
-              {/* Google */}
-              {(() => {
-                const conn = connections.find((c) => c.provider === 'google')
-                return (
-                  <div className="flex items-center gap-3 rounded-lg border border-gray-100 p-3 dark:border-racing-800">
-                    <span className="text-xl">📅</span>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Google Calendar</p>
-                      {conn ? <p className="text-xs text-emerald-500">✓ Verbunden{conn.email ? ` · ${conn.email}` : ''}</p>
-                             : <p className="text-xs text-gray-400">Nicht verbunden</p>}
-                    </div>
-                    {conn
-                      ? <button onClick={() => disconnectCalendar('google')} className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-500 hover:border-red-300 hover:text-red-500 dark:border-racing-700"><X size={12} /> Trennen</button>
-                      : <button onClick={() => startOAuth('google')} className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark">Verbinden</button>
-                    }
-                  </div>
-                )
-              })()}
+              {/* Google — temporarily hidden */}
 
               {/* Microsoft */}
               {(() => {
