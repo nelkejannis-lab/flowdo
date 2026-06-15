@@ -34,6 +34,8 @@ function toEvent(row: CalendarEventRow): CalendarEvent {
   }
 }
 
+const pendingDeletes = new Set<string>()
+
 async function getUserId(): Promise<string | null> {
   if (!isSupabaseConfigured) return null
   const { data } = await supabase.auth.getUser()
@@ -77,7 +79,7 @@ export const useEventsStore = create<EventsState>()(
           .order('date', { ascending: true })
         if (error) return
 
-        const remote = ((data ?? []) as CalendarEventRow[]).map(toEvent)
+        const remote = ((data ?? []) as CalendarEventRow[]).map(toEvent).filter((e) => !pendingDeletes.has(e.id))
         const remoteIds = new Set(remote.map((e) => e.id))
         const localOnly = get().events.filter((e) => !remoteIds.has(e.id))
 
@@ -122,9 +124,11 @@ export const useEventsStore = create<EventsState>()(
       },
 
       deleteEvent: (id) => {
+        pendingDeletes.add(id)
         set((state) => ({ events: state.events.filter((e) => e.id !== id) }))
-        void getUserId().then((userId) => {
-          if (userId) void supabase.from('calendar_events').delete().eq('id', id)
+        void getUserId().then(async (userId) => {
+          if (userId) await supabase.from('calendar_events').delete().eq('id', id)
+          pendingDeletes.delete(id)
         })
       },
     }),
