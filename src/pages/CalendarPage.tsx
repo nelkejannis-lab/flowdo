@@ -32,6 +32,7 @@ type ViewMode = 'month' | 'week' | 'day'
 export default function CalendarPage() {
   const tasks = useTasksStore((s) => s.tasks)
   const events = useEventsStore((s) => s.events)
+  const fetchEvents = useEventsStore((s) => s.fetchAll)
   const entries = useCalendarEntriesStore((s) => s.entries)
   const fetchEntries = useCalendarEntriesStore((s) => s.fetchEntries)
   const [view, setView] = useState<ViewMode>('month')
@@ -62,8 +63,8 @@ export default function CalendarPage() {
   const fetchTeams = useTeamsStore((s) => s.fetch)
 
   useEffect(() => {
-    if (isSupabaseConfigured) { fetchEntries(); fetchFriends(); fetchTeams(); fetchConnections() }
-  }, [fetchEntries, fetchFriends, fetchTeams, fetchConnections])
+    if (isSupabaseConfigured) { fetchEntries(); fetchFriends(); fetchTeams(); fetchConnections(); fetchEvents() }
+  }, [fetchEntries, fetchFriends, fetchTeams, fetchConnections, fetchEvents])
 
   // Close dropdowns on outside click
   useEffect(() => {

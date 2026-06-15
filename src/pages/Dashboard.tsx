@@ -24,6 +24,7 @@ export default function Dashboard() {
   const fetchMyProjectTasks = useProjectTasksStore((s) => s.fetchMyTasks)
   const workEntries = useWorkTimeStore((s) => s.entries)
   const events = useEventsStore((s) => s.events)
+  const fetchEvents = useEventsStore((s) => s.fetchAll)
   const [showForm, setShowForm] = useState(false)
 
   useEffect(() => {
@@ -31,8 +32,9 @@ export default function Dashboard() {
     if (isSupabaseConfigured) {
       fetchMyProjectTasks()
       fetchTasks()
+      fetchEvents()
     }
-  }, [fetchBoards, fetchMyProjectTasks, fetchTasks])
+  }, [fetchBoards, fetchMyProjectTasks, fetchTasks, fetchEvents])
 
   const allTasks = [...tasks, ...myProjectTasks]
 
