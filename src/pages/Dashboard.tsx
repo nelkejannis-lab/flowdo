@@ -92,12 +92,23 @@ export default function Dashboard() {
           <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Aktive Projekte</p>
           <p className="mt-1 text-3xl font-bold">{boards.length}</p>
         </div>
-        <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-400 flex items-center gap-1.5">
-            <Clock size={14} className="text-accent" />
-            Gearbeitete Zeit heute
-          </p>
-          <p className="mt-1 text-3xl font-bold">{formatHM(workedMinutesToday)}</p>
+        <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-gray-400 flex items-center gap-1.5">
+              <Clock size={14} className="text-accent" />
+              Gearbeitete Zeit heute
+            </p>
+            <p className="mt-1 text-3xl font-bold">{formatHM(workedMinutesToday)}</p>
+          </div>
+          <button
+            onClick={isWorkTimeRunning ? clockOut : clockIn}
+            className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-white shadow ${
+              isWorkTimeRunning ? 'bg-red-500 hover:bg-red-600' : 'bg-accent hover:bg-accent-dark'
+            }`}
+            title={isWorkTimeRunning ? 'Ausstempeln' : 'Einstempeln'}
+          >
+            {isWorkTimeRunning ? <Square size={16} /> : <Play size={18} className="ml-0.5" />}
+          </button>
         </div>
       </div>
 
@@ -129,38 +140,6 @@ export default function Dashboard() {
                 ))}
               </div>
             )}
-          </div>
-
-          <div>
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Arbeitszeit-Tracker</h2>
-              <Link
-                to="/arbeitszeit"
-                className="flex items-center gap-1.5 text-sm font-medium text-accent hover:underline"
-              >
-                <Clock size={14} />
-                Zeit erfassen
-              </Link>
-            </div>
-            <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-4 text-sm text-gray-500 dark:border-racing-800 dark:bg-racing-900 dark:text-racing-200">
-              <button
-                onClick={isWorkTimeRunning ? clockOut : clockIn}
-                className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-white shadow ${
-                  isWorkTimeRunning ? 'bg-red-500 hover:bg-red-600' : 'bg-accent hover:bg-accent-dark'
-                }`}
-                title={isWorkTimeRunning ? 'Ausstempeln' : 'Einstempeln'}
-              >
-                {isWorkTimeRunning ? <Square size={16} /> : <Play size={18} className="ml-0.5" />}
-              </button>
-              {workedMinutesToday > 0 ? (
-                <p>
-                  Du hast heute bereits <strong className="text-gray-900 dark:text-white">{formatHM(workedMinutesToday)}</strong> gearbeitet.
-                  {isWorkTimeRunning ? ' Timer läuft…' : ' Weiter so!'}
-                </p>
-              ) : (
-                <p>{isWorkTimeRunning ? 'Timer läuft…' : 'Heute noch keine Arbeitszeit erfasst. Starte jetzt einen Timer.'}</p>
-              )}
-            </div>
           </div>
 
           <div>
