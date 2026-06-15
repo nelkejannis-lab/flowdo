@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { differenceInCalendarDays, format, parseISO } from 'date-fns'
 import { de } from 'date-fns/locale'
-import { Plus, Clock, CalendarClock } from 'lucide-react'
+import { Plus, Clock, CalendarClock, Play, Square } from 'lucide-react'
 import { useTasksStore } from '../store/tasksStore'
 import { useBoardsStore } from '../store/boardsStore'
 import { useProjectTasksStore } from '../store/projectTasksStore'
@@ -24,6 +24,10 @@ export default function Dashboard() {
   const fetchMyProjectTasks = useProjectTasksStore((s) => s.fetchMyTasks)
   const workEntries = useWorkTimeStore((s) => s.entries)
   const fetchWorkTime = useWorkTimeStore((s) => s.fetchAll)
+  const isWorkTimeRunning = useWorkTimeStore((s) => s.isRunning)
+  const runningStartedAt = useWorkTimeStore((s) => s.runningStartedAt)
+  const clockIn = useWorkTimeStore((s) => s.clockIn)
+  const clockOut = useWorkTimeStore((s) => s.clockOut)
   const events = useEventsStore((s) => s.events)
   const fetchEvents = useEventsStore((s) => s.fetchAll)
   const [showForm, setShowForm] = useState(false)
@@ -37,6 +41,13 @@ export default function Dashboard() {
       fetchWorkTime()
     }
   }, [fetchBoards, fetchMyProjectTasks, fetchTasks, fetchEvents, fetchWorkTime])
+
+  const [, forceTick] = useState(0)
+  useEffect(() => {
+    if (!isWorkTimeRunning) return
+    const interval = setInterval(() => forceTick((n) => n + 1), 1000)
+    return () => clearInterval(interval)
+  }, [isWorkTimeRunning])
 
   const allTasks = [...tasks, ...myProjectTasks]
 
@@ -55,7 +66,9 @@ export default function Dashboard() {
     .sort((a, b) => (a.date < b.date ? -1 : 1))
     .slice(0, 3)
 
-  const workedMinutesToday = netMinutes(workEntries[todayISO()])
+  const liveMinutes =
+    isWorkTimeRunning && runningStartedAt ? (Date.now() - new Date(runningStartedAt).getTime()) / 60000 : 0
+  const workedMinutesToday = netMinutes(workEntries[todayISO()]) + liveMinutes
 
   return (
     <div>
@@ -129,13 +142,23 @@ export default function Dashboard() {
                 Zeit erfassen
               </Link>
             </div>
-            <div className="rounded-xl border border-gray-100 bg-white p-4 text-sm text-gray-500 dark:border-racing-800 dark:bg-racing-900 dark:text-racing-200">
+            <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-4 text-sm text-gray-500 dark:border-racing-800 dark:bg-racing-900 dark:text-racing-200">
+              <button
+                onClick={isWorkTimeRunning ? clockOut : clockIn}
+                className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-white shadow ${
+                  isWorkTimeRunning ? 'bg-red-500 hover:bg-red-600' : 'bg-accent hover:bg-accent-dark'
+                }`}
+                title={isWorkTimeRunning ? 'Ausstempeln' : 'Einstempeln'}
+              >
+                {isWorkTimeRunning ? <Square size={16} /> : <Play size={18} className="ml-0.5" />}
+              </button>
               {workedMinutesToday > 0 ? (
                 <p>
-                  Du hast heute bereits <strong className="text-gray-900 dark:text-white">{formatHM(workedMinutesToday)}</strong> gearbeitet. Weiter so!
+                  Du hast heute bereits <strong className="text-gray-900 dark:text-white">{formatHM(workedMinutesToday)}</strong> gearbeitet.
+                  {isWorkTimeRunning ? ' Timer läuft…' : ' Weiter so!'}
                 </p>
               ) : (
-                <p>Heute noch keine Arbeitszeit erfasst. Starte jetzt einen Timer.</p>
+                <p>{isWorkTimeRunning ? 'Timer läuft…' : 'Heute noch keine Arbeitszeit erfasst. Starte jetzt einen Timer.'}</p>
               )}
             </div>
           </div>
