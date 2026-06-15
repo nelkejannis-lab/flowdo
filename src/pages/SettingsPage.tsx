@@ -463,7 +463,8 @@ export default function SettingsPage() {
           </div>
 
           <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-            <h2 className="mb-1 text-sm font-semibold">Rechtliches</h2>
+            <h2 className="mb-1 text-sm font-semibold">App-Infos &amp; Rechtliches</h2>
+            <p className="mb-2 text-xs text-gray-400">Mooncrew · Version {__APP_VERSION__}</p>
             <div className="flex flex-col gap-1 text-xs">
               <Link to="/datenschutz" target="_blank" className="text-accent hover:underline">Datenschutzerklärung</Link>
               <Link to="/impressum" target="_blank" className="text-accent hover:underline">Impressum</Link>
