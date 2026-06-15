@@ -25,6 +25,7 @@ const titles: Record<string, string> = {
 export default function TasksPage() {
   const { smartList } = useParams()
   const tasks = useTasksStore((s) => s.tasks)
+  const fetchTasks = useTasksStore((s) => s.fetchAll)
   const myProjectTasks = useProjectTasksStore((s) => s.myTasks)
   const fetchMyProjectTasks = useProjectTasksStore((s) => s.fetchMyTasks)
   const fetchBoards = useBoardsStore((s) => s.fetchBoards)
@@ -60,8 +61,9 @@ export default function TasksPage() {
     if (isSupabaseConfigured) {
       fetchBoards()
       fetchMyProjectTasks()
+      fetchTasks()
     }
-  }, [fetchBoards, fetchMyProjectTasks])
+  }, [fetchBoards, fetchMyProjectTasks, fetchTasks])
 
   const allTasks = [...tasks, ...myProjectTasks]
 

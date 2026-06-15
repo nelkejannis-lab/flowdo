@@ -17,6 +17,7 @@ import { formatHM, netMinutes } from '../utils/worktime'
 
 export default function Dashboard() {
   const tasks = useTasksStore((s) => s.tasks)
+  const fetchTasks = useTasksStore((s) => s.fetchAll)
   const boards = useBoardsStore((s) => s.boards)
   const fetchBoards = useBoardsStore((s) => s.fetchBoards)
   const myProjectTasks = useProjectTasksStore((s) => s.myTasks)
@@ -27,8 +28,11 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchBoards()
-    if (isSupabaseConfigured) fetchMyProjectTasks()
-  }, [fetchBoards, fetchMyProjectTasks])
+    if (isSupabaseConfigured) {
+      fetchMyProjectTasks()
+      fetchTasks()
+    }
+  }, [fetchBoards, fetchMyProjectTasks, fetchTasks])
 
   const allTasks = [...tasks, ...myProjectTasks]
 
