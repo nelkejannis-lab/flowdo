@@ -33,6 +33,8 @@ interface AuthState {
   updateProfile: (updates: ProfileUpdate) => Promise<string | null>
   updatePassword: (newPassword: string) => Promise<string | null>
   requestPasswordReset: (email: string) => Promise<string | null>
+  exportUserData: () => Promise<string | null>
+  deleteAccount: () => Promise<string | null>
 }
 
 export const useAuthStore = create<AuthState>()((set, get) => ({
@@ -121,5 +123,38 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       redirectTo: window.location.origin,
     })
     return error?.message ?? null
+  },
+
+  exportUserData: async () => {
+    const userId = get().user?.id
+    const user = get().user
+    if (!userId || !user) return 'Nicht angemeldet'
+
+    const tables = ['profiles', 'tasks', 'boards', 'board_columns', 'comments', 'work_time_entries', 'calendar_entries', 'friendships']
+    const data: Record<string, unknown> = {
+      exported_at: new Date().toISOString(),
+      account: { id: user.id, email: user.email, created_at: user.created_at },
+    }
+
+    for (const table of tables) {
+      const { data: rows } = await supabase.from(table).select('*')
+      data[table] = rows ?? []
+    }
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `mooncrew-daten-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+    return null
+  },
+
+  deleteAccount: async () => {
+    const { error } = await supabase.rpc('delete_my_account')
+    if (error) return error.message
+    set({ session: null, user: null, profile: null })
+    return null
   },
 }))

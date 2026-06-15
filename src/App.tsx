@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import Layout from './components/layout/Layout'
 import Dashboard from './pages/Dashboard'
@@ -15,11 +15,14 @@ import SocialAccountDetailPage from './pages/SocialAccountDetailPage'
 import AiSchedulerPage from './pages/AiSchedulerPage'
 import ChatPage from './pages/ChatPage'
 import SettingsPage from './pages/SettingsPage'
+import DatenschutzPage from './pages/legal/DatenschutzPage'
+import ImpressumPage from './pages/legal/ImpressumPage'
 import { useSettingsStore } from './store/settingsStore'
 import { useAuthStore } from './store/authStore'
 import { isSupabaseConfigured } from './lib/supabase'
 
 export default function App() {
+  const location = useLocation()
   const mode = useSettingsStore((s) => s.mode)
   const pinkAccent = useSettingsStore((s) => s.pinkAccent)
   const init = useAuthStore((s) => s.init)
@@ -37,6 +40,9 @@ export default function App() {
     return unsubscribe
   }, [init])
 
+  if (location.pathname === '/datenschutz') return <DatenschutzPage />
+  if (location.pathname === '/impressum') return <ImpressumPage />
+
   if (isSupabaseConfigured && loading) {
     return (
       <div className="flex min-h-screen items-center justify-center text-gray-400">
@@ -51,6 +57,8 @@ export default function App() {
 
   return (
     <Routes>
+      <Route path="/datenschutz" element={<DatenschutzPage />} />
+      <Route path="/impressum" element={<ImpressumPage />} />
       <Route element={<Layout />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/tasks" element={<TasksPage />} />

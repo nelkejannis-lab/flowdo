@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Eye, EyeOff, Loader2, RefreshCw, Upload, X } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Download, Eye, EyeOff, Loader2, RefreshCw, Trash2, Upload, X } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { uploadAvatar } from '../lib/avatar'
 import { BOARD_COLORS } from '../store/boardsStore'
@@ -11,7 +12,15 @@ export default function SettingsPage() {
   const user = useAuthStore((s) => s.user)
   const updateProfile = useAuthStore((s) => s.updateProfile)
   const updatePassword = useAuthStore((s) => s.updatePassword)
+  const exportUserData = useAuthStore((s) => s.exportUserData)
+  const deleteAccount = useAuthStore((s) => s.deleteAccount)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState('')
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const [displayName, setDisplayName] = useState(profile?.display_name ?? '')
   const [username, setUsername] = useState(profile?.username ?? '')
@@ -31,7 +40,7 @@ export default function SettingsPage() {
   const [savingPassword, setSavingPassword] = useState(false)
 
   const [searchParams] = useSearchParams()
-  const [activeTab, setActiveTab] = useState(searchParams.get('tab') === 'kalender' ? 'kalender' : 'profil')
+  const [activeTab, setActiveTab] = useState<'profil' | 'kalender' | 'datenschutz'>(searchParams.get('tab') === 'kalender' ? 'kalender' : 'profil')
   const connections = useCalendarConnectionsStore((s) => s.connections)
   const fetchConnections = useCalendarConnectionsStore((s) => s.fetch)
   const disconnectCalendar = useCalendarConnectionsStore((s) => s.disconnect)
@@ -106,8 +115,8 @@ export default function SettingsPage() {
     e.preventDefault()
     setPasswordError(null)
     setPasswordSuccess(null)
-    if (newPassword.length < 6) {
-      setPasswordError('Passwort muss mindestens 6 Zeichen lang sein')
+    if (newPassword.length < 8) {
+      setPasswordError('Passwort muss mindestens 8 Zeichen lang sein')
       return
     }
     if (newPassword !== confirmPassword) {
@@ -126,19 +135,35 @@ export default function SettingsPage() {
     }
   }
 
+  async function handleExport() {
+    setExportError(null)
+    setExporting(true)
+    const err = await exportUserData()
+    setExporting(false)
+    if (err) setExportError(err)
+  }
+
+  async function handleDeleteAccount() {
+    setDeleteError(null)
+    setDeleting(true)
+    const err = await deleteAccount()
+    setDeleting(false)
+    if (err) setDeleteError(err)
+  }
+
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6">
       <h1 className="text-2xl font-semibold">Einstellungen</h1>
 
       {/* Tabs */}
       <div className="flex gap-1 rounded-lg border border-gray-200 p-1 dark:border-racing-700 w-fit">
-        {(['profil', 'kalender'] as const).map((tab) => (
+        {(['profil', 'kalender', 'datenschutz'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`rounded-md px-4 py-1.5 text-sm font-medium capitalize ${activeTab === tab ? 'bg-accent text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'}`}
           >
-            {tab === 'profil' ? 'Profil' : 'Kalender'}
+            {tab === 'profil' ? 'Profil' : tab === 'kalender' ? 'Kalender' : 'Datenschutz'}
           </button>
         ))}
       </div>
@@ -378,7 +403,7 @@ export default function SettingsPage() {
           <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
-              minLength={6}
+              minLength={8}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="••••••••"
@@ -393,12 +418,13 @@ export default function SettingsPage() {
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
+          <p className="mt-1 text-xs text-gray-400">Mindestens 8 Zeichen</p>
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-gray-500">Neues Passwort bestätigen</label>
           <input
             type={showPassword ? 'text' : 'password'}
-            minLength={6}
+            minLength={8}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="••••••••"
@@ -416,6 +442,60 @@ export default function SettingsPage() {
         </button>
       </form>
       </>)}
+
+      {activeTab === 'datenschutz' && (
+        <div className="flex flex-col gap-4">
+          <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+            <h2 className="mb-1 text-sm font-semibold">Meine Daten exportieren</h2>
+            <p className="mb-3 text-xs text-gray-400">
+              Lade alle deine bei Mooncrew gespeicherten Daten (Profil, Aufgaben, Projekte, Kommentare, Arbeitszeiten,
+              Kalendereinträge) als JSON-Datei herunter (Art. 15 DSGVO).
+            </p>
+            {exportError && <p className="mb-2 text-sm text-red-500">{exportError}</p>}
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              className="flex items-center gap-2 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
+            >
+              {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+              {exporting ? 'Exportiere…' : 'Daten exportieren'}
+            </button>
+          </div>
+
+          <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+            <h2 className="mb-1 text-sm font-semibold">Rechtliches</h2>
+            <div className="flex flex-col gap-1 text-xs">
+              <Link to="/datenschutz" target="_blank" className="text-accent hover:underline">Datenschutzerklärung</Link>
+              <Link to="/impressum" target="_blank" className="text-accent hover:underline">Impressum</Link>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900/40 dark:bg-red-900/10">
+            <h2 className="mb-1 text-sm font-semibold text-red-600 dark:text-red-400">Account löschen</h2>
+            <p className="mb-3 text-xs text-red-500/80 dark:text-red-300/70">
+              Dies löscht dein Konto und alle damit verknüpften Daten unwiderruflich (Art. 17 DSGVO – Recht auf Löschung).
+              Diese Aktion kann nicht rückgängig gemacht werden.
+            </p>
+            <label className="mb-1 block text-xs font-medium text-red-600 dark:text-red-400">
+              Gib zum Bestätigen <span className="font-mono">LÖSCHEN</span> ein
+            </label>
+            <input
+              value={deleteConfirm}
+              onChange={(e) => setDeleteConfirm(e.target.value)}
+              className="mb-3 w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm focus:border-red-400 focus:outline-none dark:border-red-900/40 dark:bg-racing-900"
+            />
+            {deleteError && <p className="mb-2 text-sm text-red-500">{deleteError}</p>}
+            <button
+              onClick={handleDeleteAccount}
+              disabled={deleteConfirm !== 'LÖSCHEN' || deleting}
+              className="flex items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+              {deleting ? 'Lösche…' : 'Account endgültig löschen'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

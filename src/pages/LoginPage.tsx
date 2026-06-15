@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { isSupabaseConfigured } from '../lib/supabase'
@@ -45,6 +46,10 @@ export default function LoginPage() {
         const err = await signIn(email, password)
         if (err) setError(err)
       } else {
+        if (password.length < 8) {
+          setError('Passwort muss mindestens 8 Zeichen lang sein')
+          return
+        }
         if (password !== confirmPassword) {
           setError('Passwörter stimmen nicht überein')
           return
@@ -63,7 +68,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-racing-950">
+    <div className="relative flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-racing-950">
       <div className="w-full max-w-sm rounded-xl border border-gray-100 bg-white p-6 shadow-sm dark:border-racing-800 dark:bg-racing-900">
         <div className="mb-6 flex items-center justify-center">
           <img src="/logo-full.svg" alt="MoonCrew" className="h-20 w-auto" />
@@ -141,7 +146,7 @@ export default function LoginPage() {
                 <input
                   required
                   type={showPassword ? 'text' : 'password'}
-                  minLength={6}
+                  minLength={mode === 'signup' ? 8 : 1}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
@@ -156,6 +161,9 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+              {mode === 'signup' && (
+                <p className="mt-1 text-xs text-gray-400">Mindestens 8 Zeichen</p>
+              )}
             </div>
           )}
 
@@ -165,7 +173,7 @@ export default function LoginPage() {
               <input
                 required
                 type={showPassword ? 'text' : 'password'}
-                minLength={6}
+                minLength={8}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
@@ -219,6 +227,10 @@ export default function LoginPage() {
             </button>
           </p>
         )}
+      </div>
+      <div className="absolute bottom-4 flex gap-4 text-xs text-gray-400">
+        <Link to="/datenschutz" className="hover:underline">Datenschutz</Link>
+        <Link to="/impressum" className="hover:underline">Impressum</Link>
       </div>
     </div>
   )

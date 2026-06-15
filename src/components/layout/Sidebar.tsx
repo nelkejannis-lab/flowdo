@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import Logo from './Logo'
 import {
   LayoutDashboard,
@@ -365,6 +365,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           >
             <Sparkles size={16} />
           </button>
+        </div>
+        <div className="mt-2 flex justify-center gap-3 px-2 text-[11px] text-gray-400">
+          <Link to="/datenschutz" target="_blank" className="hover:underline">Datenschutz</Link>
+          <Link to="/impressum" target="_blank" className="hover:underline">Impressum</Link>
         </div>
       </div>
       </aside>
