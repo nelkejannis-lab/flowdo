@@ -10,13 +10,15 @@ export default function ImpressumPage() {
       <h1 className="mb-6 text-2xl font-semibold">Impressum</h1>
 
       <p className="mb-4 rounded-lg bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
-        Platzhalter-Angaben gemäß § 5 TMG / § 18 MStV. Bitte mit den tatsächlichen Daten des
-        Anbieters ersetzen, bevor die Anwendung produktiv (insbesondere geschäftlich) genutzt wird.
+        Platzhalter-Angaben gemäß § 5 TMG / § 18 MStV für ein Einzelunternehmen (Gewerbe).
+        Bitte mit den tatsächlichen Daten ersetzen, sobald das Gewerbe angemeldet ist – vorher
+        darf die App nicht geschäftlich/produktiv betrieben werden.
       </p>
 
       <h2 className="mb-2 mt-6 text-base font-semibold">Angaben gemäß § 5 TMG</h2>
       <p className="mb-4">
-        [Vor- und Nachname / Firmenname]<br />
+        [Vor- und Nachname]<br />
+        [ggf. Geschäftsbezeichnung, z. B. "Mooncrew" – nur falls als Firma/Gewerbename geführt]<br />
         [Straße und Hausnummer]<br />
         [Postleitzahl und Ort]<br />
         Deutschland
@@ -28,19 +30,11 @@ export default function ImpressumPage() {
         E-Mail: [E-Mail-Adresse]
       </p>
 
-      <h2 className="mb-2 mt-6 text-base font-semibold">Vertreten durch</h2>
-      <p className="mb-4">[Name der verantwortlichen Person(en) / Geschäftsführung]</p>
-
-      <h2 className="mb-2 mt-6 text-base font-semibold">Registereintrag</h2>
-      <p className="mb-4">
-        Eintragung im Handelsregister.<br />
-        Registergericht: [Registergericht]<br />
-        Registernummer: [HRB-Nummer]
-      </p>
-
       <h2 className="mb-2 mt-6 text-base font-semibold">Umsatzsteuer-ID</h2>
       <p className="mb-4">
-        Umsatzsteuer-Identifikationsnummer gemäß § 27 a Umsatzsteuergesetz: [USt-IdNr.]
+        Umsatzsteuer-Identifikationsnummer gemäß § 27 a Umsatzsteuergesetz: [USt-IdNr., falls
+        vorhanden]. Bei Anwendung der Kleinunternehmerregelung (§ 19 UStG) stattdessen ergänzen:
+        "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet."
       </p>
 
       <h2 className="mb-2 mt-6 text-base font-semibold">Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
