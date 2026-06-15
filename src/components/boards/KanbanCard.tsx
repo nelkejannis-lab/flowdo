@@ -1,6 +1,7 @@
+import { useState } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
-import { Check, ListChecks } from 'lucide-react'
+import { Check, ChevronDown, ListChecks } from 'lucide-react'
 import type { Task } from '../../types'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
 import { formatFriendlyDate, isOverdue } from '../../utils/date'
@@ -13,10 +14,13 @@ interface KanbanCardProps {
 
 export default function KanbanCard({ task, onClick }: KanbanCardProps) {
   const toggleTaskCompleted = useProjectTasksStore((s) => s.toggleTaskCompleted)
+  const toggleSubtask = useProjectTasksStore((s) => s.toggleSubtask)
+  const [expanded, setExpanded] = useState(false)
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
   })
   const overdue = isOverdue(task.dueDate) && !task.completed
+  const hasSubtasks = task.subtasks.length > 0
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -55,11 +59,18 @@ export default function KanbanCard({ task, onClick }: KanbanCardProps) {
             {formatFriendlyDate(task.dueDate)}
           </span>
         )}
-        {task.subtasks.length > 0 && (
-          <span className="flex items-center gap-1 text-xs text-gray-400">
+        {hasSubtasks && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              setExpanded((v) => !v)
+            }}
+            className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-racing-200"
+          >
             <ListChecks size={12} />
             {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length}
-          </span>
+            <ChevronDown size={12} className={`transition-transform duration-150 ${expanded ? '' : '-rotate-90'}`} />
+          </button>
         )}
         {task.assignee && (
           <span
@@ -71,6 +82,32 @@ export default function KanbanCard({ task, onClick }: KanbanCardProps) {
           </span>
         )}
       </div>
+
+      {expanded && hasSubtasks && (
+        <div className="flex flex-col gap-1 border-t border-gray-100 pt-2 dark:border-racing-800">
+          {task.subtasks.map((subtask) => (
+            <button
+              key={subtask.id}
+              onClick={(e) => {
+                e.stopPropagation()
+                toggleSubtask(task.id, subtask.id)
+              }}
+              className="flex items-center gap-2 text-left text-xs"
+            >
+              <span
+                className={`flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-full border-2 ${
+                  subtask.completed ? 'border-accent bg-accent text-white' : 'border-gray-300 dark:border-racing-600'
+                }`}
+              >
+                {subtask.completed && <Check size={8} />}
+              </span>
+              <span className={subtask.completed ? 'text-gray-400 line-through' : 'text-gray-600 dark:text-racing-200'}>
+                {subtask.title}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
