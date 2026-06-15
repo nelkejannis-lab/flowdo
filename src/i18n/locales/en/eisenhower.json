@@ -1,0 +1,16 @@
+{
+  "page": {
+    "title": "Eisenhower Matrix",
+    "intro": "Prioritize tasks by urgency and importance"
+  },
+  "quadrants": {
+    "urgentImportant": "Urgent & Important",
+    "notUrgentImportant": "Not Urgent & Important",
+    "urgentNotImportant": "Urgent & Not Important",
+    "notUrgentNotImportant": "Not Urgent & Not Important"
+  },
+  "quadrant": {
+    "addTask": "Add task",
+    "noTasks": "No tasks"
+  }
+}

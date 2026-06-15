@@ -1,0 +1,45 @@
+{
+  "title": "AI Scheduling",
+  "describe": {
+    "heading": "Describe an appointment",
+    "placeholder": "e.g. \"Team meeting with @Jannis next Tuesday at 2pm, one hour\"",
+    "mentionTip": "Tip: Use @ to mention colleagues",
+    "analyzing": "Analyzing…",
+    "analyze": "Detect appointment"
+  },
+  "finder": {
+    "heading": "Find the best shared time slot",
+    "participants": "Participants",
+    "searchPlaceholder": "Search and add colleagues…",
+    "from": "Period from",
+    "to": "to",
+    "durationMinutes": "Duration (minutes)",
+    "preferredFrom": "Preferred from",
+    "searching": "Searching…",
+    "findBestSlot": "Find best slot",
+    "apply": "Apply"
+  },
+  "preview": {
+    "heading": "Preview",
+    "titlePlaceholder": "Title",
+    "date": "Date",
+    "endDateOptional": "End date (optional)",
+    "startTime": "From (time)",
+    "endTime": "To (time)",
+    "descriptionPlaceholder": "Description (optional)",
+    "inviteColleagues": "Invite colleagues",
+    "checkingAvailability": "Checking availability…",
+    "recheck": "Check again",
+    "conflictTitle": "Already booked",
+    "conflictWarning": "Note: At least one colleague already has an appointment at this time.",
+    "creating": "Creating…",
+    "createAppointment": "Create appointment"
+  },
+  "errors": {
+    "unknown": "Unknown error"
+  },
+  "success": {
+    "created": "Appointment was created."
+  },
+  "uhr": ""
+}

@@ -1,0 +1,86 @@
+{
+  "back": "Back",
+  "impressum": {
+    "title": "Imprint",
+    "tmgHeading": "Information according to § 5 TMG",
+    "tmgBody": "Janis Nelke<br />Milsper Straße 14<br />58256 Ennepetal<br />Germany",
+    "contactHeading": "Contact",
+    "contactBody": "Phone: 0160 93865193<br />Email: jannisnelke1@gmail.com",
+    "vatHeading": "VAT ID",
+    "vatBody": "In accordance with § 19 UStG (German small business regulation), no VAT is charged.",
+    "responsibleHeading": "Responsible for content pursuant to § 18 Abs. 2 MStV",
+    "responsibleBody": "Janis Nelke<br />Milsper Straße 14<br />58256 Ennepetal",
+    "disputeHeading": "EU dispute resolution",
+    "disputeBody": "The European Commission provides a platform for online dispute resolution (ODR): {{link}}. You can find our email address above in the imprint.",
+    "consumerDisputeHeading": "Consumer dispute resolution / universal arbitration board",
+    "consumerDisputeBody": "We are not willing or obliged to participate in dispute resolution proceedings before a consumer arbitration board. [Adjust if participation occurs.]"
+  },
+  "datenschutz": {
+    "title": "Privacy Policy",
+    "section1": {
+      "heading": "1. Data controller",
+      "body": "The controller within the meaning of the General Data Protection Regulation (GDPR) is:<br />Janis Nelke<br />Milsper Straße 14, 58256 Ennepetal, Germany<br />Email: jannisnelke1@gmail.com"
+    },
+    "section2": {
+      "heading": "2. Overview of processing activities",
+      "intro": "Mooncrew is a task and project management application (\"Work Organizer\"). When using it, the following personal data is processed:",
+      "items": [
+        "Account and profile data (email address, username, display name, optional profile picture, optional date of birth)",
+        "Content you enter (tasks, projects/campaigns, comments, tags, appointments, notes, chat messages)",
+        "Working time and calendar data, if you use these features",
+        "When connecting external calendars (Google, Microsoft/Outlook, iCal): access tokens or calendar links and the appointments imported from them",
+        "Technical data required to provide the service (e.g. authentication/session data)"
+      ]
+    },
+    "section3": {
+      "heading": "3. Hosting and services used",
+      "intro": "This application is operated using the following technical service providers, who act as data processors within the meaning of Art. 28 GDPR. A data processing agreement (DPA) exists or will be concluded with each provider:",
+      "items": [
+        "<strong>Vercel Inc.</strong> – hosting of the web application (frontend). [Check server location/region and configure for an EU region if necessary; for data transfers to the USA: specify Standard Contractual Clauses (SCC) as the transfer basis.]",
+        "<strong>Supabase Inc.</strong> – database, authentication and file storage (profile pictures). [Set the project region to \"EU\" if not already done. Conclude a DPA with Supabase.]",
+        "<strong>AI appointment suggestions (\"AI Scheduler\")</strong>: If you use this feature, the text you enter is transmitted for processing to an AI provider [name the provider, e.g. OpenAI/Anthropic, including server location]. Do not use this feature if you do not want to transmit personal or confidential data to third parties.",
+        "<strong>External calendar providers</strong> (Google Calendar, Microsoft/Outlook, iCloud): only activated if you establish a connection in the settings. The respective provider's privacy policy also applies."
+      ]
+    },
+    "section4": {
+      "heading": "4. Purposes and legal bases of processing",
+      "items": [
+        "<strong>Contract performance (Art. 6(1)(b) GDPR):</strong> Providing account functions, storing and displaying your tasks, projects and calendar data.",
+        "<strong>Legitimate interest (Art. 6(1)(f) GDPR):</strong> Ensuring IT security, error analysis and abuse prevention.",
+        "<strong>Consent (Art. 6(1)(a) GDPR):</strong> If you enable optional features (e.g. AI appointment suggestions, external calendar connections, profile picture upload). You may withdraw any consent given at any time with effect for the future.",
+        "<strong>Employment context / legitimate interest of the employer (Art. 6(1)(f) GDPR or § 26 BDSG):</strong> If the application is used in an internal company context for task and project organization."
+      ]
+    },
+    "section5": {
+      "heading": "5. Cookies and local storage",
+      "body": "This application uses exclusively technically necessary cookies or storage in your browser's local storage (e.g. login session, display settings such as dark mode). These are permitted without consent under § 25(2) No. 2 TTDSG, as they are required to provide the telemedia service you explicitly requested. No cookies or scripts are used for marketing, tracking or analytics purposes."
+    },
+    "section6": {
+      "heading": "6. Storage duration",
+      "body": "Your data is stored for as long as your account exists. After your account is deleted (see item 8), your personal data and the content you created will be deleted without delay, unless statutory retention obligations require otherwise."
+    },
+    "section7": {
+      "heading": "7. Recipients / disclosure of data",
+      "body": "Your data is only disclosed to third parties to the processors named in item 3, as well as to other users of the application to the extent you cause this yourself through your use (e.g. sharing tasks/projects with colleagues, team or project memberships, chat messages)."
+    },
+    "section8": {
+      "heading": "8. Your rights",
+      "intro": "You have the following rights with respect to the controller regarding personal data concerning you:",
+      "items": [
+        "Right of access (Art. 15 GDPR)",
+        "Right to rectification (Art. 16 GDPR)",
+        "Right to erasure (Art. 17 GDPR)",
+        "Right to restriction of processing (Art. 18 GDPR)",
+        "Right to data portability (Art. 20 GDPR)",
+        "Right to object to processing (Art. 21 GDPR)",
+        "Right to lodge a complaint with a supervisory authority (Art. 77 GDPR)"
+      ],
+      "outro": "In the settings under \"Privacy\" you can export your data yourself as a file (access/portability) and permanently and irrevocably delete your account including all data (right to erasure). For all other inquiries, please contact the address given in item 1."
+    },
+    "section9": {
+      "heading": "9. Data security",
+      "body": "Transmission is encrypted via TLS/HTTPS. Access to your data in the database is restricted by row-level security so that users can generally only access their own data or data explicitly shared with them."
+    },
+    "lastUpdated": "Last updated: [insert date]"
+  }
+}

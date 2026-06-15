@@ -1,0 +1,111 @@
+{
+  "priority": {
+    "high": "Hoch",
+    "medium": "Mittel",
+    "low": "Niedrig"
+  },
+  "dateGroups": {
+    "overdue": "Überfällig",
+    "today": "Heute",
+    "tonight": "Heute Abend",
+    "tomorrow": "Morgen",
+    "thisWeek": "Diese Woche",
+    "later": "Später",
+    "noDate": "Ohne Datum"
+  },
+  "list": {
+    "noTasks": "Keine Aufgaben",
+    "allDone": "Alle Aufgaben erledigt 🎉",
+    "completedCount_one": "Erledigt ({{count}})",
+    "completedCount_other": "Erledigt ({{count}})"
+  },
+  "item": {
+    "dateToday": "Heute",
+    "dateTomorrow": "Morgen",
+    "dateYesterday": "Gestern",
+    "tonight": "Heute Abend",
+    "recurring": "Wiederkehrend",
+    "comments": "Kommentare",
+    "askColleague": "Kollegen fragen",
+    "questionSent": "Frage gesendet!",
+    "addColleaguesFirst": "Füge zuerst Kollegen hinzu.",
+    "askQuestionTitle": "Frage zu dieser Aufgabe stellen",
+    "chooseColleague": "Kollegen wählen…",
+    "yourQuestion": "Deine Frage…",
+    "sending": "Sende…",
+    "sendQuestion": "Frage senden",
+    "collapse": "Einklappen",
+    "showSubtasks": "Unteraufgaben anzeigen"
+  },
+  "form": {
+    "titleNew": "Neue Aufgabe",
+    "titleEdit": "Aufgabe bearbeiten",
+    "titlePlaceholder": "Was ist zu tun? (z. B. „Bericht morgen“)",
+    "descriptionPlaceholder": "Beschreibung (optional)",
+    "dueDate": "Fällig am",
+    "priority": "Priorität",
+    "tonight": "Heute Abend",
+    "repeatPlaceholder": "Wiederholen…",
+    "repeatDaily": "Täglich",
+    "repeatWeekly": "Wöchentlich",
+    "repeatMonthly": "Monatlich",
+    "someday": "Irgendwann",
+    "project": "Projekt",
+    "noProject": "Kein Projekt (persönlich)",
+    "movedToProjectHint": "Diese Aufgabe wird in das Projekt verschoben und mit allen Mitgliedern geteilt.",
+    "assignTo": "Zuweisen an",
+    "myself": "Mich selbst",
+    "shareHint": "Diese Aufgabe wird an {{name}} gesendet und erscheint dort in der Inbox.",
+    "shareMessage": "Nachricht dazu (optional)",
+    "shareMessagePlaceholder": "z. B. \"Bitte bis Freitag erledigen - danke!\"",
+    "assigneeOnVacation": "{{name}} ist im Urlaub.",
+    "assigneeOnVacationDueDate": "{{name}} ist am Fälligkeitsdatum im Urlaub.",
+    "tags": "Tags",
+    "tagPlaceholder": "Tag hinzufügen + Enter",
+    "eisenhowerMatrix": "Eisenhower-Matrix",
+    "quadrants": {
+      "urgentImportant": "Dringend & Wichtig",
+      "notUrgentImportant": "Nicht dringend & Wichtig",
+      "urgentNotImportant": "Dringend & Unwichtig",
+      "notUrgentNotImportant": "Nicht dringend & Unwichtig"
+    },
+    "subtasks": "Unteraufgaben",
+    "addSubtask": "Unteraufgabe hinzufügen",
+    "moving": "Verschiebe…",
+    "creating": "Erstelle…",
+    "sending": "Sende…",
+    "send": "Senden",
+    "add": "Hinzufügen"
+  },
+  "page": {
+    "addTask": "Aufgabe",
+    "noCompletedTasks": "Keine erledigten Aufgaben",
+    "titles": {
+      "all": "Alle Aufgaben",
+      "today": "Heute",
+      "week": "Diese Woche fällig",
+      "inbox": "Inbox",
+      "completed": "Erledigt",
+      "someday": "Irgendwann"
+    },
+    "tabs": {
+      "tasks": "Aufgaben",
+      "someday": "Irgendwann",
+      "completed": "Erledigt"
+    },
+    "inbox": {
+      "allDone": "Alles erledigt. Keine neuen Benachrichtigungen.",
+      "birthdaysToday": "Geburtstage heute",
+      "congratulated": "Gratuliert!",
+      "notifications": "Benachrichtigungen",
+      "markAllRead": "Alle gelesen",
+      "projectInvites": "Projekteinladungen",
+      "teamInvites": "Team-Einladungen",
+      "taskInvites": "Aufgaben-Einladungen",
+      "from": "von {{name}}",
+      "due": "fällig {{date}}",
+      "accept": "Annehmen",
+      "decline": "Ablehnen"
+    }
+  }
+}

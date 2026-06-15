@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { Hash, ListTodo, Search, Trello } from 'lucide-react'
 import { useSearchStore } from '../../store/searchStore'
@@ -8,6 +9,7 @@ import { useBoardsStore } from '../../store/boardsStore'
 import type { Task } from '../../types'
 
 export default function GlobalSearch() {
+  const { t } = useTranslation('layout')
   const isOpen = useSearchStore((s) => s.isOpen)
   const open = useSearchStore((s) => s.open)
   const close = useSearchStore((s) => s.close)
@@ -82,21 +84,21 @@ export default function GlobalSearch() {
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Aufgaben, Projekte, Tags durchsuchen…"
+            placeholder={t('search.placeholder')}
             className="flex-1 bg-transparent text-sm focus:outline-none"
           />
-          <kbd className="rounded border border-gray-200 px-1.5 py-0.5 text-[10px] text-gray-400 dark:border-racing-700">Esc</kbd>
+          <kbd className="rounded border border-gray-200 px-1.5 py-0.5 text-[10px] text-gray-400 dark:border-racing-700">{t('search.esc')}</kbd>
         </div>
 
         {query.trim() && (
           <div className="overflow-y-auto p-2">
             {!hasResults && (
-              <p className="py-8 text-center text-sm text-gray-400">Keine Ergebnisse</p>
+              <p className="py-8 text-center text-sm text-gray-400">{t('search.noResults')}</p>
             )}
 
             {results.tasks.length > 0 && (
               <div className="mb-2">
-                <p className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Aufgaben</p>
+                <p className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-gray-400">{t('search.tasks')}</p>
                 {results.tasks.map((task) => (
                   <button
                     key={task.id}
@@ -112,7 +114,7 @@ export default function GlobalSearch() {
 
             {results.boards.length > 0 && (
               <div className="mb-2">
-                <p className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Projekte</p>
+                <p className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-gray-400">{t('search.projects')}</p>
                 {results.boards.map((board) => (
                   <button
                     key={board.id}
@@ -128,7 +130,7 @@ export default function GlobalSearch() {
 
             {results.tags.length > 0 && (
               <div>
-                <p className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Tags</p>
+                <p className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-gray-400">{t('search.tags')}</p>
                 <div className="flex flex-wrap gap-1.5 px-2 py-1">
                   {results.tags.map((tag) => (
                     <button

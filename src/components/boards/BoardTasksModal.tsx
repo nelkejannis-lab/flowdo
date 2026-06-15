@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Check } from 'lucide-react'
 import Modal from '../layout/Modal'
@@ -12,6 +13,7 @@ interface BoardTasksModalProps {
 }
 
 export default function BoardTasksModal({ boardId, onClose }: BoardTasksModalProps) {
+  const { t } = useTranslation('boards')
   const board = useBoardsStore((s) => s.boards.find((b) => b.id === boardId))
   const tasks = useProjectTasksStore((s) => s.tasks)
   const fetchTasks = useProjectTasksStore((s) => s.fetchTasks)
@@ -41,7 +43,7 @@ export default function BoardTasksModal({ boardId, onClose }: BoardTasksModalPro
             />
           </div>
           <span className="text-xs font-medium text-gray-500 dark:text-racing-200">
-            {done}/{total} erledigt
+            {t('tasksModal.done', { done, total })}
           </span>
         </div>
       </div>
@@ -55,7 +57,7 @@ export default function BoardTasksModal({ boardId, onClose }: BoardTasksModalPro
                 {column.title} ({columnTasks.length})
               </h3>
               {columnTasks.length === 0 && (
-                <p className="text-sm text-gray-400">Keine Aufgaben</p>
+                <p className="text-sm text-gray-400">{t('tasksModal.noTasks')}</p>
               )}
               <div className="flex flex-col gap-1">
                 {columnTasks.map((task) => (
@@ -97,7 +99,7 @@ export default function BoardTasksModal({ boardId, onClose }: BoardTasksModalPro
           onClick={onClose}
           className="text-sm font-medium text-accent hover:underline"
         >
-          Projekt öffnen →
+          {t('tasksModal.openProject')}
         </Link>
       </div>
     </Modal>

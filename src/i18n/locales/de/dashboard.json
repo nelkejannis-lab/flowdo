@@ -1,0 +1,31 @@
+{
+  "title": "Dashboard",
+  "addTask": "Aufgabe",
+  "showAll": "Alle anzeigen",
+  "allProjects": "Alle Projekte",
+  "calendar": "Kalender",
+  "clockIn": "Einstempeln",
+  "clockOut": "Ausstempeln",
+  "noTasksThisWeek": "Keine Aufgaben diese Woche fällig – gut gemacht!",
+  "noUpcomingDeadlines": "Keine anstehenden Deadlines",
+  "noUpcomingEvents": "Keine anstehenden Events",
+  "noProjectsYet": "Noch keine Projekte angelegt",
+  "stats": {
+    "dueThisWeek": "Diese Woche fällig",
+    "activeProjects": "Aktive Projekte",
+    "workedToday": "Gearbeitete Zeit heute"
+  },
+  "sections": {
+    "dueThisWeek": "Diese Woche fällig",
+    "upcomingDeadlines": "Anstehende Deadlines",
+    "upcomingEvents": "Nächste Events",
+    "projectsOverview": "Projekte-Übersicht"
+  },
+  "eventStatus": {
+    "ongoing": "läuft",
+    "today": "Heute",
+    "tomorrow": "Morgen",
+    "inDays_one": "in {{count}} Tag",
+    "inDays_other": "in {{count}} Tagen"
+  }
+}

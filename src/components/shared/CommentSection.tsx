@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Send, Trash2 } from 'lucide-react'
 import { useCommentsStore } from '../../store/commentsStore'
 import { useFriendsStore } from '../../store/friendsStore'
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export default function CommentSection({ taskId, boardId }: Props) {
+  const { t } = useTranslation('common')
   const contextId = taskId ?? boardId!
   const comments = useCommentsStore((s) => s.comments[contextId] ?? [])
   const fetch = useCommentsStore((s) => s.fetch)
@@ -113,7 +115,7 @@ export default function CommentSection({ taskId, boardId }: Props) {
   return (
     <div className="flex flex-col gap-3">
       {comments.length === 0 && (
-        <p className="text-xs text-gray-400">Noch keine Kommentare.</p>
+        <p className="text-xs text-gray-400">{t('comments.empty')}</p>
       )}
       <div className="flex max-h-64 flex-col gap-2 overflow-y-auto">
         {comments.map((c) => (
@@ -155,7 +157,7 @@ export default function CommentSection({ taskId, boardId }: Props) {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e as unknown as React.FormEvent) }
             if (e.key === 'Escape') setMentionQuery(null)
           }}
-          placeholder="Kommentar schreiben… @ zum Erwähnen"
+          placeholder={t('comments.placeholder')}
           rows={2}
           className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 pr-10 text-xs focus:border-accent focus:outline-none dark:border-racing-700"
         />

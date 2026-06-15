@@ -1,0 +1,111 @@
+{
+  "priority": {
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low"
+  },
+  "dateGroups": {
+    "overdue": "Overdue",
+    "today": "Today",
+    "tonight": "Tonight",
+    "tomorrow": "Tomorrow",
+    "thisWeek": "This week",
+    "later": "Later",
+    "noDate": "No date"
+  },
+  "list": {
+    "noTasks": "No tasks",
+    "allDone": "All tasks done 🎉",
+    "completedCount_one": "Done ({{count}})",
+    "completedCount_other": "Done ({{count}})"
+  },
+  "item": {
+    "dateToday": "Today",
+    "dateTomorrow": "Tomorrow",
+    "dateYesterday": "Yesterday",
+    "tonight": "Tonight",
+    "recurring": "Recurring",
+    "comments": "Comments",
+    "askColleague": "Ask a colleague",
+    "questionSent": "Question sent!",
+    "addColleaguesFirst": "Add colleagues first.",
+    "askQuestionTitle": "Ask a question about this task",
+    "chooseColleague": "Choose colleague…",
+    "yourQuestion": "Your question…",
+    "sending": "Sending…",
+    "sendQuestion": "Send question",
+    "collapse": "Collapse",
+    "showSubtasks": "Show subtasks"
+  },
+  "form": {
+    "titleNew": "New task",
+    "titleEdit": "Edit task",
+    "titlePlaceholder": "What needs to be done? (e.g. \"Report tomorrow\")",
+    "descriptionPlaceholder": "Description (optional)",
+    "dueDate": "Due date",
+    "priority": "Priority",
+    "tonight": "Tonight",
+    "repeatPlaceholder": "Repeat…",
+    "repeatDaily": "Daily",
+    "repeatWeekly": "Weekly",
+    "repeatMonthly": "Monthly",
+    "someday": "Someday",
+    "project": "Project",
+    "noProject": "No project (personal)",
+    "movedToProjectHint": "This task will be moved into the project and shared with all members.",
+    "assignTo": "Assign to",
+    "myself": "Myself",
+    "shareHint": "This task will be sent to {{name}} and will appear in their inbox.",
+    "shareMessage": "Message (optional)",
+    "shareMessagePlaceholder": "e.g. \"Please finish by Friday - thanks!\"",
+    "assigneeOnVacation": "{{name}} is on vacation.",
+    "assigneeOnVacationDueDate": "{{name}} is on vacation on the due date.",
+    "tags": "Tags",
+    "tagPlaceholder": "Add tag + Enter",
+    "eisenhowerMatrix": "Eisenhower matrix",
+    "quadrants": {
+      "urgentImportant": "Urgent & Important",
+      "notUrgentImportant": "Not urgent & Important",
+      "urgentNotImportant": "Urgent & Not important",
+      "notUrgentNotImportant": "Not urgent & Not important"
+    },
+    "subtasks": "Subtasks",
+    "addSubtask": "Add subtask",
+    "moving": "Moving…",
+    "creating": "Creating…",
+    "sending": "Sending…",
+    "send": "Send",
+    "add": "Add"
+  },
+  "page": {
+    "addTask": "Task",
+    "noCompletedTasks": "No completed tasks",
+    "titles": {
+      "all": "All tasks",
+      "today": "Today",
+      "week": "Due this week",
+      "inbox": "Inbox",
+      "completed": "Done",
+      "someday": "Someday"
+    },
+    "tabs": {
+      "tasks": "Tasks",
+      "someday": "Someday",
+      "completed": "Done"
+    },
+    "inbox": {
+      "allDone": "All done. No new notifications.",
+      "birthdaysToday": "Birthdays today",
+      "congratulated": "Congratulated!",
+      "notifications": "Notifications",
+      "markAllRead": "Mark all read",
+      "projectInvites": "Project invites",
+      "teamInvites": "Team invites",
+      "taskInvites": "Task invites",
+      "from": "from {{name}}",
+      "due": "due {{date}}",
+      "accept": "Accept",
+      "decline": "Decline"
+    }
+  }
+}

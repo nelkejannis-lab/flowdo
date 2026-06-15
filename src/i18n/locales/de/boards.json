@@ -1,0 +1,108 @@
+{
+  "page": {
+    "title": "Projekte",
+    "newFolder": "Ordner",
+    "newProject": "Projekt",
+    "noProjects": "Noch keine Projekte. Erstelle dein erstes Projekt und lade Kollegen dazu ein.",
+    "unfiled": "Ohne Ordner",
+    "dropHere": "Hier ablegen",
+    "dropHereToUnfile": "Hier ablegen um aus Ordner zu entfernen",
+    "noProjectsInFolder": "Projekt hierher ziehen oder noch keine Projekte.",
+    "noProjectsUnfiled": "Keine Projekte ohne Ordner."
+  },
+  "folder": {
+    "namePlaceholder": "Ordnername",
+    "create": "Erstellen",
+    "deleteConfirm": "Ordner „{{title}}\" löschen? Projekte bleiben erhalten."
+  },
+  "invites": {
+    "title": "Projekteinladungen",
+    "from": "von {{name}}",
+    "accept": "Annehmen",
+    "decline": "Ablehnen"
+  },
+  "card": {
+    "tasks_one": "{{count}} Aufgabe",
+    "tasks_other": "{{count}} Aufgaben",
+    "responsible": "Verantwortlich: {{name}}",
+    "internal": "Intern: {{date}}",
+    "external": "Extern: {{date}}"
+  },
+  "badge": {
+    "showAllTasks": "Alle Aufgaben in \"{{title}}\" anzeigen"
+  },
+  "detail": {
+    "notFound": "Projekt nicht gefunden.",
+    "backToProjects": "Zurück zu Projekten",
+    "projects": "Projekte",
+    "responsible": "Verantwortlich:",
+    "internalLaunch": "Interner Launch: {{date}}",
+    "externalLaunch": "Externer Launch: {{date}}",
+    "members": "Mitglieder",
+    "me": "Ich",
+    "owner": "(Inhaber)",
+    "remove": "Entfernen",
+    "addMember": "Hinzufügen",
+    "noFriendsAvailable": "Keine weiteren Kollegen verfügbar.",
+    "invited": "Eingeladen",
+    "edit": "Bearbeiten",
+    "progress": "{{percent}}% ({{done}}/{{total}})",
+    "deadline": "Deadline: {{date}}",
+    "filterAll": "Alle Beteiligten",
+    "filterMine": "Nur ich",
+    "addColumn": "Spalte hinzufügen",
+    "newColumnTitle": "Neue Spalte",
+    "discussion": "Diskussion"
+  },
+  "tasksModal": {
+    "done": "{{done}}/{{total}} erledigt",
+    "noTasks": "Keine Aufgaben",
+    "openProject": "Projekt öffnen →"
+  },
+  "kanban": {
+    "rename": "Umbenennen",
+    "delete": "Löschen",
+    "addTask": "Aufgabe hinzufügen"
+  },
+  "form": {
+    "editProject": "Projekt bearbeiten",
+    "newProject": "Neues Projekt",
+    "namePlaceholder": "Name des Projekts",
+    "descriptionPlaceholder": "Beschreibung (optional)",
+    "responsible": "Verantwortlicher",
+    "noResponsible": "Keiner festgelegt",
+    "me": "(ich)",
+    "deadline": "Deadline",
+    "folder": "Ordner",
+    "noFolder": "Kein Ordner",
+    "color": "Farbe",
+    "internalLaunch": "Interner Launch",
+    "externalLaunch": "Externer Launch",
+    "delete": "Löschen",
+    "save": "Speichern",
+    "create": "Erstellen"
+  },
+  "taskForm": {
+    "editTask": "Aufgabe bearbeiten",
+    "newTask": "Neue Aufgabe",
+    "titlePlaceholder": "Was ist zu tun?",
+    "descriptionPlaceholder": "Beschreibung (optional)",
+    "dueDate": "Fällig am",
+    "priority": "Priorität",
+    "priorityLow": "Niedrig",
+    "priorityMedium": "Mittel",
+    "priorityHigh": "Hoch",
+    "eisenhowerMatrix": "Eisenhower-Matrix",
+    "quadrantUrgentImportant": "Dringend & Wichtig",
+    "quadrantNotUrgentImportant": "Nicht dringend & Wichtig",
+    "quadrantUrgentNotImportant": "Dringend & Unwichtig",
+    "quadrantNotUrgentNotImportant": "Nicht dringend & Unwichtig",
+    "assignedTo": "Zugewiesen an",
+    "noone": "Niemand",
+    "subtasks": "Unteraufgaben",
+    "addSubtaskPlaceholder": "Unteraufgabe hinzufügen",
+    "delete": "Löschen",
+    "save": "Speichern",
+    "add": "Hinzufügen"
+  }
+}

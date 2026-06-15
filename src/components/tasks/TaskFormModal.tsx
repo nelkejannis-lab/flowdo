@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Plus, Trash2, Check, X, Moon, Repeat, Archive } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import Modal from '../layout/Modal'
 import AttachmentsField from '../shared/AttachmentsField'
 import { useTasksStore } from '../../store/tasksStore'
@@ -13,11 +14,11 @@ import { eachEntryDate } from '../../utils/events'
 import { todayISO, parseNaturalDate } from '../../utils/date'
 import type { Attachment, Priority, Task } from '../../types'
 
-const quadrants: { urgent: boolean; important: boolean; label: string; activeClass: string }[] = [
-  { urgent: true, important: true, label: 'Dringend & Wichtig', activeClass: 'border-red-400 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
-  { urgent: false, important: true, label: 'Nicht dringend & Wichtig', activeClass: 'border-amber-400 bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' },
-  { urgent: true, important: false, label: 'Dringend & Unwichtig', activeClass: 'border-blue-400 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
-  { urgent: false, important: false, label: 'Nicht dringend & Unwichtig', activeClass: 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' },
+const quadrants: { urgent: boolean; important: boolean; labelKey: string; activeClass: string }[] = [
+  { urgent: true, important: true, labelKey: 'form.quadrants.urgentImportant', activeClass: 'border-red-400 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
+  { urgent: false, important: true, labelKey: 'form.quadrants.notUrgentImportant', activeClass: 'border-amber-400 bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' },
+  { urgent: true, important: false, labelKey: 'form.quadrants.urgentNotImportant', activeClass: 'border-blue-400 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
+  { urgent: false, important: false, labelKey: 'form.quadrants.notUrgentNotImportant', activeClass: 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' },
 ]
 
 interface TaskFormModalProps {
@@ -35,6 +36,7 @@ export default function TaskFormModal({
   defaultImportant,
   onClose,
 }: TaskFormModalProps) {
+  const { t } = useTranslation(['tasks', 'common'])
   const addTask = useTasksStore((s) => s.addTask)
   const updateTask = useTasksStore((s) => s.updateTask)
   const deleteTask = useTasksStore((s) => s.deleteTask)
@@ -248,27 +250,27 @@ export default function TaskFormModal({
   }
 
   return (
-    <Modal title={task ? 'Aufgabe bearbeiten' : 'Neue Aufgabe'} onClose={onClose}>
+    <Modal title={task ? t('form.titleEdit') : t('form.titleNew')} onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <input
           autoFocus
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onBlur={handleTitleBlur}
-          placeholder="Was ist zu tun? (z. B. „Bericht morgen“)"
+          placeholder={t('form.titlePlaceholder')}
           className="rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm font-medium focus:border-accent focus:outline-none dark:border-racing-700"
         />
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Beschreibung (optional)"
+          placeholder={t('form.descriptionPlaceholder')}
           rows={2}
           className="rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
         />
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500">Fällig am</label>
+            <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.dueDate')}</label>
             <input
               type="date"
               value={dueDate}
@@ -278,15 +280,15 @@ export default function TaskFormModal({
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500">Priorität</label>
+            <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.priority')}</label>
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value as Priority)}
               className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
             >
-              <option value="low">Niedrig</option>
-              <option value="medium">Mittel</option>
-              <option value="high">Hoch</option>
+              <option value="low">{t('priority.low')}</option>
+              <option value="medium">{t('priority.medium')}</option>
+              <option value="high">{t('priority.high')}</option>
             </select>
           </div>
         </div>
@@ -303,7 +305,7 @@ export default function TaskFormModal({
             }`}
           >
             <Moon size={13} />
-            Heute Abend
+            {t('form.tonight')}
           </button>
 
           <div className="relative">
@@ -316,10 +318,10 @@ export default function TaskFormModal({
                   : 'border-gray-200 bg-transparent text-gray-500 dark:border-racing-700 dark:text-racing-200'
               }`}
             >
-              <option value="">Wiederholen…</option>
-              <option value="daily">Täglich</option>
-              <option value="weekly">Wöchentlich</option>
-              <option value="monthly">Monatlich</option>
+              <option value="">{t('form.repeatPlaceholder')}</option>
+              <option value="daily">{t('form.repeatDaily')}</option>
+              <option value="weekly">{t('form.repeatWeekly')}</option>
+              <option value="monthly">{t('form.repeatMonthly')}</option>
             </select>
             <Repeat size={13} className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2" />
           </div>
@@ -340,19 +342,19 @@ export default function TaskFormModal({
             }`}
           >
             <Archive size={13} />
-            Irgendwann
+            {t('form.someday')}
           </button>
         </div>
 
         {boards.length > 0 && (
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500">Projekt</label>
+            <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.project')}</label>
             <select
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
               className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
             >
-              <option value="">Kein Projekt (persönlich)</option>
+              <option value="">{t('form.noProject')}</option>
               {boards.map((board) => (
                 <option key={board.id} value={board.id}>
                   {board.title}
@@ -361,7 +363,7 @@ export default function TaskFormModal({
             </select>
             {task && projectId && (
               <p className="mt-1 text-xs text-gray-400">
-                Diese Aufgabe wird in das Projekt verschoben und mit allen Mitgliedern geteilt.
+                {t('form.movedToProjectHint')}
               </p>
             )}
           </div>
@@ -369,13 +371,13 @@ export default function TaskFormModal({
 
         {!task && !projectId && friends.length > 0 && (
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500">Zuweisen an</label>
+            <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.assignTo')}</label>
             <select
               value={assigneeId}
               onChange={(e) => setAssigneeId(e.target.value)}
               className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
             >
-              <option value="">Mich selbst</option>
+              <option value="">{t('form.myself')}</option>
               {friends.map((f) => (
                 <option key={f.profile.id} value={f.profile.id}>
                   {f.profile.display_name} (@{f.profile.username})
@@ -385,15 +387,14 @@ export default function TaskFormModal({
             {assigneeId && (
               <>
                 <p className="mt-1 text-xs text-gray-400">
-                  Diese Aufgabe wird an {friends.find((f) => f.profile.id === assigneeId)?.profile.display_name} gesendet
-                  und erscheint dort in der Inbox.
+                  {t('form.shareHint', { name: friends.find((f) => f.profile.id === assigneeId)?.profile.display_name })}
                 </p>
                 <div className="mt-2">
-                  <label className="mb-1 block text-xs font-medium text-gray-500">Nachricht dazu (optional)</label>
+                  <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.shareMessage')}</label>
                   <textarea
                     value={shareMessage}
                     onChange={(e) => setShareMessage(e.target.value)}
-                    placeholder={'z. B. "Bitte bis Freitag erledigen - danke!"'}
+                    placeholder={t('form.shareMessagePlaceholder')}
                     rows={2}
                     className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
                   />
@@ -402,8 +403,9 @@ export default function TaskFormModal({
             )}
             {assigneeOnVacation && (
               <p className="mt-1 text-xs text-amber-500">
-                ⚠️ {friends.find((f) => f.profile.id === assigneeId)?.profile.display_name} ist
-                {dueDate ? ' am Fälligkeitsdatum' : ''} im Urlaub.
+                ⚠️ {dueDate
+                  ? t('form.assigneeOnVacationDueDate', { name: friends.find((f) => f.profile.id === assigneeId)?.profile.display_name })
+                  : t('form.assigneeOnVacation', { name: friends.find((f) => f.profile.id === assigneeId)?.profile.display_name })}
               </p>
             )}
             {sendError && <p className="mt-1 text-xs text-red-500">{sendError}</p>}
@@ -411,7 +413,7 @@ export default function TaskFormModal({
         )}
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">Tags</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.tags')}</label>
           <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-gray-200 px-2 py-1.5 dark:border-racing-700">
             {tags.map((tag) => (
               <span
@@ -434,21 +436,21 @@ export default function TaskFormModal({
                 }
               }}
               onBlur={addTag}
-              placeholder="Tag hinzufügen + Enter"
+              placeholder={t('form.tagPlaceholder')}
               className="min-w-[120px] flex-1 bg-transparent py-0.5 text-sm focus:outline-none"
             />
           </div>
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">Eisenhower-Matrix</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.eisenhowerMatrix')}</label>
           <div className="grid grid-cols-2 gap-2">
             {quadrants.map((q) => {
               const active = q.urgent === urgent && q.important === important
               return (
                 <button
                   type="button"
-                  key={q.label}
+                  key={q.labelKey}
                   onClick={() => {
                     setUrgent(q.urgent)
                     setImportant(q.important)
@@ -457,7 +459,7 @@ export default function TaskFormModal({
                     active ? q.activeClass : 'border-gray-200 text-gray-500 hover:border-gray-300 dark:border-racing-700 dark:text-racing-200'
                   }`}
                 >
-                  {q.label}
+                  {t(q.labelKey)}
                 </button>
               )
             })}
@@ -465,7 +467,7 @@ export default function TaskFormModal({
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">Unteraufgaben</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.subtasks')}</label>
           <div className="flex flex-col gap-1">
             {task &&
               task.subtasks.map((s) => (
@@ -523,7 +525,7 @@ export default function TaskFormModal({
                   }
                 }
               }}
-              placeholder="Unteraufgabe hinzufügen"
+              placeholder={t('form.addSubtask')}
               className="flex-1 rounded-lg border border-gray-200 bg-transparent px-3 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
             />
             <button
@@ -570,7 +572,7 @@ export default function TaskFormModal({
               onClick={handleDelete}
               className="text-sm font-medium text-red-500 hover:underline"
             >
-              Löschen
+              {t('common:buttons.delete')}
             </button>
           ) : (
             <span />
@@ -583,18 +585,18 @@ export default function TaskFormModal({
             {task
               ? projectId
                 ? sending
-                  ? 'Verschiebe…'
-                  : 'Speichern'
-                : 'Speichern'
+                  ? t('form.moving')
+                  : t('common:buttons.save')
+                : t('common:buttons.save')
               : projectId
                 ? sending
-                  ? 'Erstelle…'
-                  : 'Hinzufügen'
+                  ? t('form.creating')
+                  : t('form.add')
                 : assigneeId
                   ? sending
-                    ? 'Sende…'
-                    : 'Senden'
-                  : 'Hinzufügen'}
+                    ? t('form.sending')
+                    : t('form.send')
+                  : t('form.add')}
           </button>
         </div>
       </form>

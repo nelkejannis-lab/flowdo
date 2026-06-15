@@ -1,0 +1,60 @@
+{
+  "page": {
+    "title": "Working Time",
+    "viewWeek": "Week",
+    "viewMonth": "Month"
+  },
+  "settingsModal": {
+    "title": "Working Time Settings",
+    "weeklyHours": "Weekly working hours (hours)",
+    "workDaysPerWeek": "Work days per week",
+    "defaultBreakMinutes": "Default lunch break (min.)",
+    "done": "Done"
+  },
+  "clock": {
+    "running": "running…",
+    "workedToday": "worked today",
+    "clockIn": "Clock in",
+    "clockOut": "Clock out",
+    "targetToday": "Target today",
+    "difference": "Difference",
+    "breakMinutes": "Lunch break (min.)",
+    "alreadyTracked": "{{time}} already tracked",
+    "nothingTracked": "Nothing tracked yet"
+  },
+  "month": {
+    "total": "Month total: {{value}}"
+  },
+  "week": {
+    "columns": {
+      "day": "Day",
+      "from": "From",
+      "to": "To",
+      "break": "Break (min.)",
+      "worked": "Worked",
+      "target": "Target",
+      "diff": "Diff."
+    },
+    "total": "Week total"
+  },
+  "weekdays": {
+    "mon": "Mon",
+    "tue": "Tue",
+    "wed": "Wed",
+    "thu": "Thu",
+    "fri": "Fri",
+    "sat": "Sat",
+    "sun": "Sun"
+  },
+  "overview": {
+    "totalOvertime": "Total overtime",
+    "overtimeInDays": "Overtime in days",
+    "compDays": "Comp days (weekend)",
+    "undoCompDay": "Undo comp day",
+    "markCompDayTaken": "Mark comp day as taken",
+    "openCompDay_one": "open comp day",
+    "openCompDay_other": "open comp days",
+    "earnedAndTaken": "{{earned}} earned · {{taken}} taken",
+    "thresholdInfo": "From {{threshold}} on a weekend day, you earn a comp day; anything above counts as overtime."
+  }
+}

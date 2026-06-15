@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { Priority } from '../../types'
 
 const styles: Record<Priority, string> = {
@@ -6,16 +7,17 @@ const styles: Record<Priority, string> = {
   low: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400',
 }
 
-const labels: Record<Priority, string> = {
-  high: 'Hoch',
-  medium: 'Mittel',
-  low: 'Niedrig',
+const labelKeys: Record<Priority, string> = {
+  high: 'priority.high',
+  medium: 'priority.medium',
+  low: 'priority.low',
 }
 
 export default function PriorityBadge({ priority }: { priority: Priority }) {
+  const { t } = useTranslation('tasks')
   return (
     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${styles[priority]}`}>
-      {labels[priority]}
+      {t(labelKeys[priority])}
     </span>
   )
 }

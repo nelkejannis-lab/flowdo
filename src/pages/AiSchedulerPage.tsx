@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Sparkles, Wand2, CheckCircle2, AlertTriangle, Loader2, Calendar, Users } from 'lucide-react'
 import { useFriendsStore } from '../store/friendsStore'
 import { useAiSchedulerStore, type ParsedAppointment, type ColleagueAvailability, type BestSlotResult } from '../store/aiSchedulerStore'
@@ -8,6 +9,7 @@ import { isSupabaseConfigured } from '../lib/supabase'
 const DEFAULT_COLOR = '#10B981'
 
 export default function AiSchedulerPage() {
+  const { t, i18n } = useTranslation('aiScheduler')
   const friends = useFriendsStore((s) => s.friends)
   const fetchFriends = useFriendsStore((s) => s.fetchAll)
   const parseAppointment = useAiSchedulerStore((s) => s.parseAppointment)
@@ -134,7 +136,7 @@ export default function AiSchedulerPage() {
       )
       setBestSlot(result)
     } catch (err) {
-      setFinderError(err instanceof Error ? err.message : 'Unbekannter Fehler')
+      setFinderError(err instanceof Error ? err.message : t('errors.unknown'))
     } finally {
       setFindingSlot(false)
     }
@@ -186,7 +188,7 @@ export default function AiSchedulerPage() {
         await runAvailabilityCheck(parsed.colleagueIds, parsed.date, parsed.endDate ?? '', parsed.startTime ?? '', parsed.endTime ?? '')
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unbekannter Fehler')
+      setError(err instanceof Error ? err.message : t('errors.unknown'))
     } finally {
       setParsing(false)
     }
@@ -212,7 +214,7 @@ export default function AiSchedulerPage() {
       setError(err)
       return
     }
-    setSuccess('Termin wurde erstellt.')
+    setSuccess(t('success.created'))
     setResult(null)
     setText('')
     setAvailability([])
@@ -222,11 +224,11 @@ export default function AiSchedulerPage() {
     <div>
       <h1 className="mb-6 flex items-center gap-2 text-2xl font-semibold">
         <Sparkles size={22} />
-        KI-Termine
+        {t('title')}
       </h1>
 
       <div className="mb-6 rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-        <h2 className="mb-2 text-sm font-semibold">Termin beschreiben</h2>
+        <h2 className="mb-2 text-sm font-semibold">{t('describe.heading')}</h2>
         <div className="relative">
           <textarea
             ref={textareaRef}
@@ -237,7 +239,7 @@ export default function AiSchedulerPage() {
                 setMentionQuery(null)
               }
             }}
-            placeholder={`z. B. „Team-Meeting mit @Jannis nächsten Dienstag um 14 Uhr, eine Stunde"`}
+            placeholder={t('describe.placeholder')}
             rows={3}
             className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
           />
@@ -263,14 +265,14 @@ export default function AiSchedulerPage() {
             </div>
           )}
         </div>
-        <p className="mt-1.5 text-xs text-gray-400">Tipp: Mit @ Kollegen erwähnen</p>
+        <p className="mt-1.5 text-xs text-gray-400">{t('describe.mentionTip')}</p>
         <button
           onClick={handleAnalyze}
           disabled={parsing || !text.trim()}
           className="mt-3 flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
         >
           {parsing ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
-          {parsing ? 'Analysiere…' : 'Termin erkennen'}
+          {parsing ? t('describe.analyzing') : t('describe.analyze')}
         </button>
         {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
         {success && <p className="mt-2 text-sm text-emerald-500">{success}</p>}
@@ -280,17 +282,17 @@ export default function AiSchedulerPage() {
         <div className="mb-6 rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold">
             <Users size={15} />
-            Besten gemeinsamen Termin finden
+            {t('finder.heading')}
           </h2>
 
           <div className="mb-3">
-            <label className="mb-1 block text-xs font-medium text-gray-500">Beteiligte Personen</label>
+            <label className="mb-1 block text-xs font-medium text-gray-500">{t('finder.participants')}</label>
             <div className="relative">
               <input
                 type="text"
                 value={finderSearch}
                 onChange={(e) => setFinderSearch(e.target.value)}
-                placeholder="Kollegen suchen und hinzufügen…"
+                placeholder={t('finder.searchPlaceholder')}
                 className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
               />
               {finderSearchResults.length > 0 && (
@@ -333,7 +335,7 @@ export default function AiSchedulerPage() {
 
           <div className="mb-3 flex gap-2">
             <div className="flex-1">
-              <label className="mb-1 block text-xs font-medium text-gray-500">Zeitraum von</label>
+              <label className="mb-1 block text-xs font-medium text-gray-500">{t('finder.from')}</label>
               <input
                 type="date"
                 value={finderFromDate}
@@ -342,7 +344,7 @@ export default function AiSchedulerPage() {
               />
             </div>
             <div className="flex-1">
-              <label className="mb-1 block text-xs font-medium text-gray-500">bis</label>
+              <label className="mb-1 block text-xs font-medium text-gray-500">{t('finder.to')}</label>
               <input
                 type="date"
                 value={finderToDate}
@@ -355,7 +357,7 @@ export default function AiSchedulerPage() {
 
           <div className="mb-3 flex gap-2">
             <div className="flex-1">
-              <label className="mb-1 block text-xs font-medium text-gray-500">Dauer (Minuten)</label>
+              <label className="mb-1 block text-xs font-medium text-gray-500">{t('finder.durationMinutes')}</label>
               <input
                 type="number"
                 value={finderDuration}
@@ -366,7 +368,7 @@ export default function AiSchedulerPage() {
               />
             </div>
             <div className="flex-1">
-              <label className="mb-1 block text-xs font-medium text-gray-500">Bevorzugt ab</label>
+              <label className="mb-1 block text-xs font-medium text-gray-500">{t('finder.preferredFrom')}</label>
               <input
                 type="time"
                 value={finderPrefStart}
@@ -375,7 +377,7 @@ export default function AiSchedulerPage() {
               />
             </div>
             <div className="flex-1">
-              <label className="mb-1 block text-xs font-medium text-gray-500">bis</label>
+              <label className="mb-1 block text-xs font-medium text-gray-500">{t('finder.to')}</label>
               <input
                 type="time"
                 value={finderPrefEnd}
@@ -391,7 +393,7 @@ export default function AiSchedulerPage() {
             className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
           >
             {findingSlot ? <Loader2 size={16} className="animate-spin" /> : <Calendar size={16} />}
-            {findingSlot ? 'Suche läuft…' : 'Besten Termin finden'}
+            {findingSlot ? t('finder.searching') : t('finder.findBestSlot')}
           </button>
 
           {finderError && <p className="mt-2 text-sm text-red-500">{finderError}</p>}
@@ -402,8 +404,8 @@ export default function AiSchedulerPage() {
                 <div>
                   <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
                     <CheckCircle2 size={14} className="mr-1 inline" />
-                    {new Date(bestSlot.date).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long' })}
-                    {' · '}{bestSlot.startTime} – {bestSlot.endTime} Uhr
+                    {new Date(bestSlot.date).toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'de-DE', { weekday: 'long', day: '2-digit', month: 'long' })}
+                    {' · '}{bestSlot.startTime} – {bestSlot.endTime}{t('uhr') ? ` ${t('uhr')}` : ''}
                   </p>
                   <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-500">{bestSlot.explanation}</p>
                 </div>
@@ -411,7 +413,7 @@ export default function AiSchedulerPage() {
                   onClick={applyBestSlot}
                   className="flex-shrink-0 rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:bg-transparent dark:text-emerald-400"
                 >
-                  Übernehmen
+                  {t('finder.apply')}
                 </button>
               </div>
             </div>
@@ -421,18 +423,18 @@ export default function AiSchedulerPage() {
 
       {result && (
         <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-          <h2 className="mb-3 text-sm font-semibold">Vorschau</h2>
+          <h2 className="mb-3 text-sm font-semibold">{t('preview.heading')}</h2>
           <div className="flex flex-col gap-3">
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Titel"
+              placeholder={t('preview.titlePlaceholder')}
               className="rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm font-medium focus:border-accent focus:outline-none dark:border-racing-700"
             />
 
             <div className="flex gap-2">
               <div className="flex-1">
-                <label className="mb-1 block text-xs font-medium text-gray-500">Datum</label>
+                <label className="mb-1 block text-xs font-medium text-gray-500">{t('preview.date')}</label>
                 <input
                   type="date"
                   value={date}
@@ -441,7 +443,7 @@ export default function AiSchedulerPage() {
                 />
               </div>
               <div className="flex-1">
-                <label className="mb-1 block text-xs font-medium text-gray-500">Enddatum (optional)</label>
+                <label className="mb-1 block text-xs font-medium text-gray-500">{t('preview.endDateOptional')}</label>
                 <input
                   type="date"
                   value={endDate}
@@ -454,7 +456,7 @@ export default function AiSchedulerPage() {
 
             <div className="flex gap-2">
               <div className="flex-1">
-                <label className="mb-1 block text-xs font-medium text-gray-500">Von (Uhrzeit)</label>
+                <label className="mb-1 block text-xs font-medium text-gray-500">{t('preview.startTime')}</label>
                 <input
                   type="time"
                   value={startTime}
@@ -463,7 +465,7 @@ export default function AiSchedulerPage() {
                 />
               </div>
               <div className="flex-1">
-                <label className="mb-1 block text-xs font-medium text-gray-500">Bis (Uhrzeit)</label>
+                <label className="mb-1 block text-xs font-medium text-gray-500">{t('preview.endTime')}</label>
                 <input
                   type="time"
                   value={endTime}
@@ -476,7 +478,7 @@ export default function AiSchedulerPage() {
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Beschreibung (optional)"
+              placeholder={t('preview.descriptionPlaceholder')}
               rows={2}
               className="rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
             />
@@ -484,10 +486,10 @@ export default function AiSchedulerPage() {
             {friends.length > 0 && (
               <div>
                 <div className="mb-1 flex items-center justify-between">
-                  <label className="block text-xs font-medium text-gray-500">Kollegen einladen</label>
+                  <label className="block text-xs font-medium text-gray-500">{t('preview.inviteColleagues')}</label>
                   {checkingAvailability && (
                     <span className="flex items-center gap-1 text-xs text-gray-400">
-                      <Loader2 size={12} className="animate-spin" /> Verfügbarkeit wird geprüft…
+                      <Loader2 size={12} className="animate-spin" /> {t('preview.checkingAvailability')}
                     </span>
                   )}
                   {!checkingAvailability && selectedColleagues.length > 0 && date && (
@@ -496,7 +498,7 @@ export default function AiSchedulerPage() {
                       onClick={() => runAvailabilityCheck(selectedColleagues, date, endDate, startTime, endTime)}
                       className="text-xs font-medium text-accent hover:underline"
                     >
-                      Erneut prüfen
+                      {t('preview.recheck')}
                     </button>
                   )}
                 </div>
@@ -518,7 +520,7 @@ export default function AiSchedulerPage() {
                         {f.profile.display_name}
                         {avail && (
                           avail.busy ? (
-                            <span title={avail.conflictTitle ?? 'Bereits verplant'}>
+                            <span title={avail.conflictTitle ?? t('preview.conflictTitle')}>
                               <AlertTriangle size={12} className="text-amber-500" />
                             </span>
                           ) : (
@@ -531,7 +533,7 @@ export default function AiSchedulerPage() {
                 </div>
                 {availability.some((a) => a.busy) && (
                   <p className="mt-2 text-xs text-amber-500">
-                    Achtung: Mindestens ein Kollege hat zu dieser Zeit bereits einen Termin.
+                    {t('preview.conflictWarning')}
                   </p>
                 )}
               </div>
@@ -543,7 +545,7 @@ export default function AiSchedulerPage() {
                 disabled={creating || !title.trim() || !date}
                 className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
               >
-                {creating ? 'Erstelle…' : 'Termin erstellen'}
+                {creating ? t('preview.creating') : t('preview.createAppointment')}
               </button>
             </div>
           </div>

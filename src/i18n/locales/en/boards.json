@@ -1,0 +1,108 @@
+{
+  "page": {
+    "title": "Projects",
+    "newFolder": "Folder",
+    "newProject": "Project",
+    "noProjects": "No projects yet. Create your first project and invite colleagues.",
+    "unfiled": "No folder",
+    "dropHere": "Drop here",
+    "dropHereToUnfile": "Drop here to remove from folder",
+    "noProjectsInFolder": "Drag a project here or there are no projects yet.",
+    "noProjectsUnfiled": "No projects without a folder."
+  },
+  "folder": {
+    "namePlaceholder": "Folder name",
+    "create": "Create",
+    "deleteConfirm": "Delete folder \"{{title}}\"? Projects will be kept."
+  },
+  "invites": {
+    "title": "Project invitations",
+    "from": "from {{name}}",
+    "accept": "Accept",
+    "decline": "Decline"
+  },
+  "card": {
+    "tasks_one": "{{count}} task",
+    "tasks_other": "{{count}} tasks",
+    "responsible": "Responsible: {{name}}",
+    "internal": "Internal: {{date}}",
+    "external": "External: {{date}}"
+  },
+  "badge": {
+    "showAllTasks": "Show all tasks in \"{{title}}\""
+  },
+  "detail": {
+    "notFound": "Project not found.",
+    "backToProjects": "Back to projects",
+    "projects": "Projects",
+    "responsible": "Responsible:",
+    "internalLaunch": "Internal launch: {{date}}",
+    "externalLaunch": "External launch: {{date}}",
+    "members": "Members",
+    "me": "Me",
+    "owner": "(Owner)",
+    "remove": "Remove",
+    "addMember": "Add",
+    "noFriendsAvailable": "No more colleagues available.",
+    "invited": "Invited",
+    "edit": "Edit",
+    "progress": "{{percent}}% ({{done}}/{{total}})",
+    "deadline": "Deadline: {{date}}",
+    "filterAll": "All participants",
+    "filterMine": "Only me",
+    "addColumn": "Add column",
+    "newColumnTitle": "New column",
+    "discussion": "Discussion"
+  },
+  "tasksModal": {
+    "done": "{{done}}/{{total}} done",
+    "noTasks": "No tasks",
+    "openProject": "Open project →"
+  },
+  "kanban": {
+    "rename": "Rename",
+    "delete": "Delete",
+    "addTask": "Add task"
+  },
+  "form": {
+    "editProject": "Edit project",
+    "newProject": "New project",
+    "namePlaceholder": "Project name",
+    "descriptionPlaceholder": "Description (optional)",
+    "responsible": "Responsible",
+    "noResponsible": "None set",
+    "me": "(me)",
+    "deadline": "Deadline",
+    "folder": "Folder",
+    "noFolder": "No folder",
+    "color": "Color",
+    "internalLaunch": "Internal launch",
+    "externalLaunch": "External launch",
+    "delete": "Delete",
+    "save": "Save",
+    "create": "Create"
+  },
+  "taskForm": {
+    "editTask": "Edit task",
+    "newTask": "New task",
+    "titlePlaceholder": "What needs to be done?",
+    "descriptionPlaceholder": "Description (optional)",
+    "dueDate": "Due date",
+    "priority": "Priority",
+    "priorityLow": "Low",
+    "priorityMedium": "Medium",
+    "priorityHigh": "High",
+    "eisenhowerMatrix": "Eisenhower matrix",
+    "quadrantUrgentImportant": "Urgent & important",
+    "quadrantNotUrgentImportant": "Not urgent & important",
+    "quadrantUrgentNotImportant": "Urgent & not important",
+    "quadrantNotUrgentNotImportant": "Not urgent & not important",
+    "assignedTo": "Assigned to",
+    "noone": "No one",
+    "subtasks": "Subtasks",
+    "addSubtaskPlaceholder": "Add subtask",
+    "delete": "Delete",
+    "save": "Save",
+    "add": "Add"
+  }
+}

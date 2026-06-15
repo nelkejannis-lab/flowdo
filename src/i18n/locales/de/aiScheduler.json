@@ -1,0 +1,45 @@
+{
+  "title": "KI-Termine",
+  "describe": {
+    "heading": "Termin beschreiben",
+    "placeholder": "z. B. „Team-Meeting mit @Jannis nächsten Dienstag um 14 Uhr, eine Stunde\"",
+    "mentionTip": "Tipp: Mit @ Kollegen erwähnen",
+    "analyzing": "Analysiere…",
+    "analyze": "Termin erkennen"
+  },
+  "finder": {
+    "heading": "Besten gemeinsamen Termin finden",
+    "participants": "Beteiligte Personen",
+    "searchPlaceholder": "Kollegen suchen und hinzufügen…",
+    "from": "Zeitraum von",
+    "to": "bis",
+    "durationMinutes": "Dauer (Minuten)",
+    "preferredFrom": "Bevorzugt ab",
+    "searching": "Suche läuft…",
+    "findBestSlot": "Besten Termin finden",
+    "apply": "Übernehmen"
+  },
+  "preview": {
+    "heading": "Vorschau",
+    "titlePlaceholder": "Titel",
+    "date": "Datum",
+    "endDateOptional": "Enddatum (optional)",
+    "startTime": "Von (Uhrzeit)",
+    "endTime": "Bis (Uhrzeit)",
+    "descriptionPlaceholder": "Beschreibung (optional)",
+    "inviteColleagues": "Kollegen einladen",
+    "checkingAvailability": "Verfügbarkeit wird geprüft…",
+    "recheck": "Erneut prüfen",
+    "conflictTitle": "Bereits verplant",
+    "conflictWarning": "Achtung: Mindestens ein Kollege hat zu dieser Zeit bereits einen Termin.",
+    "creating": "Erstelle…",
+    "createAppointment": "Termin erstellen"
+  },
+  "errors": {
+    "unknown": "Unbekannter Fehler"
+  },
+  "success": {
+    "created": "Termin wurde erstellt."
+  },
+  "uhr": "Uhr"
+}

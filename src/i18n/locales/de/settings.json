@@ -1,0 +1,81 @@
+{
+  "language": {
+    "title": "Sprache",
+    "description": "Wähle die Sprache der Benutzeroberfläche.",
+    "german": "Deutsch",
+    "english": "Englisch"
+  },
+  "title": "Einstellungen",
+  "tabs": {
+    "profil": "Profil",
+    "kalender": "Kalender",
+    "datenschutz": "Datenschutz"
+  },
+  "calendar": {
+    "title": "Externe Kalender",
+    "description": "Verbinde deine Kalender — Ereignisse werden automatisch in Flowdo importiert.",
+    "connectedSuffix": "verbunden!",
+    "errorPrefix": "Fehler",
+    "outlook": "Outlook / Microsoft 365",
+    "connected": "Verbunden",
+    "notConnected": "Nicht verbunden",
+    "disconnect": "Trennen",
+    "connect": "Verbinden",
+    "icloud": "iCloud / iCal / Andere (URL)",
+    "icloudPlaceholder": "ICS- oder Webcal-Link einfügen",
+    "urlPlaceholder": "https://... oder webcal://...",
+    "add": "Hinzufügen",
+    "icloudHint": "iCloud: Einstellungen → Kalender → Kalender freigeben → Link kopieren",
+    "lastSynced": "Zuletzt synchronisiert: {{date}}",
+    "never": "Noch nie",
+    "syncing": "Synchronisiere…",
+    "syncNow": "Jetzt synchronisieren",
+    "syncedPrefix": "Synchronisiert",
+    "fewConnections": "💡 Verbinde Google oder Outlook über den jeweiligen „Verbinden\"-Button oben. iCloud geht sofort per Kalender-Link (kein Setup nötig)."
+  },
+  "profile": {
+    "avatarTitle": "Profilbild",
+    "avatarAlt": "Profilbild",
+    "uploading": "Lädt hoch…",
+    "uploadImage": "Bild hochladen",
+    "remove": "Entfernen",
+    "uploadError": "Fehler beim Hochladen",
+    "title": "Profil",
+    "displayName": "Anzeigename",
+    "username": "Benutzername",
+    "birthday": "Geburtsdatum",
+    "email": "E-Mail",
+    "saveSuccess": "Profil gespeichert",
+    "saving": "Speichere…",
+    "save": "Speichern"
+  },
+  "password": {
+    "title": "Passwort ändern",
+    "new": "Neues Passwort",
+    "confirm": "Neues Passwort bestätigen",
+    "hint": "Mindestens 8 Zeichen",
+    "show": "Passwort anzeigen",
+    "hide": "Passwort verbergen",
+    "changeSuccess": "Passwort geändert",
+    "errorTooShort": "Passwort muss mindestens 8 Zeichen lang sein",
+    "errorMismatch": "Passwörter stimmen nicht überein",
+    "saving": "Speichere…",
+    "submit": "Passwort ändern"
+  },
+  "privacy": {
+    "exportTitle": "Meine Daten exportieren",
+    "exportDescription": "Lade alle deine bei Mooncrew gespeicherten Daten (Profil, Aufgaben, Projekte, Kommentare, Arbeitszeiten, Kalendereinträge) als JSON-Datei herunter (Art. 15 DSGVO).",
+    "exporting": "Exportiere…",
+    "exportButton": "Daten exportieren",
+    "appInfoTitle": "App-Infos & Rechtliches",
+    "appInfoVersion": "Mooncrew · Version {{version}}",
+    "privacyPolicyLink": "Datenschutzerklärung",
+    "imprintLink": "Impressum",
+    "deleteTitle": "Account löschen",
+    "deleteDescription": "Dies löscht dein Konto und alle damit verknüpften Daten unwiderruflich (Art. 17 DSGVO – Recht auf Löschung). Diese Aktion kann nicht rückgängig gemacht werden.",
+    "deleteConfirmLabel": "Gib zum Bestätigen %WORD% ein",
+    "deleteConfirmWord": "LÖSCHEN",
+    "deleting": "Lösche…",
+    "deleteButton": "Account endgültig löschen"
+  }
+}

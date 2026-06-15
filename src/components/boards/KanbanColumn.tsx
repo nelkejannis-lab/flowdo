@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useDroppable } from '@dnd-kit/core'
 import { MoreHorizontal, Plus, Trash2 } from 'lucide-react'
 import type { BoardColumn, Task } from '../../types'
@@ -21,6 +22,7 @@ export default function KanbanColumn({
   onRenameColumn,
   onDeleteColumn,
 }: KanbanColumnProps) {
+  const { t } = useTranslation('boards')
   const { setNodeRef, isOver } = useDroppable({ id: column.id })
   const [menuOpen, setMenuOpen] = useState(false)
   const [renaming, setRenaming] = useState(false)
@@ -69,14 +71,14 @@ export default function KanbanColumn({
                 }}
                 className="block w-full px-3 py-1.5 text-left hover:bg-gray-50 dark:hover:bg-racing-800"
               >
-                Umbenennen
+                {t('kanban.rename')}
               </button>
               <button
                 onClick={onDeleteColumn}
                 className="flex w-full items-center gap-1.5 px-3 py-1.5 text-left text-red-500 hover:bg-gray-50 dark:hover:bg-racing-800"
               >
                 <Trash2 size={14} />
-                Löschen
+                {t('kanban.delete')}
               </button>
             </div>
           )}
@@ -94,7 +96,7 @@ export default function KanbanColumn({
         className="mt-2 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
       >
         <Plus size={14} />
-        Aufgabe hinzufügen
+        {t('kanban.addTask')}
       </button>
     </div>
   )

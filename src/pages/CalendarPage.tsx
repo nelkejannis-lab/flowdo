@@ -8,7 +8,8 @@ import {
   subMonths,
   subWeeks,
 } from 'date-fns'
-import { de } from 'date-fns/locale'
+import { de, enUS } from 'date-fns/locale'
+import { useTranslation } from 'react-i18next'
 import { ChevronLeft, ChevronRight, Plus, Users, X } from 'lucide-react'
 import { useFriendsStore } from '../store/friendsStore'
 import { useTeamsStore } from '../store/teamsStore'
@@ -30,6 +31,8 @@ import type { CalendarEntry, CalendarEvent, Task } from '../types'
 type ViewMode = 'month' | 'week' | 'day'
 
 export default function CalendarPage() {
+  const { t, i18n } = useTranslation('calendar')
+  const dateLocale = i18n.language === 'en' ? enUS : de
   const tasks = useTasksStore((s) => s.tasks)
   const events = useEventsStore((s) => s.events)
   const fetchEvents = useEventsStore((s) => s.fetchAll)
@@ -143,10 +146,10 @@ export default function CalendarPage() {
 
   const headerLabel =
     view === 'month'
-      ? format(currentDate, 'MMMM yyyy', { locale: de })
+      ? format(currentDate, 'MMMM yyyy', { locale: dateLocale })
       : view === 'week'
-      ? `Woche vom ${format(currentDate, 'd. MMM', { locale: de })}`
-      : format(currentDate, 'd. MMMM yyyy', { locale: de })
+      ? t('weekOf', { date: format(currentDate, 'd. MMM', { locale: dateLocale }) })
+      : format(currentDate, 'd. MMMM yyyy', { locale: dateLocale })
 
   return (
     <div>
@@ -169,7 +172,7 @@ export default function CalendarPage() {
             onClick={() => setCurrentDate(new Date())}
             className="ml-2 rounded-lg border border-gray-200 px-3 py-1.5 text-sm hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800"
           >
-            Heute
+            {t('today')}
           </button>
         </div>
         <div className="flex items-center gap-1 rounded-lg border border-gray-200 p-1 dark:border-racing-700">
@@ -181,7 +184,7 @@ export default function CalendarPage() {
                 view === v ? 'bg-accent text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
               }`}
             >
-              {v === 'month' ? 'Monat' : v === 'week' ? 'Woche' : 'Tag'}
+              {v === 'month' ? t('views.month') : v === 'week' ? t('views.week') : t('views.day')}
             </button>
           ))}
         </div>
@@ -193,7 +196,7 @@ export default function CalendarPage() {
                 className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors ${teamFilterId ? 'border-accent bg-accent/10 text-accent' : 'border-gray-200 hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800'}`}
               >
                 <Users size={14} />
-                {teamFilterId ? teams.find((t) => t.id === teamFilterId)?.name : 'Team'}
+                {teamFilterId ? teams.find((tm) => tm.id === teamFilterId)?.name : t('team.label')}
                 {teamFilterId && (
                   <span onClick={(e) => { e.stopPropagation(); setTeamFilterId(null) }} className="ml-1 hover:text-red-500">
                     <X size={12} />
@@ -202,16 +205,16 @@ export default function CalendarPage() {
               </button>
               {showTeamFilter && (
                 <div className="absolute right-0 top-full z-20 mt-2 w-52 rounded-xl border border-gray-100 bg-white shadow-lg dark:border-racing-800 dark:bg-racing-900">
-                  <p className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">Team auswählen</p>
-                  {teams.map((t) => (
+                  <p className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">{t('team.select')}</p>
+                  {teams.map((tm) => (
                     <button
-                      key={t.id}
-                      onClick={() => { setTeamFilterId(t.id === teamFilterId ? null : t.id); setShowTeamFilter(false) }}
-                      className={`flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-racing-800 ${t.id === teamFilterId ? 'font-semibold text-accent' : ''}`}
+                      key={tm.id}
+                      onClick={() => { setTeamFilterId(tm.id === teamFilterId ? null : tm.id); setShowTeamFilter(false) }}
+                      className={`flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-racing-800 ${tm.id === teamFilterId ? 'font-semibold text-accent' : ''}`}
                     >
                       <Users size={14} className="flex-shrink-0 text-gray-400" />
-                      {t.name}
-                      <span className="ml-auto text-xs text-gray-400">{t.members.length}</span>
+                      {tm.name}
+                      <span className="ml-auto text-xs text-gray-400">{tm.members.length}</span>
                     </button>
                   ))}
                 </div>
@@ -222,7 +225,7 @@ export default function CalendarPage() {
             <div className="relative" ref={birthdayRef}>
               <button
                 onClick={() => setShowBirthdays((v) => !v)}
-                title="Geburtstage"
+                title={t('birthdays.tooltip')}
                 className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${showBirthdays ? 'border-accent bg-accent/10 text-accent' : 'border-gray-200 hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800'}`}
               >
                 🎂
@@ -230,10 +233,10 @@ export default function CalendarPage() {
               {showBirthdays && (
                 <div className="absolute right-0 top-full z-20 mt-2 w-72 rounded-xl border border-gray-100 bg-white shadow-lg dark:border-racing-800 dark:bg-racing-900">
                   <div className="border-b border-gray-100 px-4 py-3 dark:border-racing-800">
-                    <p className="text-sm font-semibold">Nächste Geburtstage</p>
+                    <p className="text-sm font-semibold">{t('birthdays.upcoming')}</p>
                   </div>
                   {upcomingBirthdays.length === 0 ? (
-                    <p className="px-4 py-6 text-center text-sm text-gray-400">Keine Kollegen mit Geburtsdatum.</p>
+                    <p className="px-4 py-6 text-center text-sm text-gray-400">{t('birthdays.none')}</p>
                   ) : (
                     <div className="flex flex-col divide-y divide-gray-50 dark:divide-racing-800">
                       {upcomingBirthdays.map((b, i) => (
@@ -247,7 +250,7 @@ export default function CalendarPage() {
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-medium">{b.name}</p>
                             <p className="text-xs text-gray-400">
-                              {format(b.next, 'd. MMM', { locale: de })} · wird {b.age}
+                              {format(b.next, 'd. MMM', { locale: dateLocale })} · {t('birthdays.turns', { age: b.age })}
                             </p>
                           </div>
                           <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
@@ -257,7 +260,7 @@ export default function CalendarPage() {
                               ? 'bg-accent/10 text-accent'
                               : 'bg-gray-100 text-gray-500 dark:bg-racing-800 dark:text-racing-200'
                           }`}>
-                            {b.diff === 0 ? '🎉 Heute!' : `in ${b.diff}d`}
+                            {b.diff === 0 ? t('birthdays.today') : t('birthdays.inDays', { count: b.diff })}
                           </span>
                         </div>
                       ))}
@@ -273,7 +276,7 @@ export default function CalendarPage() {
                 onClick={() => setShowCalendarMenu((v) => !v)}
                 className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors ${showCalendarMenu ? 'border-accent bg-accent/10 text-accent' : 'border-gray-200 hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800'}`}
               >
-                📅 Kalender
+                {t('externalCalendars.button')}
                 {disabledCalendars.size > 0 && (
                   <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-gray-400 text-[10px] font-bold text-white">
                     {disabledCalendars.size}
@@ -282,11 +285,11 @@ export default function CalendarPage() {
               </button>
               {showCalendarMenu && (
                 <div className="absolute right-0 top-full z-20 mt-2 w-56 rounded-xl border border-gray-100 bg-white shadow-lg dark:border-racing-800 dark:bg-racing-900">
-                  <p className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Kalender ein-/ausblenden</p>
+                  <p className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-400">{t('externalCalendars.toggleLabel')}</p>
                   {connections.map((conn) => {
-                    const label = conn.provider === 'google' ? '📅 Google Calendar'
-                      : conn.provider === 'microsoft' ? '📧 Outlook'
-                      : '☁️ iCal'
+                    const label = conn.provider === 'google' ? t('externalCalendars.google')
+                      : conn.provider === 'microsoft' ? t('externalCalendars.outlook')
+                      : t('externalCalendars.ical')
                     const active = !disabledCalendars.has(conn.provider)
                     return (
                       <button
@@ -311,7 +314,7 @@ export default function CalendarPage() {
             className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:bg-accent-dark"
           >
             <Plus size={14} />
-            Hinzufügen
+            {t('addButton')}
           </button>
         </div>
       </div>
@@ -366,10 +369,10 @@ export default function CalendarPage() {
         <div className="mt-6 rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold">
             <Users size={15} className="text-gray-400" />
-            {teams.find((t) => t.id === teamFilterId)?.name} — Auswärts & Urlaub
+            {teams.find((tm) => tm.id === teamFilterId)?.name} — {t('team.awayAndVacation')}
           </h2>
           {teamEntries.length === 0 ? (
-            <p className="text-sm text-gray-400">Keine Auswärts- oder Urlaubseinträge im Team.</p>
+            <p className="text-sm text-gray-400">{t('team.noAwayOrVacation')}</p>
           ) : (
             <div className="flex flex-col gap-2">
               {teamEntries.map((e) => {
@@ -391,7 +394,7 @@ export default function CalendarPage() {
                       </p>
                     </div>
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${e.type === 'urlaub' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}`}>
-                      {e.type === 'urlaub' ? '🌴 Urlaub' : '✈️ Reise'}
+                      {e.type === 'urlaub' ? t('entryTypeBadges.urlaub') : t('entryTypeBadges.reise')}
                     </span>
                   </div>
                 )

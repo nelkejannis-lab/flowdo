@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { DndContext, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { ArrowLeft, Building2, Globe, MessageSquare, Pencil, Plus, UserPlus, Users, X } from 'lucide-react'
@@ -19,6 +20,7 @@ import { isSupabaseConfigured } from '../lib/supabase'
 type ProgressFilter = 'all' | 'mine'
 
 export default function BoardDetailPage() {
+  const { t } = useTranslation('boards')
   const { boardId } = useParams()
   const navigate = useNavigate()
   const board = useBoardsStore((s) => s.boards.find((b) => b.id === boardId))
@@ -68,13 +70,13 @@ export default function BoardDetailPage() {
   if (!board) {
     return (
       <div className="flex flex-col items-center gap-3 py-16 text-center text-gray-400">
-        <p>Projekt nicht gefunden.</p>
+        <p>{t('detail.notFound')}</p>
         <button
           onClick={() => navigate('/projekte')}
           className="flex items-center gap-1.5 text-sm font-medium text-accent hover:underline"
         >
           <ArrowLeft size={16} />
-          Zurück zu Projekten
+          {t('detail.backToProjects')}
         </button>
       </div>
     )
@@ -120,7 +122,7 @@ export default function BoardDetailPage() {
         className="mb-3 flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-white"
       >
         <ArrowLeft size={14} />
-        Projekte
+        {t('detail.projects')}
       </button>
 
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
@@ -133,7 +135,7 @@ export default function BoardDetailPage() {
             )}
             {board.responsibleProfile && (
               <div className="mt-1.5 flex items-center gap-2">
-                <span className="text-xs text-gray-400">Verantwortlich:</span>
+                <span className="text-xs text-gray-400">{t('detail.responsible')}</span>
                 <div className="flex items-center gap-1.5">
                   <span
                     className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold text-white"
@@ -150,13 +152,13 @@ export default function BoardDetailPage() {
                 {board.internalLaunch && (
                   <span className="flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-racing-200">
                     <Building2 size={12} />
-                    Interner Launch: {formatFriendlyDate(board.internalLaunch)}
+                    {t('detail.internalLaunch', { date: formatFriendlyDate(board.internalLaunch) })}
                   </span>
                 )}
                 {board.externalLaunch && (
                   <span className="flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-racing-200">
                     <Globe size={12} />
-                    Externer Launch: {formatFriendlyDate(board.externalLaunch)}
+                    {t('detail.externalLaunch', { date: formatFriendlyDate(board.externalLaunch) })}
                   </span>
                 )}
               </div>
@@ -188,7 +190,7 @@ export default function BoardDetailPage() {
             </button>
             {showMembers && (
               <div className="absolute right-0 z-10 mt-2 w-64 rounded-xl border border-gray-100 bg-white p-3 shadow-lg dark:border-racing-800 dark:bg-racing-900">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Mitglieder</p>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">{t('detail.members')}</p>
                 <div className="flex flex-col gap-1.5">
                   {[{ userId: board.ownerId, role: 'owner' as const, profile: undefined }, ...board.members].map(
                     (m) => {
@@ -202,14 +204,14 @@ export default function BoardDetailPage() {
                             {profile ? profile.display_name.slice(0, 2).toUpperCase() : '??'}
                           </span>
                           <span className="flex-1 truncate">
-                            {profile ? profile.display_name : 'Ich'}
-                            {m.role === 'owner' && <span className="ml-1 text-xs text-gray-400">(Inhaber)</span>}
+                            {profile ? profile.display_name : t('detail.me')}
+                            {m.role === 'owner' && <span className="ml-1 text-xs text-gray-400">{t('detail.owner')}</span>}
                           </span>
                           {isOwner && m.role !== 'owner' && (
                             <button
                               onClick={() => removeMember(board.id, m.userId)}
                               className="text-gray-300 hover:text-red-500"
-                              title="Entfernen"
+                              title={t('detail.remove')}
                             >
                               <X size={14} />
                             </button>
@@ -224,10 +226,10 @@ export default function BoardDetailPage() {
                   <div className="mt-3 border-t border-gray-100 pt-2 dark:border-racing-800">
                     <p className="mb-1.5 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-gray-400">
                       <UserPlus size={12} />
-                      Hinzufügen
+                      {t('detail.addMember')}
                     </p>
                     {availableFriends.length === 0 ? (
-                      <p className="text-xs text-gray-400">Keine weiteren Kollegen verfügbar.</p>
+                      <p className="text-xs text-gray-400">{t('detail.noFriendsAvailable')}</p>
                     ) : (
                       <div className="flex flex-col gap-1">
                         {availableFriends.map((f) => {
@@ -246,7 +248,7 @@ export default function BoardDetailPage() {
                                 {f.profile.display_name.slice(0, 2).toUpperCase()}
                               </span>
                               <span className="truncate">{f.profile.display_name}</span>
-                              {invited && <span className="ml-auto text-xs text-gray-400">Eingeladen</span>}
+                              {invited && <span className="ml-auto text-xs text-gray-400">{t('detail.invited')}</span>}
                             </button>
                           )
                         })}
@@ -264,7 +266,7 @@ export default function BoardDetailPage() {
             className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-sm hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800"
           >
             <Pencil size={14} />
-            Bearbeiten
+            {t('detail.edit')}
           </button>
         </div>
       </div>
@@ -277,11 +279,11 @@ export default function BoardDetailPage() {
           />
         </div>
         <span className="text-sm font-medium text-gray-500 dark:text-racing-200">
-          {progress}% ({done}/{total})
+          {t('detail.progress', { percent: progress, done, total })}
         </span>
         {board.deadline && (
           <span className={`text-sm ${overdue ? 'font-medium text-red-500' : 'text-gray-400'}`}>
-            Deadline: {formatFriendlyDate(board.deadline)}
+            {t('detail.deadline', { date: formatFriendlyDate(board.deadline) })}
           </span>
         )}
       </div>
@@ -293,7 +295,7 @@ export default function BoardDetailPage() {
             progressFilter === 'all' ? 'bg-accent text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
           }`}
         >
-          Alle Beteiligten
+          {t('detail.filterAll')}
         </button>
         <button
           onClick={() => setProgressFilter('mine')}
@@ -301,7 +303,7 @@ export default function BoardDetailPage() {
             progressFilter === 'mine' ? 'bg-accent text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
           }`}
         >
-          Nur ich
+          {t('detail.filterMine')}
         </button>
       </div>
 
@@ -321,11 +323,11 @@ export default function BoardDetailPage() {
                 />
               ))}
               <button
-                onClick={() => addColumn(board.id, 'Neue Spalte')}
+                onClick={() => addColumn(board.id, t('detail.newColumnTitle'))}
                 className="flex h-fit w-72 flex-shrink-0 items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-gray-200 py-3 text-sm text-gray-400 hover:border-gray-300 hover:text-gray-600 dark:border-racing-800 dark:hover:border-racing-700"
               >
                 <Plus size={14} />
-                Spalte hinzufügen
+                {t('detail.addColumn')}
               </button>
             </div>
           </DndContext>
@@ -337,7 +339,7 @@ export default function BoardDetailPage() {
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="flex items-center gap-2 text-sm font-semibold">
                   <MessageSquare size={14} />
-                  Diskussion
+                  {t('detail.discussion')}
                 </h3>
                 <button onClick={() => setShowDiscussion(false)} className="text-gray-400 hover:text-gray-600">
                   <X size={14} />

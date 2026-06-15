@@ -10,15 +10,25 @@ import {
   startOfMonth,
   startOfWeek,
 } from 'date-fns'
-import { de } from 'date-fns/locale'
+import { de, enUS } from 'date-fns/locale'
+import { useTranslation } from 'react-i18next'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useWorkTimeStore } from '../../store/workTimeStore'
 import { toISODate } from '../../utils/date'
 import { dayTargetMinutes, formatHM, netMinutes } from '../../utils/worktime'
 
-const weekdays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
-
 export default function WorkMonthView() {
+  const { t, i18n } = useTranslation('worktime')
+  const dateLocale = i18n.language === 'en' ? enUS : de
+  const weekdays = [
+    t('weekdays.mon'),
+    t('weekdays.tue'),
+    t('weekdays.wed'),
+    t('weekdays.thu'),
+    t('weekdays.fri'),
+    t('weekdays.sat'),
+    t('weekdays.sun'),
+  ]
   const [currentMonth, setCurrentMonth] = useState(() => new Date())
   const entries = useWorkTimeStore((s) => s.entries)
   const settings = useWorkTimeStore((s) => s.settings)
@@ -43,7 +53,7 @@ export default function WorkMonthView() {
         >
           <ChevronLeft size={18} />
         </button>
-        <span className="text-sm font-semibold capitalize">{format(currentMonth, 'MMMM yyyy', { locale: de })}</span>
+        <span className="text-sm font-semibold capitalize">{format(currentMonth, 'MMMM yyyy', { locale: dateLocale })}</span>
         <button
           onClick={() => setCurrentMonth((d) => addMonths(d, 1))}
           className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-racing-800"
@@ -100,7 +110,7 @@ export default function WorkMonthView() {
       </div>
 
       <div className="flex items-center justify-between p-3 text-sm">
-        <span className="font-semibold">Monat gesamt: {formatHM(monthNet)}</span>
+        <span className="font-semibold">{t('month.total', { value: formatHM(monthNet) })}</span>
         <span className={`font-semibold ${monthDiff >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
           {monthDiff >= 0 ? '+' : ''}
           {formatHM(monthDiff)}

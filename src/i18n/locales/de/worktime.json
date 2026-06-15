@@ -1,0 +1,60 @@
+{
+  "page": {
+    "title": "Arbeitszeit",
+    "viewWeek": "Woche",
+    "viewMonth": "Monat"
+  },
+  "settingsModal": {
+    "title": "Arbeitszeit-Einstellungen",
+    "weeklyHours": "Wochenarbeitszeit (Stunden)",
+    "workDaysPerWeek": "Arbeitstage pro Woche",
+    "defaultBreakMinutes": "Standard-Mittagspause (Min.)",
+    "done": "Fertig"
+  },
+  "clock": {
+    "running": "läuft…",
+    "workedToday": "heute gearbeitet",
+    "clockIn": "Einstempeln",
+    "clockOut": "Ausstempeln",
+    "targetToday": "Soll heute",
+    "difference": "Differenz",
+    "breakMinutes": "Mittagspause (Min.)",
+    "alreadyTracked": "{{time}} bereits erfasst",
+    "nothingTracked": "Noch nichts erfasst"
+  },
+  "month": {
+    "total": "Monat gesamt: {{value}}"
+  },
+  "week": {
+    "columns": {
+      "day": "Tag",
+      "from": "Von",
+      "to": "Bis",
+      "break": "Pause (Min.)",
+      "worked": "Gearbeitet",
+      "target": "Soll",
+      "diff": "Diff."
+    },
+    "total": "Woche gesamt"
+  },
+  "weekdays": {
+    "mon": "Mo",
+    "tue": "Di",
+    "wed": "Mi",
+    "thu": "Do",
+    "fri": "Fr",
+    "sat": "Sa",
+    "sun": "So"
+  },
+  "overview": {
+    "totalOvertime": "Überstunden gesamt",
+    "overtimeInDays": "Überstunden in Tagen",
+    "compDays": "Ausgleichstage (Wochenende)",
+    "undoCompDay": "Ausgleichstag rückgängig machen",
+    "markCompDayTaken": "Ausgleichstag als genommen markieren",
+    "openCompDay_one": "offener Ausgleichstag",
+    "openCompDay_other": "offene Ausgleichstage",
+    "earnedAndTaken": "{{earned}} verdient · {{taken}} genommen",
+    "thresholdInfo": "Ab {{threshold}} an einem Wochenendtag gibt es einen Ausgleichstag, alles darüber zählt als Überstunden."
+  }
+}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Archive, AtSign, Bell, Check, HelpCircle, Plus, Trello, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useTasksStore } from '../store/tasksStore'
 import { useTaskSharesStore } from '../store/taskSharesStore'
 import { useProjectTasksStore } from '../store/projectTasksStore'
@@ -15,15 +16,16 @@ import TaskFormModal from '../components/tasks/TaskFormModal'
 import PriorityBadge from '../components/tasks/PriorityBadge'
 import { formatFriendlyDate, isDueThisWeek, isDueToday, isOverdue, todayISO } from '../utils/date'
 
-const titles: Record<string, string> = {
-  today: 'Heute',
-  week: 'Diese Woche fällig',
-  inbox: 'Inbox',
-  completed: 'Erledigt',
-  someday: 'Irgendwann',
+const titleKeys: Record<string, string> = {
+  today: 'page.titles.today',
+  week: 'page.titles.week',
+  inbox: 'page.titles.inbox',
+  completed: 'page.titles.completed',
+  someday: 'page.titles.someday',
 }
 
 export default function TasksPage() {
+  const { t } = useTranslation('tasks')
   const { smartList } = useParams()
   const tasks = useTasksStore((s) => s.tasks)
   const fetchTasks = useTasksStore((s) => s.fetchAll)
@@ -70,27 +72,27 @@ export default function TasksPage() {
 
   let filtered = tasks
   let groupByDate = false
-  let title = 'Alle Aufgaben'
+  let title = t('page.titles.all')
   let defaultDueDate: string | undefined
 
   if (smartList === 'today') {
     filtered = allTasks.filter((t) => !t.completed && (isDueToday(t.dueDate) || isOverdue(t.dueDate)))
-    title = titles.today
+    title = t(titleKeys.today)
     defaultDueDate = todayISO()
   } else if (smartList === 'week') {
     filtered = allTasks.filter(
       (t) => !t.completed && (isOverdue(t.dueDate) || isDueToday(t.dueDate) || isDueThisWeek(t.dueDate))
     )
-    title = titles.week
+    title = t(titleKeys.week)
   } else if (smartList === 'inbox') {
     filtered = tasks.filter((t) => !t.completed && !t.boardId && !t.dueDate && !t.someday)
-    title = titles.inbox
+    title = t(titleKeys.inbox)
   } else if (smartList === 'completed') {
     filtered = allTasks.filter((t) => t.completed)
-    title = titles.completed
+    title = t(titleKeys.completed)
   } else if (smartList === 'someday') {
     filtered = allTasks.filter((t) => !t.completed && t.someday)
-    title = titles.someday
+    title = t(titleKeys.someday)
   } else {
     filtered = allTasks.filter((t) => !t.completed && !t.someday)
     groupByDate = true
@@ -105,7 +107,7 @@ export default function TasksPage() {
           className="flex items-center gap-2 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-dark"
         >
           <Plus size={16} />
-          Aufgabe
+          {t('page.addTask')}
         </button>
       </div>
 
@@ -119,7 +121,7 @@ export default function TasksPage() {
                 : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-racing-200'
             }`}
           >
-            Aufgaben
+            {t('page.tabs.tasks')}
           </Link>
           <Link
             to="/tasks/someday"
@@ -130,7 +132,7 @@ export default function TasksPage() {
             }`}
           >
             <Archive size={14} />
-            Irgendwann
+            {t('page.tabs.someday')}
           </Link>
           <Link
             to="/tasks/completed"
@@ -141,7 +143,7 @@ export default function TasksPage() {
             }`}
           >
             <Check size={14} />
-            Erledigt
+            {t('page.tabs.completed')}
           </Link>
         </div>
       )}
@@ -149,13 +151,13 @@ export default function TasksPage() {
       {smartList === 'inbox' ? (
         <div>
           {boardInvites.length === 0 && teamInvites.length === 0 && incoming.length === 0 && notifications.filter((n) => !n.read || n.type === 'birthday').length === 0 && (
-            <p className="py-12 text-center text-sm text-gray-400">Alles erledigt. Keine neuen Benachrichtigungen.</p>
+            <p className="py-12 text-center text-sm text-gray-400">{t('page.inbox.allDone')}</p>
           )}
 
           {notifications.filter((n) => n.type === 'birthday').length > 0 && (
             <div className="mb-6">
               <h2 className="mb-3 flex items-center gap-2 text-base font-semibold">
-                🎂 Geburtstage heute
+                🎂 {t('page.inbox.birthdaysToday')}
               </h2>
               <div className="flex flex-col gap-2">
                 {notifications.filter((n) => n.type === 'birthday').map((n) => (
@@ -177,11 +179,11 @@ export default function TasksPage() {
                         onClick={() => markRead(n.id)}
                         className="flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600"
                       >
-                        <Check size={13} /> Gratuliert!
+                        <Check size={13} /> {t('page.inbox.congratulated')}
                       </button>
                     ) : (
                       <span className="flex flex-shrink-0 items-center gap-1 rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-400 dark:bg-racing-800">
-                        <Check size={13} /> Erledigt
+                        <Check size={13} /> {t('page.tabs.completed')}
                       </span>
                     )}
                   </div>
@@ -195,9 +197,9 @@ export default function TasksPage() {
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="flex items-center gap-2 text-base font-semibold">
                   <Bell size={16} className="text-gray-400" />
-                  Benachrichtigungen
+                  {t('page.inbox.notifications')}
                 </h2>
-                <button onClick={markAllRead} className="text-xs text-accent hover:underline">Alle gelesen</button>
+                <button onClick={markAllRead} className="text-xs text-accent hover:underline">{t('page.inbox.markAllRead')}</button>
               </div>
               <div className="flex flex-col gap-2">
                 {notifications.filter((n) => n.type !== 'birthday').map((n) => {
@@ -242,7 +244,7 @@ export default function TasksPage() {
             <div className="mb-6">
               <h2 className="mb-3 flex items-center gap-2 text-base font-semibold">
                 <Trello size={16} className="text-gray-400" />
-                Projekteinladungen
+                {t('page.inbox.projectInvites')}
               </h2>
               <div className="flex flex-col gap-2">
                 {boardInvites.map((invite) => (
@@ -252,13 +254,13 @@ export default function TasksPage() {
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{invite.boardTitle}</p>
-                      <p className="truncate text-xs text-gray-400">von {invite.fromUser.display_name}</p>
+                      <p className="truncate text-xs text-gray-400">{t('page.inbox.from', { name: invite.fromUser.display_name })}</p>
                     </div>
                     <button onClick={() => acceptInvite(invite.id)} className="flex items-center gap-1 rounded-lg bg-accent px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark">
-                      <Check size={14} /> Annehmen
+                      <Check size={14} /> {t('page.inbox.accept')}
                     </button>
                     <button onClick={() => declineInvite(invite.id)} className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800">
-                      <X size={14} /> Ablehnen
+                      <X size={14} /> {t('page.inbox.decline')}
                     </button>
                   </div>
                 ))}
@@ -270,7 +272,7 @@ export default function TasksPage() {
             <div className="mb-6">
               <h2 className="mb-3 flex items-center gap-2 text-base font-semibold">
                 <Users size={16} className="text-gray-400" />
-                Team-Einladungen
+                {t('page.inbox.teamInvites')}
               </h2>
               <div className="flex flex-col gap-2">
                 {teamInvites.map((invite) => (
@@ -280,13 +282,13 @@ export default function TasksPage() {
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{invite.teamName}</p>
-                      <p className="truncate text-xs text-gray-400">von {invite.fromUser.display_name}</p>
+                      <p className="truncate text-xs text-gray-400">{t('page.inbox.from', { name: invite.fromUser.display_name })}</p>
                     </div>
                     <button onClick={() => acceptTeamInvite(invite.id)} className="flex items-center gap-1 rounded-lg bg-accent px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark">
-                      <Check size={14} /> Annehmen
+                      <Check size={14} /> {t('page.inbox.accept')}
                     </button>
                     <button onClick={() => declineTeamInvite(invite.id)} className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800">
-                      <X size={14} /> Ablehnen
+                      <X size={14} /> {t('page.inbox.decline')}
                     </button>
                   </div>
                 ))}
@@ -298,7 +300,7 @@ export default function TasksPage() {
             <div className="mb-6">
               <h2 className="mb-3 flex items-center gap-2 text-base font-semibold">
                 <Check size={16} className="text-gray-400" />
-                Aufgaben-Einladungen
+                {t('page.inbox.taskInvites')}
               </h2>
               <div className="flex flex-col gap-2">
                 {incoming.map((share) => (
@@ -310,16 +312,16 @@ export default function TasksPage() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{share.task.title}</p>
                       <p className="truncate text-xs text-gray-400">
-                        von {share.fromUser.display_name}
-                        {share.task.due_date && ` · fällig ${formatFriendlyDate(share.task.due_date)}`}
+                        {t('page.inbox.from', { name: share.fromUser.display_name })}
+                        {share.task.due_date && ` · ${t('page.inbox.due', { date: formatFriendlyDate(share.task.due_date) })}`}
                       </p>
                     </div>
                     <PriorityBadge priority={share.suggestedPriority ?? share.task.priority} />
                     <button onClick={() => acceptShare(share.id)} className="flex items-center gap-1 rounded-lg bg-accent px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark">
-                      <Check size={14} /> Annehmen
+                      <Check size={14} /> {t('page.inbox.accept')}
                     </button>
                     <button onClick={() => declineShare(share.id)} className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800">
-                      <X size={14} /> Ablehnen
+                      <X size={14} /> {t('page.inbox.decline')}
                     </button>
                     </div>
                     {share.message && (
@@ -338,7 +340,7 @@ export default function TasksPage() {
           tasks={filtered}
           groupByDate={groupByDate}
           flat={smartList === 'completed'}
-          emptyMessage={smartList === 'completed' ? 'Keine erledigten Aufgaben' : 'Keine Aufgaben'}
+          emptyMessage={smartList === 'completed' ? t('page.noCompletedTasks') : t('list.noTasks')}
         />
       )}
 

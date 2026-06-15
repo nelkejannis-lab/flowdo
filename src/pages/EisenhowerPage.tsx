@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AlarmClock, CircleDot, Flame, Snowflake } from 'lucide-react'
 import { useTasksStore } from '../store/tasksStore'
 import { useProjectTasksStore } from '../store/projectTasksStore'
@@ -10,6 +11,7 @@ import { useBoardsStore } from '../store/boardsStore'
 import type { Task } from '../types'
 
 export default function EisenhowerPage() {
+  const { t } = useTranslation('eisenhower')
   const personalTasks = useTasksStore((s) => s.tasks.filter((t) => !t.completed))
   const myProjectTasks = useProjectTasksStore((s) => s.myTasks.filter((t) => !t.completed))
   const fetchMyTasks = useProjectTasksStore((s) => s.fetchMyTasks)
@@ -32,28 +34,28 @@ export default function EisenhowerPage() {
     {
       urgent: true,
       important: true,
-      title: 'Dringend & Wichtig',
+      title: t('quadrants.urgentImportant'),
       colorClass: 'text-red-500',
       icon: <Flame size={16} />,
     },
     {
       urgent: false,
       important: true,
-      title: 'Nicht dringend & Wichtig',
+      title: t('quadrants.notUrgentImportant'),
       colorClass: 'text-amber-500',
       icon: <AlarmClock size={16} />,
     },
     {
       urgent: true,
       important: false,
-      title: 'Dringend & Unwichtig',
+      title: t('quadrants.urgentNotImportant'),
       colorClass: 'text-blue-500',
       icon: <CircleDot size={16} />,
     },
     {
       urgent: false,
       important: false,
-      title: 'Nicht dringend & Unwichtig',
+      title: t('quadrants.notUrgentNotImportant'),
       colorClass: 'text-emerald-500',
       icon: <Snowflake size={16} />,
     },
@@ -62,8 +64,8 @@ export default function EisenhowerPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold">Eisenhower-Matrix</h1>
-        <p className="text-sm text-gray-400">Priorisiere Aufgaben nach Dringlichkeit und Wichtigkeit</p>
+        <h1 className="text-2xl font-semibold">{t('page.title')}</h1>
+        <p className="text-sm text-gray-400">{t('page.intro')}</p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

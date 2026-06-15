@@ -1,0 +1,19 @@
+{
+  "buttons": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "close": "Schließen"
+  },
+  "loading": "Lädt…",
+  "comments": {
+    "empty": "Noch keine Kommentare.",
+    "placeholder": "Kommentar schreiben… @ zum Erwähnen"
+  },
+  "attachments": {
+    "label": "Anhänge",
+    "uploading": "Lädt hoch…",
+    "attachFile": "Datei anhängen"
+  },
+  "create": "Erstellen"
+}

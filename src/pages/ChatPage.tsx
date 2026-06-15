@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, Send } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useMessagesStore } from '../store/messagesStore'
 import { useFriendsStore } from '../store/friendsStore'
 import { useTeamsStore } from '../store/teamsStore'
@@ -9,6 +10,7 @@ import { isSupabaseConfigured } from '../lib/supabase'
 type ChatTarget = { type: 'dm'; userId: string } | { type: 'team'; teamId: string; teamName: string }
 
 export default function ChatPage() {
+  const { t, i18n } = useTranslation('chat')
   const conversations = useMessagesStore((s) => s.conversations)
   const messages = useMessagesStore((s) => s.messages)
   const teamMessages = useMessagesStore((s) => s.teamMessages)
@@ -89,12 +91,14 @@ export default function ChatPage() {
   const activeMsgs = active?.type === 'dm' ? (messages[active.userId] ?? []) : []
   const activeTeamMsgs = active?.type === 'team' ? (teamMessages[active.teamId] ?? []) : []
 
+  const locale = i18n.language === 'en' ? 'en-US' : 'de-DE'
+
   function formatTime(iso: string) {
     const d = new Date(iso)
     const now = new Date()
     return d.toDateString() === now.toDateString()
-      ? d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
-      : d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })
+      ? d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+      : d.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' })
   }
 
   function groupByDate<T extends { createdAt: string }>(msgs: T[]) {
@@ -103,9 +107,9 @@ export default function ChatPage() {
     for (const msg of msgs) {
       const d = new Date(msg.createdAt)
       const now = new Date()
-      const label = d.toDateString() === now.toDateString() ? 'Heute'
-        : new Date(now.getTime() - 86400000).toDateString() === d.toDateString() ? 'Gestern'
-        : d.toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
+      const label = d.toDateString() === now.toDateString() ? t('dateGroups.today')
+        : new Date(now.getTime() - 86400000).toDateString() === d.toDateString() ? t('dateGroups.yesterday')
+        : d.toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' })
       if (label !== cur) { cur = label; groups.push({ label, items: [] }) }
       groups[groups.length - 1].items.push(msg)
     }
@@ -113,7 +117,7 @@ export default function ChatPage() {
   }
 
   const headerName = activeProfile?.display_name ?? activeTeam?.name ?? ''
-  const headerSub = activeProfile ? `@${activeProfile.username}` : activeTeam ? `${activeTeam.members.length} Mitglieder` : ''
+  const headerSub = activeProfile ? `@${activeProfile.username}` : activeTeam ? t('members', { count: activeTeam.members.length }) : ''
 
   // Sidebar list
   function SidebarList({ onSelect }: { onSelect?: () => void }) {
@@ -121,7 +125,7 @@ export default function ChatPage() {
       <div className="flex-1 overflow-y-auto">
         {teams.length > 0 && (
           <>
-            <p className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-racing-400">Teams</p>
+            <p className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-racing-400">{t('sections.teams')}</p>
             {teams.map((team) => {
               const isActive = active?.type === 'team' && active.teamId === team.id
               return (
@@ -132,7 +136,7 @@ export default function ChatPage() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className={`truncate text-[15px] font-medium ${isActive ? 'text-accent' : ''}`}>{team.name}</p>
-                    <p className="truncate text-xs text-gray-400">{team.members.length} Mitglieder</p>
+                    <p className="truncate text-xs text-gray-400">{t('members', { count: team.members.length })}</p>
                   </div>
                 </button>
               )
@@ -142,7 +146,7 @@ export default function ChatPage() {
 
         {allContacts.length > 0 && (
           <>
-            <p className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-racing-400">Direkte Nachrichten</p>
+            <p className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-racing-400">{t('sections.directMessages')}</p>
             {allContacts.map((profile) => {
               const conv = conversations.find((c) => c.profile.id === profile.id)
               const unread = conv?.unreadCount ?? 0
@@ -159,7 +163,7 @@ export default function ChatPage() {
                       {conv?.lastMessage && <span className={`text-[11px] ${unread > 0 ? 'font-semibold text-accent' : 'text-gray-400'}`}>{formatTime(conv.lastMessage.createdAt)}</span>}
                     </div>
                     <div className="flex items-center justify-between">
-                      <p className="truncate text-sm text-gray-400">{conv?.lastMessage ? (conv.lastMessage.fromUserId === currentUserId ? 'Du: ' : '') + conv.lastMessage.body : 'Noch keine Nachrichten'}</p>
+                      <p className="truncate text-sm text-gray-400">{conv?.lastMessage ? (conv.lastMessage.fromUserId === currentUserId ? t('youPrefix') : '') + conv.lastMessage.body : t('noMessagesPreview')}</p>
                       {unread > 0 && <span className="flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white">{unread}</span>}
                     </div>
                   </div>
@@ -170,7 +174,7 @@ export default function ChatPage() {
         )}
 
         {allContacts.length === 0 && teams.length === 0 && (
-          <p className="px-4 py-8 text-center text-sm text-gray-400">Füge Kollegen oder Teams hinzu.</p>
+          <p className="px-4 py-8 text-center text-sm text-gray-400">{t('noContactsYet')}</p>
         )}
       </div>
     )
@@ -183,12 +187,12 @@ export default function ChatPage() {
         style={{ backgroundImage: 'radial-gradient(circle, #e5e5e5 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
         {active?.type === 'dm' && activeMsgs.length === 0 && (
           <div className="flex h-full items-center justify-center">
-            <p className="rounded-xl bg-white/80 px-4 py-2 text-xs text-gray-500 shadow-sm dark:bg-racing-800/80">Noch keine Nachrichten 👋</p>
+            <p className="rounded-xl bg-white/80 px-4 py-2 text-xs text-gray-500 shadow-sm dark:bg-racing-800/80">{t('noMessagesYet')}</p>
           </div>
         )}
         {active?.type === 'team' && activeTeamMsgs.length === 0 && (
           <div className="flex h-full items-center justify-center">
-            <p className="rounded-xl bg-white/80 px-4 py-2 text-xs text-gray-500 shadow-sm dark:bg-racing-800/80">Noch keine Nachrichten im Team 👋</p>
+            <p className="rounded-xl bg-white/80 px-4 py-2 text-xs text-gray-500 shadow-sm dark:bg-racing-800/80">{t('noTeamMessagesYet')}</p>
           </div>
         )}
 
@@ -260,7 +264,7 @@ export default function ChatPage() {
       {/* MOBILE: list or chat */}
       {!active ? (
         <div className="flex flex-1 flex-col bg-white dark:bg-racing-950 sm:hidden">
-          <div className="bg-accent px-4 py-3"><h1 className="text-base font-semibold text-white">Chats</h1></div>
+          <div className="bg-accent px-4 py-3"><h1 className="text-base font-semibold text-white">{t('title')}</h1></div>
           <SidebarList />
         </div>
       ) : (
@@ -275,7 +279,7 @@ export default function ChatPage() {
           </div>
           <MessagesArea />
           <form onSubmit={handleSend} className="flex items-center gap-2 border-t border-gray-100 bg-white px-3 py-2 dark:border-racing-800 dark:bg-racing-900">
-            <input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} placeholder="Nachricht…"
+            <input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} placeholder={t('messagePlaceholder')}
               className="flex-1 rounded-full bg-gray-100 px-4 py-2.5 text-[15px] focus:outline-none dark:bg-racing-800 dark:text-racing-100" />
             <button type="submit" disabled={!input.trim() || sending}
               className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-accent text-white disabled:opacity-40">
@@ -288,13 +292,13 @@ export default function ChatPage() {
       {/* DESKTOP: sidebar + chat */}
       <div className="hidden flex-1 sm:flex">
         <div className="flex w-72 flex-shrink-0 flex-col border-r border-gray-100 bg-white dark:border-racing-800 dark:bg-racing-950">
-          <div className="bg-accent px-4 py-3"><h1 className="text-base font-semibold text-white">Chats</h1></div>
+          <div className="bg-accent px-4 py-3"><h1 className="text-base font-semibold text-white">{t('title')}</h1></div>
           <SidebarList />
         </div>
 
         {!active ? (
           <div className="flex flex-1 items-center justify-center bg-gray-50 dark:bg-racing-900">
-            <p className="text-sm text-gray-400">Wähle einen Chat</p>
+            <p className="text-sm text-gray-400">{t('selectChat')}</p>
           </div>
         ) : (
           <div className="flex flex-1 flex-col overflow-hidden">
@@ -307,7 +311,7 @@ export default function ChatPage() {
             </div>
             <MessagesArea />
             <form onSubmit={handleSend} className="flex items-center gap-2 border-t border-gray-100 bg-white px-3 py-2 dark:border-racing-800 dark:bg-racing-900">
-              <input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} placeholder="Nachricht…"
+              <input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} placeholder={t('messagePlaceholder')}
                 className="flex-1 rounded-full bg-gray-100 px-4 py-2.5 text-[15px] focus:outline-none dark:bg-racing-800 dark:text-racing-100" />
               <button type="submit" disabled={!input.trim() || sending}
                 className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-accent text-white disabled:opacity-40">

@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import Layout from './components/layout/Layout'
 import Dashboard from './pages/Dashboard'
 import TasksPage from './pages/Tasks'
@@ -22,6 +23,7 @@ import { useAuthStore } from './store/authStore'
 import { isSupabaseConfigured } from './lib/supabase'
 
 export default function App() {
+  const { t } = useTranslation('layout')
   const location = useLocation()
   const mode = useSettingsStore((s) => s.mode)
   const pinkAccent = useSettingsStore((s) => s.pinkAccent)
@@ -46,7 +48,7 @@ export default function App() {
   if (isSupabaseConfigured && loading) {
     return (
       <div className="flex min-h-screen items-center justify-center text-gray-400">
-        Lädt…
+        {t('loading')}
       </div>
     )
   }

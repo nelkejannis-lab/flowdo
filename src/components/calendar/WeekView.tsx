@@ -1,5 +1,6 @@
 import { startOfWeek, addDays, isSameDay, format } from 'date-fns'
-import { de } from 'date-fns/locale'
+import { de, enUS } from 'date-fns/locale'
+import { useTranslation } from 'react-i18next'
 import type { CalendarEntry, CalendarEvent, Task } from '../../types'
 import { toISODate } from '../../utils/date'
 import { eachEntryDate, eachEventDate } from '../../utils/events'
@@ -18,6 +19,8 @@ interface WeekViewProps {
 }
 
 export default function WeekView({ currentDate, tasks, events, entries = [], onTaskClick, onAddTask, onEventClick, onEntryClick }: WeekViewProps) {
+  const { t, i18n } = useTranslation('calendar')
+  const dateLocale = i18n.language === 'en' ? enUS : de
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 })
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
 
@@ -63,10 +66,10 @@ export default function WeekView({ currentDate, tasks, events, entries = [], onT
             <div className="mb-2 flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase text-gray-400">
-                  {format(day, 'EEE', { locale: de })}
+                  {format(day, 'EEE', { locale: dateLocale })}
                 </p>
                 <p className={`text-sm font-semibold ${today ? 'text-accent' : ''}`}>
-                  {format(day, 'd. MMM', { locale: de })}
+                  {format(day, 'd. MMM', { locale: dateLocale })}
                 </p>
               </div>
               <button
@@ -106,7 +109,7 @@ export default function WeekView({ currentDate, tasks, events, entries = [], onT
               {dayTasks.map((task) => (
                 <TaskItem key={task.id} task={task} onClick={() => onTaskClick(task)} showBoard={false} />
               ))}
-              {dayTasks.length === 0 && <p className="text-xs text-gray-300">–</p>}
+              {dayTasks.length === 0 && <p className="text-xs text-gray-300">{t('weekday.noTasks')}</p>}
             </div>
           </div>
         )

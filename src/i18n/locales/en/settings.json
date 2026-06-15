@@ -1,0 +1,81 @@
+{
+  "language": {
+    "title": "Language",
+    "description": "Choose the language of the user interface.",
+    "german": "German",
+    "english": "English"
+  },
+  "title": "Settings",
+  "tabs": {
+    "profil": "Profile",
+    "kalender": "Calendar",
+    "datenschutz": "Privacy"
+  },
+  "calendar": {
+    "title": "External calendars",
+    "description": "Connect your calendars — events are imported into Flowdo automatically.",
+    "connectedSuffix": "connected!",
+    "errorPrefix": "Error",
+    "outlook": "Outlook / Microsoft 365",
+    "connected": "Connected",
+    "notConnected": "Not connected",
+    "disconnect": "Disconnect",
+    "connect": "Connect",
+    "icloud": "iCloud / iCal / Other (URL)",
+    "icloudPlaceholder": "Paste an ICS or Webcal link",
+    "urlPlaceholder": "https://... or webcal://...",
+    "add": "Add",
+    "icloudHint": "iCloud: Settings → Calendar → Share Calendar → Copy link",
+    "lastSynced": "Last synced: {{date}}",
+    "never": "Never",
+    "syncing": "Syncing…",
+    "syncNow": "Sync now",
+    "syncedPrefix": "Synced",
+    "fewConnections": "💡 Connect Google or Outlook using the \"Connect\" button above. iCloud works instantly via calendar link (no setup needed)."
+  },
+  "profile": {
+    "avatarTitle": "Profile picture",
+    "avatarAlt": "Profile picture",
+    "uploading": "Uploading…",
+    "uploadImage": "Upload image",
+    "remove": "Remove",
+    "uploadError": "Error while uploading",
+    "title": "Profile",
+    "displayName": "Display name",
+    "username": "Username",
+    "birthday": "Date of birth",
+    "email": "Email",
+    "saveSuccess": "Profile saved",
+    "saving": "Saving…",
+    "save": "Save"
+  },
+  "password": {
+    "title": "Change password",
+    "new": "New password",
+    "confirm": "Confirm new password",
+    "hint": "At least 8 characters",
+    "show": "Show password",
+    "hide": "Hide password",
+    "changeSuccess": "Password changed",
+    "errorTooShort": "Password must be at least 8 characters long",
+    "errorMismatch": "Passwords do not match",
+    "saving": "Saving…",
+    "submit": "Change password"
+  },
+  "privacy": {
+    "exportTitle": "Export my data",
+    "exportDescription": "Download all your data stored with Mooncrew (profile, tasks, projects, comments, work hours, calendar entries) as a JSON file (Art. 15 GDPR).",
+    "exporting": "Exporting…",
+    "exportButton": "Export data",
+    "appInfoTitle": "App info & legal",
+    "appInfoVersion": "Mooncrew · Version {{version}}",
+    "privacyPolicyLink": "Privacy Policy",
+    "imprintLink": "Imprint",
+    "deleteTitle": "Delete account",
+    "deleteDescription": "This permanently deletes your account and all associated data (Art. 17 GDPR – right to erasure). This action cannot be undone.",
+    "deleteConfirmLabel": "Type %WORD% to confirm",
+    "deleteConfirmWord": "DELETE",
+    "deleting": "Deleting…",
+    "deleteButton": "Permanently delete account"
+  }
+}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Check, ChevronDown, Pencil, Plus, Trash2, UserPlus, Users, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useFriendsStore } from '../store/friendsStore'
 import { useTeamsStore } from '../store/teamsStore'
 import { useTeamInvitesStore } from '../store/teamInvitesStore'
@@ -17,6 +18,7 @@ function Avatar({ name, color }: { name: string; color: string }) {
 }
 
 export default function FriendsPage() {
+  const { t } = useTranslation(['friends', 'common'])
   const {
     friends,
     incoming,
@@ -88,7 +90,7 @@ export default function FriendsPage() {
     setSending(false)
     if (err) setError(err)
     else {
-      setSuccess(`Anfrage an @${username.trim().toLowerCase()} gesendet`)
+      setSuccess(t('addPerson.successMessage', { username: username.trim().toLowerCase() }))
       setUsername('')
       setSuggestions([])
     }
@@ -96,10 +98,10 @@ export default function FriendsPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-semibold">Kollegen</h1>
+      <h1 className="mb-6 text-2xl font-semibold">{t('title')}</h1>
 
       <div className="mb-6 rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-        <h2 className="mb-2 text-sm font-semibold">Person hinzufügen</h2>
+        <h2 className="mb-2 text-sm font-semibold">{t('addPerson.heading')}</h2>
         <form onSubmit={handleSend} className="flex gap-2">
           <div className="relative flex-1">
             <input
@@ -107,7 +109,7 @@ export default function FriendsPage() {
               onChange={(e) => setUsername(e.target.value)}
               onFocus={() => setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 100)}
-              placeholder="Benutzername oder Name suchen"
+              placeholder={t('addPerson.placeholder')}
               className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
             />
             {showSuggestions && suggestions.length > 0 && (
@@ -135,7 +137,7 @@ export default function FriendsPage() {
             className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
           >
             <UserPlus size={16} />
-            Anfrage senden
+            {t('addPerson.submit')}
           </button>
         </form>
         {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
@@ -144,7 +146,7 @@ export default function FriendsPage() {
 
       {incoming.length > 0 && (
         <div className="mb-6">
-          <h2 className="mb-3 text-lg font-semibold">Anfragen</h2>
+          <h2 className="mb-3 text-lg font-semibold">{t('incomingRequests.heading')}</h2>
           <div className="flex flex-col gap-2">
             {incoming.map((req) => (
               <div
@@ -161,14 +163,14 @@ export default function FriendsPage() {
                   className="flex items-center gap-1 rounded-lg bg-accent px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark"
                 >
                   <Check size={14} />
-                  Annehmen
+                  {t('incomingRequests.accept')}
                 </button>
                 <button
                   onClick={() => declineOrCancel(req.id)}
                   className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800"
                 >
                   <X size={14} />
-                  Ablehnen
+                  {t('incomingRequests.decline')}
                 </button>
               </div>
             ))}
@@ -178,7 +180,7 @@ export default function FriendsPage() {
 
       {outgoing.length > 0 && (
         <div className="mb-6">
-          <h2 className="mb-3 text-lg font-semibold">Gesendete Anfragen</h2>
+          <h2 className="mb-3 text-lg font-semibold">{t('outgoingRequests.heading')}</h2>
           <div className="flex flex-col gap-2">
             {outgoing.map((req) => (
               <div
@@ -190,13 +192,13 @@ export default function FriendsPage() {
                   <p className="truncate text-sm font-medium">{req.profile.display_name}</p>
                   <p className="truncate text-xs text-gray-400">@{req.profile.username}</p>
                 </div>
-                <span className="text-xs text-gray-400">Ausstehend</span>
+                <span className="text-xs text-gray-400">{t('outgoingRequests.pending')}</span>
                 <button
                   onClick={() => declineOrCancel(req.id)}
                   className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800"
                 >
                   <X size={14} />
-                  Zurückziehen
+                  {t('outgoingRequests.withdraw')}
                 </button>
               </div>
             ))}
@@ -205,11 +207,11 @@ export default function FriendsPage() {
       )}
 
       <div>
-        <h2 className="mb-3 text-lg font-semibold">Kollegen ({friends.length})</h2>
+        <h2 className="mb-3 text-lg font-semibold">{t('friendsList.heading', { count: friends.length })}</h2>
         {loading ? (
-          <p className="text-sm text-gray-400">Lädt…</p>
+          <p className="text-sm text-gray-400">{t('common:loading')}</p>
         ) : friends.length === 0 ? (
-          <p className="text-sm text-gray-400">Noch keine Kollegen hinzugefügt.</p>
+          <p className="text-sm text-gray-400">{t('friendsList.empty')}</p>
         ) : (
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {friends.map((f) => (
@@ -224,7 +226,7 @@ export default function FriendsPage() {
                 </div>
                 <button
                   onClick={() => removeFriend(f.id)}
-                  title="Entfernen"
+                  title={t('friendsList.remove')}
                   className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-red-500 dark:hover:bg-racing-800"
                 >
                   <X size={16} />
@@ -240,14 +242,14 @@ export default function FriendsPage() {
         <div className="mb-3 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
             <Users size={18} />
-            Teams
+            {t('teams.heading')}
           </h2>
           <button
             onClick={() => setShowNewTeam((v) => !v)}
             className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-racing-700 dark:text-racing-100 dark:hover:bg-racing-800"
           >
             <Plus size={15} />
-            Team erstellen
+            {t('teams.create')}
           </button>
         </div>
 
@@ -266,16 +268,16 @@ export default function FriendsPage() {
               autoFocus
               value={newTeamName}
               onChange={(e) => setNewTeamName(e.target.value)}
-              placeholder="Teamname"
+              placeholder={t('teams.namePlaceholder')}
               className="flex-1 rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700 sm:w-64 sm:flex-none"
             />
-            <button type="submit" className="rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-dark">Erstellen</button>
-            <button type="button" onClick={() => setShowNewTeam(false)} className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 dark:border-racing-700">Abbrechen</button>
+            <button type="submit" className="rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-dark">{t('teams.createSubmit')}</button>
+            <button type="button" onClick={() => setShowNewTeam(false)} className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 dark:border-racing-700">{t('teams.cancel')}</button>
           </form>
         )}
 
         {teams.length === 0 ? (
-          <p className="text-sm text-gray-400">Noch keine Teams erstellt.</p>
+          <p className="text-sm text-gray-400">{t('teams.empty')}</p>
         ) : (
           <div className="flex flex-col gap-3">
             {teams.map((team) => {
@@ -312,9 +314,9 @@ export default function FriendsPage() {
                     ) : (
                       <>
                         <span className="flex-1 text-sm font-semibold">{team.name}</span>
-                        <span className="text-xs text-gray-400">{team.members.length} Mitglieder</span>
+                        <span className="text-xs text-gray-400">{t('teams.members', { count: team.members.length })}</span>
                         <button onClick={() => { setEditingTeamId(team.id); setEditingTeamName(team.name) }} className="rounded p-1 text-gray-400 hover:text-accent"><Pencil size={13} /></button>
-                        <button onClick={() => { if (confirm(`Team „${team.name}" löschen?`)) removeTeam(team.id) }} className="rounded p-1 text-gray-400 hover:text-red-500"><Trash2 size={13} /></button>
+                        <button onClick={() => { if (confirm(t('teams.deleteConfirm', { name: team.name }))) removeTeam(team.id) }} className="rounded p-1 text-gray-400 hover:text-red-500"><Trash2 size={13} /></button>
                       </>
                     )}
                   </div>
@@ -341,7 +343,7 @@ export default function FriendsPage() {
                       {/* Add friend to team */}
                       {availableFriends.length > 0 && (
                         <div>
-                          <p className="mb-1.5 text-xs text-gray-400">Einladen:</p>
+                          <p className="mb-1.5 text-xs text-gray-400">{t('teams.invite')}</p>
                           <div className="flex flex-wrap gap-1.5">
                             {availableFriends.map((f) => {
                               const key = `${team.id}:${f.profile.id}`
@@ -362,7 +364,7 @@ export default function FriendsPage() {
                                 >
                                   {sent ? <Check size={11} /> : <Plus size={11} />}
                                   {f.profile.display_name}
-                                  {sent && ' eingeladen'}
+                                  {sent && t('teams.invited')}
                                 </button>
                               )
                             })}
@@ -371,7 +373,7 @@ export default function FriendsPage() {
                       )}
 
                       {friends.length === 0 && (
-                        <p className="text-xs text-gray-400">Keine Kollegen vorhanden.</p>
+                        <p className="text-xs text-gray-400">{t('teams.noFriends')}</p>
                       )}
                     </div>
                   )}

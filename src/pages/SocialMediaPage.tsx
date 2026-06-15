@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Instagram, Plus, RefreshCw, Users } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useSocialStore } from '../store/socialStore'
 import AddSocialAccountModal from '../components/social/AddSocialAccountModal'
 import { formatFriendlyDateTime } from '../utils/date'
 
 export default function SocialMediaPage() {
+  const { t } = useTranslation('social')
   const accounts = useSocialStore((s) => s.accounts)
   const metrics = useSocialStore((s) => s.metrics)
   const fetchAccounts = useSocialStore((s) => s.fetchAccounts)
@@ -33,13 +35,13 @@ export default function SocialMediaPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Social Media</h1>
+        <h1 className="text-2xl font-semibold">{t('page.title')}</h1>
         <button
           onClick={() => setShowForm(true)}
           className="flex items-center gap-2 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-dark"
         >
           <Plus size={16} />
-          Account
+          {t('page.addAccount')}
         </button>
       </div>
 
@@ -48,8 +50,7 @@ export default function SocialMediaPage() {
 
       {accounts.length === 0 ? (
         <p className="py-8 text-center text-sm text-gray-400">
-          Noch kein Instagram-Account verbunden. Füge einen Account hinzu, um Follower, Reichweite und weitere
-          Kennzahlen zu tracken.
+          {t('page.emptyState')}
         </p>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -68,7 +69,7 @@ export default function SocialMediaPage() {
                   <div className="min-w-0 flex-1">
                     <h3 className="truncate font-semibold">@{account.username}</h3>
                     <p className="text-xs text-gray-400">
-                      {account.lastSyncedAt ? `Zuletzt: ${formatFriendlyDateTime(account.lastSyncedAt)}` : 'Noch nicht synchronisiert'}
+                      {account.lastSyncedAt ? t('page.lastSynced', { date: formatFriendlyDateTime(account.lastSyncedAt) }) : t('page.notSyncedYet')}
                     </p>
                   </div>
                   <button
@@ -77,7 +78,7 @@ export default function SocialMediaPage() {
                       handleSync(account.id)
                     }}
                     disabled={syncingId === account.id}
-                    title="Jetzt synchronisieren"
+                    title={t('page.syncNow')}
                     className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-accent dark:hover:bg-racing-800 disabled:opacity-60"
                   >
                     <RefreshCw size={16} className={syncingId === account.id ? 'animate-spin' : ''} />
@@ -88,12 +89,12 @@ export default function SocialMediaPage() {
                   <div className="rounded-lg bg-gray-50 p-2 dark:bg-racing-800">
                     <p className="flex items-center gap-1 text-xs text-gray-400">
                       <Users size={12} />
-                      Follower
+                      {t('page.stats.followers')}
                     </p>
                     <p className="text-lg font-bold">{latest?.followersCount ?? '–'}</p>
                   </div>
                   <div className="rounded-lg bg-gray-50 p-2 dark:bg-racing-800">
-                    <p className="text-xs text-gray-400">Reichweite (heute)</p>
+                    <p className="text-xs text-gray-400">{t('page.stats.reachToday')}</p>
                     <p className="text-lg font-bold">{latest?.reach ?? '–'}</p>
                   </div>
                 </div>

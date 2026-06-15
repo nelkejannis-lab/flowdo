@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, NavLink } from 'react-router-dom'
 import Logo from './Logo'
 import {
@@ -49,6 +50,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const { t } = useTranslation('layout')
   const boards = useBoardsStore((s) => s.boards)
   const folders = useBoardsStore((s) => s.folders)
   const fetchBoards = useBoardsStore((s) => s.fetchBoards)
@@ -114,14 +116,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       <div className="mb-6 flex items-center justify-between gap-2 px-2">
         <div className="flex items-center gap-2">
           <Logo />
-          <span className="text-lg font-semibold">Mooncrew</span>
+          <span className="text-lg font-semibold">{t('appName')}</span>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={openSearch}
             className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
-            aria-label="Suche"
-            title="Suche (Strg+K)"
+            aria-label={t('sidebar.search')}
+            title={t('sidebar.searchTitle')}
           >
             <Search size={18} />
           </button>
@@ -129,7 +131,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             to="/chat"
             onClick={onClose}
             className="relative rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
-            aria-label="Chat"
+            aria-label={t('sidebar.chat')}
           >
             <MessageCircle size={18} />
             {unreadMessages > 0 && (
@@ -142,7 +144,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             to="/tasks/inbox"
             onClick={onClose}
             className="relative rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
-            aria-label="Inbox"
+            aria-label={t('sidebar.inbox')}
           >
             <Bell size={18} />
             {notificationCount > 0 && (
@@ -154,7 +156,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <button
             onClick={onClose}
             className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800 sm:hidden"
-            aria-label="Menü schließen"
+            aria-label={t('sidebar.closeMenu')}
           >
             <X size={18} />
           </button>
@@ -164,36 +166,36 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       <nav onClick={onClose} className="flex flex-col gap-1">
         <NavLink to="/" end className={navItemClass}>
           <LayoutDashboard size={18} />
-          Dashboard
+          {t('sidebar.nav.dashboard')}
         </NavLink>
         <NavLink to="/tasks/week" className={navItemClass}>
           <CheckCircle2 size={18} />
-          Diese Woche
+          {t('sidebar.nav.thisWeek')}
         </NavLink>
         <NavLink to="/tasks/inbox" className={navItemClass}>
           <Inbox size={18} />
-          Inbox
+          {t('sidebar.nav.inbox')}
         </NavLink>
         <NavLink to="/tasks" end className={navItemClass}>
           <ListTodo size={18} />
-          Alle Aufgaben
+          {t('sidebar.nav.allTasks')}
         </NavLink>
         <NavLink to="/calendar" className={navItemClass}>
           <CalendarDays size={18} />
-          Kalender
+          {t('sidebar.nav.calendar')}
         </NavLink>
         <NavLink to="/eisenhower" className={navItemClass}>
           <Grid2x2 size={18} />
-          Eisenhower
+          {t('sidebar.nav.eisenhower')}
         </NavLink>
         <NavLink to="/arbeitszeit" className={navItemClass}>
           <Clock size={18} />
-          Arbeitszeit
+          {t('sidebar.nav.worktime')}
         </NavLink>
         {isSupabaseConfigured && (
           <NavLink to="/ki-termine" className={navItemClass}>
             <Sparkles size={18} />
-            KI-Termine
+            {t('sidebar.nav.aiScheduler')}
           </NavLink>
         )}
         {isSupabaseConfigured && (
@@ -206,19 +208,19 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </span>
               )}
             </span>
-            Chat
+            {t('sidebar.nav.chat')}
           </NavLink>
         )}
         {isSupabaseConfigured && (
           <NavLink to="/friends" className={navItemClass}>
             <Users size={18} />
-            Kollegen
+            {t('sidebar.nav.friends')}
           </NavLink>
         )}
         {isSupabaseConfigured && (
           <NavLink to="/social" className={navItemClass}>
             <Instagram size={18} />
-            Social Media
+            {t('sidebar.nav.social')}
           </NavLink>
         )}
       </nav>
@@ -226,13 +228,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       <div className="mt-6">
         <div className="mb-2 flex items-center justify-between px-2">
           <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-            Projekte
+            {t('sidebar.projects.title')}
           </span>
           <NavLink
             to="/projekte"
             onClick={onClose}
             className="text-gray-400 hover:text-accent"
-            title="Projekte verwalten"
+            title={t('sidebar.projects.manage')}
           >
             <Plus size={16} />
           </NavLink>
@@ -240,7 +242,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="flex flex-col gap-1">
           <NavLink to="/projekte" end className={navItemClass} onClick={onClose}>
             <Trello size={18} />
-            Alle Projekte
+            {t('sidebar.projects.all')}
           </NavLink>
 
           {/* Folders with their boards */}
@@ -264,7 +266,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 {isOpen && (
                   <div className="ml-4 flex flex-col gap-1 border-l border-gray-100 pl-2 dark:border-racing-800">
                     {folderBoards.length === 0 ? (
-                      <span className="px-3 py-1.5 text-xs text-gray-400">Leer</span>
+                      <span className="px-3 py-1.5 text-xs text-gray-400">{t('sidebar.projects.empty')}</span>
                     ) : (
                       folderBoards.map((board) => (
                         <NavLink key={board.id} to={`/projekte/${board.id}`} className={navItemClass} onClick={onClose}>
@@ -299,7 +301,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             {profile.avatar_url ? (
               <img
                 src={profile.avatar_url}
-                alt="Profilbild"
+                alt={t('sidebar.profile.avatarAlt')}
                 className="h-7 w-7 flex-shrink-0 rounded-full object-cover"
               />
             ) : (
@@ -321,7 +323,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 e.stopPropagation()
                 signOut()
               }}
-              title="Abmelden"
+              title={t('sidebar.profile.signOut')}
               className="rounded-md p-1.5 text-gray-400 hover:bg-gray-200 hover:text-gray-600 dark:hover:bg-racing-700"
             >
               <LogOut size={16} />
@@ -331,8 +333,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="flex items-center gap-1 rounded-lg bg-gray-100 p-1 dark:bg-racing-800">
           <button
             onClick={() => setMode('light')}
-            title="Light Mode"
-            aria-label="Light Mode"
+            title={t('sidebar.theme.light')}
+            aria-label={t('sidebar.theme.light')}
             className={`flex flex-1 items-center justify-center rounded-md py-1.5 transition-colors ${
               mode === 'light'
                 ? 'bg-white text-gray-700 shadow-sm dark:bg-racing-700 dark:text-white'
@@ -343,8 +345,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </button>
           <button
             onClick={() => setMode('dark')}
-            title="Dark Mode"
-            aria-label="Dark Mode"
+            title={t('sidebar.theme.dark')}
+            aria-label={t('sidebar.theme.dark')}
             className={`flex flex-1 items-center justify-center rounded-md py-1.5 transition-colors ${
               mode === 'dark'
                 ? 'bg-white text-gray-700 shadow-sm dark:bg-racing-700 dark:text-white'
@@ -355,8 +357,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </button>
           <button
             onClick={togglePinkAccent}
-            title="Pink Mode"
-            aria-label="Pink Mode"
+            title={t('sidebar.theme.pink')}
+            aria-label={t('sidebar.theme.pink')}
             className={`flex flex-1 items-center justify-center rounded-md py-1.5 transition-colors ${
               pinkAccent
                 ? 'bg-white text-gray-700 shadow-sm dark:bg-racing-700 dark:text-white'
@@ -367,8 +369,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </button>
         </div>
         <div className="mt-2 flex justify-center gap-3 px-2 text-[11px] text-gray-400">
-          <Link to="/datenschutz" target="_blank" className="hover:underline">Datenschutz</Link>
-          <Link to="/impressum" target="_blank" className="hover:underline">Impressum</Link>
+          <Link to="/datenschutz" target="_blank" className="hover:underline">{t('sidebar.legal.privacy')}</Link>
+          <Link to="/impressum" target="_blank" className="hover:underline">{t('sidebar.legal.imprint')}</Link>
         </div>
       </div>
       </aside>

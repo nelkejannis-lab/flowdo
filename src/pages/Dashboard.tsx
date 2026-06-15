@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { differenceInCalendarDays, format, parseISO } from 'date-fns'
-import { de } from 'date-fns/locale'
+import { de, enUS } from 'date-fns/locale'
 import { Plus, Clock, CalendarClock, Play, Square } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useTasksStore } from '../store/tasksStore'
 import { useBoardsStore } from '../store/boardsStore'
 import { useProjectTasksStore } from '../store/projectTasksStore'
@@ -16,6 +17,8 @@ import { isDueThisWeek, isDueToday, isOverdue, todayISO } from '../utils/date'
 import { formatHM, netMinutes } from '../utils/worktime'
 
 export default function Dashboard() {
+  const { t, i18n } = useTranslation('dashboard')
+  const dateLocale = i18n.language === 'en' ? enUS : de
   const tasks = useTasksStore((s) => s.tasks)
   const fetchTasks = useTasksStore((s) => s.fetchAll)
   const boards = useBoardsStore((s) => s.boards)
@@ -73,30 +76,30 @@ export default function Dashboard() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <h1 className="text-2xl font-semibold">{t('title')}</h1>
         <button
           onClick={() => setShowForm(true)}
           className="flex items-center gap-2 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-dark"
         >
           <Plus size={16} />
-          Aufgabe
+          {t('addTask')}
         </button>
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Diese Woche fällig</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('stats.dueThisWeek')}</p>
           <p className="mt-1 text-3xl font-bold">{weekTasks.length}</p>
         </div>
         <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Aktive Projekte</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('stats.activeProjects')}</p>
           <p className="mt-1 text-3xl font-bold">{boards.length}</p>
         </div>
         <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-gray-400 flex items-center gap-1.5">
               <Clock size={14} className="text-accent" />
-              Gearbeitete Zeit heute
+              {t('stats.workedToday')}
             </p>
             <p className="mt-1 text-3xl font-bold">{formatHM(workedMinutesToday)}</p>
           </div>
@@ -105,7 +108,7 @@ export default function Dashboard() {
             className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-white shadow ${
               isWorkTimeRunning ? 'bg-red-500 hover:bg-red-600' : 'bg-accent hover:bg-accent-dark'
             }`}
-            title={isWorkTimeRunning ? 'Ausstempeln' : 'Einstempeln'}
+            title={isWorkTimeRunning ? t('clockOut') : t('clockIn')}
           >
             {isWorkTimeRunning ? <Square size={16} /> : <Play size={18} className="ml-0.5" />}
           </button>
@@ -115,24 +118,24 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Diese Woche fällig</h2>
+            <h2 className="text-lg font-semibold">{t('sections.dueThisWeek')}</h2>
             <Link to="/tasks/week" className="text-sm font-medium text-accent hover:underline">
-              Alle anzeigen
+              {t('showAll')}
             </Link>
           </div>
-          <TaskList tasks={weekTasks} groupByDate emptyMessage="Keine Aufgaben diese Woche fällig – gut gemacht!" />
+          <TaskList tasks={weekTasks} groupByDate emptyMessage={t('noTasksThisWeek')} />
         </div>
 
         <div className="flex flex-col gap-6">
           <div>
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Anstehende Deadlines</h2>
+              <h2 className="text-lg font-semibold">{t('sections.upcomingDeadlines')}</h2>
               <Link to="/projekte" className="text-sm font-medium text-accent hover:underline">
-                Alle Projekte
+                {t('allProjects')}
               </Link>
             </div>
             {upcomingBoards.length === 0 ? (
-              <p className="text-sm text-gray-400">Keine anstehenden Deadlines</p>
+              <p className="text-sm text-gray-400">{t('noUpcomingDeadlines')}</p>
             ) : (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {upcomingBoards.map((board) => (
@@ -144,13 +147,13 @@ export default function Dashboard() {
 
           <div>
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Nächste Events</h2>
+              <h2 className="text-lg font-semibold">{t('sections.upcomingEvents')}</h2>
               <Link to="/calendar" className="text-sm font-medium text-accent hover:underline">
-                Kalender
+                {t('calendar')}
               </Link>
             </div>
             {upcomingEvents.length === 0 ? (
-              <p className="text-sm text-gray-400">Keine anstehenden Events</p>
+              <p className="text-sm text-gray-400">{t('noUpcomingEvents')}</p>
             ) : (
               <div className="flex flex-col gap-2">
                 {upcomingEvents.map((event) => {
@@ -169,14 +172,14 @@ export default function Dashboard() {
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">{event.title}</p>
                         <p className="text-xs text-gray-400">
-                          {format(parseISO(event.date), 'd. MMM yyyy', { locale: de })}
+                          {format(parseISO(event.date), 'd. MMM yyyy', { locale: dateLocale })}
                           {event.endDate && event.endDate > event.date
-                            ? ` – ${format(parseISO(event.endDate), 'd. MMM yyyy', { locale: de })}`
+                            ? ` – ${format(parseISO(event.endDate), 'd. MMM yyyy', { locale: dateLocale })}`
                             : ''}
                         </p>
                       </div>
                       <span className="flex-shrink-0 text-sm font-semibold text-accent">
-                        {days < 0 ? 'läuft' : days === 0 ? 'Heute' : days === 1 ? 'Morgen' : `in ${days} Tagen`}
+                        {days < 0 ? t('eventStatus.ongoing') : days === 0 ? t('eventStatus.today') : days === 1 ? t('eventStatus.tomorrow') : t('eventStatus.inDays', { count: days })}
                       </span>
                     </div>
                   )
@@ -189,13 +192,13 @@ export default function Dashboard() {
 
       <div className="mt-6">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Projekte-Übersicht</h2>
+          <h2 className="text-lg font-semibold">{t('sections.projectsOverview')}</h2>
           <Link to="/projekte" className="text-sm font-medium text-accent hover:underline">
-            Alle Projekte
+            {t('allProjects')}
           </Link>
         </div>
         {boards.length === 0 ? (
-          <p className="text-sm text-gray-400">Noch keine Projekte angelegt</p>
+          <p className="text-sm text-gray-400">{t('noProjectsYet')}</p>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {boards.map((board) => (

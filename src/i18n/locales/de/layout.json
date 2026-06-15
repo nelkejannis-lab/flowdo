@@ -1,0 +1,54 @@
+{
+  "appName": "Mooncrew",
+  "sidebar": {
+    "search": "Suche",
+    "searchTitle": "Suche (Strg+K)",
+    "chat": "Chat",
+    "inbox": "Inbox",
+    "closeMenu": "Menü schließen",
+    "nav": {
+      "dashboard": "Dashboard",
+      "thisWeek": "Diese Woche",
+      "inbox": "Inbox",
+      "allTasks": "Alle Aufgaben",
+      "calendar": "Kalender",
+      "eisenhower": "Eisenhower",
+      "worktime": "Arbeitszeit",
+      "aiScheduler": "KI-Termine",
+      "chat": "Chat",
+      "friends": "Kollegen",
+      "social": "Social Media"
+    },
+    "projects": {
+      "title": "Projekte",
+      "manage": "Projekte verwalten",
+      "all": "Alle Projekte",
+      "empty": "Leer"
+    },
+    "profile": {
+      "avatarAlt": "Profilbild",
+      "signOut": "Abmelden"
+    },
+    "theme": {
+      "light": "Light Mode",
+      "dark": "Dark Mode",
+      "pink": "Pink Mode"
+    },
+    "legal": {
+      "privacy": "Datenschutz",
+      "imprint": "Impressum"
+    }
+  },
+  "topbar": {
+    "openMenu": "Menü öffnen"
+  },
+  "search": {
+    "placeholder": "Aufgaben, Projekte, Tags durchsuchen…",
+    "esc": "Esc",
+    "noResults": "Keine Ergebnisse",
+    "tasks": "Aufgaben",
+    "projects": "Projekte",
+    "tags": "Tags"
+  },
+  "loading": "Lädt…"
+}

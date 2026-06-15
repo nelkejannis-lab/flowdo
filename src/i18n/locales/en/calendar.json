@@ -1,0 +1,81 @@
+{
+  "views": {
+    "month": "Month",
+    "week": "Week",
+    "day": "Day"
+  },
+  "today": "Today",
+  "weekOf": "Week of {{date}}",
+  "addButton": "Add",
+  "team": {
+    "label": "Team",
+    "select": "Select team",
+    "awayAndVacation": "Away & Vacation",
+    "noAwayOrVacation": "No away or vacation entries in this team."
+  },
+  "birthdays": {
+    "tooltip": "Birthdays",
+    "upcoming": "Upcoming birthdays",
+    "none": "No colleagues with a birthday set.",
+    "today": "🎉 Today!",
+    "inDays": "in {{count}}d",
+    "turns": "turns {{age}}"
+  },
+  "externalCalendars": {
+    "button": "📅 Calendars",
+    "toggleLabel": "Show/hide calendars",
+    "google": "📅 Google Calendar",
+    "outlook": "📧 Outlook",
+    "ical": "☁️ iCal"
+  },
+  "entryTypes": {
+    "termin": "Appointment",
+    "reise": "Off-site",
+    "urlaub": "Vacation"
+  },
+  "entryTypeBadges": {
+    "urlaub": "🌴 Vacation",
+    "reise": "✈️ Trip"
+  },
+  "moreCount": "+{{count}} more",
+  "weekday": {
+    "noTasks": "–"
+  },
+  "day": {
+    "addTask": "Task",
+    "noTasksForDay": "No tasks for this day",
+    "withInvitees": "With {{names}}",
+    "uhr": ""
+  },
+  "sidebar": {
+    "title": "Away & Vacation",
+    "noneAway": "Nobody is currently away or on vacation.",
+    "unknown": "Unknown"
+  },
+  "form": {
+    "titleEdit": "Edit entry",
+    "titleAdd": "Add",
+    "types": {
+      "event": "Event",
+      "termin": "Appointment",
+      "reise": "Off-site",
+      "urlaub": "Vacation"
+    },
+    "titlePlaceholder": {
+      "event": "Title (e.g. DTM race weekend)",
+      "termin": "Title (e.g. team meeting)",
+      "reise": "Title (e.g. client visit Berlin, field work)",
+      "urlaub": "Title (e.g. summer vacation)"
+    },
+    "date": "Date",
+    "endDateOptional": "End date (optional)",
+    "startTimeOptional": "From (time, optional)",
+    "endTimeOptional": "To (time, optional)",
+    "descriptionPlaceholder": "Description (optional)",
+    "inviteColleagues": "Invite colleagues",
+    "color": "Color",
+    "delete": "Delete",
+    "save": "Save",
+    "create": "Create"
+  }
+}

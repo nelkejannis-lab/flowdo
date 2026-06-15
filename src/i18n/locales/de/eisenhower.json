@@ -1,0 +1,16 @@
+{
+  "page": {
+    "title": "Eisenhower-Matrix",
+    "intro": "Priorisiere Aufgaben nach Dringlichkeit und Wichtigkeit"
+  },
+  "quadrants": {
+    "urgentImportant": "Dringend & Wichtig",
+    "notUrgentImportant": "Nicht dringend & Wichtig",
+    "urgentNotImportant": "Dringend & Unwichtig",
+    "notUrgentNotImportant": "Nicht dringend & Unwichtig"
+  },
+  "quadrant": {
+    "addTask": "Aufgabe hinzufügen",
+    "noTasks": "Keine Aufgaben"
+  }
+}

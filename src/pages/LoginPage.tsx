@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Trans, useTranslation } from 'react-i18next'
 import { Eye, EyeOff } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { isSupabaseConfigured } from '../lib/supabase'
 import Logo from '../components/layout/Logo'
 
 export default function LoginPage() {
+  const { t } = useTranslation('auth')
   const signIn = useAuthStore((s) => s.signIn)
   const signUp = useAuthStore((s) => s.signUp)
   const requestPasswordReset = useAuthStore((s) => s.requestPasswordReset)
@@ -39,7 +41,7 @@ export default function LoginPage() {
       if (mode === 'forgot') {
         const err = await requestPasswordReset(email)
         if (err) setError(err)
-        else setInfo('Falls ein Konto mit dieser E-Mail existiert, wurde eine Mail zum Zurücksetzen des Passworts versendet.')
+        else setInfo(t('messages.resetSent'))
         return
       }
       if (mode === 'login') {
@@ -47,18 +49,18 @@ export default function LoginPage() {
         if (err) setError(err)
       } else {
         if (password.length < 8) {
-          setError('Passwort muss mindestens 8 Zeichen lang sein')
+          setError(t('errors.passwordTooShort'))
           return
         }
         if (password !== confirmPassword) {
-          setError('Passwörter stimmen nicht überein')
+          setError(t('errors.passwordMismatch'))
           return
         }
         const err = await signUp(email, password, username, displayName || username, birthday || undefined)
         if (err) {
           setError(err)
         } else {
-          setInfo('Konto erstellt! Falls eine Bestätigungsmail aktiviert ist, prüfe dein Postfach. Du kannst dich sonst direkt anmelden.')
+          setInfo(t('messages.accountCreated'))
           switchMode('login')
         }
       }
@@ -76,19 +78,21 @@ export default function LoginPage() {
 
         {!isSupabaseConfigured && (
           <p className="mb-4 rounded-lg bg-amber-100 p-3 text-xs text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-            Supabase ist noch nicht konfiguriert. Lege eine <code>.env</code>-Datei mit
-            <code> VITE_SUPABASE_URL</code> und <code>VITE_SUPABASE_ANON_KEY</code> an
-            (siehe <code>.env.example</code>).
+            <Trans
+              t={t}
+              i18nKey="supabaseNotConfigured"
+              components={{ code: <code /> }}
+            />
           </p>
         )}
 
         <h1 className="mb-4 text-xl font-semibold">
-          {mode === 'login' ? 'Anmelden' : mode === 'signup' ? 'Konto erstellen' : 'Passwort vergessen'}
+          {mode === 'login' ? t('title.login') : mode === 'signup' ? t('title.signup') : t('title.forgot')}
         </h1>
 
         {mode === 'forgot' && (
           <p className="mb-4 text-sm text-gray-500">
-            Gib deine E-Mail-Adresse ein. Wir senden dir einen Link zum Zurücksetzen deines Passworts.
+            {t('forgotDescription')}
           </p>
         )}
 
@@ -96,26 +100,26 @@ export default function LoginPage() {
           {mode === 'signup' && (
             <>
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-500">Benutzername</label>
+                <label className="mb-1 block text-xs font-medium text-gray-500">{t('fields.username')}</label>
                 <input
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ''))}
-                  placeholder="max123"
+                  placeholder={t('fields.usernamePlaceholder')}
                   className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-500">Anzeigename</label>
+                <label className="mb-1 block text-xs font-medium text-gray-500">{t('fields.displayName')}</label>
                 <input
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Max Mustermann"
+                  placeholder={t('fields.displayNamePlaceholder')}
                   className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-500">Geburtsdatum</label>
+                <label className="mb-1 block text-xs font-medium text-gray-500">{t('fields.birthday')}</label>
                 <input
                   required
                   type="date"
@@ -128,20 +132,20 @@ export default function LoginPage() {
             </>
           )}
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500">E-Mail</label>
+            <label className="mb-1 block text-xs font-medium text-gray-500">{t('fields.email')}</label>
             <input
               required
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="du@beispiel.de"
+              placeholder={t('fields.emailPlaceholder')}
               className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
             />
           </div>
 
           {mode !== 'forgot' && (
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-500">Passwort</label>
+              <label className="mb-1 block text-xs font-medium text-gray-500">{t('fields.password')}</label>
               <div className="relative">
                 <input
                   required
@@ -156,20 +160,20 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => setShowPassword((s) => !s)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
+                  aria-label={showPassword ? t('hidePassword') : t('showPassword')}
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
               {mode === 'signup' && (
-                <p className="mt-1 text-xs text-gray-400">Mindestens 8 Zeichen</p>
+                <p className="mt-1 text-xs text-gray-400">{t('fields.passwordHint')}</p>
               )}
             </div>
           )}
 
           {mode === 'signup' && (
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-500">Passwort bestätigen</label>
+              <label className="mb-1 block text-xs font-medium text-gray-500">{t('fields.confirmPassword')}</label>
               <input
                 required
                 type={showPassword ? 'text' : 'password'}
@@ -188,7 +192,7 @@ export default function LoginPage() {
               onClick={() => switchMode('forgot')}
               className="self-end text-xs font-medium text-accent hover:underline"
             >
-              Passwort vergessen?
+              {t('forgotPasswordLink')}
             </button>
           )}
 
@@ -201,36 +205,36 @@ export default function LoginPage() {
             className="mt-1 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
           >
             {loading
-              ? 'Bitte warten…'
+              ? t('buttons.pleaseWait')
               : mode === 'login'
-                ? 'Anmelden'
+                ? t('buttons.login')
                 : mode === 'signup'
-                  ? 'Konto erstellen'
-                  : 'Link senden'}
+                  ? t('buttons.signup')
+                  : t('buttons.sendLink')}
           </button>
         </form>
 
         {mode === 'forgot' ? (
           <p className="mt-4 text-center text-sm text-gray-400">
             <button onClick={() => switchMode('login')} className="font-medium text-accent hover:underline">
-              Zurück zur Anmeldung
+              {t('buttons.backToLogin')}
             </button>
           </p>
         ) : (
           <p className="mt-4 text-center text-sm text-gray-400">
-            {mode === 'login' ? 'Noch kein Konto?' : 'Bereits ein Konto?'}{' '}
+            {mode === 'login' ? t('buttons.noAccount') : t('buttons.hasAccount')}{' '}
             <button
               onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')}
               className="font-medium text-accent hover:underline"
             >
-              {mode === 'login' ? 'Registrieren' : 'Anmelden'}
+              {mode === 'login' ? t('buttons.register') : t('buttons.login')}
             </button>
           </p>
         )}
       </div>
       <div className="absolute bottom-4 flex gap-4 text-xs text-gray-400">
-        <Link to="/datenschutz" className="hover:underline">Datenschutz</Link>
-        <Link to="/impressum" className="hover:underline">Impressum</Link>
+        <Link to="/datenschutz" className="hover:underline">{t('footer.privacy')}</Link>
+        <Link to="/impressum" className="hover:underline">{t('footer.imprint')}</Link>
       </div>
     </div>
   )

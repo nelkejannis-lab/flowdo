@@ -1,0 +1,20 @@
+{
+  "title": "Chats",
+  "sections": {
+    "teams": "Teams",
+    "directMessages": "Direct messages"
+  },
+  "members_one": "{{count}} member",
+  "members_other": "{{count}} members",
+  "noContactsYet": "Add colleagues or teams.",
+  "noMessagesYet": "No messages yet 👋",
+  "noTeamMessagesYet": "No team messages yet 👋",
+  "youPrefix": "You: ",
+  "noMessagesPreview": "No messages yet",
+  "selectChat": "Select a chat",
+  "messagePlaceholder": "Message…",
+  "dateGroups": {
+    "today": "Today",
+    "yesterday": "Yesterday"
+  }
+}

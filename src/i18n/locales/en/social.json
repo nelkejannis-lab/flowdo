@@ -1,0 +1,79 @@
+{
+  "page": {
+    "title": "Social Media",
+    "addAccount": "Account",
+    "emptyState": "No Instagram account connected yet. Add an account to track followers, reach, and other metrics.",
+    "lastSynced": "Last: {{date}}",
+    "notSyncedYet": "Not synced yet",
+    "syncNow": "Sync now",
+    "stats": {
+      "followers": "Followers",
+      "reachToday": "Reach (today)"
+    }
+  },
+  "detail": {
+    "notFound": "Account not found.",
+    "back": "Back",
+    "backToSocial": "Social Media",
+    "lastSynced": "Last synced: {{date}}",
+    "notSyncedYet": "Not synced yet",
+    "syncing": "Syncing…",
+    "syncNow": "Sync now",
+    "accessTokenRequired": "Access token required",
+    "removeAccount": "Remove account",
+    "addToken": {
+      "heading": "Add access token",
+      "description": "Without an access token, no data can be synced. Add it here to load followers, reach, and other metrics.",
+      "placeholder": "Long-lived access token from the Meta Developer Portal",
+      "saving": "Saving…",
+      "save": "Save"
+    },
+    "metrics": {
+      "followers": "Followers",
+      "reach": "Reach",
+      "profileViews": "Profile views",
+      "interactions": "Interactions",
+      "likes": "Likes",
+      "comments": "Comments",
+      "shares": "Shares",
+      "saves": "Saves"
+    },
+    "stories": {
+      "heading": "Story insights (last 24h)",
+      "impressions": "Impressions",
+      "reach": "Reach",
+      "replies": "Replies",
+      "exits": "Exits",
+      "tapsForward": "Forward",
+      "tapsBack": "Back"
+    },
+    "posts": {
+      "heading": "Recent posts",
+      "empty": "No posts synced yet."
+    }
+  },
+  "addModal": {
+    "title": "Connect Instagram account",
+    "usernameLabel": "Instagram username",
+    "usernamePlaceholder": "e.g. mybrandaccount",
+    "igUserIdLabel": "Instagram User ID",
+    "igUserIdPlaceholder": "e.g. 17841400000000000",
+    "accessTokenLabel": "Access token (optional)",
+    "accessTokenPlaceholder": "Long-lived access token from the Meta Developer Portal – can be added later too",
+    "accessTokenHint": "Without a token, the account can be created but not synced. You can add the token anytime on the account page.",
+    "instructions": {
+      "heading": "Here's how to find this information:",
+      "step1": "Create an app in the Meta Developer Portal and add the \"Instagram Graph API\" product.",
+      "step2": "Connect your Instagram account (Business/Creator) to a Facebook page.",
+      "step3": "Generate an access token in the Graph API Explorer with the permissions",
+      "step4": "Convert it into a long-lived token (valid for 60 days).",
+      "step5Pre": "You can get the Instagram User ID via",
+      "step5Mid": "→ Page →"
+    },
+    "connecting": "Saving…",
+    "connect": "Connect"
+  },
+  "sparkline": {
+    "notEnoughData": "Not enough data yet"
+  }
+}

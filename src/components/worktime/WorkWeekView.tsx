@@ -1,12 +1,15 @@
 import { Fragment, useState } from 'react'
 import { addDays, addWeeks, eachDayOfInterval, format, isToday, startOfWeek } from 'date-fns'
-import { de } from 'date-fns/locale'
+import { de, enUS } from 'date-fns/locale'
+import { useTranslation } from 'react-i18next'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useWorkTimeStore } from '../../store/workTimeStore'
 import { toISODate } from '../../utils/date'
 import { dayTargetMinutes, formatHM, netMinutes } from '../../utils/worktime'
 
 export default function WorkWeekView() {
+  const { t, i18n } = useTranslation('worktime')
+  const dateLocale = i18n.language === 'en' ? enUS : de
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }))
   const entries = useWorkTimeStore((s) => s.entries)
   const settings = useWorkTimeStore((s) => s.settings)
@@ -28,7 +31,7 @@ export default function WorkWeekView() {
           <ChevronLeft size={18} />
         </button>
         <span className="text-sm font-semibold">
-          {format(weekStart, 'd. MMM', { locale: de })} – {format(addDays(weekStart, 6), 'd. MMM yyyy', { locale: de })}
+          {format(weekStart, 'd. MMM', { locale: dateLocale })} – {format(addDays(weekStart, 6), 'd. MMM yyyy', { locale: dateLocale })}
         </span>
         <button
           onClick={() => setWeekStart((d) => addWeeks(d, 1))}
@@ -39,13 +42,13 @@ export default function WorkWeekView() {
       </div>
 
       <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto] items-center gap-x-3 gap-y-1 p-3 text-sm">
-        <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">Tag</div>
-        <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Von</div>
-        <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Bis</div>
-        <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Pause (Min.)</div>
-        <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Gearbeitet</div>
-        <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Soll</div>
-        <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Diff.</div>
+        <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">{t('week.columns.day')}</div>
+        <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">{t('week.columns.from')}</div>
+        <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">{t('week.columns.to')}</div>
+        <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">{t('week.columns.break')}</div>
+        <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">{t('week.columns.worked')}</div>
+        <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">{t('week.columns.target')}</div>
+        <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">{t('week.columns.diff')}</div>
 
         {days.map((day) => {
           const iso = toISODate(day)
@@ -57,7 +60,7 @@ export default function WorkWeekView() {
           return (
             <Fragment key={iso}>
               <div className={`flex items-center gap-2 py-1 ${isToday(day) ? 'font-semibold text-accent' : ''}`}>
-                {format(day, 'EEEE, d.MM.', { locale: de })}
+                {format(day, 'EEEE, d.MM.', { locale: dateLocale })}
               </div>
               <div className="flex items-center justify-end py-1">
                 <input
@@ -100,7 +103,7 @@ export default function WorkWeekView() {
         })}
 
         <div className="col-span-7 mt-1 border-t border-gray-100 pt-2 dark:border-racing-800" />
-        <div className="font-semibold">Woche gesamt</div>
+        <div className="font-semibold">{t('week.total')}</div>
         <div />
         <div />
         <div />

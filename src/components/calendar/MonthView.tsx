@@ -6,8 +6,11 @@ import {
   eachDayOfInterval,
   isSameMonth,
   isSameDay,
+  addDays,
   format,
 } from 'date-fns'
+import { de, enUS } from 'date-fns/locale'
+import { useTranslation } from 'react-i18next'
 import type { CalendarEntry, CalendarEvent, Task } from '../../types'
 import { toISODate } from '../../utils/date'
 import { eachEntryDate, eachEventDate } from '../../utils/events'
@@ -24,9 +27,13 @@ interface MonthViewProps {
   onEntryClick?: (entry: CalendarEntry) => void
 }
 
-const weekdays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
-
 export default function MonthView({ currentDate, tasks, events, entries = [], onDayClick, onTaskClick, onEventClick, onEntryClick }: MonthViewProps) {
+  const { t, i18n } = useTranslation('calendar')
+  const dateLocale = i18n.language === 'en' ? enUS : de
+  const weekStartForLabels = startOfWeek(new Date(), { weekStartsOn: 1 })
+  const weekdays = Array.from({ length: 7 }, (_, i) =>
+    format(addDays(weekStartForLabels, i), 'EEEEEE', { locale: dateLocale })
+  )
   const monthStart = startOfMonth(currentDate)
   const monthEnd = endOfMonth(currentDate)
   const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 })
@@ -133,7 +140,7 @@ export default function MonthView({ currentDate, tasks, events, entries = [], on
                   </div>
                 ))}
                 {dayTasks.length > 3 && (
-                  <span className="text-xs text-gray-400">+{dayTasks.length - 3} mehr</span>
+                  <span className="text-xs text-gray-400">{t('moreCount', { count: dayTasks.length - 3 })}</span>
                 )}
               </div>
             </div>

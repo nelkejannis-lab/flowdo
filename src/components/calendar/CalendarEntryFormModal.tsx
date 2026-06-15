@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { CalendarClock, CalendarHeart, Plane, Sparkles } from 'lucide-react'
 import Modal from '../layout/Modal'
 import { useEventsStore, EVENT_COLORS } from '../../store/eventsStore'
@@ -17,12 +18,12 @@ interface CalendarEntryFormModalProps {
   onClose: () => void
 }
 
-const typeOptions: { kind: Kind; label: string; icon: typeof CalendarClock }[] = [
-  { kind: 'event', label: 'Event', icon: Sparkles },
-  { kind: 'termin', label: 'Termin', icon: CalendarClock },
-  { kind: 'reise', label: 'Außerhaus', icon: Plane },
-  { kind: 'urlaub', label: 'Urlaub', icon: CalendarHeart },
-]
+const typeIcons: Record<Kind, typeof CalendarClock> = {
+  event: Sparkles,
+  termin: CalendarClock,
+  reise: Plane,
+  urlaub: CalendarHeart,
+}
 
 const defaultColors: Record<CalendarEntryType, string> = {
   termin: '#10B981',
@@ -31,6 +32,13 @@ const defaultColors: Record<CalendarEntryType, string> = {
 }
 
 export default function CalendarEntryFormModal({ event, entry, defaultDate, onClose }: CalendarEntryFormModalProps) {
+  const { t } = useTranslation('calendar')
+  const typeOptions: { kind: Kind; label: string; icon: typeof CalendarClock }[] = [
+    { kind: 'event', label: t('form.types.event'), icon: typeIcons.event },
+    { kind: 'termin', label: t('form.types.termin'), icon: typeIcons.termin },
+    { kind: 'reise', label: t('form.types.reise'), icon: typeIcons.reise },
+    { kind: 'urlaub', label: t('form.types.urlaub'), icon: typeIcons.urlaub },
+  ]
   const addEvent = useEventsStore((s) => s.addEvent)
   const updateEvent = useEventsStore((s) => s.updateEvent)
   const deleteEvent = useEventsStore((s) => s.deleteEvent)
@@ -132,7 +140,7 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
   }
 
   return (
-    <Modal title={editing ? 'Eintrag bearbeiten' : 'Hinzufügen'} onClose={onClose}>
+    <Modal title={editing ? t('form.titleEdit') : t('form.titleAdd')} onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         {!editing && (
           <div className="grid grid-cols-4 gap-2">
@@ -164,19 +172,19 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
           onChange={(e) => setTitle(e.target.value)}
           placeholder={
             kind === 'event'
-              ? 'Titel (z. B. DTM-Rennwochenende)'
+              ? t('form.titlePlaceholder.event')
               : kind === 'termin'
-              ? 'Titel (z. B. Team-Meeting)'
+              ? t('form.titlePlaceholder.termin')
               : kind === 'reise'
-              ? 'Titel (z. B. Kundenbesuch Berlin, Außendienst)'
-              : 'Titel (z. B. Sommerurlaub)'
+              ? t('form.titlePlaceholder.reise')
+              : t('form.titlePlaceholder.urlaub')
           }
           className="rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm font-medium focus:border-accent focus:outline-none dark:border-racing-700"
         />
 
         <div className="flex gap-2">
           <div className="flex-1">
-            <label className="mb-1 block text-xs font-medium text-gray-500">Datum</label>
+            <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.date')}</label>
             <input
               type="date"
               value={date}
@@ -188,7 +196,7 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
             />
           </div>
           <div className="flex-1">
-            <label className="mb-1 block text-xs font-medium text-gray-500">Enddatum (optional)</label>
+            <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.endDateOptional')}</label>
             <input
               type="date"
               value={endDate}
@@ -202,7 +210,7 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
         {(kind === 'termin' || kind === 'reise') && (
           <div className="flex gap-2">
             <div className="flex-1">
-              <label className="mb-1 block text-xs font-medium text-gray-500">Von (Uhrzeit, optional)</label>
+              <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.startTimeOptional')}</label>
               <input
                 type="time"
                 value={startTime}
@@ -211,7 +219,7 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
               />
             </div>
             <div className="flex-1">
-              <label className="mb-1 block text-xs font-medium text-gray-500">Bis (Uhrzeit, optional)</label>
+              <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.endTimeOptional')}</label>
               <input
                 type="time"
                 value={endTime}
@@ -225,14 +233,14 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Beschreibung (optional)"
+          placeholder={t('form.descriptionPlaceholder')}
           rows={2}
           className="rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
         />
 
         {kind !== 'event' && isSupabaseConfigured && friends.length > 0 && (
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500">Kollegen einladen</label>
+            <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.inviteColleagues')}</label>
             <div className="flex flex-wrap gap-2">
               {friends.map((f) => {
                 const active = invitedUserIds.includes(f.profile.id)
@@ -256,7 +264,7 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
         )}
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">Farbe</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.color')}</label>
           <div className="flex flex-wrap gap-2">
             {EVENT_COLORS.map((c) => (
               <button
@@ -279,7 +287,7 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
               onClick={handleDelete}
               className="text-sm font-medium text-red-500 hover:underline"
             >
-              Löschen
+              {t('form.delete')}
             </button>
           ) : (
             <span />
@@ -289,7 +297,7 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
             disabled={saving}
             className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
           >
-            {editing ? 'Speichern' : 'Erstellen'}
+            {editing ? t('form.save') : t('form.create')}
           </button>
         </div>
       </form>

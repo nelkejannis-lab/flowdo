@@ -1,0 +1,79 @@
+{
+  "page": {
+    "title": "Social Media",
+    "addAccount": "Account",
+    "emptyState": "Noch kein Instagram-Account verbunden. Füge einen Account hinzu, um Follower, Reichweite und weitere Kennzahlen zu tracken.",
+    "lastSynced": "Zuletzt: {{date}}",
+    "notSyncedYet": "Noch nicht synchronisiert",
+    "syncNow": "Jetzt synchronisieren",
+    "stats": {
+      "followers": "Follower",
+      "reachToday": "Reichweite (heute)"
+    }
+  },
+  "detail": {
+    "notFound": "Account nicht gefunden.",
+    "back": "Zurück",
+    "backToSocial": "Social Media",
+    "lastSynced": "Zuletzt synchronisiert: {{date}}",
+    "notSyncedYet": "Noch nicht synchronisiert",
+    "syncing": "Synchronisiere…",
+    "syncNow": "Jetzt synchronisieren",
+    "accessTokenRequired": "Access Token erforderlich",
+    "removeAccount": "Account entfernen",
+    "addToken": {
+      "heading": "Access Token hinzufügen",
+      "description": "Ohne Access Token können keine Daten synchronisiert werden. Trage ihn hier nach, um Follower, Reichweite und weitere Kennzahlen zu laden.",
+      "placeholder": "Langlebiger Access Token aus dem Meta Developer Portal",
+      "saving": "Speichere…",
+      "save": "Speichern"
+    },
+    "metrics": {
+      "followers": "Follower",
+      "reach": "Reichweite",
+      "profileViews": "Profilaufrufe",
+      "interactions": "Interaktionen",
+      "likes": "Likes",
+      "comments": "Kommentare",
+      "shares": "Geteilt",
+      "saves": "Gespeichert"
+    },
+    "stories": {
+      "heading": "Story-Insights (letzte 24h)",
+      "impressions": "Impressions",
+      "reach": "Reichweite",
+      "replies": "Antworten",
+      "exits": "Exits",
+      "tapsForward": "Vor",
+      "tapsBack": "Zurück"
+    },
+    "posts": {
+      "heading": "Letzte Beiträge",
+      "empty": "Noch keine Beiträge synchronisiert."
+    }
+  },
+  "addModal": {
+    "title": "Instagram-Account verbinden",
+    "usernameLabel": "Instagram-Benutzername",
+    "usernamePlaceholder": "z. B. meinmarkenaccount",
+    "igUserIdLabel": "Instagram User ID",
+    "igUserIdPlaceholder": "z. B. 17841400000000000",
+    "accessTokenLabel": "Access Token (optional)",
+    "accessTokenPlaceholder": "Langlebiger Access Token aus dem Meta Developer Portal – kann auch später ergänzt werden",
+    "accessTokenHint": "Ohne Token kann der Account angelegt, aber nicht synchronisiert werden. Du kannst den Token jederzeit auf der Account-Seite nachtragen.",
+    "instructions": {
+      "heading": "So findest du diese Daten:",
+      "step1": "Erstelle eine App im Meta Developer Portal und füge das Produkt „Instagram Graph API\" hinzu.",
+      "step2": "Verknüpfe deinen Instagram-Account (Business/Creator) mit einer Facebook-Seite.",
+      "step3": "Erzeuge im Graph API Explorer einen Access Token mit den Berechtigungen",
+      "step4": "Wandle ihn in einen langlebigen Token um (60 Tage gültig).",
+      "step5Pre": "Die Instagram User ID erhältst du über",
+      "step5Mid": "→ Seite →"
+    },
+    "connecting": "Speichere…",
+    "connect": "Verbinden"
+  },
+  "sparkline": {
+    "notEnoughData": "Noch nicht genug Daten"
+  }
+}

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { Task } from '../../types'
 import { dateGroupLabel, dateGroupOrder } from '../../utils/date'
 import { useBoardsStore } from '../../store/boardsStore'
@@ -14,7 +15,20 @@ interface TaskListProps {
   flat?: boolean
 }
 
-export default function TaskList({ tasks, groupByDate = false, emptyMessage = 'Keine Aufgaben', flat = false }: TaskListProps) {
+// Maps the German labels returned by dateGroupLabel()/dateGroupOrder to translation keys.
+const dateGroupLabelKeys: Record<string, string> = {
+  'Überfällig': 'dateGroups.overdue',
+  'Heute': 'dateGroups.today',
+  'Heute Abend': 'dateGroups.tonight',
+  'Morgen': 'dateGroups.tomorrow',
+  'Diese Woche': 'dateGroups.thisWeek',
+  'Später': 'dateGroups.later',
+  'Ohne Datum': 'dateGroups.noDate',
+}
+
+export default function TaskList({ tasks, groupByDate = false, emptyMessage, flat = false }: TaskListProps) {
+  const { t } = useTranslation('tasks')
+  const resolvedEmptyMessage = emptyMessage ?? t('list.noTasks')
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [showCompleted, setShowCompleted] = useState(false)
   const boards = useBoardsStore((s) => s.boards)
@@ -43,7 +57,7 @@ export default function TaskList({ tasks, groupByDate = false, emptyMessage = 'K
   }, [activeTasks, groupByDate])
 
   if (tasks.length === 0) {
-    return <p className="py-8 text-center text-sm text-gray-400">{emptyMessage}</p>
+    return <p className="py-8 text-center text-sm text-gray-400">{resolvedEmptyMessage}</p>
   }
 
   if (flat) {
@@ -64,14 +78,14 @@ export default function TaskList({ tasks, groupByDate = false, emptyMessage = 'K
   return (
     <div className="flex flex-col gap-4">
       {activeTasks.length === 0 && completedTasks.length > 0 && (
-        <p className="py-4 text-center text-sm text-gray-400">Alle Aufgaben erledigt 🎉</p>
+        <p className="py-4 text-center text-sm text-gray-400">{t('list.allDone')}</p>
       )}
 
       {Object.entries(groups).map(([label, items]) => (
         <div key={label}>
           {groupByDate && (
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
-              {label}
+              {dateGroupLabelKeys[label] ? t(dateGroupLabelKeys[label]) : label}
             </h3>
           )}
           <div className="flex flex-col gap-2">
@@ -92,7 +106,7 @@ export default function TaskList({ tasks, groupByDate = false, emptyMessage = 'K
               size={15}
               className={`transition-transform duration-150 ${showCompleted ? '' : '-rotate-90'}`}
             />
-            <span className="font-medium">Erledigt ({completedTasks.length})</span>
+            <span className="font-medium">{t('list.completedCount', { count: completedTasks.length })}</span>
           </button>
 
           {showCompleted && (

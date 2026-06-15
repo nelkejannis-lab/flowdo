@@ -1,14 +1,22 @@
 import { format, parseISO } from 'date-fns'
-import { de } from 'date-fns/locale'
+import { de, enUS } from 'date-fns/locale'
+import { useTranslation } from 'react-i18next'
 import type { CalendarEntry } from '../../types'
 import { todayISO } from '../../utils/date'
-import { entryTypeIcon, entryTypeLabel } from '../../utils/calendarEntry'
+import { entryTypeIcon } from '../../utils/calendarEntry'
 
 interface TeamAvailabilitySidebarProps {
   entries: CalendarEntry[]
 }
 
 export default function TeamAvailabilitySidebar({ entries }: TeamAvailabilitySidebarProps) {
+  const { t, i18n } = useTranslation('calendar')
+  const dateLocale = i18n.language === 'en' ? enUS : de
+  const entryTypeLabel: Record<CalendarEntry['type'], string> = {
+    termin: t('entryTypes.termin'),
+    reise: t('entryTypes.reise'),
+    urlaub: t('entryTypes.urlaub'),
+  }
   const today = todayISO()
 
   const relevant = entries
@@ -18,11 +26,11 @@ export default function TeamAvailabilitySidebar({ entries }: TeamAvailabilitySid
 
   return (
     <aside className="w-full shrink-0 rounded-xl border border-gray-100 p-3 dark:border-racing-800 lg:w-64">
-      <h2 className="mb-2 text-sm font-semibold">Außerhaus &amp; Urlaub</h2>
-      {relevant.length === 0 && <p className="text-xs text-gray-400">Aktuell ist niemand außerhaus oder im Urlaub.</p>}
+      <h2 className="mb-2 text-sm font-semibold">{t('sidebar.title')}</h2>
+      {relevant.length === 0 && <p className="text-xs text-gray-400">{t('sidebar.noneAway')}</p>}
       <div className="flex flex-col gap-2">
         {relevant.map((entry) => {
-          const name = entry.owner?.display_name ?? 'Unbekannt'
+          const name = entry.owner?.display_name ?? t('sidebar.unknown')
           const isMultiDay = !!entry.endDate && entry.endDate > entry.date
           return (
             <div
@@ -42,13 +50,14 @@ export default function TeamAvailabilitySidebar({ entries }: TeamAvailabilitySid
               </p>
               <p className="mt-0.5 text-gray-400">
                 {isMultiDay
-                  ? `${format(parseISO(entry.date), 'd. MMM', { locale: de })} – ${format(parseISO(entry.endDate!), 'd. MMM', { locale: de })}`
-                  : format(parseISO(entry.date), 'd. MMM', { locale: de })}
+                  ? `${format(parseISO(entry.date), 'd. MMM', { locale: dateLocale })} – ${format(parseISO(entry.endDate!), 'd. MMM', { locale: dateLocale })}`
+                  : format(parseISO(entry.date), 'd. MMM', { locale: dateLocale })}
                 {(entry.startTime || entry.endTime) && (
                   <span>
                     {', '}
                     {entry.startTime ?? ''}
-                    {entry.endTime ? ` – ${entry.endTime}` : ''} Uhr
+                    {entry.endTime ? ` – ${entry.endTime}` : ''}
+                    {t('day.uhr') ? ` ${t('day.uhr')}` : ''}
                   </span>
                 )}
               </p>

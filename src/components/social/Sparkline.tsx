@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 interface SparklineProps {
   values: number[]
   color?: string
@@ -6,8 +8,9 @@ interface SparklineProps {
 }
 
 export default function Sparkline({ values, color = '#4772FA', width = 200, height = 48 }: SparklineProps) {
+  const { t } = useTranslation('social')
   if (values.length < 2) {
-    return <div style={{ width, height }} className="flex items-center justify-center text-xs text-gray-400">Noch nicht genug Daten</div>
+    return <div style={{ width, height }} className="flex items-center justify-center text-xs text-gray-400">{t('sparkline.notEnoughData')}</div>
   }
 
   const min = Math.min(...values)

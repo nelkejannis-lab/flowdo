@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import Modal from '../layout/Modal'
 import AttachmentsField from '../shared/AttachmentsField'
 import { useBoardsStore, BOARD_COLORS } from '../../store/boardsStore'
@@ -12,6 +13,7 @@ interface BoardFormModalProps {
 }
 
 export default function BoardFormModal({ board, onClose }: BoardFormModalProps) {
+  const { t } = useTranslation('boards')
   const addBoard = useBoardsStore((s) => s.addBoard)
   const updateBoard = useBoardsStore((s) => s.updateBoard)
   const deleteBoard = useBoardsStore((s) => s.deleteBoard)
@@ -67,33 +69,33 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
   }
 
   return (
-    <Modal title={board ? 'Projekt bearbeiten' : 'Neues Projekt'} onClose={onClose}>
+    <Modal title={board ? t('form.editProject') : t('form.newProject')} onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <input
           autoFocus
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Name des Projekts"
+          placeholder={t('form.namePlaceholder')}
           className="rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm font-medium focus:border-accent focus:outline-none dark:border-racing-700"
         />
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Beschreibung (optional)"
+          placeholder={t('form.descriptionPlaceholder')}
           rows={2}
           className="rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
         />
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">Verantwortlicher</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.responsible')}</label>
           <select
             value={responsibleUserId}
             onChange={(e) => setResponsibleUserId(e.target.value)}
             className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
           >
-            <option value="">Keiner festgelegt</option>
+            <option value="">{t('form.noResponsible')}</option>
             {currentUser && (
-              <option value={currentUser.id}>{currentUser.display_name} (ich)</option>
+              <option value={currentUser.id}>{currentUser.display_name} {t('form.me')}</option>
             )}
             {friends.map((f) => (
               <option key={f.profile.id} value={f.profile.id}>{f.profile.display_name}</option>
@@ -103,7 +105,7 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500">Deadline</label>
+            <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.deadline')}</label>
             <input
               type="date"
               value={deadline}
@@ -113,13 +115,13 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
           </div>
           {folders.length > 0 && (
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-500">Ordner</label>
+              <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.folder')}</label>
               <select
                 value={folderId}
                 onChange={(e) => setFolderId(e.target.value)}
                 className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
               >
-                <option value="">Kein Ordner</option>
+                <option value="">{t('form.noFolder')}</option>
                 {folders.map((f) => (
                   <option key={f.id} value={f.id}>
                     {f.title}
@@ -130,7 +132,7 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
           )}
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">Farbe</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.color')}</label>
           <div className="flex flex-wrap gap-2">
             {BOARD_COLORS.map((c) => (
               <button
@@ -146,7 +148,7 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500">Interner Launch</label>
+            <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.internalLaunch')}</label>
             <input
               type="date"
               value={internalLaunch}
@@ -155,7 +157,7 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500">Externer Launch</label>
+            <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.externalLaunch')}</label>
             <input
               type="date"
               value={externalLaunch}
@@ -200,7 +202,7 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
               }}
               className="text-sm font-medium text-red-500 hover:underline disabled:opacity-60"
             >
-              Löschen
+              {t('form.delete')}
             </button>
           ) : (
             <span />
@@ -209,7 +211,7 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
             type="submit"
             className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark"
           >
-            {board ? 'Speichern' : 'Erstellen'}
+            {board ? t('form.save') : t('form.create')}
           </button>
         </div>
       </form>

@@ -1,0 +1,38 @@
+{
+  "title": "Colleagues",
+  "addPerson": {
+    "heading": "Add person",
+    "placeholder": "Search by username or name",
+    "submit": "Send request",
+    "successMessage": "Request sent to @{{username}}"
+  },
+  "incomingRequests": {
+    "heading": "Requests",
+    "accept": "Accept",
+    "decline": "Decline"
+  },
+  "outgoingRequests": {
+    "heading": "Sent requests",
+    "pending": "Pending",
+    "withdraw": "Withdraw"
+  },
+  "friendsList": {
+    "heading": "Colleagues ({{count}})",
+    "empty": "No colleagues added yet.",
+    "remove": "Remove"
+  },
+  "teams": {
+    "heading": "Teams",
+    "create": "Create team",
+    "namePlaceholder": "Team name",
+    "createSubmit": "Create",
+    "cancel": "Cancel",
+    "empty": "No teams created yet.",
+    "members_one": "{{count}} member",
+    "members_other": "{{count}} members",
+    "deleteConfirm": "Delete team \"{{name}}\"?",
+    "invite": "Invite:",
+    "invited": " invited",
+    "noFriends": "No colleagues available."
+  }
+}

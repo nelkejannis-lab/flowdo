@@ -1,10 +1,11 @@
 import { format, parseISO } from 'date-fns'
-import { de } from 'date-fns/locale'
+import { de, enUS } from 'date-fns/locale'
+import { useTranslation } from 'react-i18next'
 import { Plus } from 'lucide-react'
 import type { CalendarEntry, CalendarEvent, Task } from '../../types'
 import { toISODate } from '../../utils/date'
 import { eachEntryDate, eachEventDate } from '../../utils/events'
-import { entryTypeIcon, entryTypeLabel } from '../../utils/calendarEntry'
+import { entryTypeIcon } from '../../utils/calendarEntry'
 import TaskList from '../tasks/TaskList'
 
 interface DayViewProps {
@@ -18,6 +19,13 @@ interface DayViewProps {
 }
 
 export default function DayView({ currentDate, tasks, events, entries = [], onAddTask, onEventClick, onEntryClick }: DayViewProps) {
+  const { t, i18n } = useTranslation('calendar')
+  const dateLocale = i18n.language === 'en' ? enUS : de
+  const entryTypeLabel: Record<CalendarEntry['type'], string> = {
+    termin: t('entryTypes.termin'),
+    reise: t('entryTypes.reise'),
+    urlaub: t('entryTypes.urlaub'),
+  }
   const iso = toISODate(currentDate)
   const dayTasks = tasks.filter((t) => t.dueDate === iso)
   const dayEvents = events.filter((e) => eachEventDate(e).includes(iso))
@@ -27,14 +35,14 @@ export default function DayView({ currentDate, tasks, events, entries = [], onAd
     <div className="rounded-xl border border-gray-100 p-4 dark:border-racing-800">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold">
-          {format(currentDate, 'EEEE, d. MMMM yyyy', { locale: de })}
+          {format(currentDate, 'EEEE, d. MMMM yyyy', { locale: dateLocale })}
         </h2>
         <button
           onClick={onAddTask}
           className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:bg-accent-dark"
         >
           <Plus size={14} />
-          Aufgabe
+          {t('day.addTask')}
         </button>
       </div>
       {dayEvents.length > 0 && (
@@ -49,7 +57,7 @@ export default function DayView({ currentDate, tasks, events, entries = [], onAd
               {event.title}
               {event.endDate && event.endDate > event.date && (
                 <p className="mt-0.5 text-xs font-normal opacity-90">
-                  {format(parseISO(event.date), 'd. MMM', { locale: de })} – {format(parseISO(event.endDate), 'd. MMM', { locale: de })}
+                  {format(parseISO(event.date), 'd. MMM', { locale: dateLocale })} – {format(parseISO(event.endDate), 'd. MMM', { locale: dateLocale })}
                 </p>
               )}
               {event.description && <p className="mt-0.5 text-xs font-normal opacity-90">{event.description}</p>}
@@ -70,13 +78,14 @@ export default function DayView({ currentDate, tasks, events, entries = [], onAd
               {(entry.startTime || entry.endTime || (entry.endDate && entry.endDate > entry.date)) && (
                 <p className="mt-0.5 text-xs font-normal opacity-90">
                   {entry.endDate && entry.endDate > entry.date
-                    ? `${format(parseISO(entry.date), 'd. MMM', { locale: de })} – ${format(parseISO(entry.endDate), 'd. MMM', { locale: de })}`
+                    ? `${format(parseISO(entry.date), 'd. MMM', { locale: dateLocale })} – ${format(parseISO(entry.endDate), 'd. MMM', { locale: dateLocale })}`
                     : ''}
                   {(entry.startTime || entry.endTime) && (
                     <span>
                       {entry.endDate && entry.endDate > entry.date ? ' · ' : ''}
                       {entry.startTime ?? ''}
-                      {entry.endTime ? ` – ${entry.endTime}` : ''} Uhr
+                      {entry.endTime ? ` – ${entry.endTime}` : ''}
+                      {t('day.uhr') ? ` ${t('day.uhr')}` : ''}
                     </span>
                   )}
                 </p>
@@ -84,14 +93,14 @@ export default function DayView({ currentDate, tasks, events, entries = [], onAd
               {entry.description && <p className="mt-0.5 text-xs font-normal opacity-90">{entry.description}</p>}
               {entry.invitees.length > 0 && (
                 <p className="mt-0.5 text-xs font-normal opacity-90">
-                  Mit {entry.invitees.map((i) => i.display_name).join(', ')}
+                  {t('day.withInvitees', { names: entry.invitees.map((i) => i.display_name).join(', ') })}
                 </p>
               )}
             </div>
           ))}
         </div>
       )}
-      <TaskList tasks={dayTasks} emptyMessage="Keine Aufgaben für diesen Tag" />
+      <TaskList tasks={dayTasks} emptyMessage={t('day.noTasksForDay')} />
     </div>
   )
 }

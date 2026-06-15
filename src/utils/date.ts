@@ -8,7 +8,12 @@ import {
   parseISO,
   startOfDay,
 } from 'date-fns'
-import { de } from 'date-fns/locale'
+import { de, enUS } from 'date-fns/locale'
+import i18n from '../i18n'
+
+function currentLocale() {
+  return i18n.language === 'en' ? enUS : de
+}
 
 export function todayISO(): string {
   return format(new Date(), 'yyyy-MM-dd')
@@ -24,13 +29,13 @@ export function formatFriendlyDate(iso?: string): string {
   if (isToday(date)) return 'Heute'
   if (isTomorrow(date)) return 'Morgen'
   if (isYesterday(date)) return 'Gestern'
-  return format(date, 'd. MMM', { locale: de })
+  return format(date, 'd. MMM', { locale: currentLocale() })
 }
 
 export function formatFriendlyDateTime(iso?: string): string {
   if (!iso) return ''
   const date = parseISO(iso)
-  return format(date, 'd. MMM yyyy, HH:mm', { locale: de })
+  return format(date, 'd. MMM yyyy, HH:mm', { locale: currentLocale() })
 }
 
 export function isOverdue(iso?: string): boolean {

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Settings } from 'lucide-react'
 import TimeClock from '../components/worktime/TimeClock'
 import OvertimeOverview from '../components/worktime/OvertimeOverview'
@@ -9,14 +10,15 @@ import { useWorkTimeStore } from '../store/workTimeStore'
 import { isSupabaseConfigured } from '../lib/supabase'
 
 function WorkTimeSettingsModal({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation('worktime')
   const settings = useWorkTimeStore((s) => s.settings)
   const updateSettings = useWorkTimeStore((s) => s.updateSettings)
 
   return (
-    <Modal title="Arbeitszeit-Einstellungen" onClose={onClose}>
+    <Modal title={t('settingsModal.title')} onClose={onClose}>
       <div className="flex flex-col gap-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">Wochenarbeitszeit (Stunden)</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500">{t('settingsModal.weeklyHours')}</label>
           <input
             type="number"
             min={1}
@@ -27,7 +29,7 @@ function WorkTimeSettingsModal({ onClose }: { onClose: () => void }) {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">Arbeitstage pro Woche</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500">{t('settingsModal.workDaysPerWeek')}</label>
           <input
             type="number"
             min={1}
@@ -38,7 +40,7 @@ function WorkTimeSettingsModal({ onClose }: { onClose: () => void }) {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">Standard-Mittagspause (Min.)</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500">{t('settingsModal.defaultBreakMinutes')}</label>
           <input
             type="number"
             min={0}
@@ -52,7 +54,7 @@ function WorkTimeSettingsModal({ onClose }: { onClose: () => void }) {
           onClick={onClose}
           className="mt-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark"
         >
-          Fertig
+          {t('settingsModal.done')}
         </button>
       </div>
     </Modal>
@@ -60,6 +62,7 @@ function WorkTimeSettingsModal({ onClose }: { onClose: () => void }) {
 }
 
 export default function ArbeitszeitPage() {
+  const { t } = useTranslation('worktime')
   const [showSettings, setShowSettings] = useState(false)
   const [view, setView] = useState<'week' | 'month'>('week')
   const fetchAll = useWorkTimeStore((s) => s.fetchAll)
@@ -71,7 +74,7 @@ export default function ArbeitszeitPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Arbeitszeit</h1>
+        <h1 className="text-2xl font-semibold">{t('page.title')}</h1>
         <button
           onClick={() => setShowSettings(true)}
           className="rounded-lg border border-gray-200 p-2 text-gray-500 hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800"
@@ -96,7 +99,7 @@ export default function ArbeitszeitPage() {
                   view === v ? 'bg-white shadow-sm dark:bg-racing-700' : 'text-gray-400'
                 }`}
               >
-                {v === 'week' ? 'Woche' : 'Monat'}
+                {v === 'week' ? t('page.viewWeek') : t('page.viewMonth')}
               </button>
             ))}
           </div>

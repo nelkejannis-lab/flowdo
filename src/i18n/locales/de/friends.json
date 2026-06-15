@@ -1,0 +1,38 @@
+{
+  "title": "Kollegen",
+  "addPerson": {
+    "heading": "Person hinzufügen",
+    "placeholder": "Benutzername oder Name suchen",
+    "submit": "Anfrage senden",
+    "successMessage": "Anfrage an @{{username}} gesendet"
+  },
+  "incomingRequests": {
+    "heading": "Anfragen",
+    "accept": "Annehmen",
+    "decline": "Ablehnen"
+  },
+  "outgoingRequests": {
+    "heading": "Gesendete Anfragen",
+    "pending": "Ausstehend",
+    "withdraw": "Zurückziehen"
+  },
+  "friendsList": {
+    "heading": "Kollegen ({{count}})",
+    "empty": "Noch keine Kollegen hinzugefügt.",
+    "remove": "Entfernen"
+  },
+  "teams": {
+    "heading": "Teams",
+    "create": "Team erstellen",
+    "namePlaceholder": "Teamname",
+    "createSubmit": "Erstellen",
+    "cancel": "Abbrechen",
+    "empty": "Noch keine Teams erstellt.",
+    "members_one": "{{count}} Mitglied",
+    "members_other": "{{count}} Mitglieder",
+    "deleteConfirm": "Team „{{name}}\" löschen?",
+    "invite": "Einladen:",
+    "invited": " eingeladen",
+    "noFriends": "Keine Kollegen vorhanden."
+  }
+}

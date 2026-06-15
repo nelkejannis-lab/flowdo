@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Play, Square } from 'lucide-react'
 import { useWorkTimeStore } from '../../store/workTimeStore'
 import { todayISO } from '../../utils/date'
 import { dayTargetMinutes, formatHM, netMinutes } from '../../utils/worktime'
 
 export default function TimeClock() {
+  const { t } = useTranslation('worktime')
   const isRunning = useWorkTimeStore((s) => s.isRunning)
   const runningStartedAt = useWorkTimeStore((s) => s.runningStartedAt)
   const entries = useWorkTimeStore((s) => s.entries)
@@ -44,7 +46,7 @@ export default function TimeClock() {
             ? `${String(liveH).padStart(2, '0')}:${String(liveM).padStart(2, '0')}:${String(liveS).padStart(2, '0')}`
             : formatHM(net)}
         </span>
-        <span className="mt-1 text-xs text-gray-400">{isRunning ? 'läuft…' : 'heute gearbeitet'}</span>
+        <span className="mt-1 text-xs text-gray-400">{isRunning ? t('clock.running') : t('clock.workedToday')}</span>
       </div>
 
       <button
@@ -52,18 +54,18 @@ export default function TimeClock() {
         className={`flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg ${
           isRunning ? 'bg-red-500 hover:bg-red-600' : 'bg-accent hover:bg-accent-dark'
         }`}
-        title={isRunning ? 'Ausstempeln' : 'Einstempeln'}
+        title={isRunning ? t('clock.clockOut') : t('clock.clockIn')}
       >
         {isRunning ? <Square size={20} /> : <Play size={22} className="ml-0.5" />}
       </button>
 
       <div className="grid w-full grid-cols-2 gap-3 text-sm">
         <div className="rounded-lg bg-gray-50 px-3 py-2 dark:bg-racing-800">
-          <p className="text-xs text-gray-400">Soll heute</p>
+          <p className="text-xs text-gray-400">{t('clock.targetToday')}</p>
           <p className="font-semibold">{formatHM(target)}</p>
         </div>
         <div className="rounded-lg bg-gray-50 px-3 py-2 dark:bg-racing-800">
-          <p className="text-xs text-gray-400">Differenz</p>
+          <p className="text-xs text-gray-400">{t('clock.difference')}</p>
           <p className={`font-semibold ${diff >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
             {diff >= 0 ? '+' : ''}
             {formatHM(diff)}
@@ -73,7 +75,7 @@ export default function TimeClock() {
 
       <div className="flex w-full items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-sm dark:bg-racing-800">
         <label htmlFor="break-minutes" className="text-gray-500 dark:text-racing-200">
-          Mittagspause (Min.)
+          {t('clock.breakMinutes')}
         </label>
         <input
           id="break-minutes"
@@ -86,7 +88,9 @@ export default function TimeClock() {
         />
       </div>
 
-      <p className="text-xs text-gray-400">{netMinutes(entry) > 0 ? `${formatHM(netMinutes(entry))} bereits erfasst` : 'Noch nichts erfasst'}</p>
+      <p className="text-xs text-gray-400">
+        {netMinutes(entry) > 0 ? t('clock.alreadyTracked', { time: formatHM(netMinutes(entry)) }) : t('clock.nothingTracked')}
+      </p>
     </div>
   )
 }

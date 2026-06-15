@@ -1,15 +1,16 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Plus, Trash2, Check, X } from 'lucide-react'
 import Modal from '../layout/Modal'
 import AttachmentsField from '../shared/AttachmentsField'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
 import type { Attachment, Board, Priority, Task } from '../../types'
 
-const quadrants: { urgent: boolean; important: boolean; label: string; activeClass: string }[] = [
-  { urgent: true, important: true, label: 'Dringend & Wichtig', activeClass: 'border-red-400 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
-  { urgent: false, important: true, label: 'Nicht dringend & Wichtig', activeClass: 'border-amber-400 bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' },
-  { urgent: true, important: false, label: 'Dringend & Unwichtig', activeClass: 'border-blue-400 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
-  { urgent: false, important: false, label: 'Nicht dringend & Unwichtig', activeClass: 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' },
+const quadrants: { urgent: boolean; important: boolean; labelKey: string; activeClass: string }[] = [
+  { urgent: true, important: true, labelKey: 'taskForm.quadrantUrgentImportant', activeClass: 'border-red-400 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
+  { urgent: false, important: true, labelKey: 'taskForm.quadrantNotUrgentImportant', activeClass: 'border-amber-400 bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' },
+  { urgent: true, important: false, labelKey: 'taskForm.quadrantUrgentNotImportant', activeClass: 'border-blue-400 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
+  { urgent: false, important: false, labelKey: 'taskForm.quadrantNotUrgentNotImportant', activeClass: 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' },
 ]
 
 interface ProjectTaskFormModalProps {
@@ -20,6 +21,7 @@ interface ProjectTaskFormModalProps {
 }
 
 export default function ProjectTaskFormModal({ board, task, defaultColumnId, onClose }: ProjectTaskFormModalProps) {
+  const { t } = useTranslation('boards')
   const addTask = useProjectTasksStore((s) => s.addTask)
   const updateTask = useProjectTasksStore((s) => s.updateTask)
   const deleteTask = useProjectTasksStore((s) => s.deleteTask)
@@ -105,26 +107,26 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, onC
   }
 
   return (
-    <Modal title={task ? 'Aufgabe bearbeiten' : 'Neue Aufgabe'} onClose={onClose}>
+    <Modal title={task ? t('taskForm.editTask') : t('taskForm.newTask')} onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <input
           autoFocus
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Was ist zu tun?"
+          placeholder={t('taskForm.titlePlaceholder')}
           className="rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm font-medium focus:border-accent focus:outline-none dark:border-racing-700"
         />
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Beschreibung (optional)"
+          placeholder={t('taskForm.descriptionPlaceholder')}
           rows={2}
           className="rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
         />
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500">Fällig am</label>
+            <label className="mb-1 block text-xs font-medium text-gray-500">{t('taskForm.dueDate')}</label>
             <input
               type="date"
               value={dueDate}
@@ -133,28 +135,28 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, onC
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500">Priorität</label>
+            <label className="mb-1 block text-xs font-medium text-gray-500">{t('taskForm.priority')}</label>
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value as Priority)}
               className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
             >
-              <option value="low">Niedrig</option>
-              <option value="medium">Mittel</option>
-              <option value="high">Hoch</option>
+              <option value="low">{t('taskForm.priorityLow')}</option>
+              <option value="medium">{t('taskForm.priorityMedium')}</option>
+              <option value="high">{t('taskForm.priorityHigh')}</option>
             </select>
           </div>
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">Eisenhower-Matrix</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500">{t('taskForm.eisenhowerMatrix')}</label>
           <div className="grid grid-cols-2 gap-2">
             {quadrants.map((q) => {
               const active = q.urgent === urgent && q.important === important
               return (
                 <button
                   type="button"
-                  key={q.label}
+                  key={q.labelKey}
                   onClick={() => {
                     setUrgent(q.urgent)
                     setImportant(q.important)
@@ -163,7 +165,7 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, onC
                     active ? q.activeClass : 'border-gray-200 text-gray-500 hover:border-gray-300 dark:border-racing-700 dark:text-racing-200'
                   }`}
                 >
-                  {q.label}
+                  {t(q.labelKey)}
                 </button>
               )
             })}
@@ -171,13 +173,13 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, onC
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">Zugewiesen an</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500">{t('taskForm.assignedTo')}</label>
           <select
             value={assignedTo}
             onChange={(e) => setAssignedTo(e.target.value)}
             className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
           >
-            <option value="">Niemand</option>
+            <option value="">{t('taskForm.noone')}</option>
             {board.members.map((m) => (
               <option key={m.userId} value={m.userId}>
                 {m.profile.display_name} (@{m.profile.username})
@@ -187,7 +189,7 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, onC
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-500">Unteraufgaben</label>
+          <label className="mb-1 block text-xs font-medium text-gray-500">{t('taskForm.subtasks')}</label>
           <div className="flex flex-col gap-1">
             {task &&
               task.subtasks.map((s) => (
@@ -245,7 +247,7 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, onC
                   }
                 }
               }}
-              placeholder="Unteraufgabe hinzufügen"
+              placeholder={t('taskForm.addSubtaskPlaceholder')}
               className="flex-1 rounded-lg border border-gray-200 bg-transparent px-3 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
             />
             <button
@@ -291,7 +293,7 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, onC
               onClick={handleDelete}
               className="text-sm font-medium text-red-500 hover:underline"
             >
-              Löschen
+              {t('taskForm.delete')}
             </button>
           ) : (
             <span />
@@ -301,7 +303,7 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, onC
             disabled={saving}
             className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
           >
-            {task ? 'Speichern' : 'Hinzufügen'}
+            {task ? t('taskForm.save') : t('taskForm.add')}
           </button>
         </div>
       </form>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Check, ChevronDown, HelpCircle, ListChecks, MessageSquare, Moon, Repeat, Send } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { Task } from '../../types'
 import { useTasksStore } from '../../store/tasksStore'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
@@ -18,7 +19,14 @@ interface TaskItemProps {
   showBoard?: boolean
 }
 
+const friendlyDateKeys: Record<string, string> = {
+  'Heute': 'item.dateToday',
+  'Morgen': 'item.dateTomorrow',
+  'Gestern': 'item.dateYesterday',
+}
+
 export default function TaskItem({ task, onClick, showBoard = true }: TaskItemProps) {
+  const { t } = useTranslation('tasks')
   const toggleTaskCompleted = useTasksStore((s) => s.toggleTaskCompleted)
   const toggleProjectTaskCompleted = useProjectTasksStore((s) => s.toggleTaskCompleted)
   const toggleSubtask = useTasksStore((s) => s.toggleSubtask)
@@ -68,16 +76,19 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
             <div className="mt-0.5 flex items-center gap-2 text-xs text-gray-400">
               {task.dueDate && (
                 <span className={overdue ? 'font-medium text-red-500' : ''}>
-                  {formatFriendlyDate(task.dueDate)}
+                  {(() => {
+                    const friendly = formatFriendlyDate(task.dueDate)
+                    return friendlyDateKeys[friendly] ? t(friendlyDateKeys[friendly]) : friendly
+                  })()}
                 </span>
               )}
               {task.evening && (
-                <span className="flex items-center gap-1" title="Heute Abend">
+                <span className="flex items-center gap-1" title={t('item.tonight')}>
                   <Moon size={12} />
                 </span>
               )}
               {task.recurrence && (
-                <span className="flex items-center gap-1" title="Wiederkehrend">
+                <span className="flex items-center gap-1" title={t('item.recurring')}>
                   <Repeat size={12} />
                 </span>
               )}
@@ -108,7 +119,7 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
           <button
             onClick={() => setShowComments((v) => !v)}
             className={`flex flex-shrink-0 items-center gap-1 rounded p-1 text-xs hover:bg-gray-100 dark:hover:bg-racing-800 ${showComments ? 'text-accent' : 'text-gray-400 hover:text-gray-600'}`}
-            title="Kommentare"
+            title={t('item.comments')}
           >
             <MessageSquare size={14} />
             {commentCount > 0 && <span className="text-[10px]">{commentCount}</span>}
@@ -121,25 +132,25 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
             <button
               onClick={() => { setShowAsk((v) => !v); setAskDone(false) }}
               className={`flex flex-shrink-0 items-center gap-1 rounded p-1 text-xs hover:bg-violet-50 dark:hover:bg-racing-800 ${showAsk ? 'text-violet-500' : 'text-gray-400 hover:text-violet-500'}`}
-              title="Kollegen fragen"
+              title={t('item.askColleague')}
             >
               <HelpCircle size={14} />
             </button>
             {showAsk && (
               <div className="absolute right-0 top-full z-30 mt-1 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-lg dark:border-racing-700 dark:bg-racing-900">
                 {askDone ? (
-                  <p className="py-2 text-center text-xs text-emerald-500">✓ Frage gesendet!</p>
+                  <p className="py-2 text-center text-xs text-emerald-500">✓ {t('item.questionSent')}</p>
                 ) : friends.length === 0 ? (
-                  <p className="py-2 text-center text-xs text-gray-400">Füge zuerst Kollegen hinzu.</p>
+                  <p className="py-2 text-center text-xs text-gray-400">{t('item.addColleaguesFirst')}</p>
                 ) : (
                   <>
-                    <p className="mb-2 text-xs font-semibold text-gray-600 dark:text-racing-200">Frage zu dieser Aufgabe stellen</p>
+                    <p className="mb-2 text-xs font-semibold text-gray-600 dark:text-racing-200">{t('item.askQuestionTitle')}</p>
                     <select
                       value={askTo}
                       onChange={(e) => setAskTo(e.target.value)}
                       className="mb-2 w-full rounded-lg border border-gray-200 bg-transparent px-2 py-1.5 text-xs focus:border-accent focus:outline-none dark:border-racing-700"
                     >
-                      <option value="">Kollegen wählen…</option>
+                      <option value="">{t('item.chooseColleague')}</option>
                       {friends.map((f) => (
                         <option key={f.profile.id} value={f.profile.id}>{f.profile.display_name}</option>
                       ))}
@@ -147,7 +158,7 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
                     <textarea
                       value={askText}
                       onChange={(e) => setAskText(e.target.value)}
-                      placeholder="Deine Frage…"
+                      placeholder={t('item.yourQuestion')}
                       rows={2}
                       className="mb-2 w-full rounded-lg border border-gray-200 bg-transparent px-2 py-1.5 text-xs focus:border-accent focus:outline-none dark:border-racing-700"
                     />
@@ -165,7 +176,7 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
                       className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark disabled:opacity-50"
                     >
                       <Send size={11} />
-                      {askSending ? 'Sende…' : 'Frage senden'}
+                      {askSending ? t('item.sending') : t('item.sendQuestion')}
                     </button>
                   </>
                 )}
@@ -179,7 +190,7 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
           <button
             onClick={() => setExpanded((v) => !v)}
             className="flex flex-shrink-0 items-center gap-1 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-racing-800"
-            title={expanded ? 'Einklappen' : 'Unteraufgaben anzeigen'}
+            title={expanded ? t('item.collapse') : t('item.showSubtasks')}
           >
             <ChevronDown size={16} className={`transition-transform duration-150 ${expanded ? '' : '-rotate-90'}`} />
           </button>

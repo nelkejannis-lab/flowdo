@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Building2, Calendar, Globe, Users } from 'lucide-react'
 import type { Board } from '../../types'
 import { useBoardsStore } from '../../store/boardsStore'
@@ -6,6 +7,7 @@ import { formatFriendlyDate, isOverdue } from '../../utils/date'
 import ProgressRing from './ProgressRing'
 
 export default function BoardCard({ board }: { board: Board }) {
+  const { t } = useTranslation('boards')
   const stats = useBoardsStore((s) => s.taskStats[board.id])
   const total = stats?.total ?? 0
   const done = stats?.done ?? 0
@@ -27,10 +29,10 @@ export default function BoardCard({ board }: { board: Board }) {
       <div className="flex items-center gap-3">
         <ProgressRing progress={progress} color={board.color} />
         <div className="flex flex-1 items-center justify-between text-xs text-gray-400">
-        <span>{done}/{total} Aufgaben</span>
+        <span>{done}/{total} {t('card.tasks', { count: total })}</span>
         <div className="flex items-center gap-2">
           {board.responsibleProfile && (
-            <span className="flex items-center gap-1" title={`Verantwortlich: ${board.responsibleProfile.display_name}`}>
+            <span className="flex items-center gap-1" title={t('card.responsible', { name: board.responsibleProfile.display_name })}>
               <span className="flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold text-white" style={{ backgroundColor: board.responsibleProfile.avatar_color }}>
                 {board.responsibleProfile.display_name.slice(0, 2).toUpperCase()}
               </span>
@@ -56,13 +58,13 @@ export default function BoardCard({ board }: { board: Board }) {
           {board.internalLaunch && (
             <span className="flex items-center gap-1">
               <Building2 size={12} />
-              Intern: {formatFriendlyDate(board.internalLaunch)}
+              {t('card.internal', { date: formatFriendlyDate(board.internalLaunch) })}
             </span>
           )}
           {board.externalLaunch && (
             <span className="flex items-center gap-1">
               <Globe size={12} />
-              Extern: {formatFriendlyDate(board.externalLaunch)}
+              {t('card.external', { date: formatFriendlyDate(board.externalLaunch) })}
             </span>
           )}
         </div>

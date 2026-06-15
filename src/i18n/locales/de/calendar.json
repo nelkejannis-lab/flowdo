@@ -1,0 +1,81 @@
+{
+  "views": {
+    "month": "Monat",
+    "week": "Woche",
+    "day": "Tag"
+  },
+  "today": "Heute",
+  "weekOf": "Woche vom {{date}}",
+  "addButton": "Hinzufügen",
+  "team": {
+    "label": "Team",
+    "select": "Team auswählen",
+    "awayAndVacation": "Auswärts & Urlaub",
+    "noAwayOrVacation": "Keine Auswärts- oder Urlaubseinträge im Team."
+  },
+  "birthdays": {
+    "tooltip": "Geburtstage",
+    "upcoming": "Nächste Geburtstage",
+    "none": "Keine Kollegen mit Geburtsdatum.",
+    "today": "🎉 Heute!",
+    "inDays": "in {{count}}d",
+    "turns": "wird {{age}}"
+  },
+  "externalCalendars": {
+    "button": "📅 Kalender",
+    "toggleLabel": "Kalender ein-/ausblenden",
+    "google": "📅 Google Calendar",
+    "outlook": "📧 Outlook",
+    "ical": "☁️ iCal"
+  },
+  "entryTypes": {
+    "termin": "Termin",
+    "reise": "Außerhaus",
+    "urlaub": "Urlaub"
+  },
+  "entryTypeBadges": {
+    "urlaub": "🌴 Urlaub",
+    "reise": "✈️ Reise"
+  },
+  "moreCount": "+{{count}} mehr",
+  "weekday": {
+    "noTasks": "–"
+  },
+  "day": {
+    "addTask": "Aufgabe",
+    "noTasksForDay": "Keine Aufgaben für diesen Tag",
+    "withInvitees": "Mit {{names}}",
+    "uhr": "Uhr"
+  },
+  "sidebar": {
+    "title": "Außerhaus & Urlaub",
+    "noneAway": "Aktuell ist niemand außerhaus oder im Urlaub.",
+    "unknown": "Unbekannt"
+  },
+  "form": {
+    "titleEdit": "Eintrag bearbeiten",
+    "titleAdd": "Hinzufügen",
+    "types": {
+      "event": "Event",
+      "termin": "Termin",
+      "reise": "Außerhaus",
+      "urlaub": "Urlaub"
+    },
+    "titlePlaceholder": {
+      "event": "Titel (z. B. DTM-Rennwochenende)",
+      "termin": "Titel (z. B. Team-Meeting)",
+      "reise": "Titel (z. B. Kundenbesuch Berlin, Außendienst)",
+      "urlaub": "Titel (z. B. Sommerurlaub)"
+    },
+    "date": "Datum",
+    "endDateOptional": "Enddatum (optional)",
+    "startTimeOptional": "Von (Uhrzeit, optional)",
+    "endTimeOptional": "Bis (Uhrzeit, optional)",
+    "descriptionPlaceholder": "Beschreibung (optional)",
+    "inviteColleagues": "Kollegen einladen",
+    "color": "Farbe",
+    "delete": "Löschen",
+    "save": "Speichern",
+    "create": "Erstellen"
+  }
+}

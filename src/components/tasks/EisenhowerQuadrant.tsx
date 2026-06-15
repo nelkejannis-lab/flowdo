@@ -1,8 +1,20 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react'
 import type { Task } from '../../types'
 import { dateGroupLabel, dateGroupOrder } from '../../utils/date'
 import EisenhowerTaskRow from './EisenhowerTaskRow'
+
+// Maps the German labels returned by dateGroupLabel()/dateGroupOrder to translation keys.
+const dateGroupLabelKeys: Record<string, string> = {
+  'Überfällig': 'tasks:dateGroups.overdue',
+  'Heute': 'tasks:dateGroups.today',
+  'Heute Abend': 'tasks:dateGroups.tonight',
+  'Morgen': 'tasks:dateGroups.tomorrow',
+  'Diese Woche': 'tasks:dateGroups.thisWeek',
+  'Später': 'tasks:dateGroups.later',
+  'Ohne Datum': 'tasks:dateGroups.noDate',
+}
 
 interface EisenhowerQuadrantProps {
   title: string
@@ -21,6 +33,7 @@ export default function EisenhowerQuadrant({
   onTaskClick,
   onAddTask,
 }: EisenhowerQuadrantProps) {
+  const { t } = useTranslation(['eisenhower', 'tasks'])
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
 
   const groups = useMemo(() => {
@@ -59,14 +72,14 @@ export default function EisenhowerQuadrant({
         <button
           onClick={onAddTask}
           className="rounded p-1 text-gray-300 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
-          title="Aufgabe hinzufügen"
+          title={t('quadrant.addTask')}
         >
           <Plus size={16} />
         </button>
       </div>
 
       {groups.length === 0 ? (
-        <p className="py-4 text-center text-xs text-gray-300">Keine Aufgaben</p>
+        <p className="py-4 text-center text-xs text-gray-300">{t('quadrant.noTasks')}</p>
       ) : (
         <div className="flex flex-col gap-1">
           {groups.map(([label, items]) => {
@@ -78,7 +91,7 @@ export default function EisenhowerQuadrant({
                   className="flex w-full items-center gap-1 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-gray-400"
                 >
                   {isCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
-                  {label}
+                  {dateGroupLabelKeys[label] ? t(dateGroupLabelKeys[label]) : label}
                   <span className="font-normal normal-case text-gray-300">{items.length}</span>
                 </button>
                 {!isCollapsed && (

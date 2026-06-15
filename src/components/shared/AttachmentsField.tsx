@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Paperclip, Plus, Trash2 } from 'lucide-react'
 import type { Attachment } from '../../types'
 import { formatFileSize } from '../../lib/attachments'
@@ -10,6 +11,7 @@ interface AttachmentsFieldProps {
 }
 
 export default function AttachmentsField({ attachments, onUpload, onDelete }: AttachmentsFieldProps) {
+  const { t } = useTranslation('common')
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -28,7 +30,7 @@ export default function AttachmentsField({ attachments, onUpload, onDelete }: At
 
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-gray-500">Anhänge</label>
+      <label className="mb-1 block text-xs font-medium text-gray-500">{t('attachments.label')}</label>
       {attachments.length > 0 && (
         <div className="mb-2 flex flex-col gap-1">
           {attachments.map((a) => (
@@ -50,7 +52,7 @@ export default function AttachmentsField({ attachments, onUpload, onDelete }: At
       )}
       <label className="flex w-fit cursor-pointer items-center gap-2 rounded-lg bg-gray-100 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-200 disabled:opacity-60 dark:bg-racing-800 dark:text-racing-100">
         <Plus size={14} />
-        {uploading ? 'Lädt hoch…' : 'Datei anhängen'}
+        {uploading ? t('attachments.uploading') : t('attachments.attachFile')}
         <input
           ref={inputRef}
           type="file"
