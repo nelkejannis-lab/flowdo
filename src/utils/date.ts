@@ -60,6 +60,54 @@ export function dateGroupLabel(iso?: string): string {
   return 'Später'
 }
 
-export const dateGroupOrder = ['Überfällig', 'Heute', 'Morgen', 'Diese Woche', 'Später', 'Ohne Datum']
+export const dateGroupOrder = ['Überfällig', 'Heute', 'Heute Abend', 'Morgen', 'Diese Woche', 'Später', 'Ohne Datum']
+
+const WEEKDAYS = ['sonntag', 'montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag']
+
+export interface ParsedDate {
+  date: string
+  cleanedText: string
+}
+
+/** Erkennt einfache deutsche Datumsangaben in einem Text und entfernt sie. */
+export function parseNaturalDate(text: string): ParsedDate | null {
+  const lower = text.toLowerCase()
+  const today = startOfDay(new Date())
+
+  const tryMatch = (regex: RegExp, resolve: (match: RegExpMatchArray) => Date): ParsedDate | null => {
+    const match = lower.match(regex)
+    if (!match) return null
+    const date = resolve(match)
+    const before = text.slice(0, match.index).trim()
+    const after = text.slice((match.index ?? 0) + match[0].length).trim()
+    const cleanedText = [before, after].filter(Boolean).join(' ')
+    return { date: toISODate(date), cleanedText }
+  }
+
+  return (
+    tryMatch(/\bübermorgen\b/, () => addDaysTo(today, 2)) ??
+    tryMatch(/\bmorgen\b/, () => addDaysTo(today, 1)) ??
+    tryMatch(/\bheute\b/, () => today) ??
+    tryMatch(/\bin (\d+) tagen\b/, (m) => addDaysTo(today, parseInt(m[1], 10))) ??
+    tryMatch(/\bnächste woche\b/, () => addDaysTo(today, 7)) ??
+    tryMatch(new RegExp(`\\b(?:nächsten |nächste |am )?(${WEEKDAYS.join('|')})\\b`), (m) =>
+      nextWeekday(today, WEEKDAYS.indexOf(m[1]))
+    ) ??
+    null
+  )
+}
+
+function addDaysTo(date: Date, days: number): Date {
+  const result = new Date(date)
+  result.setDate(result.getDate() + days)
+  return result
+}
+
+function nextWeekday(from: Date, targetDay: number): Date {
+  const currentDay = from.getDay()
+  let diff = targetDay - currentDay
+  if (diff <= 0) diff += 7
+  return addDaysTo(from, diff)
+}
 
 export { startOfDay }

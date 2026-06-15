@@ -27,7 +27,8 @@ export default function TaskList({ tasks, groupByDate = false, emptyMessage = 'K
     if (!groupByDate) return { Alle: activeTasks }
     const map = new Map<string, Task[]>()
     for (const task of activeTasks) {
-      const label = dateGroupLabel(task.dueDate)
+      let label = dateGroupLabel(task.dueDate)
+      if (label === 'Heute' && task.evening) label = 'Heute Abend'
       if (!map.has(label)) map.set(label, [])
       map.get(label)!.push(task)
     }

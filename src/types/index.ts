@@ -39,6 +39,9 @@ export interface Task {
   subtasks: Subtask[]
   attachments: Attachment[]
   createdAt: string
+  evening?: boolean
+  someday?: boolean
+  recurrence?: 'daily' | 'weekly' | 'monthly'
 }
 
 export type EisenhowerQuadrant = 'do' | 'decide' | 'delegate' | 'delete'

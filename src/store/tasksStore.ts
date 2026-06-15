@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Attachment, Task, Priority, Subtask } from '../types'
 import { createId } from '../utils/id'
-import { todayISO } from '../utils/date'
+import { todayISO, toISODate } from '../utils/date'
 import { deleteAttachment, uploadAttachment } from '../lib/attachments'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
@@ -16,6 +16,9 @@ interface NewTaskInput {
   important?: boolean
   boardId?: string
   columnId?: string
+  evening?: boolean
+  someday?: boolean
+  recurrence?: Task['recurrence']
 }
 
 interface TaskRow {
@@ -34,6 +37,9 @@ interface TaskRow {
   subtasks: Subtask[]
   attachments: Attachment[]
   created_at: string
+  evening: boolean | null
+  someday: boolean | null
+  recurrence: Task['recurrence'] | null
 }
 
 function toTask(row: TaskRow): Task {
@@ -53,6 +59,9 @@ function toTask(row: TaskRow): Task {
     subtasks: row.subtasks ?? [],
     attachments: row.attachments ?? [],
     createdAt: row.created_at,
+    evening: row.evening ?? undefined,
+    someday: row.someday ?? undefined,
+    recurrence: row.recurrence ?? undefined,
   }
 }
 
@@ -80,7 +89,23 @@ async function syncTask(task: Task, userId: string) {
     subtasks: task.subtasks,
     attachments: task.attachments,
     created_at: task.createdAt,
+    evening: task.evening ?? false,
+    someday: task.someday ?? false,
+    recurrence: task.recurrence ?? null,
   })
+}
+
+function nextRecurrenceDate(dueDate: string, recurrence: Task['recurrence']): string {
+  const date = parseISODate(dueDate)
+  if (recurrence === 'daily') date.setDate(date.getDate() + 1)
+  else if (recurrence === 'weekly') date.setDate(date.getDate() + 7)
+  else if (recurrence === 'monthly') date.setMonth(date.getMonth() + 1)
+  return toISODate(date)
+}
+
+function parseISODate(iso: string): Date {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(y, m - 1, d)
 }
 
 interface TasksState {
@@ -142,6 +167,9 @@ export const useTasksStore = create<TasksState>()(
           subtasks: [],
           attachments: [],
           createdAt: new Date().toISOString(),
+          evening: input.evening,
+          someday: input.someday,
+          recurrence: input.recurrence,
         }
         set((state) => ({ tasks: [task, ...state.tasks] }))
         void getUserId().then((userId) => {
@@ -178,6 +206,20 @@ export const useTasksStore = create<TasksState>()(
         if (!task) return
         const completed = !task.completed
         get().updateTask(id, { completed, completedAt: completed ? todayISO() : undefined })
+
+        if (completed && task.recurrence && task.dueDate) {
+          get().addTask({
+            title: task.title,
+            description: task.description,
+            dueDate: nextRecurrenceDate(task.dueDate, task.recurrence),
+            priority: task.priority,
+            tags: task.tags,
+            urgent: task.urgent,
+            important: task.important,
+            evening: task.evening,
+            recurrence: task.recurrence,
+          })
+        }
       },
 
       addSubtask: (taskId, title) => {

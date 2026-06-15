@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, Check, X } from 'lucide-react'
+import { Plus, Trash2, Check, X, Moon, Repeat, Archive } from 'lucide-react'
 import Modal from '../layout/Modal'
 import AttachmentsField from '../shared/AttachmentsField'
 import { useTasksStore } from '../../store/tasksStore'
@@ -10,7 +10,7 @@ import { useBoardsStore } from '../../store/boardsStore'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
 import { isSupabaseConfigured } from '../../lib/supabase'
 import { eachEntryDate } from '../../utils/events'
-import { todayISO } from '../../utils/date'
+import { todayISO, parseNaturalDate } from '../../utils/date'
 import type { Attachment, Priority, Task } from '../../types'
 
 const quadrants: { urgent: boolean; important: boolean; label: string; activeClass: string }[] = [
@@ -65,6 +65,9 @@ export default function TaskFormModal({
   const [tagInput, setTagInput] = useState('')
   const [urgent, setUrgent] = useState(task?.urgent ?? defaultUrgent ?? false)
   const [important, setImportant] = useState(task?.important ?? defaultImportant ?? false)
+  const [evening, setEvening] = useState(task?.evening ?? false)
+  const [someday, setSomeday] = useState(task?.someday ?? false)
+  const [recurrence, setRecurrence] = useState<Task['recurrence']>(task?.recurrence)
   const [localSubtasks, setLocalSubtasks] = useState<string[]>([])
   const [assigneeId, setAssigneeId] = useState('')
   const [projectId, setProjectId] = useState('')
@@ -116,6 +119,15 @@ export default function TaskFormModal({
     setTags(tags.filter((t) => t !== tag))
   }
 
+  function handleTitleBlur() {
+    if (dueDate || someday) return
+    const parsed = parseNaturalDate(title)
+    if (parsed && parsed.cleanedText) {
+      setTitle(parsed.cleanedText)
+      setDueDate(parsed.date)
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!title.trim()) return
@@ -163,6 +175,9 @@ export default function TaskFormModal({
         tags,
         urgent,
         important,
+        evening,
+        someday,
+        recurrence,
       })
     } else if (projectId) {
       const board = boards.find((b) => b.id === projectId)
@@ -216,6 +231,9 @@ export default function TaskFormModal({
         tags,
         urgent,
         important,
+        evening,
+        someday,
+        recurrence,
       })
       localSubtasks.forEach((s) => addSubtask(created.id, s))
     }
@@ -236,7 +254,8 @@ export default function TaskFormModal({
           autoFocus
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Was ist zu tun?"
+          onBlur={handleTitleBlur}
+          placeholder="Was ist zu tun? (z. B. „Bericht morgen“)"
           className="rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm font-medium focus:border-accent focus:outline-none dark:border-racing-700"
         />
         <textarea
@@ -253,8 +272,9 @@ export default function TaskFormModal({
             <input
               type="date"
               value={dueDate}
+              disabled={someday}
               onChange={(e) => setDueDate(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+              className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50 dark:border-racing-700"
             />
           </div>
           <div>
@@ -269,6 +289,59 @@ export default function TaskFormModal({
               <option value="high">Hoch</option>
             </select>
           </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setEvening((v) => !v)}
+            disabled={someday}
+            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
+              evening
+                ? 'border-indigo-400 bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400'
+                : 'border-gray-200 text-gray-500 hover:border-gray-300 dark:border-racing-700 dark:text-racing-200'
+            }`}
+          >
+            <Moon size={13} />
+            Heute Abend
+          </button>
+
+          <div className="relative">
+            <select
+              value={recurrence ?? ''}
+              onChange={(e) => setRecurrence((e.target.value || undefined) as Task['recurrence'])}
+              className={`appearance-none rounded-lg border py-1.5 pl-7 pr-2.5 text-xs font-medium focus:outline-none ${
+                recurrence
+                  ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
+                  : 'border-gray-200 bg-transparent text-gray-500 dark:border-racing-700 dark:text-racing-200'
+              }`}
+            >
+              <option value="">Wiederholen…</option>
+              <option value="daily">Täglich</option>
+              <option value="weekly">Wöchentlich</option>
+              <option value="monthly">Monatlich</option>
+            </select>
+            <Repeat size={13} className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2" />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSomeday((v) => !v)
+              if (!someday) {
+                setDueDate('')
+                setEvening(false)
+              }
+            }}
+            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+              someday
+                ? 'border-violet-400 bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400'
+                : 'border-gray-200 text-gray-500 hover:border-gray-300 dark:border-racing-700 dark:text-racing-200'
+            }`}
+          >
+            <Archive size={13} />
+            Irgendwann
+          </button>
         </div>
 
         {boards.length > 0 && (

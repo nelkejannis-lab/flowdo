@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Check, ChevronDown, HelpCircle, ListChecks, MessageSquare, Send } from 'lucide-react'
+import { Check, ChevronDown, HelpCircle, ListChecks, MessageSquare, Moon, Repeat, Send } from 'lucide-react'
 import type { Task } from '../../types'
 import { useTasksStore } from '../../store/tasksStore'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
@@ -64,11 +64,21 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
           <p className={`truncate text-sm font-medium ${task.completed ? 'text-gray-400 line-through' : ''}`}>
             {task.title}
           </p>
-          {(task.dueDate || hasSubtasks) && (
+          {(task.dueDate || hasSubtasks || task.evening || task.recurrence) && (
             <div className="mt-0.5 flex items-center gap-2 text-xs text-gray-400">
               {task.dueDate && (
                 <span className={overdue ? 'font-medium text-red-500' : ''}>
                   {formatFriendlyDate(task.dueDate)}
+                </span>
+              )}
+              {task.evening && (
+                <span className="flex items-center gap-1" title="Heute Abend">
+                  <Moon size={12} />
+                </span>
+              )}
+              {task.recurrence && (
+                <span className="flex items-center gap-1" title="Wiederkehrend">
+                  <Repeat size={12} />
                 </span>
               )}
               {hasSubtasks && (

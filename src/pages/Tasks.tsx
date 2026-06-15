@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { AtSign, Bell, Check, HelpCircle, Plus, Trello, X } from 'lucide-react'
+import { Archive, AtSign, Bell, Check, HelpCircle, Plus, Trello, X } from 'lucide-react'
 import { useTasksStore } from '../store/tasksStore'
 import { useTaskSharesStore } from '../store/taskSharesStore'
 import { useProjectTasksStore } from '../store/projectTasksStore'
@@ -20,6 +20,7 @@ const titles: Record<string, string> = {
   week: 'Diese Woche fällig',
   inbox: 'Inbox',
   completed: 'Erledigt',
+  someday: 'Irgendwann',
 }
 
 export default function TasksPage() {
@@ -82,13 +83,16 @@ export default function TasksPage() {
     )
     title = titles.week
   } else if (smartList === 'inbox') {
-    filtered = tasks.filter((t) => !t.completed && !t.boardId && !t.dueDate)
+    filtered = tasks.filter((t) => !t.completed && !t.boardId && !t.dueDate && !t.someday)
     title = titles.inbox
   } else if (smartList === 'completed') {
     filtered = allTasks.filter((t) => t.completed)
     title = titles.completed
+  } else if (smartList === 'someday') {
+    filtered = allTasks.filter((t) => !t.completed && t.someday)
+    title = titles.someday
   } else {
-    filtered = allTasks.filter((t) => !t.completed)
+    filtered = allTasks.filter((t) => !t.completed && !t.someday)
     groupByDate = true
   }
 
@@ -110,12 +114,23 @@ export default function TasksPage() {
           <Link
             to="/tasks"
             className={`border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
-              smartList !== 'completed'
+              smartList !== 'completed' && smartList !== 'someday'
                 ? 'border-accent text-accent'
                 : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-racing-200'
             }`}
           >
             Aufgaben
+          </Link>
+          <Link
+            to="/tasks/someday"
+            className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+              smartList === 'someday'
+                ? 'border-accent text-accent'
+                : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-racing-200'
+            }`}
+          >
+            <Archive size={14} />
+            Irgendwann
           </Link>
           <Link
             to="/tasks/completed"
