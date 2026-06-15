@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { AtSign, Bell, Check, HelpCircle, Plus, Trello, X } from 'lucide-react'
 import { useTasksStore } from '../store/tasksStore'
 import { useTaskSharesStore } from '../store/taskSharesStore'
@@ -104,6 +104,32 @@ export default function TasksPage() {
           Aufgabe
         </button>
       </div>
+
+      {smartList !== 'inbox' && (
+        <div className="mb-6 flex gap-1 border-b border-gray-100 dark:border-racing-800">
+          <Link
+            to="/tasks"
+            className={`border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+              smartList !== 'completed'
+                ? 'border-accent text-accent'
+                : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-racing-200'
+            }`}
+          >
+            Aufgaben
+          </Link>
+          <Link
+            to="/tasks/completed"
+            className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+              smartList === 'completed'
+                ? 'border-accent text-accent'
+                : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-racing-200'
+            }`}
+          >
+            <Check size={14} />
+            Erledigt
+          </Link>
+        </div>
+      )}
 
       {smartList === 'inbox' ? (
         <div>
@@ -293,7 +319,12 @@ export default function TasksPage() {
           )}
         </div>
       ) : (
-        <TaskList tasks={filtered} groupByDate={groupByDate} />
+        <TaskList
+          tasks={filtered}
+          groupByDate={groupByDate}
+          flat={smartList === 'completed'}
+          emptyMessage={smartList === 'completed' ? 'Keine erledigten Aufgaben' : 'Keine Aufgaben'}
+        />
       )}
 
       {showForm && (

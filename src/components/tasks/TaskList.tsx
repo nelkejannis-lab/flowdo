@@ -11,9 +11,10 @@ interface TaskListProps {
   tasks: Task[]
   groupByDate?: boolean
   emptyMessage?: string
+  flat?: boolean
 }
 
-export default function TaskList({ tasks, groupByDate = false, emptyMessage = 'Keine Aufgaben' }: TaskListProps) {
+export default function TaskList({ tasks, groupByDate = false, emptyMessage = 'Keine Aufgaben', flat = false }: TaskListProps) {
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [showCompleted, setShowCompleted] = useState(false)
   const boards = useBoardsStore((s) => s.boards)
@@ -42,6 +43,21 @@ export default function TaskList({ tasks, groupByDate = false, emptyMessage = 'K
 
   if (tasks.length === 0) {
     return <p className="py-8 text-center text-sm text-gray-400">{emptyMessage}</p>
+  }
+
+  if (flat) {
+    return (
+      <div className="flex flex-col gap-2">
+        {tasks.map((task) => (
+          <TaskItem key={task.id} task={task} onClick={() => setEditingTask(task)} />
+        ))}
+
+        {editingTask && editingBoard && (
+          <ProjectTaskFormModal board={editingBoard} task={editingTask} onClose={() => setEditingTask(null)} />
+        )}
+        {editingTask && !editingBoard && <TaskFormModal task={editingTask} onClose={() => setEditingTask(null)} />}
+      </div>
+    )
   }
 
   return (
