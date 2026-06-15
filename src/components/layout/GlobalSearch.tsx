@@ -71,7 +71,7 @@ export default function GlobalSearch() {
   const hasResults = results.tasks.length > 0 || results.boards.length > 0 || results.tags.length > 0
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-[12vh]" onClick={close}>
+    <div className="fixed inset-0 z-[60] flex items-start justify-center bg-black/40 p-4 pt-[12vh]" onClick={close}>
       <div
         className="flex max-h-[70vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-xl dark:bg-racing-900"
         onClick={(e) => e.stopPropagation()}
