@@ -9,7 +9,42 @@
   "tabs": {
     "profil": "Profile",
     "kalender": "Calendar",
+    "funktionen": "Features",
     "datenschutz": "Privacy"
+  },
+  "features": {
+    "title": "Features",
+    "description": "Hide areas you don't need — they disappear from the sidebar.",
+    "items": {
+      "calendar": {
+        "label": "Calendar",
+        "description": "Month, week and day view of your events"
+      },
+      "eisenhower": {
+        "label": "Eisenhower Matrix",
+        "description": "Sort tasks by importance and urgency"
+      },
+      "worktime": {
+        "label": "Worktime",
+        "description": "Time tracking and overview"
+      },
+      "aiScheduler": {
+        "label": "AI Scheduling",
+        "description": "Automatic appointment suggestions via AI"
+      },
+      "chat": {
+        "label": "Chat",
+        "description": "Messages with other users"
+      },
+      "friends": {
+        "label": "Colleagues",
+        "description": "Manage and connect with colleagues"
+      },
+      "social": {
+        "label": "Social Media",
+        "description": "Social media accounts and stats"
+      }
+    }
   },
   "calendar": {
     "title": "External calendars",

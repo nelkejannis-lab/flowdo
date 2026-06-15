@@ -27,6 +27,7 @@ export default function App() {
   const location = useLocation()
   const mode = useSettingsStore((s) => s.mode)
   const pinkAccent = useSettingsStore((s) => s.pinkAccent)
+  const featureVisibility = useSettingsStore((s) => s.featureVisibility)
   const init = useAuthStore((s) => s.init)
   const loading = useAuthStore((s) => s.loading)
   const session = useAuthStore((s) => s.session)
@@ -65,16 +66,16 @@ export default function App() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/tasks" element={<TasksPage />} />
         <Route path="/tasks/:smartList" element={<TasksPage />} />
-        <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/calendar" element={featureVisibility.calendar ? <CalendarPage /> : <Navigate to="/" replace />} />
         <Route path="/projekte" element={<BoardsPage />} />
         <Route path="/projekte/:boardId" element={<BoardDetailPage />} />
-        <Route path="/arbeitszeit" element={<ArbeitszeitPage />} />
-        <Route path="/eisenhower" element={<EisenhowerPage />} />
-        <Route path="/friends" element={<FriendsPage />} />
-        <Route path="/social" element={<SocialMediaPage />} />
-        <Route path="/social/:accountId" element={<SocialAccountDetailPage />} />
-        <Route path="/ki-termine" element={<AiSchedulerPage />} />
-        <Route path="/chat" element={<ChatPage />} />
+        <Route path="/arbeitszeit" element={featureVisibility.worktime ? <ArbeitszeitPage /> : <Navigate to="/" replace />} />
+        <Route path="/eisenhower" element={featureVisibility.eisenhower ? <EisenhowerPage /> : <Navigate to="/" replace />} />
+        <Route path="/friends" element={featureVisibility.friends ? <FriendsPage /> : <Navigate to="/" replace />} />
+        <Route path="/social" element={featureVisibility.social ? <SocialMediaPage /> : <Navigate to="/" replace />} />
+        <Route path="/social/:accountId" element={featureVisibility.social ? <SocialAccountDetailPage /> : <Navigate to="/" replace />} />
+        <Route path="/ki-termine" element={featureVisibility.aiScheduler ? <AiSchedulerPage /> : <Navigate to="/" replace />} />
+        <Route path="/chat" element={featureVisibility.chat ? <ChatPage /> : <Navigate to="/" replace />} />
         <Route path="/einstellungen" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

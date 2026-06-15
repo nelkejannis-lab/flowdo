@@ -1,18 +1,33 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Download, Eye, EyeOff, Loader2, RefreshCw, Trash2, Upload, X } from 'lucide-react'
+import { CalendarDays, Clock, Download, Eye, EyeOff, Grid2x2, Instagram, Loader2, MessageCircle, RefreshCw, Sparkles, Trash2, Upload, Users, X } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { uploadAvatar } from '../lib/avatar'
 import { BOARD_COLORS } from '../store/boardsStore'
 import { useCalendarConnectionsStore } from '../store/calendarConnectionsStore'
-import { useSettingsStore } from '../store/settingsStore'
+import { useSettingsStore, type FeatureKey } from '../store/settingsStore'
+import { isSupabaseConfigured } from '../lib/supabase'
 import { useSearchParams } from 'react-router-dom'
+
+const FEATURE_ICONS: Record<FeatureKey, React.ReactNode> = {
+  calendar: <CalendarDays size={18} />,
+  eisenhower: <Grid2x2 size={18} />,
+  worktime: <Clock size={18} />,
+  aiScheduler: <Sparkles size={18} />,
+  chat: <MessageCircle size={18} />,
+  friends: <Users size={18} />,
+  social: <Instagram size={18} />,
+}
+
+const SUPABASE_ONLY_FEATURES: FeatureKey[] = ['aiScheduler', 'chat', 'friends', 'social']
 
 export default function SettingsPage() {
   const { t, i18n } = useTranslation(['settings', 'common'])
   const language = useSettingsStore((s) => s.language)
   const setLanguage = useSettingsStore((s) => s.setLanguage)
+  const featureVisibility = useSettingsStore((s) => s.featureVisibility)
+  const toggleFeature = useSettingsStore((s) => s.toggleFeature)
   const profile = useAuthStore((s) => s.profile)
   const user = useAuthStore((s) => s.user)
   const updateProfile = useAuthStore((s) => s.updateProfile)
@@ -45,7 +60,7 @@ export default function SettingsPage() {
   const [savingPassword, setSavingPassword] = useState(false)
 
   const [searchParams] = useSearchParams()
-  const [activeTab, setActiveTab] = useState<'profil' | 'kalender' | 'datenschutz'>(searchParams.get('tab') === 'kalender' ? 'kalender' : 'profil')
+  const [activeTab, setActiveTab] = useState<'profil' | 'kalender' | 'funktionen' | 'datenschutz'>(searchParams.get('tab') === 'kalender' ? 'kalender' : 'profil')
   const connections = useCalendarConnectionsStore((s) => s.connections)
   const fetchConnections = useCalendarConnectionsStore((s) => s.fetch)
   const disconnectCalendar = useCalendarConnectionsStore((s) => s.disconnect)
@@ -162,7 +177,7 @@ export default function SettingsPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 rounded-lg border border-gray-200 p-1 dark:border-racing-700 w-fit">
-        {(['profil', 'kalender', 'datenschutz'] as const).map((tab) => (
+        {(['profil', 'kalender', 'funktionen', 'datenschutz'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -285,6 +300,42 @@ export default function SettingsPage() {
               {t('calendar.fewConnections')}
             </div>
           )}
+        </div>
+      )}
+
+      {activeTab === 'funktionen' && (
+        <div className="flex flex-col gap-4">
+          <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+            <h2 className="mb-1 text-sm font-semibold">{t('features.title')}</h2>
+            <p className="mb-3 text-xs text-gray-400">{t('features.description')}</p>
+            <div className="flex flex-col divide-y divide-gray-100 dark:divide-racing-800">
+              {(Object.keys(FEATURE_ICONS) as FeatureKey[])
+                .filter((key) => !SUPABASE_ONLY_FEATURES.includes(key) || isSupabaseConfigured)
+                .map((key) => {
+                  const enabled = featureVisibility[key]
+                  return (
+                    <div key={key} className="flex items-center gap-3 py-3">
+                      <span className="text-gray-400">{FEATURE_ICONS[key]}</span>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{t(`features.items.${key}.label`)}</p>
+                        <p className="text-xs text-gray-400">{t(`features.items.${key}.description`)}</p>
+                      </div>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={enabled}
+                        onClick={() => toggleFeature(key)}
+                        className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${enabled ? 'bg-accent' : 'bg-gray-200 dark:bg-racing-700'}`}
+                      >
+                        <span
+                          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0.5'}`}
+                        />
+                      </button>
+                    </div>
+                  )
+                })}
+            </div>
+          </div>
         </div>
       )}
 

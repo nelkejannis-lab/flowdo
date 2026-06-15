@@ -72,6 +72,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const setMode = useSettingsStore((s) => s.setMode)
   const pinkAccent = useSettingsStore((s) => s.pinkAccent)
   const togglePinkAccent = useSettingsStore((s) => s.togglePinkAccent)
+  const featureVisibility = useSettingsStore((s) => s.featureVisibility)
   const profile = useAuthStore((s) => s.profile)
   const signOut = useAuthStore((s) => s.signOut)
   const openSearch = useSearchStore((s) => s.open)
@@ -127,19 +128,21 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           >
             <Search size={18} />
           </button>
-          <NavLink
-            to="/chat"
-            onClick={onClose}
-            className="relative rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
-            aria-label={t('sidebar.chat')}
-          >
-            <MessageCircle size={18} />
-            {unreadMessages > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-white">
-                {unreadMessages > 9 ? '9+' : unreadMessages}
-              </span>
-            )}
-          </NavLink>
+          {featureVisibility.chat && (
+            <NavLink
+              to="/chat"
+              onClick={onClose}
+              className="relative rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
+              aria-label={t('sidebar.chat')}
+            >
+              <MessageCircle size={18} />
+              {unreadMessages > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-white">
+                  {unreadMessages > 9 ? '9+' : unreadMessages}
+                </span>
+              )}
+            </NavLink>
+          )}
           <NavLink
             to="/tasks/inbox"
             onClick={onClose}
@@ -180,25 +183,31 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <ListTodo size={18} />
           {t('sidebar.nav.allTasks')}
         </NavLink>
-        <NavLink to="/calendar" className={navItemClass}>
-          <CalendarDays size={18} />
-          {t('sidebar.nav.calendar')}
-        </NavLink>
-        <NavLink to="/eisenhower" className={navItemClass}>
-          <Grid2x2 size={18} />
-          {t('sidebar.nav.eisenhower')}
-        </NavLink>
-        <NavLink to="/arbeitszeit" className={navItemClass}>
-          <Clock size={18} />
-          {t('sidebar.nav.worktime')}
-        </NavLink>
-        {isSupabaseConfigured && (
+        {featureVisibility.calendar && (
+          <NavLink to="/calendar" className={navItemClass}>
+            <CalendarDays size={18} />
+            {t('sidebar.nav.calendar')}
+          </NavLink>
+        )}
+        {featureVisibility.eisenhower && (
+          <NavLink to="/eisenhower" className={navItemClass}>
+            <Grid2x2 size={18} />
+            {t('sidebar.nav.eisenhower')}
+          </NavLink>
+        )}
+        {featureVisibility.worktime && (
+          <NavLink to="/arbeitszeit" className={navItemClass}>
+            <Clock size={18} />
+            {t('sidebar.nav.worktime')}
+          </NavLink>
+        )}
+        {isSupabaseConfigured && featureVisibility.aiScheduler && (
           <NavLink to="/ki-termine" className={navItemClass}>
             <Sparkles size={18} />
             {t('sidebar.nav.aiScheduler')}
           </NavLink>
         )}
-        {isSupabaseConfigured && (
+        {isSupabaseConfigured && featureVisibility.chat && (
           <NavLink to="/chat" className={navItemClass} onClick={onClose}>
             <span className="relative">
               <MessageCircle size={18} />
@@ -211,13 +220,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             {t('sidebar.nav.chat')}
           </NavLink>
         )}
-        {isSupabaseConfigured && (
+        {isSupabaseConfigured && featureVisibility.friends && (
           <NavLink to="/friends" className={navItemClass}>
             <Users size={18} />
             {t('sidebar.nav.friends')}
           </NavLink>
         )}
-        {isSupabaseConfigured && (
+        {isSupabaseConfigured && featureVisibility.social && (
           <NavLink to="/social" className={navItemClass}>
             <Instagram size={18} />
             {t('sidebar.nav.social')}

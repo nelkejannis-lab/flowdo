@@ -9,7 +9,42 @@
   "tabs": {
     "profil": "Profil",
     "kalender": "Kalender",
+    "funktionen": "Funktionen",
     "datenschutz": "Datenschutz"
+  },
+  "features": {
+    "title": "Funktionen",
+    "description": "Blende Bereiche aus, die du nicht brauchst — sie verschwinden aus der Seitenleiste.",
+    "items": {
+      "calendar": {
+        "label": "Kalender",
+        "description": "Monats-, Wochen- und Tagesansicht deiner Termine"
+      },
+      "eisenhower": {
+        "label": "Eisenhower-Matrix",
+        "description": "Aufgaben nach Wichtigkeit und Dringlichkeit sortieren"
+      },
+      "worktime": {
+        "label": "Arbeitszeit",
+        "description": "Arbeitszeiterfassung und Übersicht"
+      },
+      "aiScheduler": {
+        "label": "KI-Termine",
+        "description": "Automatische Terminvorschläge per KI"
+      },
+      "chat": {
+        "label": "Chat",
+        "description": "Nachrichten mit anderen Nutzern"
+      },
+      "friends": {
+        "label": "Kollegen",
+        "description": "Kollegen verwalten und vernetzen"
+      },
+      "social": {
+        "label": "Social Media",
+        "description": "Social-Media-Konten und Statistiken"
+      }
+    }
   },
   "calendar": {
     "title": "Externe Kalender",
