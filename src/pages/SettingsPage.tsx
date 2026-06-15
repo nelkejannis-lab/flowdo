@@ -176,12 +176,12 @@ export default function SettingsPage() {
       <h1 className="text-2xl font-semibold">{t('title')}</h1>
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-lg border border-gray-200 p-1 dark:border-racing-700 w-fit">
+      <div className="flex gap-1 overflow-x-auto rounded-lg border border-gray-200 p-1 dark:border-racing-700 sm:w-fit">
         {(['profil', 'kalender', 'funktionen', 'datenschutz'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`rounded-md px-4 py-1.5 text-sm font-medium capitalize ${activeTab === tab ? 'bg-accent text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'}`}
+            className={`flex-shrink-0 whitespace-nowrap rounded-md px-4 py-1.5 text-sm font-medium capitalize ${activeTab === tab ? 'bg-accent text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'}`}
           >
             {t(`tabs.${tab}`)}
           </button>
@@ -315,8 +315,8 @@ export default function SettingsPage() {
                   const enabled = featureVisibility[key]
                   return (
                     <div key={key} className="flex items-center gap-3 py-3">
-                      <span className="text-gray-400">{FEATURE_ICONS[key]}</span>
-                      <div className="flex-1">
+                      <span className="flex-shrink-0 text-gray-400">{FEATURE_ICONS[key]}</span>
+                      <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium">{t(`features.items.${key}.label`)}</p>
                         <p className="text-xs text-gray-400">{t(`features.items.${key}.description`)}</p>
                       </div>

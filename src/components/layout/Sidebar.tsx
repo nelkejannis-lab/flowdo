@@ -114,19 +114,19 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-      <div className="mb-6 flex items-center justify-between gap-2 px-2">
-        <div className="flex items-center gap-2">
+      <div className="mb-6 flex items-center justify-between gap-1 px-2">
+        <div className="flex min-w-0 items-center gap-1.5">
           <Logo />
-          <span className="text-lg font-semibold">{t('appName')}</span>
+          <span className="truncate text-base font-semibold sm:text-lg">{t('appName')}</span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex flex-shrink-0 items-center gap-0">
           <button
             onClick={openSearch}
             className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
             aria-label={t('sidebar.search')}
             title={t('sidebar.searchTitle')}
           >
-            <Search size={18} />
+            <Search size={16} />
           </button>
           {featureVisibility.chat && (
             <NavLink
@@ -135,7 +135,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               className="relative rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
               aria-label={t('sidebar.chat')}
             >
-              <MessageCircle size={18} />
+              <MessageCircle size={16} />
               {unreadMessages > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-white">
                   {unreadMessages > 9 ? '9+' : unreadMessages}
@@ -149,7 +149,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             className="relative rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
             aria-label={t('sidebar.inbox')}
           >
-            <Bell size={18} />
+            <Bell size={16} />
             {notificationCount > 0 && (
               <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
                 {notificationCount > 9 ? '9+' : notificationCount}
@@ -161,7 +161,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800 sm:hidden"
             aria-label={t('sidebar.closeMenu')}
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
       </div>
