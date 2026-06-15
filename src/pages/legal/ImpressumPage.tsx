@@ -9,11 +9,6 @@ export default function ImpressumPage() {
       </Link>
       <h1 className="mb-6 text-2xl font-semibold">Impressum</h1>
 
-      <p className="mb-4 rounded-lg bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
-        Hinweis: Diese Angaben gelten erst, sobald das Gewerbe offiziell angemeldet ist – vorher
-        darf die App nicht geschäftlich/produktiv betrieben werden.
-      </p>
-
       <h2 className="mb-2 mt-6 text-base font-semibold">Angaben gemäß § 5 TMG</h2>
       <p className="mb-4">
         Janis Nelke<br />

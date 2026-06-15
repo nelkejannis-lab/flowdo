@@ -9,12 +9,6 @@ export default function DatenschutzPage() {
       </Link>
       <h1 className="mb-6 text-2xl font-semibold">Datenschutzerklärung</h1>
 
-      <p className="mb-4 rounded-lg bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
-        Dies ist ein Entwurf auf Basis der tatsächlich in dieser Anwendung verwendeten Dienste.
-        Er ersetzt keine Rechtsberatung. Bitte vor produktivem Einsatz von einem Datenschutzbeauftragten /
-        Rechtsanwalt prüfen lassen und die Platzhalter (eckige Klammern) ausfüllen.
-      </p>
-
       <h2 className="mb-2 mt-6 text-base font-semibold">1. Verantwortlicher</h2>
       <p className="mb-4">
         Verantwortlicher im Sinne der Datenschutz-Grundverordnung (DSGVO) ist:<br />
