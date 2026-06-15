@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { DndContext, type DragEndEvent } from '@dnd-kit/core'
+import { DndContext, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { ArrowLeft, Building2, Globe, MessageSquare, Pencil, Plus, UserPlus, Users, X } from 'lucide-react'
 import { useBoardsStore } from '../store/boardsStore'
 import { useBoardInvitesStore } from '../store/boardInvitesStore'
@@ -59,6 +59,11 @@ export default function BoardDetailPage() {
   useEffect(() => {
     fetchFriends()
   }, [fetchFriends])
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+  )
 
   if (!board) {
     return (
@@ -302,7 +307,7 @@ export default function BoardDetailPage() {
 
       <div className="flex gap-4">
         <div className="min-w-0 flex-1">
-          <DndContext onDragEnd={handleDragEnd}>
+          <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
             <div className="flex gap-4 overflow-x-auto pb-4">
               {board.columns.map((column) => (
                 <KanbanColumn
