@@ -35,6 +35,24 @@ export function hoursValueToMinutes(hours: number): number {
   return Math.round(hours * 60)
 }
 
+export function timeToMinutes(time: string): number | null {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(time)
+  if (!match) return null
+  const hours = Number(match[1])
+  const minutes = Number(match[2])
+  if (hours > 23 || minutes > 59) return null
+  return hours * 60 + minutes
+}
+
+// Dauer zwischen zwei Uhrzeiten in Minuten, über Mitternacht hinweg möglich.
+export function durationBetween(startTime: string, endTime: string): number | null {
+  const start = timeToMinutes(startTime)
+  const end = timeToMinutes(endTime)
+  if (start === null || end === null) return null
+  const diff = end - start
+  return diff >= 0 ? diff : diff + 24 * 60
+}
+
 // Ab dieser Arbeitszeit an einem Wochenendtag gibt es einen vollen Ausgleichstag,
 // alles darüber zählt zusätzlich als Überstunden (7 Stunden 42 Minuten).
 export const WEEKEND_COMP_DAY_THRESHOLD_MINUTES = 7 * 60 + 42

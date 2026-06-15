@@ -149,6 +149,8 @@ export interface WorkDayEntry {
   date: string // ISO date string (yyyy-MM-dd)
   workedMinutes: number
   breakMinutes: number
+  startTime?: string // HH:mm
+  endTime?: string // HH:mm
 }
 
 export interface WorkTimeSettings {

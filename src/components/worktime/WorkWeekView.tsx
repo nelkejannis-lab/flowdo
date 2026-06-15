@@ -4,14 +4,14 @@ import { de } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useWorkTimeStore } from '../../store/workTimeStore'
 import { toISODate } from '../../utils/date'
-import { dayTargetMinutes, formatHM, hoursValueToMinutes, minutesToHoursValue, netMinutes } from '../../utils/worktime'
+import { dayTargetMinutes, formatHM, netMinutes } from '../../utils/worktime'
 
 export default function WorkWeekView() {
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }))
   const entries = useWorkTimeStore((s) => s.entries)
   const settings = useWorkTimeStore((s) => s.settings)
-  const setWorkedMinutes = useWorkTimeStore((s) => s.setWorkedMinutes)
   const setBreakMinutes = useWorkTimeStore((s) => s.setBreakMinutes)
+  const setDayTimes = useWorkTimeStore((s) => s.setDayTimes)
 
   const days = eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 6) })
 
@@ -38,10 +38,12 @@ export default function WorkWeekView() {
         </button>
       </div>
 
-      <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-3 gap-y-1 p-3 text-sm">
+      <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto] items-center gap-x-3 gap-y-1 p-3 text-sm">
         <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">Tag</div>
-        <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Gearbeitet (h)</div>
+        <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Von</div>
+        <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Bis</div>
         <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Pause (Min.)</div>
+        <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Gearbeitet</div>
         <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Soll</div>
         <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Diff.</div>
 
@@ -59,16 +61,18 @@ export default function WorkWeekView() {
               </div>
               <div className="flex items-center justify-end py-1">
                 <input
-                  type="number"
-                  min={0}
-                  step={0.25}
-                  value={entry ? minutesToHoursValue(netMinutes(entry)) : ''}
-                  placeholder="0"
-                  onChange={(e) => {
-                    const breakMin = entry ? entry.breakMinutes : settings.defaultBreakMinutes
-                    setWorkedMinutes(iso, hoursValueToMinutes(Number(e.target.value)) + breakMin)
-                  }}
-                  className="w-16 rounded-md border border-gray-200 bg-transparent px-2 py-1 text-right text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+                  type="time"
+                  value={entry?.startTime ?? ''}
+                  onChange={(e) => setDayTimes(iso, e.target.value, entry?.endTime ?? '')}
+                  className="w-24 rounded-md border border-gray-200 bg-transparent px-2 py-1 text-right text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+                />
+              </div>
+              <div className="flex items-center justify-end py-1">
+                <input
+                  type="time"
+                  value={entry?.endTime ?? ''}
+                  onChange={(e) => setDayTimes(iso, entry?.startTime ?? '', e.target.value)}
+                  className="w-24 rounded-md border border-gray-200 bg-transparent px-2 py-1 text-right text-sm focus:border-accent focus:outline-none dark:border-racing-700"
                 />
               </div>
               <div className="flex items-center justify-end py-1">
@@ -82,6 +86,7 @@ export default function WorkWeekView() {
                   className="w-16 rounded-md border border-gray-200 bg-transparent px-2 py-1 text-right text-sm focus:border-accent focus:outline-none dark:border-racing-700"
                 />
               </div>
+              <div className="flex items-center justify-end py-1 font-medium">{entry ? formatHM(net) : '–'}</div>
               <div className="flex items-center justify-end py-1 text-gray-400">{formatHM(target)}</div>
               <div
                 className={`flex items-center justify-end py-1 font-medium ${
@@ -94,10 +99,12 @@ export default function WorkWeekView() {
           )
         })}
 
-        <div className="col-span-5 mt-1 border-t border-gray-100 pt-2 dark:border-racing-800" />
+        <div className="col-span-7 mt-1 border-t border-gray-100 pt-2 dark:border-racing-800" />
         <div className="font-semibold">Woche gesamt</div>
-        <div className="text-right font-semibold">{formatHM(weekNet)}</div>
         <div />
+        <div />
+        <div />
+        <div className="text-right font-semibold">{formatHM(weekNet)}</div>
         <div className="text-right font-semibold text-gray-400">{formatHM(weekTarget)}</div>
         <div
           className={`text-right font-semibold ${

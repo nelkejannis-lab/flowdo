@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware'
 import type { WorkDayEntry, WorkTimeSettings } from '../types'
 import { todayISO } from '../utils/date'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { durationBetween } from '../utils/worktime'
 
 const defaultSettings: WorkTimeSettings = {
   weeklyHours: 38.5,
@@ -21,6 +22,8 @@ interface WorkTimeEntryRow {
   date: string
   worked_minutes: number
   break_minutes: number
+  start_time: string | null
+  end_time: string | null
 }
 
 interface WorkTimeState {
@@ -35,6 +38,7 @@ interface WorkTimeState {
   clockOut: () => void
   setWorkedMinutes: (date: string, minutes: number) => void
   setBreakMinutes: (date: string, minutes: number) => void
+  setDayTimes: (date: string, startTime: string, endTime: string) => void
   updateSettings: (updates: Partial<WorkTimeSettings>) => void
   incrementSettledWeekendDays: () => void
   decrementSettledWeekendDays: () => void
@@ -58,6 +62,8 @@ async function syncEntry(entry: WorkDayEntry) {
     date: entry.date,
     worked_minutes: entry.workedMinutes,
     break_minutes: entry.breakMinutes,
+    start_time: entry.startTime ?? null,
+    end_time: entry.endTime ?? null,
     updated_at: new Date().toISOString(),
   })
 }
@@ -94,14 +100,23 @@ export const useWorkTimeStore = create<WorkTimeState>()(
         if (!userId) return
 
         const [entriesResult, settingsResult] = await Promise.all([
-          supabase.from('work_time_entries').select('date, worked_minutes, break_minutes').eq('user_id', userId),
+          supabase
+            .from('work_time_entries')
+            .select('date, worked_minutes, break_minutes, start_time, end_time')
+            .eq('user_id', userId),
           supabase.from('work_time_settings').select('*').eq('user_id', userId).maybeSingle(),
         ])
 
         const rows = (entriesResult.data ?? []) as WorkTimeEntryRow[]
         const entries: Record<string, WorkDayEntry> = {}
         for (const row of rows) {
-          entries[row.date] = { date: row.date, workedMinutes: row.worked_minutes, breakMinutes: row.break_minutes }
+          entries[row.date] = {
+            date: row.date,
+            workedMinutes: row.worked_minutes,
+            breakMinutes: row.break_minutes,
+            startTime: row.start_time ?? undefined,
+            endTime: row.end_time ?? undefined,
+          }
         }
 
         const settingsRow = settingsResult.data as WorkTimeSettingsRow | null
@@ -154,6 +169,20 @@ export const useWorkTimeStore = create<WorkTimeState>()(
         const state = get()
         const entry = ensureEntry(state.entries, date, state.settings.defaultBreakMinutes)
         const updated = { ...entry, breakMinutes: Math.max(0, minutes) }
+        set({ entries: { ...state.entries, [date]: updated } })
+        void syncEntry(updated)
+      },
+
+      setDayTimes: (date, startTime, endTime) => {
+        const state = get()
+        const entry = ensureEntry(state.entries, date, state.settings.defaultBreakMinutes)
+        const duration = durationBetween(startTime, endTime)
+        const updated = {
+          ...entry,
+          startTime: startTime || undefined,
+          endTime: endTime || undefined,
+          workedMinutes: duration ?? entry.workedMinutes,
+        }
         set({ entries: { ...state.entries, [date]: updated } })
         void syncEntry(updated)
       },
