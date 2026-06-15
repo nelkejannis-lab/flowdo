@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
 import { deleteAttachment, uploadAttachment } from '../lib/attachments'
+import { useBoardsStore } from './boardsStore'
 import type { Attachment, Priority, Subtask, Task } from '../types'
 
 interface NewProjectTaskInput {
@@ -206,7 +207,15 @@ export const useProjectTasksStore = create<ProjectTasksState>()((set, get) => ({
     if (!task) return
     const completed = !task.completed
     const completedAt = completed ? new Date().toISOString() : undefined
-    await get().updateTask(id, { completed, completedAt })
+    const updates: Partial<Task> = { completed, completedAt }
+
+    if (completed && task.boardId) {
+      const board = useBoardsStore.getState().boards.find((b) => b.id === task.boardId)
+      const doneColumn = board?.columns.find((c) => c.title === 'Erledigt')
+      if (doneColumn && doneColumn.id !== task.columnId) updates.columnId = doneColumn.id
+    }
+
+    await get().updateTask(id, updates)
   },
 
   addSubtask: async (taskId, title) => {
