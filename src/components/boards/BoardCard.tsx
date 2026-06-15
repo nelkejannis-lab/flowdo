@@ -3,6 +3,7 @@ import { Building2, Calendar, Globe, Users } from 'lucide-react'
 import type { Board } from '../../types'
 import { useBoardsStore } from '../../store/boardsStore'
 import { formatFriendlyDate, isOverdue } from '../../utils/date'
+import ProgressRing from './ProgressRing'
 
 export default function BoardCard({ board }: { board: Board }) {
   const stats = useBoardsStore((s) => s.taskStats[board.id])
@@ -23,16 +24,9 @@ export default function BoardCard({ board }: { board: Board }) {
       {board.description && (
         <p className="line-clamp-2 text-sm text-gray-500 dark:text-racing-200">{board.description}</p>
       )}
-      <div className="flex items-center gap-2">
-        <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-racing-800">
-          <div
-            className="h-full rounded-full transition-all"
-            style={{ width: `${progress}%`, backgroundColor: board.color }}
-          />
-        </div>
-        <span className="text-xs font-medium text-gray-500 dark:text-racing-200">{progress}%</span>
-      </div>
-      <div className="flex items-center justify-between text-xs text-gray-400">
+      <div className="flex items-center gap-3">
+        <ProgressRing progress={progress} color={board.color} />
+        <div className="flex flex-1 items-center justify-between text-xs text-gray-400">
         <span>{done}/{total} Aufgaben</span>
         <div className="flex items-center gap-2">
           {board.responsibleProfile && (
@@ -54,6 +48,7 @@ export default function BoardCard({ board }: { board: Board }) {
               {formatFriendlyDate(board.deadline)}
             </span>
           )}
+        </div>
         </div>
       </div>
       {(board.internalLaunch || board.externalLaunch) && (

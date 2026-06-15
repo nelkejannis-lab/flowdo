@@ -23,7 +23,9 @@ import {
   ChevronDown,
   Bell,
   MessageCircle,
+  Search,
 } from 'lucide-react'
+import { useSearchStore } from '../../store/searchStore'
 import { useMessagesStore } from '../../store/messagesStore'
 import { useBoardsStore } from '../../store/boardsStore'
 import { useSettingsStore } from '../../store/settingsStore'
@@ -70,6 +72,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const togglePinkAccent = useSettingsStore((s) => s.togglePinkAccent)
   const profile = useAuthStore((s) => s.profile)
   const signOut = useAuthStore((s) => s.signOut)
+  const openSearch = useSearchStore((s) => s.open)
 
   useEffect(() => {
     if (isSupabaseConfigured) {
@@ -114,6 +117,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <span className="text-lg font-semibold">Mooncrew</span>
         </div>
         <div className="flex items-center gap-1">
+          <button
+            onClick={openSearch}
+            className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
+            aria-label="Suche"
+            title="Suche (Strg+K)"
+          >
+            <Search size={18} />
+          </button>
           <NavLink
             to="/chat"
             onClick={onClose}

@@ -3,12 +3,14 @@ import { Outlet } from 'react-router-dom'
 import { Menu } from 'lucide-react'
 import Sidebar from './Sidebar'
 import Logo from './Logo'
+import GlobalSearch from './GlobalSearch'
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
+      <GlobalSearch />
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex items-center gap-2 border-b border-gray-100/80 bg-white/80 px-4 py-3 backdrop-blur-apple dark:border-white/5 dark:bg-racing-900/80 sm:hidden" style={{ paddingTop: 'max(12px, calc(12px + env(safe-area-inset-top)))', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }}>
