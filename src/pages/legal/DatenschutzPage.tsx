@@ -18,11 +18,9 @@ export default function DatenschutzPage() {
       <h2 className="mb-2 mt-6 text-base font-semibold">1. Verantwortlicher</h2>
       <p className="mb-4">
         Verantwortlicher im Sinne der Datenschutz-Grundverordnung (DSGVO) ist:<br />
-        [Name / Firma]<br />
-        [Anschrift]<br />
-        E-Mail: [E-Mail-Adresse]<br />
-        {/* Falls erforderlich (>= 20 Personen, die mit personenbezogenen Daten arbeiten, oder Kerntätigkeit) */}
-        Datenschutzbeauftragter (falls bestellt): [Name / Kontakt]
+        Janis Nelke<br />
+        Milsper Straße 14, 58256 Ennepetal<br />
+        E-Mail: jannisnelke1@gmail.com
       </p>
 
       <h2 className="mb-2 mt-6 text-base font-semibold">2. Übersicht der Verarbeitungen</h2>
