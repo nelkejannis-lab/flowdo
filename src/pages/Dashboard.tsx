@@ -23,6 +23,7 @@ export default function Dashboard() {
   const myProjectTasks = useProjectTasksStore((s) => s.myTasks)
   const fetchMyProjectTasks = useProjectTasksStore((s) => s.fetchMyTasks)
   const workEntries = useWorkTimeStore((s) => s.entries)
+  const fetchWorkTime = useWorkTimeStore((s) => s.fetchAll)
   const events = useEventsStore((s) => s.events)
   const fetchEvents = useEventsStore((s) => s.fetchAll)
   const [showForm, setShowForm] = useState(false)
@@ -33,8 +34,9 @@ export default function Dashboard() {
       fetchMyProjectTasks()
       fetchTasks()
       fetchEvents()
+      fetchWorkTime()
     }
-  }, [fetchBoards, fetchMyProjectTasks, fetchTasks, fetchEvents])
+  }, [fetchBoards, fetchMyProjectTasks, fetchTasks, fetchEvents, fetchWorkTime])
 
   const allTasks = [...tasks, ...myProjectTasks]
 

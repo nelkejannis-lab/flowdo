@@ -16,6 +16,8 @@ interface WorkTimeSettingsRow {
   work_days_per_week: number
   default_break_minutes: number
   settled_weekend_days: number
+  running_started_at: string | null
+  running_date: string | null
 }
 
 interface WorkTimeEntryRow {
@@ -83,6 +85,19 @@ async function syncSettings(settings: WorkTimeSettings, settledWeekendDays: numb
   })
 }
 
+async function syncRunningState(runningStartedAt?: string, runningDate?: string) {
+  if (!isSupabaseConfigured) return
+  const { data: userData } = await supabase.auth.getUser()
+  const userId = userData.user?.id
+  if (!userId) return
+  await supabase.from('work_time_settings').upsert({
+    user_id: userId,
+    running_started_at: runningStartedAt ?? null,
+    running_date: runningDate ?? null,
+    updated_at: new Date().toISOString(),
+  })
+}
+
 export const useWorkTimeStore = create<WorkTimeState>()(
   persist(
     (set, get) => ({
@@ -128,8 +143,17 @@ export const useWorkTimeStore = create<WorkTimeState>()(
             }
           : get().settings
         const settledWeekendDays = settingsRow ? settingsRow.settled_weekend_days : get().settledWeekendDays
+        const runningStartedAt = settingsRow?.running_started_at ?? undefined
+        const runningDate = settingsRow?.running_date ?? undefined
 
-        set({ entries, settings, settledWeekendDays })
+        set({
+          entries,
+          settings,
+          settledWeekendDays,
+          isRunning: Boolean(runningStartedAt && runningDate),
+          runningStartedAt,
+          runningDate,
+        })
 
         if (!settingsRow) {
           await syncSettings(settings, settledWeekendDays)
@@ -138,7 +162,10 @@ export const useWorkTimeStore = create<WorkTimeState>()(
 
       clockIn: () => {
         if (get().isRunning) return
-        set({ isRunning: true, runningStartedAt: new Date().toISOString(), runningDate: todayISO() })
+        const runningStartedAt = new Date().toISOString()
+        const runningDate = todayISO()
+        set({ isRunning: true, runningStartedAt, runningDate })
+        void syncRunningState(runningStartedAt, runningDate)
       },
 
       clockOut: () => {
@@ -155,6 +182,7 @@ export const useWorkTimeStore = create<WorkTimeState>()(
           runningDate: undefined,
         })
         void syncEntry(updated)
+        void syncRunningState()
       },
 
       setWorkedMinutes: (date, minutes) => {
