@@ -92,9 +92,21 @@ export default function DayView({ currentDate, tasks, events, entries = [], onAd
               )}
               {entry.description && <p className="mt-0.5 text-xs font-normal opacity-90">{entry.description}</p>}
               {entry.invitees.length > 0 && (
-                <p className="mt-0.5 text-xs font-normal opacity-90">
-                  {t('day.withInvitees', { names: entry.invitees.map((i) => i.display_name).join(', ') })}
-                </p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                  {entry.invitees.map((inv) => (
+                    <span
+                      key={inv.id}
+                      title={inv.display_name}
+                      className="flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold text-white ring-1 ring-white/30"
+                      style={{ backgroundColor: inv.avatar_color }}
+                    >
+                      {inv.display_name.slice(0, 2).toUpperCase()}
+                    </span>
+                  ))}
+                  <span className="text-[10px] font-normal opacity-80">
+                    {entry.invitees.map((i) => i.display_name).join(', ')}
+                  </span>
+                </div>
               )}
             </div>
           ))}

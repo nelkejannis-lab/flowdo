@@ -117,10 +117,24 @@ export default function MonthView({ currentDate, tasks, events, entries = [], on
                       e.stopPropagation()
                       onEntryClick?.(entry)
                     }}
-                    className="truncate rounded px-1.5 py-0.5 text-xs font-medium text-white"
+                    className="flex items-center gap-1 truncate rounded px-1.5 py-0.5 text-xs font-medium text-white"
                     style={{ backgroundColor: entry.color }}
                   >
-                    {entryTypeIcon[entry.type]} {entry.title}
+                    <span className="truncate">{entryTypeIcon[entry.type]} {entry.title}</span>
+                    {entry.invitees.length > 0 && (
+                      <span className="flex flex-shrink-0 -space-x-1">
+                        {entry.invitees.slice(0, 3).map((inv) => (
+                          <span
+                            key={inv.id}
+                            title={inv.display_name}
+                            className="flex h-3.5 w-3.5 items-center justify-center rounded-full text-[7px] font-bold text-white ring-1 ring-white/40"
+                            style={{ backgroundColor: inv.avatar_color }}
+                          >
+                            {inv.display_name[0].toUpperCase()}
+                          </span>
+                        ))}
+                      </span>
+                    )}
                   </div>
                 ))}
                 {dayTasks.slice(0, 3).map((task) => (

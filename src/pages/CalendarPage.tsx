@@ -26,6 +26,7 @@ import { useEventsStore } from '../store/eventsStore'
 import { useCalendarEntriesStore } from '../store/calendarEntriesStore'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { toISODate } from '../utils/date'
+import { mergeCalendarEntries } from '../utils/mergeEntries'
 import type { CalendarEntry, CalendarEvent, Task } from '../types'
 
 type ViewMode = 'month' | 'week' | 'day'
@@ -94,12 +95,12 @@ export default function CalendarPage() {
     microsoft: '[Outlook]',
     ical: '[iCal]',
   }
-  const filteredEntries = entries.filter((e) => {
+  const filteredEntries = mergeCalendarEntries(entries.filter((e) => {
     for (const [provider, prefix] of Object.entries(providerPrefixes)) {
       if (e.title.startsWith(prefix) && disabledCalendars.has(provider)) return false
     }
     return true
-  })
+  }))
 
   // Load team entries (reise + urlaub) when a team filter is selected
   useEffect(() => {
