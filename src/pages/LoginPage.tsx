@@ -6,10 +6,10 @@ import { useAuthStore } from '../store/authStore'
 import { isSupabaseConfigured } from '../lib/supabase'
 
 const FEATURES = [
-  { icon: CheckSquare, label: 'Aufgaben & Projekte', sub: 'Tasks, Boards, Eisenhower', color: '#7c6bff' },
-  { icon: CalendarDays, label: 'Kalender & Termine', sub: 'Events, Einladungen, Teams', color: '#22c4a0' },
-  { icon: Clock, label: 'Zeiterfassung', sub: 'Überstunden, Profile, Live', color: '#f59e0b' },
-  { icon: MessageCircle, label: 'Team & Chat', sub: 'Nachrichten, Kollegen', color: '#ec4899' },
+  { icon: CheckSquare, label: 'Tasks & Projects', sub: 'Lists, Boards, Eisenhower', color: '#7c6bff' },
+  { icon: CalendarDays, label: 'Calendar & Events', sub: 'Events, Invites, Teams', color: '#22c4a0' },
+  { icon: Clock, label: 'Time Tracking', sub: 'Overtime, Profiles, Live', color: '#f59e0b' },
+  { icon: MessageCircle, label: 'Team & Chat', sub: 'Messages, Colleagues', color: '#ec4899' },
 ]
 
 export default function LoginPage() {
@@ -132,7 +132,7 @@ export default function LoginPage() {
 
             {/* Tagline */}
             <p className="mc-fade-up d1 mb-10 max-w-xs text-center text-base text-white/60 leading-relaxed">
-              Alles was dein Team braucht — Aufgaben, Kalender, Zeiterfassung und Chat in einer App.
+              Everything your team needs — tasks, calendar, time tracking and chat in one app.
             </p>
 
             {/* Feature grid */}
@@ -158,14 +158,14 @@ export default function LoginPage() {
                 className="group flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold text-white transition-all duration-200 hover:scale-[1.02] active:scale-[.98]"
                 style={{ background: 'linear-gradient(135deg, #7c6bff, #a855f7)' }}
               >
-                Anmelden
+                Sign in
                 <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-1" />
               </button>
               <button
                 onClick={() => openAuth('signup')}
                 className="flex items-center justify-center gap-2 rounded-2xl border border-white/15 py-3.5 text-sm font-semibold text-white/80 backdrop-blur-sm transition-all duration-200 hover:border-white/30 hover:text-white hover:scale-[1.02] active:scale-[.98]"
               >
-                Registrieren
+                Create account
               </button>
             </div>
 
