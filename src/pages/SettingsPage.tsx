@@ -465,7 +465,14 @@ export default function SettingsPage() {
       {activeTab === 'profil' && (<>
 
       <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-        <h2 className="mb-3 text-sm font-semibold">{t('profile.avatarTitle')}</h2>
+        <div className="mb-3 flex items-center gap-2">
+          <h2 className="text-sm font-semibold">{t('profile.avatarTitle')}</h2>
+          {profile.id === '6e6370e8-4dfc-4226-b5d5-8bcb6b9273f1' && (
+            <span className="rounded-full bg-gradient-to-r from-amber-400 to-orange-400 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm">
+              👑 Owner
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-4">
           {profile.avatar_url ? (
             <img src={profile.avatar_url} alt={t('profile.avatarAlt')} className="h-16 w-16 rounded-full object-cover" />

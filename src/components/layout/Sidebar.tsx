@@ -327,7 +327,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               </span>
             )}
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{profile.display_name}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="truncate text-sm font-medium">{profile.display_name}</p>
+                {profile.id === '6e6370e8-4dfc-4226-b5d5-8bcb6b9273f1' && (
+                  <span className="flex-shrink-0 rounded-full bg-gradient-to-r from-amber-400 to-orange-400 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white shadow-sm">
+                    👑 Owner
+                  </span>
+                )}
+              </div>
               <p className="truncate text-xs text-gray-400">@{profile.username}</p>
             </div>
             <Settings size={16} className="flex-shrink-0 text-gray-400" />
