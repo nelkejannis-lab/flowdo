@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   ListTodo,
   CalendarDays,
+  CalendarClock,
   Trello,
   Clock,
   Sun,
@@ -189,6 +190,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             {t('sidebar.nav.calendar')}
           </NavLink>
         )}
+        <NavLink to="/termine" className={navItemClass}>
+          <CalendarClock size={18} />
+          Termine
+        </NavLink>
         {featureVisibility.eisenhower && (
           <NavLink to="/eisenhower" className={navItemClass}>
             <Grid2x2 size={18} />

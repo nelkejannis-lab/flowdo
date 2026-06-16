@@ -5,6 +5,7 @@ import Layout from './components/layout/Layout'
 import Dashboard from './pages/Dashboard'
 import TasksPage from './pages/Tasks'
 import CalendarPage from './pages/CalendarPage'
+import TerminePage from './pages/TerminePage'
 import BoardsPage from './pages/Boards'
 import BoardDetailPage from './pages/BoardDetailPage'
 import ArbeitszeitPage from './pages/ArbeitszeitPage'
@@ -67,6 +68,7 @@ export default function App() {
         <Route path="/tasks" element={<TasksPage />} />
         <Route path="/tasks/:smartList" element={<TasksPage />} />
         <Route path="/calendar" element={featureVisibility.calendar ? <CalendarPage /> : <Navigate to="/" replace />} />
+        <Route path="/termine" element={<TerminePage />} />
         <Route path="/projekte" element={<BoardsPage />} />
         <Route path="/projekte/:boardId" element={<BoardDetailPage />} />
         <Route path="/arbeitszeit" element={featureVisibility.worktime ? <ArbeitszeitPage /> : <Navigate to="/" replace />} />
