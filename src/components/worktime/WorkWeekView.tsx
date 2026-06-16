@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { addDays, addWeeks, eachDayOfInterval, format, isToday, startOfWeek } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
 import { useTranslation } from 'react-i18next'
@@ -15,10 +15,29 @@ export default function WorkWeekView() {
   const settings = useWorkTimeStore((s) => s.settings)
   const setBreakMinutes = useWorkTimeStore((s) => s.setBreakMinutes)
   const setDayTimes = useWorkTimeStore((s) => s.setDayTimes)
+  const isRunning = useWorkTimeStore((s) => s.isRunning)
+  const runningStartedAt = useWorkTimeStore((s) => s.runningStartedAt)
+  const runningDate = useWorkTimeStore((s) => s.runningDate)
+
+  const [, tick] = useState(0)
+  useEffect(() => {
+    if (!isRunning) return
+    const id = setInterval(() => tick((n) => n + 1), 60_000)
+    return () => clearInterval(id)
+  }, [isRunning])
+
+  const liveMinutes =
+    isRunning && runningStartedAt
+      ? (Date.now() - new Date(runningStartedAt).getTime()) / 60000
+      : 0
 
   const days = eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 6) })
 
-  const weekNet = days.reduce((sum, day) => sum + netMinutes(entries[toISODate(day)]), 0)
+  const weekNet = days.reduce((sum, day) => {
+    const iso = toISODate(day)
+    const base = netMinutes(entries[iso])
+    return sum + (iso === runningDate ? base + liveMinutes : base)
+  }, 0)
   const weekTarget = days.reduce((sum, day) => sum + dayTargetMinutes(day, settings), 0)
 
   return (
@@ -54,7 +73,9 @@ export default function WorkWeekView() {
           const iso = toISODate(day)
           const entry = entries[iso]
           const target = dayTargetMinutes(day, settings)
-          const net = netMinutes(entry)
+          const isLive = isRunning && iso === runningDate
+          const net = netMinutes(entry) + (isLive ? liveMinutes : 0)
+          const liveEndTime = isLive ? new Date().toTimeString().slice(0, 5) : null
           const diff = net - target
 
           return (
@@ -71,12 +92,18 @@ export default function WorkWeekView() {
                 />
               </div>
               <div className="flex items-center justify-end py-1">
-                <input
-                  type="time"
-                  value={entry?.endTime ?? ''}
-                  onChange={(e) => setDayTimes(iso, entry?.startTime ?? '', e.target.value)}
-                  className="w-24 rounded-md border border-gray-200 bg-transparent px-2 py-1 text-right text-sm focus:border-accent focus:outline-none dark:border-racing-700"
-                />
+                {isLive ? (
+                  <span className="w-24 px-2 py-1 text-right text-sm font-medium text-accent animate-pulse">
+                    {liveEndTime} ●
+                  </span>
+                ) : (
+                  <input
+                    type="time"
+                    value={entry?.endTime ?? ''}
+                    onChange={(e) => setDayTimes(iso, entry?.startTime ?? '', e.target.value)}
+                    className="w-24 rounded-md border border-gray-200 bg-transparent px-2 py-1 text-right text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+                  />
+                )}
               </div>
               <div className="flex items-center justify-end py-1">
                 <input
@@ -89,7 +116,10 @@ export default function WorkWeekView() {
                   className="w-16 rounded-md border border-gray-200 bg-transparent px-2 py-1 text-right text-sm focus:border-accent focus:outline-none dark:border-racing-700"
                 />
               </div>
-              <div className="flex items-center justify-end py-1 font-medium">{entry ? formatHM(net) : '–'}</div>
+              <div className="flex items-center justify-end gap-1 py-1 font-medium">
+                {(entry || isLive) ? formatHM(net) : '–'}
+                {isLive && <span className="text-accent animate-pulse">●</span>}
+              </div>
               <div className="flex items-center justify-end py-1 text-gray-400">{formatHM(target)}</div>
               <div
                 className={`flex items-center justify-end py-1 font-medium ${
