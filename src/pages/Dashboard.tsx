@@ -85,9 +85,15 @@ export default function Dashboard() {
     .filter((e) => e.date > today && e.date <= weekEndDate && (!e.endDate || e.endDate >= today))
     .sort((a, b) => a.date.localeCompare(b.date) || (a.startTime ?? '').localeCompare(b.startTime ?? ''))
 
-  const todayEntries = calendarEntries.filter(
-    (e) => e.date <= today && (!e.endDate || e.endDate >= today)
-  ).sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? ''))
+  const nowTime = new Date().toTimeString().slice(0, 5)
+  const todayEntries = calendarEntries.filter((e) => {
+    if (!(e.date <= today && (!e.endDate || e.endDate >= today))) return false
+    if (e.date === today) {
+      const endT = e.endTime ?? e.startTime
+      if (endT && endT < nowTime) return false
+    }
+    return true
+  }).sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? ''))
 
   const upcomingEvents = events
     .filter((e) => e.date >= today || (e.endDate && e.endDate >= today))
