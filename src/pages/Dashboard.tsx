@@ -16,6 +16,7 @@ import TaskList from '../components/tasks/TaskList'
 import TaskFormModal from '../components/tasks/TaskFormModal'
 import BoardCard from '../components/boards/BoardCard'
 import WeatherWidget from '../components/dashboard/WeatherWidget'
+import OnboardingPermissions from '../components/dashboard/OnboardingPermissions'
 import { useSettingsStore } from '../store/settingsStore'
 import { isDueThisWeek, isDueToday, isOverdue, todayISO } from '../utils/date'
 import { formatHM, netMinutes } from '../utils/worktime'
@@ -41,6 +42,7 @@ export default function Dashboard() {
   const fetchCalendarEntries = useCalendarEntriesStore((s) => s.fetchEntries)
   const featureVisibility = useSettingsStore((s) => s.featureVisibility)
   const dashboardVisibility = useSettingsStore((s) => s.dashboardVisibility)
+  const onboardingPermissionsDone = useSettingsStore((s) => s.onboardingPermissionsDone)
   const [showForm, setShowForm] = useState(false)
   const [showEntries, setShowEntries] = useState(true)
   const [showWeekEntries, setShowWeekEntries] = useState(true)
@@ -124,6 +126,7 @@ export default function Dashboard() {
 
   return (
     <div>
+      {!onboardingPermissionsDone && <OnboardingPermissions />}
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{t('title')}</h1>
         <button

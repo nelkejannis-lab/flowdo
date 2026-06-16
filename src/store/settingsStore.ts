@@ -44,6 +44,7 @@ interface SettingsState {
   notifyChat: boolean
   notifyTasks: boolean
   appointmentReminderMinutes: number
+  onboardingPermissionsDone: boolean
   setMode: (mode: Mode) => void
   togglePinkAccent: () => void
   setLanguage: (language: Language) => void
@@ -54,6 +55,7 @@ interface SettingsState {
   setNotifyChat: (v: boolean) => void
   setNotifyTasks: (v: boolean) => void
   setAppointmentReminderMinutes: (v: number) => void
+  setOnboardingPermissionsDone: () => void
 }
 
 interface LegacyState {
@@ -73,6 +75,7 @@ export const useSettingsStore = create<SettingsState>()(
       notifyChat: true,
       notifyTasks: true,
       appointmentReminderMinutes: 15,
+      onboardingPermissionsDone: false,
       setMode: (mode) => set({ mode }),
       togglePinkAccent: () => set((s) => ({ pinkAccent: !s.pinkAccent })),
       setLanguage: (language) => {
@@ -89,10 +92,11 @@ export const useSettingsStore = create<SettingsState>()(
       setNotifyChat: (v) => set({ notifyChat: v }),
       setNotifyTasks: (v) => set({ notifyTasks: v }),
       setAppointmentReminderMinutes: (v) => set({ appointmentReminderMinutes: v }),
+      setOnboardingPermissionsDone: () => set({ onboardingPermissionsDone: true }),
     }),
     {
       name: 'flowdo-settings',
-      version: 4, // bumped: adds weather to featureVisibility + dashboardVisibility
+      version: 5, // bumped: adds onboardingPermissionsDone
       migrate: (persisted, version) => {
         const legacy = persisted as LegacyState & Partial<SettingsState>
         if (version < 1) {
