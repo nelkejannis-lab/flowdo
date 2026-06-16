@@ -15,6 +15,8 @@ import CalendarEntriesBlock from '../components/calendar/CalendarEntriesBlock'
 import TaskList from '../components/tasks/TaskList'
 import TaskFormModal from '../components/tasks/TaskFormModal'
 import BoardCard from '../components/boards/BoardCard'
+import WeatherWidget from '../components/dashboard/WeatherWidget'
+import { useSettingsStore } from '../store/settingsStore'
 import { isDueThisWeek, isDueToday, isOverdue, todayISO } from '../utils/date'
 import { formatHM, netMinutes } from '../utils/worktime'
 
@@ -37,6 +39,7 @@ export default function Dashboard() {
   const fetchEvents = useEventsStore((s) => s.fetchAll)
   const calendarEntries = useCalendarEntriesStore((s) => s.entries)
   const fetchCalendarEntries = useCalendarEntriesStore((s) => s.fetchEntries)
+  const featureVisibility = useSettingsStore((s) => s.featureVisibility)
   const [showForm, setShowForm] = useState(false)
   const [showEntries, setShowEntries] = useState(true)
   const [showWeekEntries, setShowWeekEntries] = useState(true)
@@ -131,6 +134,12 @@ export default function Dashboard() {
         </button>
       </div>
 
+      {featureVisibility.weather && (
+        <div className="mb-4">
+          <WeatherWidget />
+        </div>
+      )}
+
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
           <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('stats.dueThisWeek')}</p>
@@ -173,7 +182,7 @@ export default function Dashboard() {
                     role="switch"
                     aria-checked={showEntries}
                     onClick={() => setShowEntries((v) => !v)}
-                    className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${showEntries ? 'bg-accent' : 'bg-gray-200 dark:bg-racing-700'}`}
+                    className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${showEntries ? 'bg-[#34c759]' : 'bg-gray-200 dark:bg-racing-700'}`}
                   >
                     <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${showEntries ? 'translate-x-5' : 'translate-x-0'}`} />
                   </button>

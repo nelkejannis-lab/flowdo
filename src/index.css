@@ -37,9 +37,9 @@
   --accent-dark: 210 210 210;
 }
 
-/* Dark mode: white accent buttons need dark text to stay readable */
-.dark .bg-accent {
-  color: rgb(15 15 15);
+/* Dark mode (no pink): white accent buttons need dark text */
+.dark:not(.pink) .bg-accent {
+  color: rgb(15 15 15) !important;
 }
 
 /* Pink accent mode */

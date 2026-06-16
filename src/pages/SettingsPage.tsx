@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Bell, CalendarDays, Clock, Download, Eye, EyeOff, Grid2x2, Instagram, Loader2, MessageCircle, Plus, RefreshCw, Sparkles, Trash2, Upload, Users, X } from 'lucide-react'
+import { Bell, CalendarDays, Clock, Cloud, Download, Eye, EyeOff, Grid2x2, Instagram, Loader2, MessageCircle, Plus, RefreshCw, Sparkles, Trash2, Upload, Users, X } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { uploadAvatar } from '../lib/avatar'
 import { BOARD_COLORS } from '../store/boardsStore'
@@ -22,6 +22,7 @@ const FEATURE_ICONS: Record<FeatureKey, React.ReactNode> = {
   chat: <MessageCircle size={18} />,
   friends: <Users size={18} />,
   social: <Instagram size={18} />,
+  weather: <Cloud size={18} />,
 }
 
 const SUPABASE_ONLY_FEATURES: FeatureKey[] = ['aiScheduler', 'chat', 'friends', 'social']
@@ -60,6 +61,8 @@ export default function SettingsPage() {
   const [displayName, setDisplayName] = useState(profile?.display_name ?? '')
   const [username, setUsername] = useState(profile?.username ?? '')
   const [birthday, setBirthday] = useState(profile?.birthday ?? '')
+  const [jobTitle, setJobTitle] = useState(profile?.job_title ?? '')
+  const [workLocation, setWorkLocation] = useState(profile?.work_location ?? '')
   const [profileError, setProfileError] = useState<string | null>(null)
   const [profileSuccess, setProfileSuccess] = useState<string | null>(null)
   const [savingProfile, setSavingProfile] = useState(false)
@@ -108,6 +111,8 @@ export default function SettingsPage() {
       setDisplayName(profile.display_name)
       setUsername(profile.username)
       setBirthday(profile.birthday ?? '')
+      setJobTitle(profile.job_title ?? '')
+      setWorkLocation(profile.work_location ?? '')
     }
   }, [profile])
 
@@ -121,6 +126,8 @@ export default function SettingsPage() {
     const err = await updateProfile({
       display_name: displayName.trim(),
       username: username.trim(),
+      job_title: jobTitle.trim() || null,
+      work_location: workLocation.trim() || null,
       birthday: birthday || null,
     })
     setSavingProfile(false)
@@ -348,7 +355,7 @@ export default function SettingsPage() {
                         role="switch"
                         aria-checked={enabled}
                         onClick={() => toggleFeature(key)}
-                        className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${enabled ? 'bg-accent' : 'bg-gray-200 dark:bg-racing-700'}`}
+                        className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${enabled ? 'bg-[#34c759]' : 'bg-gray-200 dark:bg-racing-700'}`}
                       >
                         <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0'}`} />
                       </button>
@@ -401,7 +408,7 @@ export default function SettingsPage() {
                     role="switch"
                     aria-checked={notifyAppointments}
                     onClick={() => setNotifyAppointments(!notifyAppointments)}
-                    className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${notifyAppointments ? 'bg-accent' : 'bg-gray-200 dark:bg-racing-700'}`}
+                    className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${notifyAppointments ? 'bg-[#34c759]' : 'bg-gray-200 dark:bg-racing-700'}`}
                   >
                     <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${notifyAppointments ? 'translate-x-5' : 'translate-x-0'}`} />
                   </button>
@@ -433,7 +440,7 @@ export default function SettingsPage() {
                     role="switch"
                     aria-checked={notifyChat}
                     onClick={() => setNotifyChat(!notifyChat)}
-                    className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${notifyChat ? 'bg-accent' : 'bg-gray-200 dark:bg-racing-700'}`}
+                    className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${notifyChat ? 'bg-[#34c759]' : 'bg-gray-200 dark:bg-racing-700'}`}
                   >
                     <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${notifyChat ? 'translate-x-5' : 'translate-x-0'}`} />
                   </button>
@@ -451,7 +458,7 @@ export default function SettingsPage() {
                     role="switch"
                     aria-checked={notifyTasks}
                     onClick={() => setNotifyTasks(!notifyTasks)}
-                    className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${notifyTasks ? 'bg-accent' : 'bg-gray-200 dark:bg-racing-700'}`}
+                    className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${notifyTasks ? 'bg-[#34c759]' : 'bg-gray-200 dark:bg-racing-700'}`}
                   >
                     <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${notifyTasks ? 'translate-x-5' : 'translate-x-0'}`} />
                   </button>
@@ -575,6 +582,24 @@ export default function SettingsPage() {
             value={birthday}
             onChange={(e) => setBirthday(e.target.value)}
             max={new Date().toISOString().split('T')[0]}
+            className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-500">Berufsbezeichnung</label>
+          <input
+            value={jobTitle}
+            onChange={(e) => setJobTitle(e.target.value)}
+            placeholder="z.B. Marketing Manager"
+            className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-500">Arbeitsstandort</label>
+          <input
+            value={workLocation}
+            onChange={(e) => setWorkLocation(e.target.value)}
+            placeholder="z.B. Berlin, Remote"
             className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
           />
         </div>

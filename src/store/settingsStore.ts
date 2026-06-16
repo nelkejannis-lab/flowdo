@@ -5,7 +5,7 @@ import { NAMED_COLORS } from './eventsStore'
 
 export type Mode = 'light' | 'dark'
 export type Language = 'de' | 'en'
-export type FeatureKey = 'calendar' | 'eisenhower' | 'worktime' | 'aiScheduler' | 'chat' | 'friends' | 'social'
+export type FeatureKey = 'calendar' | 'eisenhower' | 'worktime' | 'aiScheduler' | 'chat' | 'friends' | 'social' | 'weather'
 
 export const DEFAULT_FEATURE_VISIBILITY: Record<FeatureKey, boolean> = {
   calendar: true,
@@ -15,6 +15,7 @@ export const DEFAULT_FEATURE_VISIBILITY: Record<FeatureKey, boolean> = {
   chat: true,
   friends: true,
   social: true,
+  weather: true,
 }
 
 export const DEFAULT_COLOR_LABELS: Record<string, string> = Object.fromEntries(

@@ -10,6 +10,8 @@ export interface Profile {
   avatar_url?: string | null
   birthday?: string | null
   is_admin?: boolean
+  job_title?: string | null
+  work_location?: string | null
   created_at: string
 }
 
@@ -19,6 +21,8 @@ interface ProfileUpdate {
   avatar_color?: string
   avatar_url?: string | null
   birthday?: string | null
+  job_title?: string | null
+  work_location?: string | null
 }
 
 interface AuthState {

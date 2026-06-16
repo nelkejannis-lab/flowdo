@@ -60,7 +60,8 @@ export default function WorkWeekView() {
         </button>
       </div>
 
-      <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto] items-center gap-x-3 gap-y-1 p-3 text-sm">
+      <div className="overflow-x-auto -mx-1">
+      <div className="grid grid-cols-[minmax(90px,1fr)_auto_auto_auto_auto_auto_auto] items-center gap-x-2 gap-y-1 p-3 text-sm min-w-[560px]">
         <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">{t('week.columns.day')}</div>
         <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">{t('week.columns.from')}</div>
         <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">{t('week.columns.to')}</div>
@@ -148,6 +149,7 @@ export default function WorkWeekView() {
           {weekNet - weekTarget === 0 ? '–' : `${weekNet - weekTarget > 0 ? '+' : ''}${formatHM(weekNet - weekTarget)}`}
         </div>
       </div>
+      </div>{/* /overflow-x-auto */}
     </div>
   )
 }
