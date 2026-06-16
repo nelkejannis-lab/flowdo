@@ -68,15 +68,61 @@ export default function TerminePage() {
     })
     .sort((a, b) => a.date.localeCompare(b.date) || (a.startTime ?? '').localeCompare(b.startTime ?? ''))
 
-  // Group by month
+  // Group: today → this week → by month
+  const todaySection = filtered.filter((e) => e.date === today)
+  const weekSection = filtered.filter((e) => e.date !== today && e.date > today && e.date <= weekEndDate)
+  const restEntries = filtered.filter((e) => e.date > weekEndDate || (e.date < today && !(e.endDate && e.endDate >= today)))
+
   const grouped = new Map<string, CalendarEntry[]>()
-  for (const entry of filtered) {
+  for (const entry of restEntries) {
     const key = entry.date.slice(0, 7)
     if (!grouped.has(key)) grouped.set(key, [])
     grouped.get(key)!.push(entry)
   }
 
   const filters: Filter[] = ['today', 'week', 'upcoming', 'past', 'all']
+
+  function renderEntry(entry: CalendarEntry) {
+    const isToday = entry.date === today
+    const isOngoing = entry.date < today && entry.endDate && entry.endDate >= today
+    return (
+      <div
+        key={entry.id}
+        onClick={() => { setEditEntry(entry); setShowForm(true) }}
+        className="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 hover:bg-gray-50 dark:border-racing-800 dark:bg-racing-900 dark:hover:bg-racing-800"
+      >
+        <span
+          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-base text-white"
+          style={{ backgroundColor: entry.color }}
+        >
+          {entryTypeIcon[entry.type]}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium">{entry.title}</p>
+          <p className="text-xs text-gray-400">
+            {entryTypeLabel[entry.type]} ·{' '}
+            {format(parseISO(entry.date), 'd. MMM yyyy', { locale: dateLocale })}
+            {entry.endDate && entry.endDate > entry.date
+              ? ` – ${format(parseISO(entry.endDate), 'd. MMM yyyy', { locale: dateLocale })}`
+              : ''}
+            {(entry.startTime || entry.endTime) && (
+              <> · {entry.startTime ?? ''}{entry.endTime ? ` – ${entry.endTime}` : ''}</>
+            )}
+          </p>
+        </div>
+        {isToday && (
+          <span className="flex-shrink-0 rounded-full bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent">
+            {t('termine.filters.today')}
+          </span>
+        )}
+        {isOngoing && (
+          <span className="flex-shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-900/30 dark:text-green-400">
+            {t('termine.ongoing')}
+          </span>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -115,49 +161,7 @@ export default function TerminePage() {
               <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
                 {t('termine.appointments')}
               </h2>
-              <div className="flex flex-col gap-2">
-                {filtered.map((entry) => {
-                  const isToday = entry.date === today
-                  const isOngoing = entry.date < today && entry.endDate && entry.endDate >= today
-                  return (
-                    <div
-                      key={entry.id}
-                      onClick={() => { setEditEntry(entry); setShowForm(true) }}
-                      className="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 hover:bg-gray-50 dark:border-racing-800 dark:bg-racing-900 dark:hover:bg-racing-800"
-                    >
-                      <span
-                        className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-base text-white"
-                        style={{ backgroundColor: entry.color }}
-                      >
-                        {entryTypeIcon[entry.type]}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{entry.title}</p>
-                        <p className="text-xs text-gray-400">
-                          {entryTypeLabel[entry.type]} ·{' '}
-                          {format(parseISO(entry.date), 'd. MMM yyyy', { locale: dateLocale })}
-                          {entry.endDate && entry.endDate > entry.date
-                            ? ` – ${format(parseISO(entry.endDate), 'd. MMM yyyy', { locale: dateLocale })}`
-                            : ''}
-                          {(entry.startTime || entry.endTime) && (
-                            <> · {entry.startTime ?? ''}{entry.endTime ? ` – ${entry.endTime}` : ''}</>
-                          )}
-                        </p>
-                      </div>
-                      {isToday && (
-                        <span className="flex-shrink-0 rounded-full bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent">
-                          {t('termine.filters.today')}
-                        </span>
-                      )}
-                      {isOngoing && (
-                        <span className="flex-shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                          {t('termine.ongoing')}
-                        </span>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
+              <div className="flex flex-col gap-2">{filtered.map(renderEntry)}</div>
             </div>
           )}
 
@@ -187,54 +191,24 @@ export default function TerminePage() {
           </div>
         ) : (
           <div className="flex flex-col gap-6">
+            {todaySection.length > 0 && (
+              <div>
+                <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">{t('termine.filters.today')}</h2>
+                <div className="flex flex-col gap-2">{todaySection.map(renderEntry)}</div>
+              </div>
+            )}
+            {weekSection.length > 0 && (
+              <div>
+                <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">{t('termine.filters.week')}</h2>
+                <div className="flex flex-col gap-2">{weekSection.map(renderEntry)}</div>
+              </div>
+            )}
             {[...grouped.entries()].map(([month, monthEntries]) => (
               <div key={month}>
                 <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
                   {format(parseISO(month + '-01'), 'MMMM yyyy', { locale: dateLocale })}
                 </h2>
-                <div className="flex flex-col gap-2">
-                  {monthEntries.map((entry) => {
-                    const isToday = entry.date === today
-                    const isOngoing = entry.date < today && entry.endDate && entry.endDate >= today
-                    return (
-                      <div
-                        key={entry.id}
-                        onClick={() => { setEditEntry(entry); setShowForm(true) }}
-                        className="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 hover:bg-gray-50 dark:border-racing-800 dark:bg-racing-900 dark:hover:bg-racing-800"
-                      >
-                        <span
-                          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-base text-white"
-                          style={{ backgroundColor: entry.color }}
-                        >
-                          {entryTypeIcon[entry.type]}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium">{entry.title}</p>
-                          <p className="text-xs text-gray-400">
-                            {entryTypeLabel[entry.type]} ·{' '}
-                            {format(parseISO(entry.date), 'd. MMM yyyy', { locale: dateLocale })}
-                            {entry.endDate && entry.endDate > entry.date
-                              ? ` – ${format(parseISO(entry.endDate), 'd. MMM yyyy', { locale: dateLocale })}`
-                              : ''}
-                            {(entry.startTime || entry.endTime) && (
-                              <> · {entry.startTime ?? ''}{entry.endTime ? ` – ${entry.endTime}` : ''}</>
-                            )}
-                          </p>
-                        </div>
-                        {isToday && (
-                          <span className="flex-shrink-0 rounded-full bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent">
-                            {t('termine.filters.today')}
-                          </span>
-                        )}
-                        {isOngoing && (
-                          <span className="flex-shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                            {t('termine.ongoing')}
-                          </span>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
+                <div className="flex flex-col gap-2">{monthEntries.map(renderEntry)}</div>
               </div>
             ))}
           </div>
