@@ -74,8 +74,18 @@
     "descriptionPlaceholder": "Beschreibung (optional)",
     "inviteColleagues": "Kollegen einladen",
     "color": "Farbe",
+    "recurrence": {
+      "label": "Wiederholen",
+      "none": "Kein",
+      "everyNWeeks_one": "Jede Woche",
+      "everyNWeeks_other": "Alle {{count}} Wochen",
+      "hint": "Es werden {{count}} Einträge erstellt (je alle {{weeks}} Wochen, für 1 Jahr).",
+      "hint_one": "Es werden {{count}} Einträge erstellt (wöchentlich, für 1 Jahr)."
+    },
     "delete": "Löschen",
     "save": "Speichern",
-    "create": "Erstellen"
+    "create": "Erstellen",
+    "creating": "Wird erstellt…",
+    "createSeries": "Serie erstellen"
   }
 }

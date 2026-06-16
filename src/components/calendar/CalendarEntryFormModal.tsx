@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CalendarClock, CalendarHeart, Plane, Sparkles } from 'lucide-react'
+import { CalendarClock, CalendarHeart, Plane, RefreshCw, Sparkles } from 'lucide-react'
 import Modal from '../layout/Modal'
 import { useEventsStore, EVENT_COLORS } from '../../store/eventsStore'
 import { useCalendarEntriesStore } from '../../store/calendarEntriesStore'
@@ -31,12 +31,21 @@ const defaultColors: Record<CalendarEntryType, string> = {
   urlaub: '#F59E0B',
 }
 
+const RECURRENCE_OPTIONS = [0, 1, 2, 3, 4, 6, 8] as const
+type RecurrenceWeeks = (typeof RECURRENCE_OPTIONS)[number]
+
+function addWeeks(isoDate: string, weeks: number): string {
+  const d = new Date(isoDate)
+  d.setDate(d.getDate() + weeks * 7)
+  return d.toISOString().slice(0, 10)
+}
+
 export default function CalendarEntryFormModal({ event, entry, defaultDate, onClose }: CalendarEntryFormModalProps) {
   const { t } = useTranslation('calendar')
   const typeOptions: { kind: Kind; label: string; icon: typeof CalendarClock }[] = [
-    { kind: 'event', label: t('form.types.event'), icon: typeIcons.event },
     { kind: 'termin', label: t('form.types.termin'), icon: typeIcons.termin },
     { kind: 'reise', label: t('form.types.reise'), icon: typeIcons.reise },
+    { kind: 'event', label: t('form.types.event'), icon: typeIcons.event },
     { kind: 'urlaub', label: t('form.types.urlaub'), icon: typeIcons.urlaub },
   ]
   const addEvent = useEventsStore((s) => s.addEvent)
@@ -49,7 +58,7 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
   const fetchFriends = useFriendsStore((s) => s.fetchAll)
 
   const editing = event ?? entry
-  const initialKind: Kind = event ? 'event' : entry ? entry.type : 'event'
+  const initialKind: Kind = event ? 'event' : entry ? entry.type : 'termin'
 
   const [kind, setKind] = useState<Kind>(initialKind)
   const [title, setTitle] = useState(editing?.title ?? '')
@@ -58,8 +67,9 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
   const [startTime, setStartTime] = useState(entry?.startTime ?? '')
   const [endTime, setEndTime] = useState(entry?.endTime ?? '')
   const [description, setDescription] = useState(editing?.description ?? '')
-  const [color, setColor] = useState(editing?.color ?? EVENT_COLORS[0])
+  const [color, setColor] = useState(editing?.color ?? defaultColors.termin)
   const [invitedUserIds, setInvitedUserIds] = useState<string[]>(entry?.invitees.map((i) => i.id) ?? [])
+  const [recurrenceWeeks, setRecurrenceWeeks] = useState<RecurrenceWeeks>(0)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -73,6 +83,7 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
     } else if (!editing && kind === 'event') {
       setColor(EVENT_COLORS[0])
     }
+    if (kind !== 'termin' && kind !== 'reise') setRecurrenceWeeks(0)
   }, [kind, editing])
 
   function toggleInvitee(userId: string) {
@@ -109,23 +120,47 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
 
     setSaving(true)
     setError(null)
-    const input = {
-      type: kind,
+
+    const baseInput = {
+      type: kind as CalendarEntryType,
       title: title.trim(),
       description: description.trim() || undefined,
-      date,
       endDate: normalizedEndDate,
       startTime: startTime || undefined,
       endTime: endTime || undefined,
       color,
       invitedUserIds,
     }
-    const err = entry ? await updateEntry(entry.id, input) : await addEntry(input)
-    setSaving(false)
-    if (err) {
-      setError(err)
+
+    if (entry) {
+      const err = await updateEntry(entry.id, { ...baseInput, date })
+      setSaving(false)
+      if (err) { setError(err); return }
+      onClose()
       return
     }
+
+    if (recurrenceWeeks === 0) {
+      const err = await addEntry({ ...baseInput, date })
+      setSaving(false)
+      if (err) { setError(err); return }
+      onClose()
+      return
+    }
+
+    // Create recurring entries for ~1 year
+    const occurrences: string[] = []
+    let current = date
+    const horizon = addWeeks(date, 52)
+    while (current <= horizon) {
+      occurrences.push(current)
+      current = addWeeks(current, recurrenceWeeks)
+    }
+    for (const d of occurrences) {
+      const err = await addEntry({ ...baseInput, date: d })
+      if (err) { setSaving(false); setError(err); return }
+    }
+    setSaving(false)
     onClose()
   }
 
@@ -138,6 +173,8 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
       onClose()
     }
   }
+
+  const showRecurrence = !editing && (kind === 'termin' || kind === 'reise')
 
   return (
     <Modal title={editing ? t('form.titleEdit') : t('form.titleAdd')} onClose={onClose}>
@@ -230,6 +267,31 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
           </div>
         )}
 
+        {showRecurrence && (
+          <div>
+            <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-gray-500">
+              <RefreshCw size={12} />
+              {t('form.recurrence.label')}
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {RECURRENCE_OPTIONS.map((w) => (
+                <button
+                  type="button"
+                  key={w}
+                  onClick={() => setRecurrenceWeeks(w)}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                    recurrenceWeeks === w
+                      ? 'border-accent bg-accent/10 text-accent'
+                      : 'border-gray-200 text-gray-500 hover:border-gray-300 dark:border-racing-700 dark:text-racing-200'
+                  }`}
+                >
+                  {w === 0 ? t('form.recurrence.none') : t('form.recurrence.everyNWeeks', { count: w })}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -278,6 +340,15 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
           </div>
         </div>
 
+        {recurrenceWeeks > 0 && !editing && (
+          <p className="rounded-lg bg-accent/5 px-3 py-2 text-xs text-accent">
+            {t('form.recurrence.hint', {
+              count: Math.floor(52 / recurrenceWeeks) + 1,
+              weeks: recurrenceWeeks,
+            })}
+          </p>
+        )}
+
         {error && <p className="text-sm text-red-500">{error}</p>}
 
         <div className="mt-2 flex items-center justify-between">
@@ -297,7 +368,13 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
             disabled={saving}
             className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
           >
-            {editing ? t('form.save') : t('form.create')}
+            {saving
+              ? t('form.creating')
+              : editing
+              ? t('form.save')
+              : recurrenceWeeks > 0
+              ? t('form.createSeries')
+              : t('form.create')}
           </button>
         </div>
       </form>
