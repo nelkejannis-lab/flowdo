@@ -718,7 +718,7 @@ export default function SettingsPage() {
                   >
                     {activeProfileId === p.id ? '✓ Aktiv' : 'Anwenden'}
                   </button>
-                  {p.id !== 'gbm' && (
+                  {p.id !== 'gbm' && profile.is_admin && (
                     <button onClick={() => deleteWorkProfile(p.id)} className="flex-shrink-0 p-1 text-gray-300 hover:text-red-500">
                       <Trash2 size={14} />
                     </button>
@@ -726,14 +726,15 @@ export default function SettingsPage() {
                 </div>
               ))}
 
-              {!showAddProfile ? (
+              {profile.is_admin && !showAddProfile && (
                 <button
                   onClick={() => setShowAddProfile(true)}
                   className="flex items-center gap-1.5 rounded-lg border border-dashed border-gray-200 px-3 py-2 text-xs text-gray-400 hover:border-accent hover:text-accent dark:border-racing-700"
                 >
                   <Plus size={14} /> Neues Profil anlegen / New profile
                 </button>
-              ) : (
+              )}
+              {profile.is_admin && showAddProfile && (
                 <div className="flex flex-col gap-2 rounded-lg border border-accent/30 bg-accent/5 p-3">
                   <p className="text-xs font-semibold text-accent">Neues Profil</p>
                   <input

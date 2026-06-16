@@ -9,6 +9,7 @@ export interface Profile {
   avatar_color: string
   avatar_url?: string | null
   birthday?: string | null
+  is_admin?: boolean
   created_at: string
 }
 
