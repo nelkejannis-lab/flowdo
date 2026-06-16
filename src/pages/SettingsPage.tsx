@@ -328,7 +328,7 @@ export default function SettingsPage() {
                         className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${enabled ? 'bg-accent' : 'bg-gray-200 dark:bg-racing-700'}`}
                       >
                         <span
-                          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0.5'}`}
+                          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-[22px]' : 'translate-x-0.5'}`}
                         />
                       </button>
                     </div>
