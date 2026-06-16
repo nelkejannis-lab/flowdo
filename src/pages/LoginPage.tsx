@@ -247,7 +247,7 @@ export default function LoginPage() {
       {/* ══════════════════════════════════════════════════════════
           ROOT — dark starfield bg
       ══════════════════════════════════════════════════════════ */}
-      <div className="mc-grain relative min-h-screen overflow-hidden bg-[#0a0a0a]">
+      <div className="mc-grain relative min-h-screen overflow-hidden bg-[#0a0a0a]" style={{ backgroundColor: '#0a0a0a' }}>
 
         {/* Ambient — subtle white radials only, no color */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -309,7 +309,7 @@ export default function LoginPage() {
 
           {/* Right — auth glass card */}
           <div className="w-[380px] flex-shrink-0 lg:w-[400px]">
-            <div className="card-in glass w-full rounded-3xl p-7">
+            <div className="card-in glass w-full rounded-3xl p-7" style={{ background: 'rgba(18,18,18,0.85)', backdropFilter: 'blur(28px) saturate(160%)', WebkitBackdropFilter: 'blur(28px) saturate(160%)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 32px 64px rgba(0,0,0,0.6)' }}>
               <div className="mb-6 flex items-center gap-2.5">
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/[.08]">
                   <img src="/logo-full.svg" alt="" className="h-5 w-auto" />
@@ -394,7 +394,7 @@ export default function LoginPage() {
               </div>
 
               {/* the sheet */}
-              <div className="sheet-up glass-sheet relative rounded-t-[2rem] px-6 pb-10 pt-5">
+              <div className="sheet-up glass-sheet relative rounded-t-[2rem] px-6 pb-10 pt-5" style={{ background: 'rgba(13,13,13,0.97)', borderTop: '1px solid rgba(255,255,255,0.09)' }}>
                 {/* drag handle */}
                 <div className="mx-auto mb-5 h-[3px] w-9 rounded-full bg-white/[.12]" />
 

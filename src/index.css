@@ -30,23 +30,28 @@
   --racing-950: 10 10 10;
 }
 
-/* Dark mode: flip accent to near-white so buttons stay visible */
+/* Dark mode: accent → near-white (white buttons on dark surfaces) */
 .dark {
-  --accent: 240 240 240;
+  --accent: 245 245 245;
   --accent-light: 255 255 255;
-  --accent-dark: 200 200 200;
+  --accent-dark: 210 210 210;
 }
 
-/* Pink accent mode (optional, kept for toggle) */
+/* Dark mode: white accent buttons need dark text to stay readable */
+.dark .bg-accent {
+  color: rgb(15 15 15);
+}
+
+/* Pink accent mode */
 .pink {
-  --accent: 15 15 15;
-  --accent-light: 55 55 55;
-  --accent-dark: 0 0 0;
+  --accent: 236 72 153;
+  --accent-light: 244 114 182;
+  --accent-dark: 219 39 119;
 }
 .dark.pink {
-  --accent: 240 240 240;
-  --accent-light: 255 255 255;
-  --accent-dark: 200 200 200;
+  --accent: 236 72 153;
+  --accent-light: 244 114 182;
+  --accent-dark: 219 39 119;
 }
 
 html, body, #root {
