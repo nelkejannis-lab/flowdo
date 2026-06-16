@@ -139,7 +139,7 @@ export default function LoginPage() {
         )}
 
         <button type="submit" disabled={busy}
-          className="mt-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-[13.5px] font-semibold text-white transition-all duration-200 hover:opacity-90 hover:scale-[1.01] active:scale-[.99] disabled:opacity-50"
+          className="btn-glow mt-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-[13.5px] font-semibold text-white transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none"
           style={{ background: 'linear-gradient(135deg, #6d62f0 0%, #a855f7 100%)' }}>
           {busy
             ? <span className="flex items-center gap-2"><span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />{t('buttons.pleaseWait')}</span>
@@ -196,6 +196,22 @@ export default function LoginPage() {
           border: 1px solid rgba(255,255,255,.11);
           box-shadow: 0 32px 64px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.04) inset;
         }
+        /* feature card hover glow */
+        .feat-card {
+          transition: transform .2s cubic-bezier(.22,1,.36,1), background .2s, border-color .2s, box-shadow .2s;
+        }
+        .feat-card:hover {
+          transform: translateY(-3px) scale(1.02);
+          background: rgba(255,255,255,.07);
+          border-color: rgba(255,255,255,.14);
+          box-shadow: 0 8px 24px rgba(0,0,0,.3);
+        }
+        /* submit btn hover */
+        .btn-glow:hover {
+          box-shadow: 0 0 28px rgba(109,98,240,.5), 0 4px 16px rgba(0,0,0,.3);
+          transform: translateY(-1px);
+        }
+        .btn-glow:active { transform: translateY(0) scale(.98); }
         /* mobile bottom sheet */
         .glass-sheet {
           background: linear-gradient(180deg, rgba(20,17,40,.97) 0%, rgba(14,12,28,.99) 100%);
@@ -220,59 +236,60 @@ export default function LoginPage() {
         </div>
 
         {/* ── DESKTOP layout (md+) ── */}
-        <div className="relative z-10 hidden min-h-screen md:flex">
+        <div className="relative z-10 hidden min-h-screen md:flex items-center justify-center px-8 lg:px-16">
+          <div className="flex w-full max-w-5xl items-center gap-12 lg:gap-20">
 
           {/* Left — hero */}
-          <div className="flex flex-1 flex-col items-start justify-center px-16 xl:px-24">
+          <div className="flex flex-1 flex-col items-start">
 
             {/* Logo */}
-            <div className="mc-up mb-10 flex flex-col gap-4">
+            <div className="mc-up mb-8 flex flex-col gap-4">
               <div className="mc-float">
                 <img src="/logo-full.svg" alt="MoonCrew"
-                  className="h-16 w-auto drop-shadow-[0_0_32px_rgba(139,92,246,.6)]" />
+                  className="h-14 w-auto drop-shadow-[0_0_32px_rgba(139,92,246,.6)]" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold tracking-[-0.03em] text-white xl:text-5xl">
+                <h1 className="text-4xl font-bold tracking-[-0.03em] text-white lg:text-5xl">
                   Moon<span className="text-violet-400">Crew</span>
                 </h1>
-                <p className="mt-1.5 text-sm font-medium uppercase tracking-[0.18em] text-white/30">
+                <p className="mt-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-white/25">
                   Work Organizer
                 </p>
               </div>
             </div>
 
             {/* Tagline */}
-            <p className="mc-up d1 mb-10 max-w-sm text-[15px] leading-relaxed text-white/50">
-              Everything your team needs — tasks, calendar,<br />time tracking and chat in one app.
+            <p className="mc-up d1 mb-8 max-w-xs text-[14.5px] leading-relaxed text-white/45">
+              Everything your team needs — tasks, calendar, time tracking and chat in one app.
             </p>
 
             {/* Features */}
-            <div className="mc-up d2 grid grid-cols-2 gap-3 max-w-[380px]">
+            <div className="mc-up d2 grid grid-cols-2 gap-2.5 w-full max-w-[360px]">
               {FEATURES.map((f, i) => (
                 <div key={f.label}
-                  className={`mc-up d${i+3} flex items-center gap-3 rounded-2xl border border-white/[.06] bg-white/[.03] px-4 py-3 backdrop-blur-sm`}>
-                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl"
+                  className={`feat-card mc-up d${i+3} flex items-center gap-3 rounded-2xl border border-white/[.06] bg-white/[.03] px-3.5 py-3 backdrop-blur-sm cursor-default`}>
+                  <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg"
                     style={{ backgroundColor: f.color + '1a' }}>
-                    <f.icon size={15} style={{ color: f.color }} />
+                    <f.icon size={14} style={{ color: f.color }} />
                   </div>
                   <div>
-                    <p className="text-[12px] font-semibold text-white/85">{f.label}</p>
-                    <p className="text-[10.5px] text-white/30">{f.sub}</p>
+                    <p className="text-[11.5px] font-semibold text-white/85 leading-tight">{f.label}</p>
+                    <p className="text-[10px] text-white/30 leading-tight mt-0.5">{f.sub}</p>
                   </div>
                 </div>
               ))}
             </div>
 
             {/* Footer */}
-            <div className="mc-up d6 mt-12 flex gap-5 text-[11px] text-white/20">
+            <div className="mc-up d6 mt-10 flex gap-5 text-[11px] text-white/20">
               <Link to="/datenschutz" className="hover:text-white/50 transition-colors">{t('footer.privacy')}</Link>
               <Link to="/impressum"   className="hover:text-white/50 transition-colors">{t('footer.imprint')}</Link>
             </div>
           </div>
 
           {/* Right — auth glass card */}
-          <div className="flex w-[460px] flex-shrink-0 items-center justify-center px-10 xl:w-[500px]">
-            <div className="card-in glass w-full rounded-3xl p-8">
+          <div className="w-[380px] flex-shrink-0 lg:w-[400px]">
+            <div className="card-in glass w-full rounded-3xl p-7">
               <div className="mb-6 flex items-center gap-2.5">
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-500/20">
                   <img src="/logo-full.svg" alt="" className="h-5 w-auto" />
@@ -282,6 +299,7 @@ export default function LoginPage() {
               {AuthForm}
             </div>
           </div>
+          </div>{/* /max-w-5xl */}
         </div>
 
         {/* ── MOBILE layout (< md) ── */}
@@ -312,7 +330,7 @@ export default function LoginPage() {
               <div className="mc-up d4 my-8 grid w-full grid-cols-2 gap-2.5">
                 {FEATURES.map((f) => (
                   <div key={f.label}
-                    className="flex items-center gap-2.5 rounded-2xl border border-white/[.07] bg-white/[.04] px-3.5 py-3 backdrop-blur-sm">
+                    className="feat-card flex items-center gap-2.5 rounded-2xl border border-white/[.07] bg-white/[.04] px-3.5 py-3 backdrop-blur-sm cursor-default">
                     <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg"
                       style={{ backgroundColor: f.color + '1a' }}>
                       <f.icon size={13} style={{ color: f.color }} />
