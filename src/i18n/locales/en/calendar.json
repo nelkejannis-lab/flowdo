@@ -91,6 +91,7 @@
     "inviteColleagues": "Invite colleagues",
     "wholeTeam": "Whole team",
     "color": "Color",
+    "colorLabelPlaceholder": "Enter label…",
     "recurrence": {
       "label": "Repeat",
       "none": "None",

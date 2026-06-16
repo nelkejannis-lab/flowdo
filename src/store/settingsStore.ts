@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import i18n from '../i18n'
+import { NAMED_COLORS } from './eventsStore'
 
 export type Mode = 'light' | 'dark'
 export type Language = 'de' | 'en'
@@ -16,15 +17,21 @@ export const DEFAULT_FEATURE_VISIBILITY: Record<FeatureKey, boolean> = {
   social: true,
 }
 
+export const DEFAULT_COLOR_LABELS: Record<string, string> = Object.fromEntries(
+  NAMED_COLORS.map((c) => [c.hex, c.label])
+)
+
 interface SettingsState {
   mode: Mode
   pinkAccent: boolean
   language: Language
   featureVisibility: Record<FeatureKey, boolean>
+  colorLabels: Record<string, string>
   setMode: (mode: Mode) => void
   togglePinkAccent: () => void
   setLanguage: (language: Language) => void
   toggleFeature: (key: FeatureKey) => void
+  setColorLabel: (hex: string, label: string) => void
 }
 
 interface LegacyState {
@@ -38,6 +45,7 @@ export const useSettingsStore = create<SettingsState>()(
       pinkAccent: false,
       language: 'de',
       featureVisibility: { ...DEFAULT_FEATURE_VISIBILITY },
+      colorLabels: { ...DEFAULT_COLOR_LABELS },
       setMode: (mode) => set({ mode }),
       togglePinkAccent: () => set((s) => ({ pinkAccent: !s.pinkAccent })),
       setLanguage: (language) => {
@@ -46,6 +54,8 @@ export const useSettingsStore = create<SettingsState>()(
       },
       toggleFeature: (key) =>
         set((s) => ({ featureVisibility: { ...s.featureVisibility, [key]: !s.featureVisibility[key] } })),
+      setColorLabel: (hex, label) =>
+        set((s) => ({ colorLabels: { ...s.colorLabels, [hex]: label } })),
     }),
     {
       name: 'flowdo-settings',
@@ -64,6 +74,7 @@ export const useSettingsStore = create<SettingsState>()(
           ...legacy,
           language: legacy.language ?? 'de',
           featureVisibility: { ...DEFAULT_FEATURE_VISIBILITY, ...legacy.featureVisibility },
+          colorLabels: { ...DEFAULT_COLOR_LABELS, ...(legacy as any).colorLabels },
         }
       },
       onRehydrateStorage: () => (state) => {

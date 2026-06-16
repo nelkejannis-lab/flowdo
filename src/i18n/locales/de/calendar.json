@@ -91,6 +91,7 @@
     "inviteColleagues": "Kollegen einladen",
     "wholeTeam": "Ganzes Team",
     "color": "Farbe",
+    "colorLabelPlaceholder": "Bezeichnung eingeben…",
     "recurrence": {
       "label": "Wiederholen",
       "none": "Kein",

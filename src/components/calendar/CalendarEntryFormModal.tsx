@@ -6,6 +6,7 @@ import { useEventsStore, EVENT_COLORS, NAMED_COLORS } from '../../store/eventsSt
 import { useCalendarEntriesStore } from '../../store/calendarEntriesStore'
 import { useFriendsStore } from '../../store/friendsStore'
 import { useAuthStore } from '../../store/authStore'
+import { useSettingsStore } from '../../store/settingsStore'
 import { isSupabaseConfigured } from '../../lib/supabase'
 import type { CalendarEntry, CalendarEntryType, CalendarEvent } from '../../types'
 import { todayISO } from '../../utils/date'
@@ -58,6 +59,8 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
   const friends = useFriendsStore((s) => s.friends)
   const fetchFriends = useFriendsStore((s) => s.fetchAll)
   const currentUserId = useAuthStore((s) => s.user?.id)
+  const colorLabels = useSettingsStore((s) => s.colorLabels)
+  const setColorLabel = useSettingsStore((s) => s.setColorLabel)
 
   const editing = event ?? entry
   const initialKind: Kind = event ? 'event' : entry ? entry.type : 'termin'
@@ -356,17 +359,29 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
                 type="button"
                 key={c.hex}
                 onClick={() => setColor(c.hex)}
-                title={c.label}
+                title={colorLabels[c.hex] ?? c.label}
                 className={`flex flex-col items-center gap-0.5 rounded-lg p-1 transition-colors ${color === c.hex ? 'bg-gray-100 dark:bg-racing-800' : 'hover:bg-gray-50 dark:hover:bg-racing-800/50'}`}
               >
                 <span
                   className={`h-6 w-6 rounded-full border-2 ${color === c.hex ? 'border-gray-900 dark:border-white' : 'border-transparent'}`}
                   style={{ backgroundColor: c.hex }}
                 />
-                <span className="text-[9px] leading-none text-gray-500 dark:text-racing-300">{c.label}</span>
+                <span className="text-[9px] leading-none text-gray-500 dark:text-racing-300">{colorLabels[c.hex] ?? c.label}</span>
               </button>
             ))}
           </div>
+          {color && NAMED_COLORS.some((c) => c.hex === color) && (
+            <div className="mt-2 flex items-center gap-2">
+              <span className="h-4 w-4 flex-shrink-0 rounded-full" style={{ backgroundColor: color }} />
+              <input
+                type="text"
+                value={colorLabels[color] ?? NAMED_COLORS.find((c) => c.hex === color)?.label ?? ''}
+                onChange={(e) => setColorLabel(color, e.target.value)}
+                placeholder={t('form.colorLabelPlaceholder')}
+                className="flex-1 rounded-lg border border-gray-200 bg-transparent px-2 py-1 text-xs focus:border-accent focus:outline-none dark:border-racing-700"
+              />
+            </div>
+          )}
         </div>
 
         {recurrenceWeeks > 0 && !editing && (
