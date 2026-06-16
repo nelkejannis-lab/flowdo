@@ -4,13 +4,10 @@ import { de, enUS } from 'date-fns/locale'
 import { useTranslation } from 'react-i18next'
 import { CalendarDays, Plus } from 'lucide-react'
 import { useCalendarEntriesStore } from '../store/calendarEntriesStore'
-import { useTasksStore } from '../store/tasksStore'
-import { useProjectTasksStore } from '../store/projectTasksStore'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { entryTypeIcon, entryTypeLabel } from '../utils/calendarEntry'
-import { isDueThisWeek, isDueToday, isOverdue, todayISO } from '../utils/date'
+import { todayISO } from '../utils/date'
 import CalendarEntryFormModal from '../components/calendar/CalendarEntryFormModal'
-import TaskList from '../components/tasks/TaskList'
 import type { CalendarEntry } from '../types'
 
 type Filter = 'upcoming' | 'past' | 'all'
@@ -20,21 +17,13 @@ export default function TerminePage() {
   const dateLocale = i18n.language === 'en' ? enUS : de
   const entries = useCalendarEntriesStore((s) => s.entries)
   const fetchEntries = useCalendarEntriesStore((s) => s.fetchEntries)
-  const tasks = useTasksStore((s) => s.tasks)
-  const fetchTasks = useTasksStore((s) => s.fetchAll)
-  const myProjectTasks = useProjectTasksStore((s) => s.myTasks)
-  const fetchMyProjectTasks = useProjectTasksStore((s) => s.fetchMyTasks)
   const [filter, setFilter] = useState<Filter>('upcoming')
   const [showForm, setShowForm] = useState(false)
   const [editEntry, setEditEntry] = useState<CalendarEntry | undefined>()
 
   useEffect(() => {
-    if (isSupabaseConfigured) {
-      fetchEntries()
-      fetchTasks()
-      fetchMyProjectTasks()
-    }
-  }, [fetchEntries, fetchTasks, fetchMyProjectTasks])
+    if (isSupabaseConfigured) fetchEntries()
+  }, [fetchEntries])
 
   const today = todayISO()
 
@@ -46,10 +35,6 @@ export default function TerminePage() {
     end.setDate(d.getDate() + diff)
     return end.toISOString().slice(0, 10)
   })()
-
-  const allTasks = [...tasks, ...myProjectTasks]
-  const todayTasks = allTasks.filter((tk) => !tk.completed && (isDueToday(tk.dueDate) || isOverdue(tk.dueDate)))
-  const weekTasks = allTasks.filter((tk) => !tk.completed && (isOverdue(tk.dueDate) || isDueToday(tk.dueDate) || isDueThisWeek(tk.dueDate)))
 
   const filtered = entries
     .filter((e) => {
@@ -121,7 +106,7 @@ export default function TerminePage() {
     )
   }
 
-  const isEmpty = filtered.length === 0 && todayTasks.length === 0
+  const isEmpty = filtered.length === 0
 
   return (
     <div>
@@ -160,30 +145,18 @@ export default function TerminePage() {
       ) : (
         <div className="flex flex-col gap-6">
           {/* Heute */}
-          {(todayEntries.length > 0 || todayTasks.length > 0) && (
+          {todayEntries.length > 0 && (
             <div>
               <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">{t('termine.filters.today')}</h2>
-              {todayEntries.length > 0 && (
-                <div className="mb-3 flex flex-col gap-2">{todayEntries.map(renderEntry)}</div>
-              )}
-              {todayTasks.length > 0 && <TaskList tasks={todayTasks} emptyMessage="" />}
+              <div className="flex flex-col gap-2">{todayEntries.map(renderEntry)}</div>
             </div>
           )}
 
           {/* Diese Woche */}
-          {(weekEntries.length > 0 || (filter === 'upcoming' || filter === 'all') && weekTasks.filter(tk => !isDueToday(tk.dueDate) && !isOverdue(tk.dueDate)).length > 0) && (
+          {weekEntries.length > 0 && (
             <div>
               <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">{t('termine.filters.week')}</h2>
-              {weekEntries.length > 0 && (
-                <div className="mb-3 flex flex-col gap-2">{weekEntries.map(renderEntry)}</div>
-              )}
-              {(filter === 'upcoming' || filter === 'all') && (
-                <TaskList
-                  tasks={weekTasks.filter(tk => !isDueToday(tk.dueDate) && !isOverdue(tk.dueDate))}
-                  groupByDate
-                  emptyMessage=""
-                />
-              )}
+              <div className="flex flex-col gap-2">{weekEntries.map(renderEntry)}</div>
             </div>
           )}
 
