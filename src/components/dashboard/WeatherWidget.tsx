@@ -30,37 +30,69 @@ function weatherLabel(code: number): string {
   return 'Thunderstorm'
 }
 
+async function fetchWeatherForCoords(lat: number, lon: number): Promise<WeatherData> {
+  const [meteoRes, geoRes] = await Promise.all([
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`),
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`),
+  ])
+  const meteo = await meteoRes.json()
+  const geo = await geoRes.json()
+  const city = geo?.address?.city || geo?.address?.town || geo?.address?.village || geo?.address?.county
+  return {
+    temp: Math.round(meteo.current_weather.temperature),
+    weatherCode: meteo.current_weather.weathercode,
+    windspeed: Math.round(meteo.current_weather.windspeed),
+    city,
+  }
+}
+
 export default function WeatherWidget() {
   const [weather, setWeather] = useState<WeatherData | null>(null)
   const [error, setError] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!navigator.geolocation) { setError(true); setLoading(false); return }
-    navigator.geolocation.getCurrentPosition(
-      async ({ coords }) => {
+    let cancelled = false
+
+    async function loadWeather() {
+      // Try GPS first
+      if (navigator.geolocation) {
         try {
-          const [meteoRes, geoRes] = await Promise.all([
-            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${coords.latitude}&longitude=${coords.longitude}&current_weather=true`),
-            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json`)
-          ])
-          const meteo = await meteoRes.json()
-          const geo = await geoRes.json()
-          const city = geo?.address?.city || geo?.address?.town || geo?.address?.village || geo?.address?.county
-          setWeather({
-            temp: Math.round(meteo.current_weather.temperature),
-            weatherCode: meteo.current_weather.weathercode,
-            windspeed: Math.round(meteo.current_weather.windspeed),
-            city,
-          })
+          const coords = await new Promise<GeolocationCoordinates>((resolve, reject) =>
+            navigator.geolocation.getCurrentPosition(
+              (pos) => resolve(pos.coords),
+              reject,
+              { timeout: 6000 }
+            )
+          )
+          if (cancelled) return
+          const data = await fetchWeatherForCoords(coords.latitude, coords.longitude)
+          if (!cancelled) { setWeather(data); setLoading(false) }
+          return
         } catch {
-          setError(true)
-        } finally {
-          setLoading(false)
+          // GPS denied or timed out — fall through to IP fallback
         }
-      },
-      () => { setError(true); setLoading(false) }
-    )
+      }
+
+      // IP-based fallback (no key required)
+      try {
+        const ipRes = await fetch('https://ipapi.co/json/')
+        const ip = await ipRes.json()
+        if (cancelled) return
+        if (ip?.latitude && ip?.longitude) {
+          const data = await fetchWeatherForCoords(ip.latitude, ip.longitude)
+          if (!cancelled) { setWeather(data); setLoading(false) }
+          return
+        }
+      } catch {
+        // IP lookup failed too
+      }
+
+      if (!cancelled) { setError(true); setLoading(false) }
+    }
+
+    loadWeather()
+    return () => { cancelled = true }
   }, [])
 
   if (error || (!loading && !weather)) return null

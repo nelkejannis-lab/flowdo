@@ -63,7 +63,7 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
   const teams = useTeamsStore((s) => s.teams)
   const fetchTeams = useTeamsStore((s) => s.fetch)
   const currentUserId = useAuthStore((s) => s.user?.id)
-  const colorLabels = useSettingsStore((s) => s.colorLabels)
+  const colorLabels = useSettingsStore((s) => s.colorLabels ?? {})
   const setColorLabel = useSettingsStore((s) => s.setColorLabel)
 
   const editing = event ?? entry

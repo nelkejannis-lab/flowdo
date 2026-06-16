@@ -44,6 +44,10 @@
       "social": {
         "label": "Social Media",
         "description": "Social-Media-Konten und Statistiken"
+      },
+      "weather": {
+        "label": "Wetter",
+        "description": "Standortbasiertes Wetter auf dem Dashboard"
       }
     }
   },
