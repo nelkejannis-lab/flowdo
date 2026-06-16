@@ -62,10 +62,11 @@ export default function WeatherWidget() {
     let cancelled = false
 
     async function load() {
-      // 1. Try GPS
-      let lat: number | null = null
-      let lon: number | null = null
+      // Default: center of Germany (always valid)
+      let lat = 51.1657
+      let lon = 10.4515
 
+      // 1. Try GPS
       if (navigator.geolocation) {
         try {
           const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
@@ -73,11 +74,11 @@ export default function WeatherWidget() {
           )
           lat = pos.coords.latitude
           lon = pos.coords.longitude
-        } catch { /* denied or timeout */ }
+        } catch { /* denied or timeout — keep default */ }
       }
 
-      // 2. IP fallback via ipwho.is (CORS-friendly, no key)
-      if (lat === null) {
+      // 2. IP fallback via ipwho.is if still at default
+      if (lat === 51.1657) {
         try {
           const res = await fetch('https://ipwho.is/')
           const json = await res.json()
@@ -85,22 +86,13 @@ export default function WeatherWidget() {
             lat = json.latitude
             lon = json.longitude
           }
-        } catch { /* blocked */ }
+        } catch { /* blocked — keep default */ }
       }
-
-      // 3. Last resort: center of Germany
-      if (lat === null) {
-        lat = 51.1657
-        lon = 10.4515
-      }
-
-      const finalLat = lat
-      const finalLon = lon
 
       try {
         const [data, city] = await Promise.all([
-          fetchWeather(finalLat, finalLon),
-          reverseGeocode(finalLat, finalLon),
+          fetchWeather(lat, lon),
+          reverseGeocode(lat, lon),
         ])
         if (!cancelled) {
           setWeather({ ...data, city })
