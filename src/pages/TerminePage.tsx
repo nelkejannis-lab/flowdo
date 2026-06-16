@@ -60,7 +60,13 @@ export default function TerminePage() {
     })
     .sort((a, b) => a.date.localeCompare(b.date) || (a.startTime ?? '').localeCompare(b.startTime ?? ''))
 
-  const todayEntries = filtered.filter((e) => e.date === today)
+  const nowTime = new Date().toTimeString().slice(0, 5) // "HH:MM"
+  const todayEntries = filtered.filter((e) => {
+    if (e.date !== today) return false
+    const endT = e.endTime ?? e.startTime
+    if (endT && endT < nowTime) return false
+    return true
+  })
   const weekEntries = filtered.filter((e) => e.date !== today && e.date > today && e.date <= weekEndDate)
   const restEntries = filtered.filter((e) => e.date > weekEndDate || e.date < today)
 
