@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Cloud, CloudRain, Sun, CloudSnow, CloudLightning, Wind, Thermometer, MapPin } from 'lucide-react'
+import { Cloud, CloudRain, Sun, CloudSnow, CloudLightning, Wind, MapPin } from 'lucide-react'
 
 interface WeatherData {
   temp: number
@@ -19,118 +19,140 @@ function weatherIcon(code: number) {
 }
 
 function weatherLabel(code: number): string {
-  if (code === 0) return 'Clear sky'
-  if (code <= 2) return 'Partly cloudy'
-  if (code === 3) return 'Overcast'
-  if (code <= 49) return 'Foggy'
-  if (code <= 59) return 'Drizzle'
-  if (code <= 67) return 'Rain'
-  if (code <= 77) return 'Snow'
-  if (code <= 82) return 'Rain showers'
-  return 'Thunderstorm'
+  if (code === 0) return 'Klar'
+  if (code <= 2) return 'Teilweise bewölkt'
+  if (code === 3) return 'Bewölkt'
+  if (code <= 49) return 'Nebelig'
+  if (code <= 59) return 'Nieselregen'
+  if (code <= 67) return 'Regen'
+  if (code <= 77) return 'Schnee'
+  if (code <= 82) return 'Regenschauer'
+  return 'Gewitter'
 }
 
-async function fetchWeatherForCoords(lat: number, lon: number): Promise<WeatherData> {
-  const [meteoRes, geoRes] = await Promise.all([
-    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`),
-    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`),
-  ])
-  const meteo = await meteoRes.json()
-  const geo = await geoRes.json()
-  const city = geo?.address?.city || geo?.address?.town || geo?.address?.village || geo?.address?.county
+async function fetchWeather(lat: number, lon: number): Promise<Omit<WeatherData, 'city'>> {
+  const res = await fetch(
+    `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`
+  )
+  const json = await res.json()
   return {
-    temp: Math.round(meteo.current_weather.temperature),
-    weatherCode: meteo.current_weather.weathercode,
-    windspeed: Math.round(meteo.current_weather.windspeed),
-    city,
+    temp: Math.round(json.current_weather.temperature),
+    weatherCode: json.current_weather.weathercode,
+    windspeed: Math.round(json.current_weather.windspeed),
+  }
+}
+
+async function reverseGeocode(lat: number, lon: number): Promise<string | undefined> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`
+    )
+    const json = await res.json()
+    return json?.address?.city || json?.address?.town || json?.address?.village || json?.address?.county
+  } catch {
+    return undefined
   }
 }
 
 export default function WeatherWidget() {
   const [weather, setWeather] = useState<WeatherData | null>(null)
-  const [error, setError] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
 
-    async function loadWeather() {
-      // Try GPS first
+    async function load() {
+      // 1. Try GPS
+      let lat: number | null = null
+      let lon: number | null = null
+
       if (navigator.geolocation) {
         try {
-          const coords = await new Promise<GeolocationCoordinates>((resolve, reject) =>
-            navigator.geolocation.getCurrentPosition(
-              (pos) => resolve(pos.coords),
-              reject,
-              { timeout: 6000 }
-            )
+          const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 })
           )
-          if (cancelled) return
-          const data = await fetchWeatherForCoords(coords.latitude, coords.longitude)
-          if (!cancelled) { setWeather(data); setLoading(false) }
-          return
-        } catch {
-          // GPS denied or timed out — fall through to IP fallback
-        }
+          lat = pos.coords.latitude
+          lon = pos.coords.longitude
+        } catch { /* denied or timeout */ }
       }
 
-      // IP-based fallback (no key required)
+      // 2. IP fallback via ipwho.is (CORS-friendly, no key)
+      if (lat === null) {
+        try {
+          const res = await fetch('https://ipwho.is/')
+          const json = await res.json()
+          if (json?.latitude && json?.longitude) {
+            lat = json.latitude
+            lon = json.longitude
+          }
+        } catch { /* blocked */ }
+      }
+
+      // 3. Last resort: center of Germany
+      if (lat === null) {
+        lat = 51.1657
+        lon = 10.4515
+      }
+
+      const finalLat = lat
+      const finalLon = lon
+
       try {
-        const ipRes = await fetch('https://ipapi.co/json/')
-        const ip = await ipRes.json()
-        if (cancelled) return
-        if (ip?.latitude && ip?.longitude) {
-          const data = await fetchWeatherForCoords(ip.latitude, ip.longitude)
-          if (!cancelled) { setWeather(data); setLoading(false) }
-          return
+        const [data, city] = await Promise.all([
+          fetchWeather(finalLat, finalLon),
+          reverseGeocode(finalLat, finalLon),
+        ])
+        if (!cancelled) {
+          setWeather({ ...data, city })
+          setLoading(false)
         }
       } catch {
-        // IP lookup failed too
+        if (!cancelled) setLoading(false)
       }
-
-      if (!cancelled) { setError(true); setLoading(false) }
     }
 
-    loadWeather()
+    load()
     return () => { cancelled = true }
   }, [])
 
-  if (error || (!loading && !weather)) return null
-
   if (loading) {
     return (
-      <div className="flex items-center gap-2 rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+      <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
         <div className="h-8 w-8 animate-pulse rounded-full bg-gray-100 dark:bg-racing-800" />
-        <div className="h-4 w-24 animate-pulse rounded bg-gray-100 dark:bg-racing-800" />
+        <div className="flex flex-col gap-1.5">
+          <div className="h-5 w-16 animate-pulse rounded bg-gray-100 dark:bg-racing-800" />
+          <div className="h-3 w-24 animate-pulse rounded bg-gray-100 dark:bg-racing-800" />
+        </div>
       </div>
     )
   }
 
-  const Icon = weatherIcon(weather!.weatherCode)
-  const label = weatherLabel(weather!.weatherCode)
+  if (!weather) return null
+
+  const Icon = weatherIcon(weather.weatherCode)
+  const label = weatherLabel(weather.weatherCode)
 
   return (
     <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
       <Icon size={32} className="flex-shrink-0 text-sky-400" strokeWidth={1.5} />
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-1.5">
-          <span className="text-2xl font-bold">{weather!.temp}°C</span>
-          <span className="text-xs text-gray-400">{label}</span>
+          <span className="text-2xl font-bold">{weather.temp}°C</span>
+          <span className="text-sm text-gray-400">{label}</span>
         </div>
         <div className="mt-0.5 flex items-center gap-3 text-[11px] text-gray-400">
-          {weather!.city && (
+          {weather.city && (
             <span className="flex items-center gap-0.5 truncate">
               <MapPin size={10} />
-              {weather!.city}
+              {weather.city}
             </span>
           )}
           <span className="flex items-center gap-0.5">
             <Wind size={10} />
-            {weather!.windspeed} km/h
+            {weather.windspeed} km/h
           </span>
         </div>
       </div>
-      <Thermometer size={14} className="flex-shrink-0 text-gray-300" />
     </div>
   )
 }

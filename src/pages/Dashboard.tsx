@@ -138,7 +138,7 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {featureVisibility.weather && dashboardVisibility.weather && (
+      {(dashboardVisibility.weather ?? true) && (
         <div className="mb-4">
           <WeatherWidget />
         </div>
