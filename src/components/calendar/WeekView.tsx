@@ -48,72 +48,76 @@ export default function WeekView({ currentDate, tasks, events, entries = [], onT
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-7">
-      {days.map((day) => {
-        const iso = toISODate(day)
-        const dayTasks = tasksByDate.get(iso) ?? []
-        const dayEvents = eventsByDate.get(iso) ?? []
-        const dayEntries = entriesByDate.get(iso) ?? []
-        const today = isSameDay(day, new Date())
+    <div className="-mx-1 overflow-x-auto pb-2">
+      <div className="flex min-w-[560px] gap-2 px-1">
+        {days.map((day) => {
+          const iso = toISODate(day)
+          const dayTasks = tasksByDate.get(iso) ?? []
+          const dayEvents = eventsByDate.get(iso) ?? []
+          const dayEntries = entriesByDate.get(iso) ?? []
+          const today = isSameDay(day, new Date())
 
-        return (
-          <div
-            key={iso}
-            className={`rounded-xl border p-2 ${
-              today ? 'border-accent' : 'border-gray-100 dark:border-racing-800'
-            }`}
-          >
-            <div className="mb-2 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase text-gray-400">
-                  {format(day, 'EEE', { locale: dateLocale })}
-                </p>
-                <p className={`text-sm font-semibold ${today ? 'text-accent' : ''}`}>
-                  {format(day, 'd. MMM', { locale: dateLocale })}
-                </p>
+          return (
+            <div
+              key={iso}
+              className={`min-w-0 flex-1 rounded-xl border p-2 ${
+                today ? 'border-accent bg-accent/[0.03]' : 'border-gray-100 dark:border-racing-800'
+              }`}
+            >
+              <div className="mb-2 flex items-center justify-between gap-1">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                    {format(day, 'EEE', { locale: dateLocale })}
+                  </p>
+                  <p className={`text-xs font-semibold ${today ? 'text-accent' : ''}`}>
+                    {format(day, 'd. MMM', { locale: dateLocale })}
+                  </p>
+                </div>
+                <button
+                  onClick={() => onAddTask(day)}
+                  className="flex-shrink-0 rounded p-0.5 text-gray-300 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
+                >
+                  +
+                </button>
               </div>
-              <button
-                onClick={() => onAddTask(day)}
-                className="rounded p-1 text-gray-300 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
-              >
-                +
-              </button>
+              <div className="flex flex-col gap-1">
+                {dayEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    onClick={() => onEventClick(event)}
+                    className="cursor-pointer truncate rounded-md px-1.5 py-0.5 text-[11px] font-medium text-white"
+                    style={{ backgroundColor: event.color }}
+                  >
+                    {event.title}
+                  </div>
+                ))}
+                {dayEntries.map((entry) => (
+                  <div
+                    key={entry.id}
+                    onClick={() => onEntryClick?.(entry)}
+                    className="cursor-pointer truncate rounded-md px-1.5 py-0.5 text-[11px] font-medium text-white"
+                    style={{ backgroundColor: entry.color }}
+                  >
+                    {entryTypeIcon[entry.type]} {entry.title}
+                    {(entry.startTime || entry.endTime) && (
+                      <span className="ml-1 opacity-80">
+                        {entry.startTime ?? ''}
+                        {entry.endTime ? `–${entry.endTime}` : ''}
+                      </span>
+                    )}
+                  </div>
+                ))}
+                {dayTasks.map((task) => (
+                  <TaskItem key={task.id} task={task} onClick={() => onTaskClick(task)} showBoard={false} />
+                ))}
+                {dayEvents.length === 0 && dayEntries.length === 0 && dayTasks.length === 0 && (
+                  <p className="text-[11px] text-gray-300">{t('weekday.noTasks')}</p>
+                )}
+              </div>
             </div>
-            <div className="flex flex-col gap-1.5">
-              {dayEvents.map((event) => (
-                <div
-                  key={event.id}
-                  onClick={() => onEventClick(event)}
-                  className="cursor-pointer truncate rounded-lg px-2 py-1 text-xs font-medium text-white"
-                  style={{ backgroundColor: event.color }}
-                >
-                  {event.title}
-                </div>
-              ))}
-              {dayEntries.map((entry) => (
-                <div
-                  key={entry.id}
-                  onClick={() => onEntryClick?.(entry)}
-                  className="cursor-pointer truncate rounded-lg px-2 py-1 text-xs font-medium text-white"
-                  style={{ backgroundColor: entry.color }}
-                >
-                  {entryTypeIcon[entry.type]} {entry.title}
-                  {(entry.startTime || entry.endTime) && (
-                    <span className="ml-1 opacity-80">
-                      {entry.startTime ?? ''}
-                      {entry.endTime ? `–${entry.endTime}` : ''}
-                    </span>
-                  )}
-                </div>
-              ))}
-              {dayTasks.map((task) => (
-                <TaskItem key={task.id} task={task} onClick={() => onTaskClick(task)} showBoard={false} />
-              ))}
-              {dayTasks.length === 0 && <p className="text-xs text-gray-300">{t('weekday.noTasks')}</p>}
-            </div>
-          </div>
-        )
-      })}
+          )
+        })}
+      </div>
     </div>
   )
 }
