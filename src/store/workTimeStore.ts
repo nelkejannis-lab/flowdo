@@ -28,11 +28,6 @@ interface WorkTimeEntryRow {
   end_time: string | null
 }
 
-export interface CompensationDay {
-  date: string
-  note: string
-}
-
 interface WorkTimeState {
   settings: WorkTimeSettings
   entries: Record<string, WorkDayEntry>
@@ -40,7 +35,7 @@ interface WorkTimeState {
   runningStartedAt?: string
   runningDate?: string
   settledWeekendDays: number
-  compensationDays: CompensationDay[]
+  compensationDaysCount: number
   fetchAll: () => Promise<void>
   clockIn: () => void
   clockOut: () => void
@@ -50,8 +45,8 @@ interface WorkTimeState {
   updateSettings: (updates: Partial<WorkTimeSettings>) => void
   incrementSettledWeekendDays: () => void
   decrementSettledWeekendDays: () => void
-  addCompensationDay: (date: string, note: string) => void
-  removeCompensationDay: (date: string) => void
+  incrementCompensationDays: () => void
+  decrementCompensationDays: () => void
 }
 
 function ensureEntry(
@@ -115,7 +110,7 @@ export const useWorkTimeStore = create<WorkTimeState>()(
       runningStartedAt: undefined,
       runningDate: undefined,
       settledWeekendDays: 0,
-      compensationDays: [],
+      compensationDaysCount: 0,
 
       fetchAll: async () => {
         if (!isSupabaseConfigured) return
@@ -252,15 +247,8 @@ export const useWorkTimeStore = create<WorkTimeState>()(
         void syncSettings(get().settings, settledWeekendDays)
       },
 
-      addCompensationDay: (date, note) => {
-        const existing = get().compensationDays
-        if (existing.some((d) => d.date === date)) return
-        set({ compensationDays: [...existing, { date, note }].sort((a, b) => a.date.localeCompare(b.date)) })
-      },
-
-      removeCompensationDay: (date) => {
-        set({ compensationDays: get().compensationDays.filter((d) => d.date !== date) })
-      },
+      incrementCompensationDays: () => set((s) => ({ compensationDaysCount: s.compensationDaysCount + 1 })),
+      decrementCompensationDays: () => set((s) => ({ compensationDaysCount: Math.max(0, s.compensationDaysCount - 1) })),
     }),
     { name: 'flowdo-worktime' }
   )

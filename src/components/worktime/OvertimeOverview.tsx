@@ -12,7 +12,9 @@ export default function OvertimeOverview() {
   const settledWeekendDays = useWorkTimeStore((s) => s.settledWeekendDays)
   const incrementSettledWeekendDays = useWorkTimeStore((s) => s.incrementSettledWeekendDays)
   const decrementSettledWeekendDays = useWorkTimeStore((s) => s.decrementSettledWeekendDays)
-  const compensationDays = useWorkTimeStore((s) => s.compensationDays)
+  const compensationDaysCount = useWorkTimeStore((s) => s.compensationDaysCount)
+  const incrementCompensationDays = useWorkTimeStore((s) => s.incrementCompensationDays)
+  const decrementCompensationDays = useWorkTimeStore((s) => s.decrementCompensationDays)
   const isRunning = useWorkTimeStore((s) => s.isRunning)
   const runningStartedAt = useWorkTimeStore((s) => s.runningStartedAt)
   const runningDate = useWorkTimeStore((s) => s.runningDate)
@@ -38,16 +40,15 @@ export default function OvertimeOverview() {
 
   const { totalDiffMinutes, totalDiffDays, weekendDaysWorked } = computeOverview(liveEntries, settings)
 
-  // Each compensation day reduces overtime by one daily target
   const dailyTarget = dailyTargetMinutes(settings)
-  const compensationMinutes = compensationDays.length * dailyTarget
+  const compensationMinutes = compensationDaysCount * dailyTarget
   const adjustedDiffMinutes = totalDiffMinutes - compensationMinutes
   const adjustedDiffDays = dailyTarget > 0 ? adjustedDiffMinutes / dailyTarget : 0
   const positive = adjustedDiffMinutes >= 0
   const openWeekendDays = weekendDaysWorked - settledWeekendDays
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
         <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('overview.totalOvertime')}</p>
         <p className={`mt-1 text-3xl font-bold ${positive ? 'text-emerald-500' : 'text-red-500'}`}>
@@ -55,10 +56,10 @@ export default function OvertimeOverview() {
           {formatHM(adjustedDiffMinutes)}
           {isRunning && <span className="ml-1 text-base animate-pulse">●</span>}
         </p>
-        {compensationDays.length > 0 && (
+        {compensationDaysCount > 0 && (
           <p className="mt-1 text-xs text-gray-400">
-            inkl. {compensationDays.length} Ausgleichstag{compensationDays.length !== 1 ? 'e' : ''}
-            {' ('}−{formatHM(compensationMinutes)}{')'}
+            inkl. {compensationDaysCount} Ausgleichstag{compensationDaysCount !== 1 ? 'e' : ''}{' '}
+            (−{formatHM(compensationMinutes)})
           </p>
         )}
       </div>
@@ -96,6 +97,28 @@ export default function OvertimeOverview() {
         <p className="mt-1 text-center text-xs text-gray-400">
           {t('overview.earnedAndTaken', { earned: weekendDaysWorked, taken: settledWeekendDays })}
         </p>
+      </div>
+      <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+        <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Ausgleichstage</p>
+        <div className="mt-1 flex items-center gap-3">
+          <button
+            onClick={decrementCompensationDays}
+            disabled={compensationDaysCount <= 0}
+            className="rounded-full border border-gray-200 p-1 text-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-30 dark:border-racing-700 dark:hover:bg-racing-800"
+          >
+            <Minus size={16} />
+          </button>
+          <div className="flex-1 text-center">
+            <p className="text-3xl font-bold">{compensationDaysCount}</p>
+          </div>
+          <button
+            onClick={incrementCompensationDays}
+            className="rounded-full border border-gray-200 p-1 text-gray-400 hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800"
+          >
+            <Plus size={16} />
+          </button>
+        </div>
+        <p className="mt-1 text-center text-xs text-gray-400">genommene Ausgleichstage</p>
       </div>
     </div>
   )
