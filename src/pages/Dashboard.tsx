@@ -11,7 +11,7 @@ import { isSupabaseConfigured } from '../lib/supabase'
 import { useWorkTimeStore } from '../store/workTimeStore'
 import { useEventsStore } from '../store/eventsStore'
 import { useCalendarEntriesStore } from '../store/calendarEntriesStore'
-import { entryTypeIcon } from '../utils/calendarEntry'
+import CalendarEntriesBlock from '../components/calendar/CalendarEntriesBlock'
 import TaskList from '../components/tasks/TaskList'
 import TaskFormModal from '../components/tasks/TaskFormModal'
 import BoardCard from '../components/boards/BoardCard'
@@ -125,42 +125,19 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {todayEntries.length > 0 && (
+      {(todayEntries.length > 0 || allTasks.some((tk) => !tk.completed && (isDueToday(tk.dueDate) || isOverdue(tk.dueDate)))) && (
         <div className="mb-6">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-lg font-semibold">{t('sections.todayCalendar')}</h2>
-            <Link to="/calendar" className="text-sm font-medium text-accent hover:underline">
-              {t('calendar')}
+            <Link to="/tasks/today" className="text-sm font-medium text-accent hover:underline">
+              {t('showAll')}
             </Link>
           </div>
-          <div className="flex flex-col gap-2">
-            {todayEntries.map((entry) => (
-              <div
-                key={entry.id}
-                className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 dark:border-racing-800 dark:bg-racing-900"
-              >
-                <span
-                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-base text-white"
-                  style={{ backgroundColor: entry.color }}
-                >
-                  {entryTypeIcon[entry.type]}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{entry.title}</p>
-                  {(entry.startTime || entry.endTime) && (
-                    <p className="text-xs text-gray-400">
-                      {entry.startTime ?? ''}{entry.endTime ? ` – ${entry.endTime}` : ''}
-                    </p>
-                  )}
-                </div>
-                {entry.endDate && entry.endDate > today && (
-                  <span className="flex-shrink-0 text-xs font-medium text-accent">
-                    {t('eventStatus.ongoing')}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
+          <CalendarEntriesBlock entries={todayEntries} label="Termine heute" today={today} />
+          <TaskList
+            tasks={allTasks.filter((tk) => !tk.completed && (isDueToday(tk.dueDate) || isOverdue(tk.dueDate)))}
+            emptyMessage=""
+          />
         </div>
       )}
 

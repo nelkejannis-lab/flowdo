@@ -6,6 +6,8 @@ import { useTasksStore } from '../store/tasksStore'
 import { useTaskSharesStore } from '../store/taskSharesStore'
 import { useProjectTasksStore } from '../store/projectTasksStore'
 import { useBoardsStore } from '../store/boardsStore'
+import { useCalendarEntriesStore } from '../store/calendarEntriesStore'
+import CalendarEntriesBlock from '../components/calendar/CalendarEntriesBlock'
 import { useBoardInvitesStore } from '../store/boardInvitesStore'
 import { useTeamInvitesStore } from '../store/teamInvitesStore'
 import { Users } from 'lucide-react'
@@ -49,6 +51,8 @@ export default function TasksPage() {
   const fetchNotifications = useNotificationsStore((s) => s.fetch)
   const markRead = useNotificationsStore((s) => s.markRead)
   const markAllRead = useNotificationsStore((s) => s.markAllRead)
+  const calendarEntries = useCalendarEntriesStore((s) => s.entries)
+  const fetchCalendarEntries = useCalendarEntriesStore((s) => s.fetchEntries)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -65,8 +69,9 @@ export default function TasksPage() {
       fetchBoards()
       fetchMyProjectTasks()
       fetchTasks()
+      fetchCalendarEntries()
     }
-  }, [fetchBoards, fetchMyProjectTasks, fetchTasks])
+  }, [fetchBoards, fetchMyProjectTasks, fetchTasks, fetchCalendarEntries])
 
   const allTasks = [...tasks, ...myProjectTasks]
 
@@ -97,6 +102,32 @@ export default function TasksPage() {
     filtered = allTasks.filter((t) => !t.completed && !t.someday)
     groupByDate = true
   }
+
+  const today = todayISO()
+
+  // ISO date of Sunday this week
+  const weekEndDate = (() => {
+    const d = new Date()
+    const day = d.getDay() // 0=Sun
+    const diff = day === 0 ? 0 : 7 - day
+    const end = new Date(d)
+    end.setDate(d.getDate() + diff)
+    return end.toISOString().slice(0, 10)
+  })()
+
+  const relevantEntries = (() => {
+    if (smartList === 'today') {
+      return calendarEntries
+        .filter((e) => e.date <= today && (!e.endDate || e.endDate >= today))
+        .sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? ''))
+    }
+    if (smartList === 'week') {
+      return calendarEntries
+        .filter((e) => e.date <= weekEndDate && (!e.endDate ? e.date >= today : e.endDate >= today))
+        .sort((a, b) => a.date.localeCompare(b.date) || (a.startTime ?? '').localeCompare(b.startTime ?? ''))
+    }
+    return []
+  })()
 
   return (
     <div>
@@ -336,12 +367,21 @@ export default function TasksPage() {
           )}
         </div>
       ) : (
-        <TaskList
-          tasks={filtered}
-          groupByDate={groupByDate}
-          flat={smartList === 'completed'}
-          emptyMessage={smartList === 'completed' ? t('page.noCompletedTasks') : t('list.noTasks')}
-        />
+        <>
+          {relevantEntries.length > 0 && (
+            <CalendarEntriesBlock
+              entries={relevantEntries}
+              label={smartList === 'today' ? 'Termine heute' : 'Termine diese Woche'}
+              today={today}
+            />
+          )}
+          <TaskList
+            tasks={filtered}
+            groupByDate={groupByDate}
+            flat={smartList === 'completed'}
+            emptyMessage={smartList === 'completed' ? t('page.noCompletedTasks') : t('list.noTasks')}
+          />
+        </>
       )}
 
       {showForm && (
