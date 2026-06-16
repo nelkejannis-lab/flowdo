@@ -10,7 +10,7 @@ import { todayISO } from '../utils/date'
 import CalendarEntryFormModal from '../components/calendar/CalendarEntryFormModal'
 import type { CalendarEntry } from '../types'
 
-type Filter = 'upcoming' | 'past' | 'all'
+type Filter = 'today' | 'week' | 'upcoming' | 'past' | 'all'
 
 export default function TerminePage() {
   const { t, i18n } = useTranslation('calendar')
@@ -27,9 +27,20 @@ export default function TerminePage() {
 
   const today = todayISO()
 
+  const weekEndDate = (() => {
+    const d = new Date()
+    const day = d.getDay()
+    const diff = day === 0 ? 0 : 7 - day
+    const end = new Date(d)
+    end.setDate(d.getDate() + diff)
+    return end.toISOString().slice(0, 10)
+  })()
+
   const filtered = entries
     .filter((e) => {
       const endDate = e.endDate ?? e.date
+      if (filter === 'today') return e.date <= today && endDate >= today
+      if (filter === 'week') return e.date <= weekEndDate && endDate >= today && !(e.date < today && endDate < today)
       if (filter === 'upcoming') return endDate >= today
       if (filter === 'past') return endDate < today
       return true
@@ -58,8 +69,8 @@ export default function TerminePage() {
       </div>
 
       <div className="mb-6 flex gap-1 border-b border-gray-100 dark:border-racing-800">
-        {(['upcoming', 'past', 'all'] as Filter[]).map((f) => {
-          const labels = { upcoming: 'Anstehend', past: 'Vergangen', all: 'Alle' }
+        {(['today', 'week', 'upcoming', 'past', 'all'] as Filter[]).map((f) => {
+          const labels: Record<Filter, string> = { today: 'Heute', week: 'Diese Woche', upcoming: 'Anstehend', past: 'Vergangen', all: 'Alle' }
           return (
             <button
               key={f}
