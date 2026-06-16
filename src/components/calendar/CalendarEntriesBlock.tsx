@@ -13,14 +13,16 @@ export default function CalendarEntriesBlock({ entries, label, today }: Props) {
 
   return (
     <div className="mb-4">
-      <div className="mb-2 flex items-center justify-between">
-        <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
-          🗓️ {label}
-        </h3>
-        <Link to="/calendar" className="text-xs font-medium text-accent hover:underline">
-          Kalender
-        </Link>
-      </div>
+      {label && (
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
+            🗓️ {label}
+          </h3>
+          <Link to="/calendar" className="text-xs font-medium text-accent hover:underline">
+            Kalender
+          </Link>
+        </div>
+      )}
       <div className="flex flex-col gap-1.5">
         {entries.map((entry) => (
           <div

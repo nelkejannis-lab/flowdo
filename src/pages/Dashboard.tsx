@@ -38,6 +38,8 @@ export default function Dashboard() {
   const calendarEntries = useCalendarEntriesStore((s) => s.entries)
   const fetchCalendarEntries = useCalendarEntriesStore((s) => s.fetchEntries)
   const [showForm, setShowForm] = useState(false)
+  const [showEntries, setShowEntries] = useState(true)
+  const [showWeekEntries, setShowWeekEntries] = useState(true)
 
   useEffect(() => {
     fetchBoards()
@@ -69,6 +71,19 @@ export default function Dashboard() {
     .slice(0, 3)
 
   const today = todayISO()
+
+  const weekEndDate = (() => {
+    const d = new Date()
+    const day = d.getDay()
+    const diff = day === 0 ? 0 : 7 - day
+    const end = new Date(d)
+    end.setDate(d.getDate() + diff)
+    return end.toISOString().slice(0, 10)
+  })()
+
+  const weekEntries = calendarEntries
+    .filter((e) => e.date > today && e.date <= weekEndDate && (!e.endDate || e.endDate >= today))
+    .sort((a, b) => a.date.localeCompare(b.date) || (a.startTime ?? '').localeCompare(b.startTime ?? ''))
 
   const todayEntries = calendarEntries.filter(
     (e) => e.date <= today && (!e.endDate || e.endDate >= today)
@@ -129,11 +144,27 @@ export default function Dashboard() {
         <div className="mb-6">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-lg font-semibold">{t('sections.todayCalendar')}</h2>
-            <Link to="/tasks/today" className="text-sm font-medium text-accent hover:underline">
-              {t('showAll')}
-            </Link>
+            <div className="flex items-center gap-3">
+              {todayEntries.length > 0 && (
+                <label className="flex cursor-pointer items-center gap-1.5 text-xs text-gray-400">
+                  <span>Termine</span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={showEntries}
+                    onClick={() => setShowEntries((v) => !v)}
+                    className={`relative h-5 w-9 flex-shrink-0 rounded-full transition-colors ${showEntries ? 'bg-accent' : 'bg-gray-200 dark:bg-racing-700'}`}
+                  >
+                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${showEntries ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                  </button>
+                </label>
+              )}
+              <Link to="/tasks/today" className="text-sm font-medium text-accent hover:underline">
+                {t('showAll')}
+              </Link>
+            </div>
           </div>
-          <CalendarEntriesBlock entries={todayEntries} label="Termine heute" today={today} />
+          {showEntries && <CalendarEntriesBlock entries={todayEntries} label="Termine heute" today={today} />}
           <TaskList
             tasks={allTasks.filter((tk) => !tk.completed && (isDueToday(tk.dueDate) || isOverdue(tk.dueDate)))}
             emptyMessage=""
@@ -145,10 +176,27 @@ export default function Dashboard() {
         <div>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-lg font-semibold">{t('sections.dueThisWeek')}</h2>
-            <Link to="/tasks/week" className="text-sm font-medium text-accent hover:underline">
-              {t('showAll')}
-            </Link>
+            <div className="flex items-center gap-3">
+              {weekEntries.length > 0 && (
+                <label className="flex cursor-pointer items-center gap-1.5 text-xs text-gray-400">
+                  <span>Termine</span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={showWeekEntries}
+                    onClick={() => setShowWeekEntries((v) => !v)}
+                    className={`relative h-5 w-9 flex-shrink-0 rounded-full transition-colors ${showWeekEntries ? 'bg-accent' : 'bg-gray-200 dark:bg-racing-700'}`}
+                  >
+                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${showWeekEntries ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                  </button>
+                </label>
+              )}
+              <Link to="/tasks/week" className="text-sm font-medium text-accent hover:underline">
+                {t('showAll')}
+              </Link>
+            </div>
           </div>
+          {showWeekEntries && <CalendarEntriesBlock entries={weekEntries} label="Termine diese Woche" today={today} />}
           <TaskList tasks={weekTasks} groupByDate emptyMessage={t('noTasksThisWeek')} />
         </div>
 

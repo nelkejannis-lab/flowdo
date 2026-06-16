@@ -53,6 +53,7 @@ export default function TasksPage() {
   const markAllRead = useNotificationsStore((s) => s.markAllRead)
   const calendarEntries = useCalendarEntriesStore((s) => s.entries)
   const fetchCalendarEntries = useCalendarEntriesStore((s) => s.fetchEntries)
+  const [showEntries, setShowEntries] = useState(true)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -369,11 +370,23 @@ export default function TasksPage() {
       ) : (
         <>
           {relevantEntries.length > 0 && (
-            <CalendarEntriesBlock
-              entries={relevantEntries}
-              label={smartList === 'today' ? 'Termine heute' : 'Termine diese Woche'}
-              today={today}
-            />
+            <div className="mb-4 flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                🗓️ {smartList === 'today' ? 'Termine heute' : 'Termine diese Woche'}
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={showEntries}
+                onClick={() => setShowEntries((v) => !v)}
+                className={`relative h-5 w-9 flex-shrink-0 rounded-full transition-colors ${showEntries ? 'bg-accent' : 'bg-gray-200 dark:bg-racing-700'}`}
+              >
+                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${showEntries ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              </button>
+            </div>
+          )}
+          {showEntries && relevantEntries.length > 0 && (
+            <CalendarEntriesBlock entries={relevantEntries} label="" today={today} />
           )}
           <TaskList
             tasks={filtered}
