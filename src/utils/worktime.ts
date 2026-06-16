@@ -78,10 +78,11 @@ export function computeOverview(
     if (isWeekend(date)) {
       if (net >= WEEKEND_COMP_DAY_THRESHOLD_MINUTES) {
         weekendDaysWorked++
-        totalDiffMinutes += net - WEEKEND_COMP_DAY_THRESHOLD_MINUTES
-      } else {
-        totalDiffMinutes += net
+        // only hours above daily target count as overtime
+        const dailyTgt = dailyTargetMinutes(settings)
+        totalDiffMinutes += Math.max(0, net - dailyTgt)
       }
+      // below threshold: weekend hours neither overtime nor comp day
     } else {
       totalDiffMinutes += net - target
     }

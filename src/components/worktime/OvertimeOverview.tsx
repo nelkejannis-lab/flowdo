@@ -38,8 +38,7 @@ export default function OvertimeOverview() {
   const { totalDiffMinutes, weekendDaysWorked } = computeOverview(liveEntries, settings)
 
   const dailyTarget = dailyTargetMinutes(settings)
-  // Deduct taken comp days from overtime
-  const adjustedDiffMinutes = totalDiffMinutes - takenCompDays * dailyTarget
+  const adjustedDiffMinutes = totalDiffMinutes
   const adjustedDiffDays = dailyTarget > 0 ? adjustedDiffMinutes / dailyTarget : 0
   const positive = adjustedDiffMinutes >= 0
 
@@ -55,9 +54,6 @@ export default function OvertimeOverview() {
           {formatHM(adjustedDiffMinutes)}
           {isRunning && <span className="ml-1 text-base animate-pulse">●</span>}
         </p>
-        {takenCompDays > 0 && (
-          <p className="mt-1 text-xs text-gray-400">inkl. {takenCompDays} Ausgleichstag{takenCompDays !== 1 ? 'e' : ''} (−{formatHM(takenCompDays * dailyTarget)})</p>
-        )}
       </div>
 
       <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
