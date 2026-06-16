@@ -94,9 +94,32 @@ export default function LoginPage() {
             placeholder={t('fields.usernamePlaceholder')} className={inp} />
           <input value={dname} onChange={(e) => setDname(e.target.value)}
             placeholder={t('fields.displayNamePlaceholder')} className={inp} />
-          <input required type="date" value={bday} onChange={(e) => setBday(e.target.value)}
-            max={new Date().toISOString().split('T')[0]}
-            className={inp + ' [color-scheme:dark]'} />
+          {/* Birthday — custom selects to avoid ugly native date picker */}
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label: 'Day', name: 'day', options: Array.from({length:31},(_,i)=>String(i+1).padStart(2,'0')) },
+              { label: 'Month', name: 'month', options: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m,i)=>({ v: String(i+1).padStart(2,'0'), l: m })) },
+              { label: 'Year', name: 'year', options: Array.from({length:80},(_,i)=>String(new Date().getFullYear()-i)) },
+            ].map((sel) => (
+              <select key={sel.name}
+                required
+                value={bday ? (sel.name==='day'?bday.split('-')[2] : sel.name==='month'?bday.split('-')[1] : bday.split('-')[0]) : ''}
+                onChange={(e) => {
+                  const parts = (bday || '--').split('-')
+                  const [y,m,d] = [parts[0]||'',parts[1]||'',parts[2]||'']
+                  const next = sel.name==='year' ? `${e.target.value}-${m}-${d}` : sel.name==='month' ? `${y}-${e.target.value}-${d}` : `${y}-${m}-${e.target.value}`
+                  setBday(next)
+                }}
+                className="w-full rounded-xl border border-white/[.1] bg-white/[.06] px-2.5 py-2.5 text-[13px] text-white appearance-none focus:border-violet-400/60 focus:bg-white/[.1] focus:outline-none [color-scheme:dark]"
+              >
+                <option value="" disabled className="bg-[#1a1730] text-white/40">{sel.label}</option>
+                {sel.options.map((o) => typeof o === 'string'
+                  ? <option key={o} value={o} className="bg-[#1a1730]">{o}</option>
+                  : <option key={o.v} value={o.v} className="bg-[#1a1730]">{o.l}</option>
+                )}
+              </select>
+            ))}
+          </div>
         </>)}
 
         <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)}
