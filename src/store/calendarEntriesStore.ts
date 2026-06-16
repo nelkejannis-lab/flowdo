@@ -28,7 +28,10 @@ export interface NewCalendarEntryInput {
   endTime?: string
   color: string
   invitedUserIds: string[]
+  recurrence?: CalendarEntry['recurrence']
 }
+
+const pendingEntryDeletes = new Map<string, { entry: CalendarEntry; timer: ReturnType<typeof setTimeout> }>()
 
 interface CalendarEntriesState {
   entries: CalendarEntry[]
@@ -38,13 +41,14 @@ interface CalendarEntriesState {
   addEntry: (input: NewCalendarEntryInput) => Promise<string | null>
   updateEntry: (id: string, input: NewCalendarEntryInput) => Promise<string | null>
   deleteEntry: (id: string) => Promise<void>
+  undoDelete: (id: string) => void
 }
 
 function single<T>(value: T | T[]): T {
   return Array.isArray(value) ? value[0] : value
 }
 
-function toEntry(row: CalendarEntryRow): CalendarEntry {
+function toEntry(row: CalendarEntryRow & { recurrence?: string | null }): CalendarEntry {
   return {
     id: row.id,
     ownerId: row.owner_id,
@@ -59,6 +63,7 @@ function toEntry(row: CalendarEntryRow): CalendarEntry {
     color: row.color,
     invitees: (row.calendar_entry_invites ?? []).map((i) => single(i.user)).filter(Boolean),
     createdAt: row.created_at,
+    recurrence: (row.recurrence ?? undefined) as CalendarEntry['recurrence'],
   }
 }
 
@@ -109,6 +114,7 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()((set, get)
         start_time: input.startTime ?? null,
         end_time: input.endTime ?? null,
         color: input.color,
+        recurrence: input.recurrence ?? null,
       })
       .select('id')
       .single()
@@ -135,6 +141,7 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()((set, get)
         start_time: input.startTime ?? null,
         end_time: input.endTime ?? null,
         color: input.color,
+        recurrence: input.recurrence ?? null,
       })
       .eq('id', id)
 
@@ -146,8 +153,22 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()((set, get)
   },
 
   deleteEntry: async (id) => {
-    await supabase.from('calendar_entry_invites').delete().eq('entry_id', id)
-    await supabase.from('calendar_entries').delete().eq('id', id)
+    const entry = get().entries.find((e) => e.id === id)
+    if (!entry) return
     set((state) => ({ entries: state.entries.filter((e) => e.id !== id) }))
+    const timer = setTimeout(async () => {
+      pendingEntryDeletes.delete(id)
+      await supabase.from('calendar_entry_invites').delete().eq('entry_id', id)
+      await supabase.from('calendar_entries').delete().eq('id', id)
+    }, 5000)
+    pendingEntryDeletes.set(id, { entry, timer })
+  },
+
+  undoDelete: (id) => {
+    const item = pendingEntryDeletes.get(id)
+    if (!item) return
+    clearTimeout(item.timer)
+    pendingEntryDeletes.delete(id)
+    set((s) => ({ entries: [item.entry, ...s.entries] }))
   },
 }))

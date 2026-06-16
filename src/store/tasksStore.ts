@@ -108,12 +108,16 @@ function parseISODate(iso: string): Date {
   return new Date(y, m - 1, d)
 }
 
+const pendingTaskDeletes = new Map<string, { task: Task; timer: ReturnType<typeof setTimeout> }>()
+
 interface TasksState {
   tasks: Task[]
   fetchAll: () => Promise<void>
   addTask: (input: NewTaskInput) => Task
   updateTask: (id: string, updates: Partial<Task>) => void
   deleteTask: (id: string) => void
+  undoDelete: (id: string) => void
+  reorderTasks: (ids: string[]) => void
   toggleTaskCompleted: (id: string) => void
   addSubtask: (taskId: string, title: string) => void
   toggleSubtask: (taskId: string, subtaskId: string) => void
@@ -195,9 +199,31 @@ export const useTasksStore = create<TasksState>()(
       },
 
       deleteTask: (id) => {
+        const task = get().tasks.find((t) => t.id === id)
+        if (!task) return
         set((state) => ({ tasks: state.tasks.filter((t) => t.id !== id) }))
-        void getUserId().then((userId) => {
+        const timer = setTimeout(async () => {
+          pendingTaskDeletes.delete(id)
+          const userId = await getUserId()
           if (userId) void supabase.from('tasks').delete().eq('id', id)
+        }, 5000)
+        pendingTaskDeletes.set(id, { task, timer })
+      },
+
+      undoDelete: (id) => {
+        const item = pendingTaskDeletes.get(id)
+        if (!item) return
+        clearTimeout(item.timer)
+        pendingTaskDeletes.delete(id)
+        set((s) => ({ tasks: [item.task, ...s.tasks] }))
+      },
+
+      reorderTasks: (ids) => {
+        set((s) => {
+          const map = new Map(s.tasks.map((t) => [t.id, t]))
+          const reordered = ids.map((id) => map.get(id)).filter(Boolean) as Task[]
+          const rest = s.tasks.filter((t) => !ids.includes(t.id))
+          return { tasks: [...reordered, ...rest] }
         })
       },
 

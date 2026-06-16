@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import Modal from '../layout/Modal'
 import AttachmentsField from '../shared/AttachmentsField'
 import { useTasksStore } from '../../store/tasksStore'
+import { useToastStore } from '../../store/toastStore'
 import { useFriendsStore } from '../../store/friendsStore'
 import { useTaskSharesStore } from '../../store/taskSharesStore'
 import { useCalendarEntriesStore } from '../../store/calendarEntriesStore'
@@ -167,7 +168,13 @@ export default function TaskFormModal({
           }
         }
       }
-      deleteTask(task.id)
+      const taskId = task.id
+      deleteTask(taskId)
+      useToastStore.getState().show({
+        message: 'Aufgabe gelöscht',
+        action: { label: 'Rückgängig', onClick: () => useTasksStore.getState().undoDelete(taskId) },
+        duration: 5000,
+      })
     } else if (task) {
       updateTask(task.id, {
         title: title.trim(),
@@ -244,7 +251,13 @@ export default function TaskFormModal({
 
   function handleDelete() {
     if (task) {
-      deleteTask(task.id)
+      const taskId = task.id
+      deleteTask(taskId)
+      useToastStore.getState().show({
+        message: 'Aufgabe gelöscht',
+        action: { label: 'Rückgängig', onClick: () => useTasksStore.getState().undoDelete(taskId) },
+        duration: 5000,
+      })
       onClose()
     }
   }

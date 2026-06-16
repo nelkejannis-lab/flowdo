@@ -195,4 +195,5 @@ export interface CalendarEntry {
   color: string
   invitees: CalendarEntryInvitee[]
   createdAt: string
+  recurrence?: 'daily' | 'weekly' | 'monthly' | 'yearly'
 }

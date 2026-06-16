@@ -1,12 +1,30 @@
 import { useMemo, useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, GripVertical } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { Task } from '../../types'
 import { dateGroupLabel, dateGroupOrder } from '../../utils/date'
 import { useBoardsStore } from '../../store/boardsStore'
+import { useTasksStore } from '../../store/tasksStore'
 import TaskItem from './TaskItem'
 import TaskFormModal from './TaskFormModal'
 import ProjectTaskFormModal from '../boards/ProjectTaskFormModal'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 interface TaskListProps {
   tasks: Task[]
@@ -26,12 +44,29 @@ const dateGroupLabelKeys: Record<string, string> = {
   'Ohne Datum': 'dateGroups.noDate',
 }
 
+function SortableTaskItem({ task, onClick }: { task: Task; onClick: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-1">
+      <div {...attributes} {...listeners} className="cursor-grab p-1 text-gray-300 hover:text-gray-500 dark:text-racing-600">
+        <GripVertical size={14} />
+      </div>
+      <div className="flex-1">
+        <TaskItem task={task} onClick={onClick} />
+      </div>
+    </div>
+  )
+}
+
 export default function TaskList({ tasks, groupByDate = false, emptyMessage, flat = false }: TaskListProps) {
   const { t } = useTranslation('tasks')
   const resolvedEmptyMessage = emptyMessage ?? t('list.noTasks')
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [showCompleted, setShowCompleted] = useState(false)
+  const [visibleCount, setVisibleCount] = useState(20)
   const boards = useBoardsStore((s) => s.boards)
+  const reorderTasks = useTasksStore((s) => s.reorderTasks)
   const editingBoard = editingTask?.boardId ? boards.find((b) => b.id === editingTask.boardId) : undefined
 
   const activeTasks = useMemo(() => tasks.filter((t) => !t.completed), [tasks])
@@ -56,6 +91,22 @@ export default function TaskList({ tasks, groupByDate = false, emptyMessage, fla
     return ordered
   }, [activeTasks, groupByDate])
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const flatActive = activeTasks.map((t) => t.id)
+    const oldIndex = flatActive.indexOf(active.id as string)
+    const newIndex = flatActive.indexOf(over.id as string)
+    if (oldIndex === -1 || newIndex === -1) return
+    const newOrder = arrayMove(flatActive, oldIndex, newIndex)
+    reorderTasks(newOrder)
+  }
+
   if (tasks.length === 0) {
     return <p className="py-8 text-center text-sm text-gray-400">{resolvedEmptyMessage}</p>
   }
@@ -75,26 +126,47 @@ export default function TaskList({ tasks, groupByDate = false, emptyMessage, fla
     )
   }
 
+  const visibleActive = activeTasks.slice(0, visibleCount)
+
   return (
     <div className="flex flex-col gap-4">
       {activeTasks.length === 0 && completedTasks.length > 0 && (
         <p className="py-4 text-center text-sm text-gray-400">{t('list.allDone')}</p>
       )}
 
-      {Object.entries(groups).map(([label, items]) => (
-        <div key={label}>
-          {groupByDate && (
+      {groupByDate ? (
+        Object.entries(groups).map(([label, items]) => (
+          <div key={label}>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
               {dateGroupLabelKeys[label] ? t(dateGroupLabelKeys[label]) : label}
             </h3>
-          )}
-          <div className="flex flex-col gap-2">
-            {items.map((task) => (
-              <TaskItem key={task.id} task={task} onClick={() => setEditingTask(task)} />
-            ))}
+            <div className="flex flex-col gap-2">
+              {items.map((task) => (
+                <TaskItem key={task.id} task={task} onClick={() => setEditingTask(task)} />
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        ))
+      ) : (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={visibleActive.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+            <div className="flex flex-col gap-2">
+              {visibleActive.map((task) => (
+                <SortableTaskItem key={task.id} task={task} onClick={() => setEditingTask(task)} />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      )}
+
+      {!groupByDate && activeTasks.length > visibleCount && (
+        <button
+          onClick={() => setVisibleCount((c) => c + 20)}
+          className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-racing-200"
+        >
+          Mehr laden / Load more ({activeTasks.length - visibleCount} verbleibend)
+        </button>
+      )}
 
       {completedTasks.length > 0 && (
         <div>

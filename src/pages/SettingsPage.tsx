@@ -10,6 +10,7 @@ import { useSettingsStore, type FeatureKey } from '../store/settingsStore'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { useSearchParams } from 'react-router-dom'
 import { requestPermission, canNotify } from '../utils/notifications'
+import { SHORTCUTS } from '../hooks/useKeyboardShortcuts'
 
 const FEATURE_ICONS: Record<FeatureKey, React.ReactNode> = {
   calendar: <CalendarDays size={18} />,
@@ -72,7 +73,7 @@ export default function SettingsPage() {
   const [savingPassword, setSavingPassword] = useState(false)
 
   const [searchParams] = useSearchParams()
-  const [activeTab, setActiveTab] = useState<'profil' | 'kalender' | 'funktionen' | 'datenschutz'>(searchParams.get('tab') === 'kalender' ? 'kalender' : 'profil')
+  const [activeTab, setActiveTab] = useState<'profil' | 'kalender' | 'funktionen' | 'datenschutz' | 'tastenkuerzel'>(searchParams.get('tab') === 'kalender' ? 'kalender' : 'profil')
   const connections = useCalendarConnectionsStore((s) => s.connections)
   const fetchConnections = useCalendarConnectionsStore((s) => s.fetch)
   const disconnectCalendar = useCalendarConnectionsStore((s) => s.disconnect)
@@ -189,13 +190,13 @@ export default function SettingsPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 overflow-x-auto rounded-lg border border-gray-200 p-1 dark:border-racing-700 sm:w-fit">
-        {(['profil', 'kalender', 'funktionen', 'datenschutz'] as const).map((tab) => (
+        {(['profil', 'kalender', 'funktionen', 'datenschutz', 'tastenkuerzel'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`flex-shrink-0 whitespace-nowrap rounded-md px-4 py-1.5 text-sm font-medium capitalize ${activeTab === tab ? 'bg-accent text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'}`}
           >
-            {t(`tabs.${tab}`)}
+            {tab === 'tastenkuerzel' ? 'Tastenkürzel' : t(`tabs.${tab}`)}
           </button>
         ))}
       </div>
@@ -680,6 +681,27 @@ export default function SettingsPage() {
               {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
               {deleting ? t('privacy.deleting') : t('privacy.deleteButton')}
             </button>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'tastenkuerzel' && (
+        <div className="flex flex-col gap-4">
+          <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+            <h2 className="mb-4 text-sm font-semibold">Tastenkürzel / Keyboard Shortcuts</h2>
+            <div className="flex flex-col gap-3">
+              {SHORTCUTS.map((s) => (
+                <div key={s.key} className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm">{s.description}</p>
+                    <p className="text-xs text-gray-400">{s.scope}</p>
+                  </div>
+                  <kbd className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold dark:border-racing-700 dark:bg-racing-800">
+                    {s.key}
+                  </kbd>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}

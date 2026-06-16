@@ -4,6 +4,7 @@ import { CalendarClock, CalendarHeart, Plane, RefreshCw, Sparkles } from 'lucide
 import Modal from '../layout/Modal'
 import { useEventsStore, EVENT_COLORS, NAMED_COLORS } from '../../store/eventsStore'
 import { useCalendarEntriesStore } from '../../store/calendarEntriesStore'
+import { useToastStore } from '../../store/toastStore'
 import { useFriendsStore } from '../../store/friendsStore'
 import { useAuthStore } from '../../store/authStore'
 import { useSettingsStore } from '../../store/settingsStore'
@@ -82,6 +83,7 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
     return existing
   })
   const [recurrenceWeeks, setRecurrenceWeeks] = useState<RecurrenceWeeks>(0)
+  const [entryRecurrence, setEntryRecurrence] = useState<CalendarEntry['recurrence']>(entry?.recurrence)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -142,6 +144,7 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
       endTime: endTime || undefined,
       color,
       invitedUserIds,
+      recurrence: entryRecurrence,
     }
 
     if (entry) {
@@ -181,7 +184,13 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
       deleteEvent(event.id)
       onClose()
     } else if (entry) {
-      deleteEntry(entry.id)
+      const entryId = entry.id
+      void deleteEntry(entryId)
+      useToastStore.getState().show({
+        message: 'Termin gelöscht',
+        action: { label: 'Rückgängig', onClick: () => useCalendarEntriesStore.getState().undoDelete(entryId) },
+        duration: 5000,
+      })
       onClose()
     }
   }
@@ -418,6 +427,21 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
               />
             </div>
           )}
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-500">Wiederholung / Recurrence</label>
+          <select
+            value={entryRecurrence ?? ''}
+            onChange={(e) => setEntryRecurrence((e.target.value as CalendarEntry['recurrence']) || undefined)}
+            className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+          >
+            <option value="">Keine / None</option>
+            <option value="daily">Täglich / Daily</option>
+            <option value="weekly">Wöchentlich / Weekly</option>
+            <option value="monthly">Monatlich / Monthly</option>
+            <option value="yearly">Jährlich / Yearly</option>
+          </select>
         </div>
 
         {recurrenceWeeks > 0 && !editing && (

@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Layout from './components/layout/Layout'
 import Dashboard from './pages/Dashboard'
@@ -23,6 +23,9 @@ import { useSettingsStore } from './store/settingsStore'
 import { useAuthStore } from './store/authStore'
 import { useNotifications } from './hooks/useNotifications'
 import { isSupabaseConfigured } from './lib/supabase'
+import ErrorBoundary from './components/layout/ErrorBoundary'
+import TaskFormModal from './components/tasks/TaskFormModal'
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 
 export default function App() {
   const { t } = useTranslation('layout')
@@ -34,6 +37,9 @@ export default function App() {
   const loading = useAuthStore((s) => s.loading)
   const session = useAuthStore((s) => s.session)
   useNotifications()
+
+  const [showNewTask, setShowNewTask] = useState(false)
+  useKeyboardShortcuts({ onNewTask: () => setShowNewTask(true) })
 
   useEffect(() => {
     const root = document.documentElement
@@ -62,6 +68,9 @@ export default function App() {
   }
 
   return (
+    <>
+    {showNewTask && <TaskFormModal onClose={() => setShowNewTask(false)} />}
+    <ErrorBoundary>
     <Routes>
       <Route path="/datenschutz" element={<DatenschutzPage />} />
       <Route path="/impressum" element={<ImpressumPage />} />
@@ -84,5 +93,7 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
+    </ErrorBoundary>
+    </>
   )
 }
