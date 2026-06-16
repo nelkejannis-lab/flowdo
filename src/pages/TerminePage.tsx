@@ -13,7 +13,7 @@ import CalendarEntryFormModal from '../components/calendar/CalendarEntryFormModa
 import TaskList from '../components/tasks/TaskList'
 import type { CalendarEntry } from '../types'
 
-type Filter = 'today' | 'week' | 'upcoming' | 'past' | 'all'
+type Filter = 'upcoming' | 'past' | 'all'
 
 export default function TerminePage() {
   const { t, i18n } = useTranslation('calendar')
@@ -48,30 +48,21 @@ export default function TerminePage() {
   })()
 
   const allTasks = [...tasks, ...myProjectTasks]
-
-  const todayTasks = allTasks.filter(
-    (tk) => !tk.completed && (isDueToday(tk.dueDate) || isOverdue(tk.dueDate))
-  )
-
-  const weekTasks = allTasks.filter(
-    (tk) => !tk.completed && (isOverdue(tk.dueDate) || isDueToday(tk.dueDate) || isDueThisWeek(tk.dueDate))
-  )
+  const todayTasks = allTasks.filter((tk) => !tk.completed && (isDueToday(tk.dueDate) || isOverdue(tk.dueDate)))
+  const weekTasks = allTasks.filter((tk) => !tk.completed && (isOverdue(tk.dueDate) || isDueToday(tk.dueDate) || isDueThisWeek(tk.dueDate)))
 
   const filtered = entries
     .filter((e) => {
       const endDate = e.endDate ?? e.date
-      if (filter === 'today') return e.date <= today && endDate >= today
-      if (filter === 'week') return e.date <= weekEndDate && endDate >= today && !(e.date < today && endDate < today)
       if (filter === 'upcoming') return endDate >= today
       if (filter === 'past') return endDate < today
       return true
     })
     .sort((a, b) => a.date.localeCompare(b.date) || (a.startTime ?? '').localeCompare(b.startTime ?? ''))
 
-  // Group: today → this week → by month
-  const todaySection = filtered.filter((e) => e.date === today)
-  const weekSection = filtered.filter((e) => e.date !== today && e.date > today && e.date <= weekEndDate)
-  const restEntries = filtered.filter((e) => e.date > weekEndDate || (e.date < today && !(e.endDate && e.endDate >= today)))
+  const todayEntries = filtered.filter((e) => e.date === today)
+  const weekEntries = filtered.filter((e) => e.date !== today && e.date > today && e.date <= weekEndDate)
+  const restEntries = filtered.filter((e) => e.date > weekEndDate || e.date < today)
 
   const grouped = new Map<string, CalendarEntry[]>()
   for (const entry of restEntries) {
@@ -80,7 +71,7 @@ export default function TerminePage() {
     grouped.get(key)!.push(entry)
   }
 
-  const filters: Filter[] = ['today', 'week', 'upcoming', 'past', 'all']
+  const filters: Filter[] = ['upcoming', 'past', 'all']
 
   function renderEntry(entry: CalendarEntry) {
     const isToday = entry.date === today
@@ -124,6 +115,8 @@ export default function TerminePage() {
     )
   }
 
+  const isEmpty = filtered.length === 0 && todayTasks.length === 0
+
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
@@ -153,66 +146,51 @@ export default function TerminePage() {
         ))}
       </div>
 
-      {(filter === 'today' || filter === 'week') && (
-        <div className="mb-6 flex flex-col gap-6">
-          {/* Appointments section */}
-          {filtered.length > 0 && (
+      {isEmpty ? (
+        <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+          <CalendarDays size={40} className="mb-3 opacity-30" />
+          <p className="text-sm">{t('termine.empty')}</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-6">
+          {/* Heute */}
+          {(todayEntries.length > 0 || todayTasks.length > 0) && (
             <div>
-              <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                {t('termine.appointments')}
-              </h2>
-              <div className="flex flex-col gap-2">{filtered.map(renderEntry)}</div>
+              <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">{t('termine.filters.today')}</h2>
+              {todayEntries.length > 0 && (
+                <div className="mb-3 flex flex-col gap-2">{todayEntries.map(renderEntry)}</div>
+              )}
+              {todayTasks.length > 0 && <TaskList tasks={todayTasks} emptyMessage="" />}
             </div>
           )}
 
-          {/* Tasks section */}
-          <div>
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
-              {t('termine.tasks')}
-            </h2>
-            {(filter === 'today' ? todayTasks : weekTasks).length === 0 ? (
-              <p className="text-sm text-gray-400">{t('termine.noTasks')}</p>
-            ) : (
-              <TaskList
-                tasks={filter === 'today' ? todayTasks : weekTasks}
-                groupByDate={filter === 'week'}
-                emptyMessage=""
-              />
-            )}
-          </div>
-        </div>
-      )}
+          {/* Diese Woche */}
+          {(weekEntries.length > 0 || (filter === 'upcoming' || filter === 'all') && weekTasks.filter(tk => !isDueToday(tk.dueDate) && !isOverdue(tk.dueDate)).length > 0) && (
+            <div>
+              <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">{t('termine.filters.week')}</h2>
+              {weekEntries.length > 0 && (
+                <div className="mb-3 flex flex-col gap-2">{weekEntries.map(renderEntry)}</div>
+              )}
+              {(filter === 'upcoming' || filter === 'all') && (
+                <TaskList
+                  tasks={weekTasks.filter(tk => !isDueToday(tk.dueDate) && !isOverdue(tk.dueDate))}
+                  groupByDate
+                  emptyMessage=""
+                />
+              )}
+            </div>
+          )}
 
-      {filter !== 'today' && filter !== 'week' && (
-        filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-            <CalendarDays size={40} className="mb-3 opacity-30" />
-            <p className="text-sm">{t('termine.empty')}</p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-6">
-            {todaySection.length > 0 && (
-              <div>
-                <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">{t('termine.filters.today')}</h2>
-                <div className="flex flex-col gap-2">{todaySection.map(renderEntry)}</div>
-              </div>
-            )}
-            {weekSection.length > 0 && (
-              <div>
-                <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">{t('termine.filters.week')}</h2>
-                <div className="flex flex-col gap-2">{weekSection.map(renderEntry)}</div>
-              </div>
-            )}
-            {[...grouped.entries()].map(([month, monthEntries]) => (
-              <div key={month}>
-                <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                  {format(parseISO(month + '-01'), 'MMMM yyyy', { locale: dateLocale })}
-                </h2>
-                <div className="flex flex-col gap-2">{monthEntries.map(renderEntry)}</div>
-              </div>
-            ))}
-          </div>
-        )
+          {/* Monate */}
+          {[...grouped.entries()].map(([month, monthEntries]) => (
+            <div key={month}>
+              <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                {format(parseISO(month + '-01'), 'MMMM yyyy', { locale: dateLocale })}
+              </h2>
+              <div className="flex flex-col gap-2">{monthEntries.map(renderEntry)}</div>
+            </div>
+          ))}
+        </div>
       )}
 
       {showForm && (

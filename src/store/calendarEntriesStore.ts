@@ -146,6 +146,7 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()((set, get)
   },
 
   deleteEntry: async (id) => {
+    await supabase.from('calendar_entry_invites').delete().eq('entry_id', id)
     await supabase.from('calendar_entries').delete().eq('id', id)
     set((state) => ({ entries: state.entries.filter((e) => e.id !== id) }))
   },
