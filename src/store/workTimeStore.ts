@@ -1,6 +1,16 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { WorkDayEntry, WorkTimeSettings } from '../types'
+import type { WorkDayEntry, WorkProfile, WorkTimeSettings } from '../types'
+import { createId } from '../utils/id'
+
+const GBM_PROFILE: WorkProfile = {
+  id: 'gbm',
+  name: 'GBM – Group Brand & Marketing',
+  weeklyHours: 38.5,
+  workDaysPerWeek: 5,
+  defaultBreakMinutes: 45,
+  fridayHours: 7.25,
+}
 import { todayISO } from '../utils/date'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { durationBetween } from '../utils/worktime'
@@ -40,6 +50,8 @@ interface WorkTimeState {
   manualCompDays: number
   takenCompDays: number
   compensationDaysCount: number
+  workProfiles: WorkProfile[]
+  activeProfileId?: string
   fetchAll: () => Promise<void>
   clockIn: () => void
   clockOut: () => void
@@ -47,6 +59,9 @@ interface WorkTimeState {
   setBreakMinutes: (date: string, minutes: number) => void
   setDayTimes: (date: string, startTime: string, endTime: string) => void
   updateSettings: (updates: Partial<WorkTimeSettings>) => void
+  addWorkProfile: (profile: Omit<WorkProfile, 'id'>) => void
+  deleteWorkProfile: (id: string) => void
+  applyWorkProfile: (id: string) => void
   incrementSettledWeekendDays: () => void
   decrementSettledWeekendDays: () => void
   incrementManualCompDays: () => void
@@ -120,6 +135,8 @@ export const useWorkTimeStore = create<WorkTimeState>()(
       manualCompDays: 0,
       takenCompDays: 0,
       compensationDaysCount: 0,
+      workProfiles: [GBM_PROFILE],
+      activeProfileId: undefined,
 
       fetchAll: async () => {
         if (!isSupabaseConfigured) return
@@ -257,6 +274,24 @@ export const useWorkTimeStore = create<WorkTimeState>()(
         void syncSettings(get().settings, settledWeekendDays)
       },
 
+      addWorkProfile: (profile) => {
+        const newProfile: WorkProfile = { ...profile, id: createId() }
+        set((s) => ({ workProfiles: [...s.workProfiles, newProfile] }))
+      },
+      deleteWorkProfile: (id) => {
+        set((s) => ({
+          workProfiles: s.workProfiles.filter((p) => p.id !== id),
+          activeProfileId: s.activeProfileId === id ? undefined : s.activeProfileId,
+        }))
+      },
+      applyWorkProfile: (id) => {
+        const profile = get().workProfiles.find((p) => p.id === id)
+        if (!profile) return
+        const { name: _name, id: _id, ...settingsFromProfile } = profile
+        const settings = { ...get().settings, ...settingsFromProfile }
+        set({ activeProfileId: id, settings })
+        void syncSettings(settings, get().settledWeekendDays)
+      },
       incrementManualCompDays: () => set((s) => ({ manualCompDays: s.manualCompDays + 1 })),
       takeCompDay: () => set((s) => ({ takenCompDays: s.takenCompDays + 1 })),
       incrementCompensationDays: () => set((s) => ({ compensationDaysCount: s.compensationDaysCount + 1 })),

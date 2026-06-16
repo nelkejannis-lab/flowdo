@@ -163,6 +163,15 @@ export interface WorkTimeSettings {
   fridayHours?: number // separate target for Fridays (e.g. 7.25 for 7:15h)
 }
 
+export interface WorkProfile {
+  id: string
+  name: string
+  weeklyHours: number
+  workDaysPerWeek: number
+  defaultBreakMinutes: number
+  fridayHours?: number
+}
+
 export interface CalendarEvent {
   id: string
   title: string
