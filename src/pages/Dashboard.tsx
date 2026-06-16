@@ -61,8 +61,22 @@ export default function Dashboard() {
 
   const allTasks = [...tasks, ...myProjectTasks]
 
-  const weekTasks = allTasks.filter(
-    (t) => !t.completed && (isOverdue(t.dueDate) || isDueToday(t.dueDate) || isDueThisWeek(t.dueDate))
+  function eisenhowerRank(t: { urgent: boolean; important: boolean; priority: string }): number {
+    if (t.urgent && t.important) return 0
+    if (!t.urgent && t.important) return 1
+    if (t.urgent && !t.important) return 2
+    return 3
+  }
+  const priorityRank: Record<string, number> = { high: 0, medium: 1, low: 2 }
+
+  function sortByEisenhower<T extends { urgent: boolean; important: boolean; priority: string }>(arr: T[]): T[] {
+    return [...arr].sort((a, b) =>
+      eisenhowerRank(a) - eisenhowerRank(b) || (priorityRank[a.priority] ?? 1) - (priorityRank[b.priority] ?? 1)
+    )
+  }
+
+  const weekTasks = sortByEisenhower(
+    allTasks.filter((t) => !t.completed && (isOverdue(t.dueDate) || isDueToday(t.dueDate) || isDueThisWeek(t.dueDate)))
   )
 
   const upcomingBoards = boards
@@ -172,7 +186,7 @@ export default function Dashboard() {
           </div>
           {showEntries && <CalendarEntriesBlock entries={todayEntries} label="Termine heute" today={today} />}
           <TaskList
-            tasks={allTasks.filter((tk) => !tk.completed && (isDueToday(tk.dueDate) || isOverdue(tk.dueDate)))}
+            tasks={sortByEisenhower(allTasks.filter((tk) => !tk.completed && (isDueToday(tk.dueDate) || isOverdue(tk.dueDate))))}
             emptyMessage=""
           />
         </div>
