@@ -3,15 +3,16 @@ import { Minus, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useWorkTimeStore } from '../../store/workTimeStore'
 import { WEEKEND_COMP_DAY_THRESHOLD_MINUTES, computeOverview, dailyTargetMinutes, formatHM } from '../../utils/worktime'
-import { todayISO } from '../../utils/date'
 
 export default function OvertimeOverview() {
   const { t } = useTranslation('worktime')
   const entries = useWorkTimeStore((s) => s.entries)
   const settings = useWorkTimeStore((s) => s.settings)
-  const settledWeekendDays = useWorkTimeStore((s) => s.settledWeekendDays)
-  const incrementSettledWeekendDays = useWorkTimeStore((s) => s.incrementSettledWeekendDays)
-  const decrementSettledWeekendDays = useWorkTimeStore((s) => s.decrementSettledWeekendDays)
+  const weekendDaysWorkedAuto = useWorkTimeStore((s) => s.settledWeekendDays)
+  const manualCompDays = useWorkTimeStore((s) => s.manualCompDays)
+  const takenCompDays = useWorkTimeStore((s) => s.takenCompDays)
+  const incrementManualCompDays = useWorkTimeStore((s) => s.incrementManualCompDays)
+  const takeCompDay = useWorkTimeStore((s) => s.takeCompDay)
   const isRunning = useWorkTimeStore((s) => s.isRunning)
   const runningStartedAt = useWorkTimeStore((s) => s.runningStartedAt)
   const runningDate = useWorkTimeStore((s) => s.runningDate)
@@ -23,7 +24,6 @@ export default function OvertimeOverview() {
     return () => clearInterval(id)
   }, [isRunning])
 
-  // Build entries with live minutes included for today
   const liveMinutes =
     isRunning && runningStartedAt
       ? (Date.now() - new Date(runningStartedAt).getTime()) / 60000
@@ -35,13 +35,16 @@ export default function OvertimeOverview() {
     liveEntries[runningDate] = { ...todayEntry, workedMinutes: todayEntry.workedMinutes + liveMinutes }
   }
 
-  const { totalDiffMinutes, totalDiffDays, weekendDaysWorked } = computeOverview(liveEntries, settings)
+  const { totalDiffMinutes, weekendDaysWorked } = computeOverview(liveEntries, settings)
 
   const dailyTarget = dailyTargetMinutes(settings)
-  const adjustedDiffMinutes = totalDiffMinutes
+  // Deduct taken comp days from overtime
+  const adjustedDiffMinutes = totalDiffMinutes - takenCompDays * dailyTarget
   const adjustedDiffDays = dailyTarget > 0 ? adjustedDiffMinutes / dailyTarget : 0
   const positive = adjustedDiffMinutes >= 0
-  const openWeekendDays = weekendDaysWorked - settledWeekendDays
+
+  // Available balance = auto-detected weekend days + manually added - taken
+  const availableCompDays = weekendDaysWorked + manualCompDays - takenCompDays
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -52,7 +55,9 @@ export default function OvertimeOverview() {
           {formatHM(adjustedDiffMinutes)}
           {isRunning && <span className="ml-1 text-base animate-pulse">●</span>}
         </p>
-
+        {takenCompDays > 0 && (
+          <p className="mt-1 text-xs text-gray-400">inkl. {takenCompDays} Ausgleichstag{takenCompDays !== 1 ? 'e' : ''} (−{formatHM(takenCompDays * dailyTarget)})</p>
+        )}
       </div>
 
       <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
@@ -67,25 +72,25 @@ export default function OvertimeOverview() {
         <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('overview.compDays')}</p>
         <div className="mt-1 flex items-center gap-3">
           <button
-            onClick={decrementSettledWeekendDays}
-            disabled={settledWeekendDays <= 0}
+            onClick={takeCompDay}
+            disabled={availableCompDays <= 0}
             className="rounded-full border border-gray-200 p-1 text-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-30 dark:border-racing-700 dark:hover:bg-racing-800"
           >
             <Minus size={16} />
           </button>
           <div className="flex-1 text-center">
-            <p className="text-3xl font-bold">{openWeekendDays}</p>
-            <p className="text-xs text-gray-400">{t('overview.openCompDay', { count: openWeekendDays })}</p>
+            <p className="text-3xl font-bold">{availableCompDays}</p>
+            <p className="text-xs text-gray-400">verfügbare Tage</p>
           </div>
           <button
-            onClick={incrementSettledWeekendDays}
+            onClick={incrementManualCompDays}
             className="rounded-full border border-gray-200 p-1 text-gray-400 hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800"
           >
             <Plus size={16} />
           </button>
         </div>
         <p className="mt-1 text-center text-xs text-gray-400">
-          {t('overview.earnedAndTaken', { earned: weekendDaysWorked, taken: settledWeekendDays })}
+          {weekendDaysWorked + manualCompDays} erarbeitet · {takenCompDays} genommen
         </p>
       </div>
     </div>

@@ -35,6 +35,8 @@ interface WorkTimeState {
   runningStartedAt?: string
   runningDate?: string
   settledWeekendDays: number
+  manualCompDays: number
+  takenCompDays: number
   compensationDaysCount: number
   fetchAll: () => Promise<void>
   clockIn: () => void
@@ -45,6 +47,8 @@ interface WorkTimeState {
   updateSettings: (updates: Partial<WorkTimeSettings>) => void
   incrementSettledWeekendDays: () => void
   decrementSettledWeekendDays: () => void
+  incrementManualCompDays: () => void
+  takeCompDay: () => void
   incrementCompensationDays: () => void
   decrementCompensationDays: () => void
 }
@@ -110,6 +114,8 @@ export const useWorkTimeStore = create<WorkTimeState>()(
       runningStartedAt: undefined,
       runningDate: undefined,
       settledWeekendDays: 0,
+      manualCompDays: 0,
+      takenCompDays: 0,
       compensationDaysCount: 0,
 
       fetchAll: async () => {
@@ -247,6 +253,8 @@ export const useWorkTimeStore = create<WorkTimeState>()(
         void syncSettings(get().settings, settledWeekendDays)
       },
 
+      incrementManualCompDays: () => set((s) => ({ manualCompDays: s.manualCompDays + 1 })),
+      takeCompDay: () => set((s) => ({ takenCompDays: s.takenCompDays + 1 })),
       incrementCompensationDays: () => set((s) => ({ compensationDaysCount: s.compensationDaysCount + 1 })),
       decrementCompensationDays: () => set((s) => ({ compensationDaysCount: Math.max(0, s.compensationDaysCount - 1) })),
     }),
