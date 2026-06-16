@@ -33,6 +33,8 @@ interface WorkTimeSettingsRow {
   settled_weekend_days: number
   running_started_at: string | null
   running_date: string | null
+  profiles_json: string | null
+  active_profile_id: string | null
 }
 
 interface WorkTimeEntryRow {
@@ -97,7 +99,12 @@ async function syncEntry(entry: WorkDayEntry) {
   })
 }
 
-async function syncSettings(settings: WorkTimeSettings, settledWeekendDays: number) {
+async function syncSettings(
+  settings: WorkTimeSettings,
+  settledWeekendDays: number,
+  workProfiles?: import('../types').WorkProfile[],
+  activeProfileId?: string
+) {
   if (!isSupabaseConfigured) return
   const { data: userData } = await supabase.auth.getUser()
   const userId = userData.user?.id
@@ -110,6 +117,8 @@ async function syncSettings(settings: WorkTimeSettings, settledWeekendDays: numb
     friday_hours: settings.fridayHours ?? null,
     weekday_hours: settings.weekdayHours ?? null,
     settled_weekend_days: settledWeekendDays,
+    profiles_json: workProfiles ? JSON.stringify(workProfiles) : undefined,
+    active_profile_id: activeProfileId ?? null,
     updated_at: new Date().toISOString(),
   })
 }
@@ -182,6 +191,21 @@ export const useWorkTimeStore = create<WorkTimeState>()(
         const runningStartedAt = settingsRow?.running_started_at ?? undefined
         const runningDate = settingsRow?.running_date ?? undefined
 
+        // Load profiles from Supabase (merged with built-in GBM profile)
+        let workProfiles = get().workProfiles
+        let activeProfileId = get().activeProfileId
+        if (settingsRow?.profiles_json) {
+          try {
+            const parsed = JSON.parse(settingsRow.profiles_json) as import('../types').WorkProfile[]
+            // Always keep GBM built-in, merge with stored custom profiles
+            const custom = parsed.filter((p) => p.id !== 'gbm')
+            workProfiles = [GBM_PROFILE, ...custom]
+          } catch { /* ignore parse errors */ }
+        }
+        if (settingsRow?.active_profile_id) {
+          activeProfileId = settingsRow.active_profile_id
+        }
+
         set({
           entries,
           settings,
@@ -189,10 +213,12 @@ export const useWorkTimeStore = create<WorkTimeState>()(
           isRunning: Boolean(runningStartedAt && runningDate),
           runningStartedAt,
           runningDate,
+          workProfiles,
+          activeProfileId,
         })
 
         if (!settingsRow) {
-          await syncSettings(settings, settledWeekendDays)
+          await syncSettings(settings, settledWeekendDays, get().workProfiles, get().activeProfileId)
         }
       },
 
@@ -282,27 +308,30 @@ export const useWorkTimeStore = create<WorkTimeState>()(
       addWorkProfile: (profile) => {
         const newProfile: WorkProfile = { ...profile, id: createId() }
         set((s) => ({ workProfiles: [...s.workProfiles, newProfile] }))
+        const s = get()
+        void syncSettings(s.settings, s.settledWeekendDays, s.workProfiles, s.activeProfileId)
       },
       deleteWorkProfile: (id) => {
         set((s) => ({
           workProfiles: s.workProfiles.filter((p) => p.id !== id),
           activeProfileId: s.activeProfileId === id ? undefined : s.activeProfileId,
         }))
+        const s = get()
+        void syncSettings(s.settings, s.settledWeekendDays, s.workProfiles, s.activeProfileId)
       },
       applyWorkProfile: (id) => {
         const profile = get().workProfiles.find((p) => p.id === id)
         if (!profile) return
-        const { name: _name, id: _id, ...settingsFromProfile } = profile
         const settings: WorkTimeSettings = {
           ...get().settings,
-          weeklyHours: settingsFromProfile.weeklyHours,
-          workDaysPerWeek: settingsFromProfile.workDaysPerWeek,
-          defaultBreakMinutes: settingsFromProfile.defaultBreakMinutes,
-          weekdayHours: settingsFromProfile.weekdayHours,
-          fridayHours: settingsFromProfile.fridayHours,
+          weeklyHours: profile.weeklyHours,
+          workDaysPerWeek: profile.workDaysPerWeek,
+          defaultBreakMinutes: profile.defaultBreakMinutes,
+          weekdayHours: profile.weekdayHours,
+          fridayHours: profile.fridayHours,
         }
         set({ activeProfileId: id, settings })
-        void syncSettings(settings, get().settledWeekendDays)
+        void syncSettings(settings, get().settledWeekendDays, get().workProfiles, id)
       },
       incrementManualCompDays: () => set((s) => ({ manualCompDays: s.manualCompDays + 1 })),
       takeCompDay: () => set((s) => ({ takenCompDays: s.takenCompDays + 1 })),
