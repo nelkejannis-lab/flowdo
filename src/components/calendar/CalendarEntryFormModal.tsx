@@ -5,6 +5,7 @@ import Modal from '../layout/Modal'
 import { useEventsStore, EVENT_COLORS, NAMED_COLORS } from '../../store/eventsStore'
 import { useCalendarEntriesStore } from '../../store/calendarEntriesStore'
 import { useFriendsStore } from '../../store/friendsStore'
+import { useAuthStore } from '../../store/authStore'
 import { isSupabaseConfigured } from '../../lib/supabase'
 import type { CalendarEntry, CalendarEntryType, CalendarEvent } from '../../types'
 import { todayISO } from '../../utils/date'
@@ -56,6 +57,7 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
   const deleteEntry = useCalendarEntriesStore((s) => s.deleteEntry)
   const friends = useFriendsStore((s) => s.friends)
   const fetchFriends = useFriendsStore((s) => s.fetchAll)
+  const currentUserId = useAuthStore((s) => s.user?.id)
 
   const editing = event ?? entry
   const initialKind: Kind = event ? 'event' : entry ? entry.type : 'termin'
@@ -68,7 +70,11 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
   const [endTime, setEndTime] = useState(entry?.endTime ?? '')
   const [description, setDescription] = useState(editing?.description ?? '')
   const [color, setColor] = useState(editing?.color ?? defaultColors.termin)
-  const [invitedUserIds, setInvitedUserIds] = useState<string[]>(entry?.invitees.map((i) => i.id) ?? [])
+  const [invitedUserIds, setInvitedUserIds] = useState<string[]>(() => {
+    const existing = entry?.invitees.map((i) => i.id) ?? []
+    if (!entry && currentUserId && !existing.includes(currentUserId)) return [currentUserId, ...existing]
+    return existing
+  })
   const [recurrenceWeeks, setRecurrenceWeeks] = useState<RecurrenceWeeks>(0)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
