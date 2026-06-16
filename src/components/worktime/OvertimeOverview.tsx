@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react'
 import { Minus, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useWorkTimeStore } from '../../store/workTimeStore'
-import { WEEKEND_COMP_DAY_THRESHOLD_MINUTES, computeOverview, formatHM } from '../../utils/worktime'
+import { WEEKEND_COMP_DAY_THRESHOLD_MINUTES, computeOverview, dailyTargetMinutes, formatHM } from '../../utils/worktime'
+import { todayISO } from '../../utils/date'
 
 export default function OvertimeOverview() {
   const { t } = useTranslation('worktime')
@@ -10,9 +12,38 @@ export default function OvertimeOverview() {
   const settledWeekendDays = useWorkTimeStore((s) => s.settledWeekendDays)
   const incrementSettledWeekendDays = useWorkTimeStore((s) => s.incrementSettledWeekendDays)
   const decrementSettledWeekendDays = useWorkTimeStore((s) => s.decrementSettledWeekendDays)
+  const compensationDays = useWorkTimeStore((s) => s.compensationDays)
+  const isRunning = useWorkTimeStore((s) => s.isRunning)
+  const runningStartedAt = useWorkTimeStore((s) => s.runningStartedAt)
+  const runningDate = useWorkTimeStore((s) => s.runningDate)
 
-  const { totalDiffMinutes, totalDiffDays, weekendDaysWorked } = computeOverview(entries, settings)
-  const positive = totalDiffMinutes >= 0
+  const [, tick] = useState(0)
+  useEffect(() => {
+    if (!isRunning) return
+    const id = setInterval(() => tick((n) => n + 1), 60_000)
+    return () => clearInterval(id)
+  }, [isRunning])
+
+  // Build entries with live minutes included for today
+  const liveMinutes =
+    isRunning && runningStartedAt
+      ? (Date.now() - new Date(runningStartedAt).getTime()) / 60000
+      : 0
+
+  const liveEntries = { ...entries }
+  if (isRunning && runningDate) {
+    const todayEntry = entries[runningDate] ?? { date: runningDate, workedMinutes: 0, breakMinutes: settings.defaultBreakMinutes }
+    liveEntries[runningDate] = { ...todayEntry, workedMinutes: todayEntry.workedMinutes + liveMinutes }
+  }
+
+  const { totalDiffMinutes, totalDiffDays, weekendDaysWorked } = computeOverview(liveEntries, settings)
+
+  // Each compensation day reduces overtime by one daily target
+  const dailyTarget = dailyTargetMinutes(settings)
+  const compensationMinutes = compensationDays.length * dailyTarget
+  const adjustedDiffMinutes = totalDiffMinutes - compensationMinutes
+  const adjustedDiffDays = dailyTarget > 0 ? adjustedDiffMinutes / dailyTarget : 0
+  const positive = adjustedDiffMinutes >= 0
   const openWeekendDays = weekendDaysWorked - settledWeekendDays
 
   return (
@@ -21,23 +52,31 @@ export default function OvertimeOverview() {
         <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('overview.totalOvertime')}</p>
         <p className={`mt-1 text-3xl font-bold ${positive ? 'text-emerald-500' : 'text-red-500'}`}>
           {positive ? '+' : ''}
-          {formatHM(totalDiffMinutes)}
+          {formatHM(adjustedDiffMinutes)}
+          {isRunning && <span className="ml-1 text-base animate-pulse">●</span>}
         </p>
+        {compensationDays.length > 0 && (
+          <p className="mt-1 text-xs text-gray-400">
+            inkl. {compensationDays.length} Ausgleichstag{compensationDays.length !== 1 ? 'e' : ''}
+            {' ('}−{formatHM(compensationMinutes)}{')'}
+          </p>
+        )}
       </div>
+
       <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
         <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('overview.overtimeInDays')}</p>
         <p className={`mt-1 text-3xl font-bold ${positive ? 'text-emerald-500' : 'text-red-500'}`}>
           {positive ? '+' : ''}
-          {totalDiffDays.toFixed(1)}
+          {adjustedDiffDays.toFixed(1)}
         </p>
       </div>
+
       <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
         <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('overview.compDays')}</p>
         <div className="mt-1 flex items-center gap-3">
           <button
             onClick={decrementSettledWeekendDays}
             disabled={settledWeekendDays <= 0}
-            title={t('overview.undoCompDay')}
             className="rounded-full border border-gray-200 p-1 text-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-30 dark:border-racing-700 dark:hover:bg-racing-800"
           >
             <Minus size={16} />
@@ -49,7 +88,6 @@ export default function OvertimeOverview() {
           <button
             onClick={incrementSettledWeekendDays}
             disabled={settledWeekendDays >= weekendDaysWorked}
-            title={t('overview.markCompDayTaken')}
             className="rounded-full border border-gray-200 p-1 text-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-30 dark:border-racing-700 dark:hover:bg-racing-800"
           >
             <Plus size={16} />
@@ -57,9 +95,6 @@ export default function OvertimeOverview() {
         </div>
         <p className="mt-1 text-center text-xs text-gray-400">
           {t('overview.earnedAndTaken', { earned: weekendDaysWorked, taken: settledWeekendDays })}
-        </p>
-        <p className="mt-2 text-center text-xs text-gray-400">
-          {t('overview.thresholdInfo', { threshold: formatHM(WEEKEND_COMP_DAY_THRESHOLD_MINUTES) })}
         </p>
       </div>
     </div>

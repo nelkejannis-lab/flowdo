@@ -28,6 +28,11 @@ interface WorkTimeEntryRow {
   end_time: string | null
 }
 
+export interface CompensationDay {
+  date: string
+  note: string
+}
+
 interface WorkTimeState {
   settings: WorkTimeSettings
   entries: Record<string, WorkDayEntry>
@@ -35,6 +40,7 @@ interface WorkTimeState {
   runningStartedAt?: string
   runningDate?: string
   settledWeekendDays: number
+  compensationDays: CompensationDay[]
   fetchAll: () => Promise<void>
   clockIn: () => void
   clockOut: () => void
@@ -44,6 +50,8 @@ interface WorkTimeState {
   updateSettings: (updates: Partial<WorkTimeSettings>) => void
   incrementSettledWeekendDays: () => void
   decrementSettledWeekendDays: () => void
+  addCompensationDay: (date: string, note: string) => void
+  removeCompensationDay: (date: string) => void
 }
 
 function ensureEntry(
@@ -107,6 +115,7 @@ export const useWorkTimeStore = create<WorkTimeState>()(
       runningStartedAt: undefined,
       runningDate: undefined,
       settledWeekendDays: 0,
+      compensationDays: [],
 
       fetchAll: async () => {
         if (!isSupabaseConfigured) return
@@ -164,7 +173,12 @@ export const useWorkTimeStore = create<WorkTimeState>()(
         if (get().isRunning) return
         const runningStartedAt = new Date().toISOString()
         const runningDate = todayISO()
-        set({ isRunning: true, runningStartedAt, runningDate })
+        const startTime = new Date().toTimeString().slice(0, 5)
+        const state = get()
+        const entry = ensureEntry(state.entries, runningDate, state.settings.defaultBreakMinutes)
+        const updated = { ...entry, startTime: entry.startTime ?? startTime }
+        set({ isRunning: true, runningStartedAt, runningDate, entries: { ...state.entries, [runningDate]: updated } })
+        void syncEntry(updated)
         void syncRunningState(runningStartedAt, runningDate)
       },
 
@@ -173,8 +187,13 @@ export const useWorkTimeStore = create<WorkTimeState>()(
         if (!state.isRunning || !state.runningStartedAt || !state.runningDate) return
         const elapsedMinutes = Math.round((Date.now() - new Date(state.runningStartedAt).getTime()) / 60000)
         const date = state.runningDate
+        const endTime = new Date().toTimeString().slice(0, 5)
         const entry = ensureEntry(state.entries, date, state.settings.defaultBreakMinutes)
-        const updated = { ...entry, workedMinutes: entry.workedMinutes + Math.max(0, elapsedMinutes) }
+        const updated = {
+          ...entry,
+          workedMinutes: entry.workedMinutes + Math.max(0, elapsedMinutes),
+          endTime,
+        }
         set({
           entries: { ...state.entries, [date]: updated },
           isRunning: false,
@@ -231,6 +250,16 @@ export const useWorkTimeStore = create<WorkTimeState>()(
         const settledWeekendDays = Math.max(0, get().settledWeekendDays - 1)
         set({ settledWeekendDays })
         void syncSettings(get().settings, settledWeekendDays)
+      },
+
+      addCompensationDay: (date, note) => {
+        const existing = get().compensationDays
+        if (existing.some((d) => d.date === date)) return
+        set({ compensationDays: [...existing, { date, note }].sort((a, b) => a.date.localeCompare(b.date)) })
+      },
+
+      removeCompensationDay: (date) => {
+        set({ compensationDays: get().compensationDays.filter((d) => d.date !== date) })
       },
     }),
     { name: 'flowdo-worktime' }
