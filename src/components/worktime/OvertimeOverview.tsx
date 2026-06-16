@@ -88,8 +88,7 @@ export default function OvertimeOverview() {
           </div>
           <button
             onClick={incrementSettledWeekendDays}
-            disabled={settledWeekendDays >= weekendDaysWorked}
-            className="rounded-full border border-gray-200 p-1 text-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-30 dark:border-racing-700 dark:hover:bg-racing-800"
+            className="rounded-full border border-gray-200 p-1 text-gray-400 hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800"
           >
             <Plus size={16} />
           </button>
