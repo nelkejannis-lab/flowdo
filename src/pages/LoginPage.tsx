@@ -1,334 +1,382 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Trans, useTranslation } from 'react-i18next'
-import { Eye, EyeOff, CalendarDays, CheckSquare, Clock, MessageCircle, ArrowRight, X } from 'lucide-react'
+import { Eye, EyeOff, CalendarDays, CheckSquare, Clock, MessageCircle, ArrowRight, ChevronLeft } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { isSupabaseConfigured } from '../lib/supabase'
 
+const OWNER_ID = '6e6370e8-4dfc-4226-b5d5-8bcb6b9273f1'
+
 const FEATURES = [
-  { icon: CheckSquare, label: 'Tasks & Projects', sub: 'Lists, Boards, Eisenhower', color: '#7c6bff' },
-  { icon: CalendarDays, label: 'Calendar & Events', sub: 'Events, Invites, Teams', color: '#22c4a0' },
-  { icon: Clock, label: 'Time Tracking', sub: 'Overtime, Profiles, Live', color: '#f59e0b' },
-  { icon: MessageCircle, label: 'Team & Chat', sub: 'Messages, Colleagues', color: '#ec4899' },
+  { icon: CheckSquare, label: 'Tasks & Projects',   sub: 'Lists · Boards · Eisenhower', color: '#818cf8' },
+  { icon: CalendarDays, label: 'Calendar & Events', sub: 'Events · Invites · Teams',    color: '#34d399' },
+  { icon: Clock,        label: 'Time Tracking',     sub: 'Overtime · Profiles · Live',  color: '#fbbf24' },
+  { icon: MessageCircle,label: 'Team & Chat',       sub: 'Messages · Colleagues',       color: '#f472b6' },
 ]
+
+/* ─── shared input style ─── */
+const inp = 'w-full rounded-xl border border-white/[.1] bg-white/[.06] px-3.5 py-2.5 text-[13.5px] text-white placeholder:text-white/30 transition-all duration-150 focus:border-violet-400/60 focus:bg-white/[.1] focus:outline-none'
 
 export default function LoginPage() {
   const { t } = useTranslation('auth')
-  const signIn = useAuthStore((s) => s.signIn)
-  const signUp = useAuthStore((s) => s.signUp)
+  const signIn              = useAuthStore((s) => s.signIn)
+  const signUp              = useAuthStore((s) => s.signUp)
   const requestPasswordReset = useAuthStore((s) => s.requestPasswordReset)
 
-  const [phase, setPhase] = useState<'hero' | 'auth'>('hero')
-  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [username, setUsername] = useState('')
-  const [displayName, setDisplayName] = useState('')
-  const [birthday, setBirthday] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [info, setInfo] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  /* mobile-only phase */
+  const [phase, setPhase]   = useState<'hero' | 'auth'>('hero')
+  const [mode,  setMode]    = useState<'login' | 'signup' | 'forgot'>('login')
+  const [email, setEmail]   = useState('')
+  const [pw,    setPw]      = useState('')
+  const [pw2,   setPw2]     = useState('')
+  const [showPw,setShowPw]  = useState(false)
+  const [uname, setUname]   = useState('')
+  const [dname, setDname]   = useState('')
+  const [bday,  setBday]    = useState('')
+  const [error, setError]   = useState<string | null>(null)
+  const [info,  setInfo]    = useState<string | null>(null)
+  const [busy,  setBusy]    = useState(false)
 
-  function openAuth(m: 'login' | 'signup') {
-    setMode(m)
-    setError(null)
-    setInfo(null)
-    setPhase('auth')
-  }
+  function open(m: 'login' | 'signup') { setMode(m); setError(null); setInfo(null); setPhase('auth') }
 
   function switchMode(next: 'login' | 'signup' | 'forgot') {
-    setMode(next)
-    setError(null)
-    setInfo(null)
-    setPassword('')
-    setConfirmPassword('')
+    setMode(next); setError(null); setInfo(null); setPw(''); setPw2('')
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
-    setInfo(null)
-    setLoading(true)
+  async function submit(e: React.FormEvent) {
+    e.preventDefault(); setError(null); setInfo(null); setBusy(true)
     try {
       if (mode === 'forgot') {
         const err = await requestPasswordReset(email)
-        if (err) setError(err)
-        else setInfo(t('messages.resetSent'))
+        err ? setError(err) : setInfo(t('messages.resetSent'))
         return
       }
       if (mode === 'login') {
-        const err = await signIn(email, password)
+        const err = await signIn(email, pw)
         if (err) setError(err)
       } else {
-        if (password.length < 8) { setError(t('errors.passwordTooShort')); return }
-        if (password !== confirmPassword) { setError(t('errors.passwordMismatch')); return }
-        const err = await signUp(email, password, username, displayName || username, birthday || undefined)
-        if (err) setError(err)
-        else { setInfo(t('messages.accountCreated')); switchMode('login') }
+        if (pw.length < 8)  { setError(t('errors.passwordTooShort')); return }
+        if (pw !== pw2)     { setError(t('errors.passwordMismatch'));  return }
+        const err = await signUp(email, pw, uname, dname || uname, bday || undefined)
+        err ? setError(err) : (setInfo(t('messages.accountCreated')), switchMode('login'))
       }
-    } finally {
-      setLoading(false)
-    }
+    } finally { setBusy(false) }
   }
+
+  /* ─── auth form (shared desktop + mobile) ─── */
+  const AuthForm = (
+    <div className="flex w-full flex-col">
+      {/* mode tabs */}
+      <div className="mb-6 flex rounded-xl bg-white/[.07] p-1">
+        {(['login', 'signup'] as const).map((m) => (
+          <button key={m} type="button" onClick={() => switchMode(m)}
+            className={`flex-1 rounded-lg py-2 text-xs font-semibold transition-all duration-200 ${
+              mode === m ? 'bg-white/[.13] text-white shadow-sm' : 'text-white/40 hover:text-white/70'
+            }`}>
+            {m === 'login' ? 'Sign in' : 'Create account'}
+          </button>
+        ))}
+      </div>
+
+      {mode === 'forgot' && (
+        <p className="mb-4 text-[13px] text-white/50 leading-relaxed">{t('forgotDescription')}</p>
+      )}
+
+      {!isSupabaseConfigured && (
+        <p className="mb-4 rounded-xl bg-amber-500/10 border border-amber-500/20 px-3 py-2.5 text-xs text-amber-300">
+          <Trans t={t} i18nKey="supabaseNotConfigured" components={{ code: <code className="font-mono" /> }} />
+        </p>
+      )}
+
+      <form onSubmit={submit} className="flex flex-col gap-2.5">
+        {mode === 'signup' && (<>
+          <input required value={uname} onChange={(e) => setUname(e.target.value.toLowerCase().replace(/\s+/g,''))}
+            placeholder={t('fields.usernamePlaceholder')} className={inp} />
+          <input value={dname} onChange={(e) => setDname(e.target.value)}
+            placeholder={t('fields.displayNamePlaceholder')} className={inp} />
+          <input required type="date" value={bday} onChange={(e) => setBday(e.target.value)}
+            max={new Date().toISOString().split('T')[0]}
+            className={inp + ' [color-scheme:dark]'} />
+        </>)}
+
+        <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+          placeholder={t('fields.emailPlaceholder')} className={inp} />
+
+        {mode !== 'forgot' && (
+          <div className="relative">
+            <input required type={showPw ? 'text' : 'password'} minLength={mode === 'signup' ? 8 : 1}
+              value={pw} onChange={(e) => setPw(e.target.value)}
+              placeholder="••••••••" className={inp + ' pr-10'} />
+            <button type="button" onClick={() => setShowPw(s => !s)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors">
+              {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
+            </button>
+          </div>
+        )}
+
+        {mode === 'signup' && (
+          <input required type={showPw ? 'text' : 'password'} minLength={8}
+            value={pw2} onChange={(e) => setPw2(e.target.value)}
+            placeholder={`${t('fields.confirmPassword')} ••••••••`} className={inp} />
+        )}
+
+        {mode === 'login' && (
+          <button type="button" onClick={() => switchMode('forgot')}
+            className="self-end text-[12px] font-medium text-violet-400 hover:text-violet-300 transition-colors">
+            {t('forgotPasswordLink')}
+          </button>
+        )}
+
+        {error && (
+          <div className="flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2.5">
+            <span className="mt-px text-red-400 text-[13px] leading-relaxed">{error}</span>
+          </div>
+        )}
+        {info && (
+          <div className="flex items-start gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2.5">
+            <span className="mt-px text-emerald-400 text-[13px] leading-relaxed">{info}</span>
+          </div>
+        )}
+
+        <button type="submit" disabled={busy}
+          className="mt-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-[13.5px] font-semibold text-white transition-all duration-200 hover:opacity-90 hover:scale-[1.01] active:scale-[.99] disabled:opacity-50"
+          style={{ background: 'linear-gradient(135deg, #6d62f0 0%, #a855f7 100%)' }}>
+          {busy
+            ? <span className="flex items-center gap-2"><span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />{t('buttons.pleaseWait')}</span>
+            : <>{mode === 'login' ? 'Sign in' : mode === 'signup' ? 'Create account' : t('buttons.sendLink')}<ArrowRight size={14} /></>
+          }
+        </button>
+      </form>
+
+      {mode === 'forgot' ? (
+        <button onClick={() => switchMode('login')}
+          className="mt-5 flex items-center justify-center gap-1.5 text-[12px] text-white/40 hover:text-white/70 transition-colors">
+          <ChevronLeft size={13} />{t('buttons.backToLogin')}
+        </button>
+      ) : (
+        <p className="mt-5 text-center text-[12px] text-white/30">
+          {mode === 'login' ? t('buttons.noAccount') : t('buttons.hasAccount')}{' '}
+          <button onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')}
+            className="font-semibold text-violet-400 hover:text-violet-300 transition-colors">
+            {mode === 'login' ? t('buttons.register') : t('buttons.login')}
+          </button>
+        </p>
+      )}
+    </div>
+  )
 
   return (
     <>
       <style>{`
-        @keyframes mcFadeUp {
-          from { opacity: 0; transform: translateY(24px); }
-          to   { opacity: 1; transform: translateY(0); }
+        @keyframes mcUp   { from { opacity:0; transform:translateY(28px) } to { opacity:1; transform:translateY(0) } }
+        @keyframes mcGlow { 0%,100% { opacity:.3; transform:scale(1) } 50% { opacity:.5; transform:scale(1.1) } }
+        @keyframes mcFloat{ 0%,100% { transform:translateY(0) rotate(-1.5deg) } 50% { transform:translateY(-14px) rotate(1.5deg) } }
+        @keyframes sheetUp{ from { transform:translateY(100%); opacity:0 } to { transform:translateY(0); opacity:1 } }
+        @keyframes cardIn { from { opacity:0; transform:translateY(16px) scale(.97) } to { opacity:1; transform:translateY(0) scale(1) } }
+        .mc-up    { animation: mcUp   .65s cubic-bezier(.22,1,.36,1) both }
+        .mc-glow  { animation: mcGlow 5s ease-in-out infinite }
+        .mc-float { animation: mcFloat 6s ease-in-out infinite }
+        .sheet-up { animation: sheetUp .46s cubic-bezier(.32,.72,0,1) both }
+        .card-in  { animation: cardIn  .5s cubic-bezier(.22,1,.36,1) both }
+        .d1{animation-delay:.06s}.d2{animation-delay:.14s}.d3{animation-delay:.22s}
+        .d4{animation-delay:.30s}.d5{animation-delay:.38s}.d6{animation-delay:.46s}
+
+        /* noise grain overlay */
+        .mc-grain::after {
+          content:''; position:absolute; inset:0; pointer-events:none; z-index:1;
+          background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+          background-size:180px; opacity:.35;
         }
-        @keyframes mcSlideUp {
-          from { transform: translateY(100%); opacity: 0; }
-          to   { transform: translateY(0);    opacity: 1; }
+
+        /* glass card */
+        .glass {
+          background: linear-gradient(145deg, rgba(255,255,255,.09) 0%, rgba(255,255,255,.04) 100%);
+          backdrop-filter: blur(28px) saturate(160%);
+          -webkit-backdrop-filter: blur(28px) saturate(160%);
+          border: 1px solid rgba(255,255,255,.11);
+          box-shadow: 0 32px 64px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.04) inset;
         }
-        @keyframes mcGlow {
-          0%, 100% { opacity: .35; transform: scale(1); }
-          50%       { opacity: .55; transform: scale(1.08); }
+        /* mobile bottom sheet */
+        .glass-sheet {
+          background: linear-gradient(180deg, rgba(20,17,40,.97) 0%, rgba(14,12,28,.99) 100%);
+          backdrop-filter: blur(40px) saturate(180%);
+          -webkit-backdrop-filter: blur(40px) saturate(180%);
+          border-top: 1px solid rgba(255,255,255,.1);
+          box-shadow: 0 -24px 64px rgba(0,0,0,.6);
         }
-        @keyframes mcFloat {
-          0%, 100% { transform: translateY(0px) rotate(-2deg); }
-          50%       { transform: translateY(-12px) rotate(2deg); }
-        }
-        .mc-fade-up   { animation: mcFadeUp  .6s cubic-bezier(.22,1,.36,1) both; }
-        .mc-slide-up  { animation: mcSlideUp .5s cubic-bezier(.32,.72,0,1)  both; }
-        .mc-glow      { animation: mcGlow   4s ease-in-out infinite; }
-        .mc-float     { animation: mcFloat  5s ease-in-out infinite; }
-        .d1 { animation-delay: .05s; }
-        .d2 { animation-delay: .15s; }
-        .d3 { animation-delay: .25s; }
-        .d4 { animation-delay: .35s; }
-        .d5 { animation-delay: .45s; }
-        .d6 { animation-delay: .55s; }
       `}</style>
 
-      <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#09090f]">
+      {/* ══════════════════════════════════════════════════════════
+          ROOT — dark starfield bg
+      ══════════════════════════════════════════════════════════ */}
+      <div className="mc-grain relative min-h-screen overflow-hidden bg-[#07060f]">
 
-        {/* Background glow blobs */}
+        {/* Ambient glow blobs */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="mc-glow absolute -left-32 -top-32 h-96 w-96 rounded-full bg-[#7c6bff]/20 blur-3xl" />
-          <div className="mc-glow absolute -right-24 top-1/3 h-80 w-80 rounded-full bg-[#ec4899]/15 blur-3xl" style={{ animationDelay: '2s' }} />
-          <div className="mc-glow absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-[#22c4a0]/10 blur-3xl" style={{ animationDelay: '1s' }} />
+          <div className="mc-glow absolute -left-40 -top-40 h-[600px] w-[600px] rounded-full bg-violet-600/[.18] blur-[100px]" />
+          <div className="mc-glow absolute -right-32 top-[30%]  h-[440px] w-[440px] rounded-full bg-pink-500/[.12]   blur-[90px]" style={{animationDelay:'2.2s'}} />
+          <div className="mc-glow absolute bottom-[-10%] left-[35%] h-[360px] w-[360px] rounded-full bg-teal-400/[.08]  blur-[80px]" style={{animationDelay:'1.1s'}} />
+          <div className="mc-glow absolute top-[60%] left-[10%] h-[280px] w-[280px] rounded-full bg-blue-500/[.07]   blur-[70px]" style={{animationDelay:'3s'}} />
         </div>
 
-        {/* Hero */}
-        {phase === 'hero' && (
-          <div className="relative flex flex-1 flex-col items-center justify-center px-6 py-12">
+        {/* ── DESKTOP layout (md+) ── */}
+        <div className="relative z-10 hidden min-h-screen md:flex">
 
-            {/* Logo + wordmark */}
-            <div className="mc-fade-up mb-6 flex flex-col items-center gap-3">
+          {/* Left — hero */}
+          <div className="flex flex-1 flex-col items-start justify-center px-16 xl:px-24">
+
+            {/* Logo */}
+            <div className="mc-up mb-10 flex flex-col gap-4">
               <div className="mc-float">
-                <img src="/logo-full.svg" alt="MoonCrew" className="h-24 w-auto drop-shadow-[0_0_24px_rgba(124,107,255,.5)]" />
+                <img src="/logo-full.svg" alt="MoonCrew"
+                  className="h-16 w-auto drop-shadow-[0_0_32px_rgba(139,92,246,.6)]" />
               </div>
-              <div className="text-center">
-                <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                  Moon<span style={{ color: '#7c6bff' }}>Crew</span>
+              <div>
+                <h1 className="text-4xl font-bold tracking-[-0.03em] text-white xl:text-5xl">
+                  Moon<span className="text-violet-400">Crew</span>
                 </h1>
-                <p className="mt-1 text-sm font-medium text-white/50 tracking-widest uppercase">Work Organizer</p>
+                <p className="mt-1.5 text-sm font-medium uppercase tracking-[0.18em] text-white/30">
+                  Work Organizer
+                </p>
               </div>
             </div>
 
             {/* Tagline */}
-            <p className="mc-fade-up d1 mb-10 max-w-xs text-center text-base text-white/60 leading-relaxed">
-              Everything your team needs — tasks, calendar, time tracking and chat in one app.
+            <p className="mc-up d1 mb-10 max-w-sm text-[15px] leading-relaxed text-white/50">
+              Everything your team needs — tasks, calendar,<br />time tracking and chat in one app.
             </p>
 
-            {/* Feature grid */}
-            <div className="mc-fade-up d2 mb-10 grid grid-cols-2 gap-3 w-full max-w-xs">
+            {/* Features */}
+            <div className="mc-up d2 grid grid-cols-2 gap-3 max-w-[380px]">
               {FEATURES.map((f, i) => (
-                <div
-                  key={f.label}
-                  className={`mc-fade-up d${i + 3} flex flex-col gap-1.5 rounded-2xl border border-white/8 bg-white/5 p-3.5 backdrop-blur-sm`}
-                >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ backgroundColor: f.color + '22' }}>
-                    <f.icon size={16} style={{ color: f.color }} />
+                <div key={f.label}
+                  className={`mc-up d${i+3} flex items-center gap-3 rounded-2xl border border-white/[.06] bg-white/[.03] px-4 py-3 backdrop-blur-sm`}>
+                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl"
+                    style={{ backgroundColor: f.color + '1a' }}>
+                    <f.icon size={15} style={{ color: f.color }} />
                   </div>
-                  <p className="text-xs font-semibold text-white/90">{f.label}</p>
-                  <p className="text-[11px] text-white/40 leading-tight">{f.sub}</p>
+                  <div>
+                    <p className="text-[12px] font-semibold text-white/85">{f.label}</p>
+                    <p className="text-[10.5px] text-white/30">{f.sub}</p>
+                  </div>
                 </div>
               ))}
             </div>
 
-            {/* CTAs */}
-            <div className="mc-fade-up d6 flex w-full max-w-xs flex-col gap-3">
-              <button
-                onClick={() => openAuth('login')}
-                className="group flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold text-white transition-all duration-200 hover:scale-[1.02] active:scale-[.98]"
-                style={{ background: 'linear-gradient(135deg, #7c6bff, #a855f7)' }}
-              >
-                Sign in
-                <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-1" />
-              </button>
-              <button
-                onClick={() => openAuth('signup')}
-                className="flex items-center justify-center gap-2 rounded-2xl border border-white/15 py-3.5 text-sm font-semibold text-white/80 backdrop-blur-sm transition-all duration-200 hover:border-white/30 hover:text-white hover:scale-[1.02] active:scale-[.98]"
-              >
-                Create account
-              </button>
-            </div>
-
-            {/* Footer links */}
-            <div className="mt-8 flex gap-5 text-xs text-white/25">
+            {/* Footer */}
+            <div className="mc-up d6 mt-12 flex gap-5 text-[11px] text-white/20">
               <Link to="/datenschutz" className="hover:text-white/50 transition-colors">{t('footer.privacy')}</Link>
-              <Link to="/impressum" className="hover:text-white/50 transition-colors">{t('footer.imprint')}</Link>
+              <Link to="/impressum"   className="hover:text-white/50 transition-colors">{t('footer.imprint')}</Link>
             </div>
           </div>
-        )}
 
-        {/* Auth overlay */}
-        {phase === 'auth' && (
-          <>
-            {/* Dimmed hero bg visible behind sheet */}
-            <div className="absolute inset-0 flex flex-col items-center justify-end pb-0">
-              <div className="mb-8 text-center">
-                <img src="/logo-full.svg" alt="MoonCrew" className="mx-auto mb-3 h-14 w-auto opacity-60" />
-                <p className="text-sm text-white/30">MoonCrew Work Organizer</p>
+          {/* Right — auth glass card */}
+          <div className="flex w-[460px] flex-shrink-0 items-center justify-center px-10 xl:w-[500px]">
+            <div className="card-in glass w-full rounded-3xl p-8">
+              <div className="mb-6 flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-500/20">
+                  <img src="/logo-full.svg" alt="" className="h-5 w-auto" />
+                </div>
+                <span className="text-[13px] font-semibold text-white/60">MoonCrew</span>
               </div>
+              {AuthForm}
             </div>
+          </div>
+        </div>
 
-            {/* Bottom sheet */}
-            <div className="mc-slide-up absolute inset-x-0 bottom-0 rounded-t-3xl bg-white px-6 pb-8 pt-5 shadow-2xl dark:bg-[#111118]">
-              {/* Handle bar */}
-              <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-gray-200 dark:bg-white/10" />
+        {/* ── MOBILE layout (< md) ── */}
+        <div className="relative z-10 flex min-h-screen flex-col md:hidden">
 
-              {/* Close → back to hero */}
-              <button
-                onClick={() => setPhase('hero')}
-                className="absolute right-5 top-5 rounded-full p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
-              >
-                <X size={18} />
-              </button>
+          {/* Hero phase */}
+          {phase === 'hero' && (
+            <div className="flex flex-1 flex-col items-center justify-between px-6 py-14">
 
-              <h2 className="mb-5 text-lg font-bold text-gray-900 dark:text-white">
-                {mode === 'login' ? t('title.login') : mode === 'signup' ? t('title.signup') : t('title.forgot')}
-              </h2>
-
-              {!isSupabaseConfigured && (
-                <p className="mb-4 rounded-xl bg-amber-50 p-3 text-xs text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
-                  <Trans t={t} i18nKey="supabaseNotConfigured" components={{ code: <code /> }} />
+              {/* top: logo + tagline */}
+              <div className="flex flex-col items-center text-center">
+                <div className="mc-up mc-float mb-5">
+                  <img src="/logo-full.svg" alt="MoonCrew"
+                    className="h-20 w-auto drop-shadow-[0_0_28px_rgba(139,92,246,.55)]" />
+                </div>
+                <h1 className="mc-up d1 text-[28px] font-bold tracking-[-0.02em] text-white">
+                  Moon<span className="text-violet-400">Crew</span>
+                </h1>
+                <p className="mc-up d2 mt-1 text-[11px] font-medium uppercase tracking-[0.18em] text-white/30">
+                  Work Organizer
                 </p>
-              )}
+                <p className="mc-up d3 mt-4 max-w-[260px] text-[13.5px] leading-relaxed text-white/45">
+                  Everything your team needs in one app.
+                </p>
+              </div>
 
-              {mode === 'forgot' && (
-                <p className="mb-4 text-sm text-gray-500">{t('forgotDescription')}</p>
-              )}
-
-              <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-                {mode === 'signup' && (
-                  <>
-                    <input
-                      required
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ''))}
-                      placeholder={t('fields.usernamePlaceholder')}
-                      className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm focus:border-[#7c6bff] focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-white"
-                    />
-                    <input
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      placeholder={t('fields.displayNamePlaceholder')}
-                      className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm focus:border-[#7c6bff] focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-white"
-                    />
-                    <input
-                      required
-                      type="date"
-                      value={birthday}
-                      onChange={(e) => setBirthday(e.target.value)}
-                      max={new Date().toISOString().split('T')[0]}
-                      className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm focus:border-[#7c6bff] focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-white"
-                    />
-                  </>
-                )}
-
-                <input
-                  required
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t('fields.emailPlaceholder')}
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm focus:border-[#7c6bff] focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-white"
-                />
-
-                {mode !== 'forgot' && (
-                  <div className="relative">
-                    <input
-                      required
-                      type={showPassword ? 'text' : 'password'}
-                      minLength={mode === 'signup' ? 8 : 1}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 pr-10 text-sm focus:border-[#7c6bff] focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-white"
-                    />
-                    <button type="button" onClick={() => setShowPassword((s) => !s)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
+              {/* middle: feature pills */}
+              <div className="mc-up d4 my-8 grid w-full grid-cols-2 gap-2.5">
+                {FEATURES.map((f) => (
+                  <div key={f.label}
+                    className="flex items-center gap-2.5 rounded-2xl border border-white/[.07] bg-white/[.04] px-3.5 py-3 backdrop-blur-sm">
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg"
+                      style={{ backgroundColor: f.color + '1a' }}>
+                      <f.icon size={13} style={{ color: f.color }} />
+                    </div>
+                    <div>
+                      <p className="text-[11.5px] font-semibold text-white/80">{f.label}</p>
+                      <p className="text-[10px] text-white/30">{f.sub}</p>
+                    </div>
                   </div>
-                )}
+                ))}
+              </div>
 
-                {mode === 'signup' && (
-                  <input
-                    required
-                    type={showPassword ? 'text' : 'password'}
-                    minLength={8}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder={`${t('fields.confirmPassword')} ••••••••`}
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm focus:border-[#7c6bff] focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-white"
-                  />
-                )}
-
-                {mode === 'login' && (
-                  <button type="button" onClick={() => switchMode('forgot')}
-                    className="self-end text-xs font-medium text-[#7c6bff] hover:underline">
-                    {t('forgotPasswordLink')}
-                  </button>
-                )}
-
-                {error && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">{error}</p>}
-                {info  && <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">{info}</p>}
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="mt-1 flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold text-white transition-all duration-200 hover:scale-[1.02] active:scale-[.98] disabled:opacity-60"
-                  style={{ background: 'linear-gradient(135deg, #7c6bff, #a855f7)' }}
-                >
-                  {loading
-                    ? t('buttons.pleaseWait')
-                    : mode === 'login' ? t('buttons.login')
-                    : mode === 'signup' ? t('buttons.signup')
-                    : t('buttons.sendLink')}
-                  {!loading && <ArrowRight size={15} />}
+              {/* CTAs */}
+              <div className="mc-up d5 w-full space-y-2.5">
+                <button onClick={() => open('login')}
+                  className="group flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-[13.5px] font-semibold text-white transition-all duration-200 hover:opacity-90 active:scale-[.98]"
+                  style={{ background: 'linear-gradient(135deg, #6d62f0, #a855f7)' }}>
+                  Sign in
+                  <ArrowRight size={15} className="transition-transform duration-200 group-hover:translate-x-0.5" />
                 </button>
-              </form>
-
-              {mode === 'forgot' ? (
-                <p className="mt-4 text-center text-sm text-gray-400">
-                  <button onClick={() => switchMode('login')} className="font-medium text-[#7c6bff] hover:underline">
-                    {t('buttons.backToLogin')}
-                  </button>
-                </p>
-              ) : (
-                <p className="mt-4 text-center text-sm text-gray-400">
-                  {mode === 'login' ? t('buttons.noAccount') : t('buttons.hasAccount')}{' '}
-                  <button onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')}
-                    className="font-medium text-[#7c6bff] hover:underline">
-                    {mode === 'login' ? t('buttons.register') : t('buttons.login')}
-                  </button>
-                </p>
-              )}
-
-              <div className="mt-5 flex justify-center gap-5 text-xs text-gray-300 dark:text-white/20">
-                <Link to="/datenschutz" className="hover:underline">{t('footer.privacy')}</Link>
-                <Link to="/impressum" className="hover:underline">{t('footer.imprint')}</Link>
+                <button onClick={() => open('signup')}
+                  className="w-full rounded-2xl border border-white/[.13] py-3 text-[13.5px] font-semibold text-white/70 backdrop-blur-sm transition-all duration-200 hover:border-white/25 hover:text-white active:scale-[.98]">
+                  Create account
+                </button>
+                <div className="flex justify-center gap-4 pt-2 text-[11px] text-white/20">
+                  <Link to="/datenschutz" className="hover:text-white/40 transition-colors">{t('footer.privacy')}</Link>
+                  <Link to="/impressum"   className="hover:text-white/40 transition-colors">{t('footer.imprint')}</Link>
+                </div>
               </div>
             </div>
-          </>
-        )}
+          )}
+
+          {/* Auth phase — bottom sheet */}
+          {phase === 'auth' && (
+            <>
+              {/* background: logo + branding visible above sheet */}
+              <div className="flex flex-1 flex-col items-center justify-center">
+                <div className="mc-float">
+                  <img src="/logo-full.svg" alt="MoonCrew" className="h-14 w-auto opacity-50" />
+                </div>
+                <p className="mt-3 text-[12px] font-medium uppercase tracking-widest text-white/20">MoonCrew</p>
+              </div>
+
+              {/* the sheet */}
+              <div className="sheet-up glass-sheet relative rounded-t-[2rem] px-6 pb-10 pt-5">
+                {/* drag handle */}
+                <div className="mx-auto mb-5 h-[3px] w-9 rounded-full bg-white/[.12]" />
+
+                {/* back button */}
+                <button onClick={() => setPhase('hero')}
+                  className="absolute left-5 top-5 flex items-center gap-1 text-[12px] text-white/35 hover:text-white/65 transition-colors">
+                  <ChevronLeft size={14} />Back
+                </button>
+
+                {AuthForm}
+
+                <div className="mt-5 flex justify-center gap-5 text-[11px] text-white/15">
+                  <Link to="/datenschutz" className="hover:text-white/40 transition-colors">{t('footer.privacy')}</Link>
+                  <Link to="/impressum"   className="hover:text-white/40 transition-colors">{t('footer.imprint')}</Link>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </>
   )
