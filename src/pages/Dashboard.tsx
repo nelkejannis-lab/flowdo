@@ -40,6 +40,7 @@ export default function Dashboard() {
   const calendarEntries = useCalendarEntriesStore((s) => s.entries)
   const fetchCalendarEntries = useCalendarEntriesStore((s) => s.fetchEntries)
   const featureVisibility = useSettingsStore((s) => s.featureVisibility)
+  const dashboardVisibility = useSettingsStore((s) => s.dashboardVisibility)
   const [showForm, setShowForm] = useState(false)
   const [showEntries, setShowEntries] = useState(true)
   const [showWeekEntries, setShowWeekEntries] = useState(true)
@@ -134,13 +135,13 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {featureVisibility.weather && (
+      {featureVisibility.weather && dashboardVisibility.weather && (
         <div className="mb-4">
           <WeatherWidget />
         </div>
       )}
 
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {dashboardVisibility.stats && <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
           <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('stats.dueThisWeek')}</p>
           <p className="mt-1 text-3xl font-bold">{weekTasks.length}</p>
@@ -167,9 +168,9 @@ export default function Dashboard() {
             {isWorkTimeRunning ? <Square size={16} /> : <Play size={18} className="ml-0.5" />}
           </button>
         </div>
-      </div>
+      </div>}
 
-      {(todayEntries.length > 0 || allTasks.some((tk) => !tk.completed && (isDueToday(tk.dueDate) || isOverdue(tk.dueDate)))) && (
+      {dashboardVisibility.todayTasks && (todayEntries.length > 0 || allTasks.some((tk) => !tk.completed && (isDueToday(tk.dueDate) || isOverdue(tk.dueDate)))) && (
         <div className="mb-6">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-lg font-semibold">{t('sections.todayCalendar')}</h2>
@@ -202,7 +203,7 @@ export default function Dashboard() {
       )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div>
+        {dashboardVisibility.upcomingDeadlines !== false && <div>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-lg font-semibold">{t('sections.dueThisWeek')}</h2>
             <div className="flex items-center gap-3">
@@ -227,10 +228,10 @@ export default function Dashboard() {
           </div>
           {showWeekEntries && <CalendarEntriesBlock entries={weekEntries} label="Termine diese Woche" today={today} />}
           <TaskList tasks={weekTasks} groupByDate emptyMessage={t('noTasksThisWeek')} />
-        </div>
+        </div>}
 
         <div className="flex flex-col gap-6">
-          <div>
+          {dashboardVisibility.upcomingDeadlines && <div>
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-lg font-semibold">{t('sections.upcomingDeadlines')}</h2>
               <Link to="/projekte" className="text-sm font-medium text-accent hover:underline">
@@ -246,9 +247,9 @@ export default function Dashboard() {
                 ))}
               </div>
             )}
-          </div>
+          </div>}
 
-          <div>
+          {dashboardVisibility.nextEvents && <div>
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-lg font-semibold">{t('sections.upcomingEvents')}</h2>
               <Link to="/calendar" className="text-sm font-medium text-accent hover:underline">
@@ -289,11 +290,11 @@ export default function Dashboard() {
                 })}
               </div>
             )}
-          </div>
+          </div>}
         </div>
       </div>
 
-      <div className="mt-6">
+      {dashboardVisibility.projectsOverview && <div className="mt-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold">{t('sections.projectsOverview')}</h2>
           <Link to="/projekte" className="text-sm font-medium text-accent hover:underline">
@@ -309,7 +310,7 @@ export default function Dashboard() {
             ))}
           </div>
         )}
-      </div>
+      </div>}
 
       {showForm && (
         <TaskFormModal defaultDueDate={todayISO()} onClose={() => setShowForm(false)} />

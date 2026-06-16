@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Bell, CalendarDays, Clock, Cloud, Download, Eye, EyeOff, Grid2x2, Instagram, Loader2, MessageCircle, Plus, RefreshCw, Sparkles, Trash2, Upload, Users, X } from 'lucide-react'
+import { BarChart2, Bell, CalendarClock, CalendarDays, CheckSquare, Clock, Cloud, Download, Eye, EyeOff, FolderKanban, Grid2x2, Instagram, Loader2, MessageCircle, Plus, RefreshCw, Sparkles, Trash2, Upload, Users, X } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { uploadAvatar } from '../lib/avatar'
 import { BOARD_COLORS } from '../store/boardsStore'
 import { useCalendarConnectionsStore } from '../store/calendarConnectionsStore'
-import { useSettingsStore, type FeatureKey } from '../store/settingsStore'
+import { useSettingsStore, type DashboardWidget, type FeatureKey } from '../store/settingsStore'
 import { useWorkTimeStore } from '../store/workTimeStore'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { useSearchParams } from 'react-router-dom'
@@ -33,6 +33,8 @@ export default function SettingsPage() {
   const setLanguage = useSettingsStore((s) => s.setLanguage)
   const featureVisibility = useSettingsStore((s) => s.featureVisibility)
   const toggleFeature = useSettingsStore((s) => s.toggleFeature)
+  const dashboardVisibility = useSettingsStore((s) => s.dashboardVisibility)
+  const toggleDashboardWidget = useSettingsStore((s) => s.toggleDashboardWidget)
   const notifyAppointments = useSettingsStore((s) => s.notifyAppointments)
   const notifyChat = useSettingsStore((s) => s.notifyChat)
   const notifyTasks = useSettingsStore((s) => s.notifyTasks)
@@ -362,6 +364,42 @@ export default function SettingsPage() {
                     </div>
                   )
                 })}
+            </div>
+          </div>
+
+          {/* Dashboard */}
+          <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+            <h2 className="mb-1 text-sm font-semibold">Dashboard</h2>
+            <p className="mb-3 text-xs text-gray-400">Wähle aus, was auf deinem Dashboard angezeigt wird.</p>
+            <div className="flex flex-col divide-y divide-gray-100 dark:divide-racing-800">
+              {([
+                { key: 'weather' as DashboardWidget, icon: <Cloud size={18} />, label: 'Wetter', desc: 'Aktuelles Wetter deines Standorts' },
+                { key: 'stats' as DashboardWidget, icon: <BarChart2 size={18} />, label: 'Statistiken', desc: 'Aufgaben, Projekte und Arbeitszeit' },
+                { key: 'todayTasks' as DashboardWidget, icon: <CheckSquare size={18} />, label: 'Heute', desc: 'Heutige Aufgaben und Termine' },
+                { key: 'upcomingDeadlines' as DashboardWidget, icon: <Clock size={18} />, label: 'Deadlines', desc: 'Anstehende Projekt-Deadlines' },
+                { key: 'nextEvents' as DashboardWidget, icon: <CalendarClock size={18} />, label: 'Events', desc: 'Nächste Ereignisse' },
+                { key: 'projectsOverview' as DashboardWidget, icon: <FolderKanban size={18} />, label: 'Projektübersicht', desc: 'Alle aktiven Projekte' },
+              ]).map(({ key, icon, label, desc }) => {
+                const enabled = dashboardVisibility[key]
+                return (
+                  <div key={key} className="flex items-center gap-3 py-3">
+                    <span className="flex-shrink-0 text-gray-400">{icon}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">{label}</p>
+                      <p className="text-xs text-gray-400">{desc}</p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={enabled}
+                      onClick={() => toggleDashboardWidget(key)}
+                      className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${enabled ? 'bg-[#34c759]' : 'bg-gray-200 dark:bg-racing-700'}`}
+                    >
+                      <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+                )
+              })}
             </div>
           </div>
 

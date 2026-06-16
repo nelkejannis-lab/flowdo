@@ -18,6 +18,17 @@ export const DEFAULT_FEATURE_VISIBILITY: Record<FeatureKey, boolean> = {
   weather: true,
 }
 
+export type DashboardWidget = 'weather' | 'stats' | 'todayTasks' | 'upcomingDeadlines' | 'nextEvents' | 'projectsOverview'
+
+export const DEFAULT_DASHBOARD_VISIBILITY: Record<DashboardWidget, boolean> = {
+  weather: true,
+  stats: true,
+  todayTasks: true,
+  upcomingDeadlines: true,
+  nextEvents: true,
+  projectsOverview: true,
+}
+
 export const DEFAULT_COLOR_LABELS: Record<string, string> = Object.fromEntries(
   NAMED_COLORS.map((c) => [c.hex, c.label])
 )
@@ -27,6 +38,7 @@ interface SettingsState {
   pinkAccent: boolean
   language: Language
   featureVisibility: Record<FeatureKey, boolean>
+  dashboardVisibility: Record<DashboardWidget, boolean>
   colorLabels: Record<string, string>
   notifyAppointments: boolean
   notifyChat: boolean
@@ -36,6 +48,7 @@ interface SettingsState {
   togglePinkAccent: () => void
   setLanguage: (language: Language) => void
   toggleFeature: (key: FeatureKey) => void
+  toggleDashboardWidget: (key: DashboardWidget) => void
   setColorLabel: (hex: string, label: string) => void
   setNotifyAppointments: (v: boolean) => void
   setNotifyChat: (v: boolean) => void
@@ -54,6 +67,7 @@ export const useSettingsStore = create<SettingsState>()(
       pinkAccent: false,
       language: 'de',
       featureVisibility: { ...DEFAULT_FEATURE_VISIBILITY },
+      dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY },
       colorLabels: { ...DEFAULT_COLOR_LABELS },
       notifyAppointments: true,
       notifyChat: true,
@@ -67,6 +81,8 @@ export const useSettingsStore = create<SettingsState>()(
       },
       toggleFeature: (key) =>
         set((s) => ({ featureVisibility: { ...s.featureVisibility, [key]: !s.featureVisibility[key] } })),
+      toggleDashboardWidget: (key) =>
+        set((s) => ({ dashboardVisibility: { ...s.dashboardVisibility, [key]: !s.dashboardVisibility[key] } })),
       setColorLabel: (hex, label) =>
         set((s) => ({ colorLabels: { ...s.colorLabels, [hex]: label } })),
       setNotifyAppointments: (v) => set({ notifyAppointments: v }),
@@ -76,7 +92,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'flowdo-settings',
-      version: 3,
+      version: 4, // bumped: adds weather to featureVisibility + dashboardVisibility
       migrate: (persisted, version) => {
         const legacy = persisted as LegacyState & Partial<SettingsState>
         if (version < 1) {
@@ -85,12 +101,14 @@ export const useSettingsStore = create<SettingsState>()(
             pinkAccent: legacy.theme === 'pink',
             language: 'de',
             featureVisibility: { ...DEFAULT_FEATURE_VISIBILITY },
+            dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY },
           }
         }
         return {
           ...legacy,
           language: legacy.language ?? 'de',
           featureVisibility: { ...DEFAULT_FEATURE_VISIBILITY, ...legacy.featureVisibility },
+          dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY, ...(legacy as any).dashboardVisibility },
           colorLabels: { ...DEFAULT_COLOR_LABELS, ...(legacy as any).colorLabels },
         }
       },
