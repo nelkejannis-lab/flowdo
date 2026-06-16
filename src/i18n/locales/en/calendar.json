@@ -73,6 +73,7 @@
     "endTimeOptional": "To (time, optional)",
     "descriptionPlaceholder": "Description (optional)",
     "inviteColleagues": "Invite colleagues",
+    "wholeTeam": "Whole team",
     "color": "Color",
     "recurrence": {
       "label": "Repeat",

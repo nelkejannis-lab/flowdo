@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CalendarClock, CalendarHeart, Plane, RefreshCw, Sparkles } from 'lucide-react'
 import Modal from '../layout/Modal'
-import { useEventsStore, EVENT_COLORS } from '../../store/eventsStore'
+import { useEventsStore, EVENT_COLORS, NAMED_COLORS } from '../../store/eventsStore'
 import { useCalendarEntriesStore } from '../../store/calendarEntriesStore'
 import { useFriendsStore } from '../../store/friendsStore'
 import { isSupabaseConfigured } from '../../lib/supabase'
@@ -250,6 +250,7 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
               <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.startTimeOptional')}</label>
               <input
                 type="time"
+                step="300"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
                 className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
@@ -259,6 +260,7 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
               <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.endTimeOptional')}</label>
               <input
                 type="time"
+                step="300"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
                 className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
@@ -304,6 +306,21 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.inviteColleagues')}</label>
             <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const allIds = friends.map((f) => f.profile.id)
+                  const allSelected = allIds.every((id) => invitedUserIds.includes(id))
+                  setInvitedUserIds(allSelected ? [] : allIds)
+                }}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                  friends.every((f) => invitedUserIds.includes(f.profile.id))
+                    ? 'border-accent bg-accent/10 text-accent'
+                    : 'border-gray-200 text-gray-500 hover:border-gray-300 dark:border-racing-700 dark:text-racing-200'
+                }`}
+              >
+                {t('form.wholeTeam')}
+              </button>
               {friends.map((f) => {
                 const active = invitedUserIds.includes(f.profile.id)
                 return (
@@ -328,14 +345,20 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
         <div>
           <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.color')}</label>
           <div className="flex flex-wrap gap-2">
-            {EVENT_COLORS.map((c) => (
+            {NAMED_COLORS.map((c) => (
               <button
                 type="button"
-                key={c}
-                onClick={() => setColor(c)}
-                className={`h-7 w-7 rounded-full border-2 ${color === c ? 'border-gray-900 dark:border-white' : 'border-transparent'}`}
-                style={{ backgroundColor: c }}
-              />
+                key={c.hex}
+                onClick={() => setColor(c.hex)}
+                title={c.label}
+                className={`flex flex-col items-center gap-0.5 rounded-lg p-1 transition-colors ${color === c.hex ? 'bg-gray-100 dark:bg-racing-800' : 'hover:bg-gray-50 dark:hover:bg-racing-800/50'}`}
+              >
+                <span
+                  className={`h-6 w-6 rounded-full border-2 ${color === c.hex ? 'border-gray-900 dark:border-white' : 'border-transparent'}`}
+                  style={{ backgroundColor: c.hex }}
+                />
+                <span className="text-[9px] leading-none text-gray-500 dark:text-racing-300">{c.label}</span>
+              </button>
             ))}
           </div>
         </div>

@@ -18,6 +18,7 @@
   "sections": {
     "dueThisWeek": "Due this week",
     "upcomingDeadlines": "Upcoming deadlines",
+    "todayCalendar": "Today in calendar",
     "upcomingEvents": "Upcoming events",
     "projectsOverview": "Projects overview"
   },

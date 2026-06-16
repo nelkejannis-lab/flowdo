@@ -136,6 +136,20 @@ export const useEventsStore = create<EventsState>()(
   )
 )
 
-export const EVENT_COLORS = [
-  '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#06B6D4', '#EF4444',
+export const NAMED_COLORS: { hex: string; label: string }[] = [
+  { hex: '#8B5CF6', label: 'Meeting' },
+  { hex: '#EF4444', label: 'Dringend' },
+  { hex: '#F59E0B', label: 'Deadline' },
+  { hex: '#10B981', label: 'Erledigt' },
+  { hex: '#06B6D4', label: 'Info' },
+  { hex: '#EC4899', label: 'Wichtig' },
+  { hex: '#3B82F6', label: 'Präsentation' },
+  { hex: '#F97316', label: 'Reise' },
+  { hex: '#14B8A6', label: 'Privat' },
+  { hex: '#84CC16', label: 'Sport' },
+  { hex: '#6366F1', label: 'Lernen' },
+  { hex: '#DB2777', label: 'Social' },
+  { hex: '#64748B', label: 'Sonstige' },
 ]
+
+export const EVENT_COLORS = NAMED_COLORS.map((c) => c.hex)

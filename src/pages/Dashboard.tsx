@@ -10,6 +10,8 @@ import { useProjectTasksStore } from '../store/projectTasksStore'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { useWorkTimeStore } from '../store/workTimeStore'
 import { useEventsStore } from '../store/eventsStore'
+import { useCalendarEntriesStore } from '../store/calendarEntriesStore'
+import { entryTypeIcon } from '../utils/calendarEntry'
 import TaskList from '../components/tasks/TaskList'
 import TaskFormModal from '../components/tasks/TaskFormModal'
 import BoardCard from '../components/boards/BoardCard'
@@ -33,6 +35,8 @@ export default function Dashboard() {
   const clockOut = useWorkTimeStore((s) => s.clockOut)
   const events = useEventsStore((s) => s.events)
   const fetchEvents = useEventsStore((s) => s.fetchAll)
+  const calendarEntries = useCalendarEntriesStore((s) => s.entries)
+  const fetchCalendarEntries = useCalendarEntriesStore((s) => s.fetchEntries)
   const [showForm, setShowForm] = useState(false)
 
   useEffect(() => {
@@ -41,9 +45,10 @@ export default function Dashboard() {
       fetchMyProjectTasks()
       fetchTasks()
       fetchEvents()
+      fetchCalendarEntries()
       fetchWorkTime()
     }
-  }, [fetchBoards, fetchMyProjectTasks, fetchTasks, fetchEvents, fetchWorkTime])
+  }, [fetchBoards, fetchMyProjectTasks, fetchTasks, fetchEvents, fetchCalendarEntries, fetchWorkTime])
 
   const [, forceTick] = useState(0)
   useEffect(() => {
@@ -64,6 +69,11 @@ export default function Dashboard() {
     .slice(0, 3)
 
   const today = todayISO()
+
+  const todayEntries = calendarEntries.filter(
+    (e) => e.date <= today && (!e.endDate || e.endDate >= today)
+  ).sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? ''))
+
   const upcomingEvents = events
     .filter((e) => e.date >= today || (e.endDate && e.endDate >= today))
     .sort((a, b) => (a.date < b.date ? -1 : 1))
@@ -114,6 +124,45 @@ export default function Dashboard() {
           </button>
         </div>
       </div>
+
+      {todayEntries.length > 0 && (
+        <div className="mb-6">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-semibold">{t('sections.todayCalendar')}</h2>
+            <Link to="/calendar" className="text-sm font-medium text-accent hover:underline">
+              {t('calendar')}
+            </Link>
+          </div>
+          <div className="flex flex-col gap-2">
+            {todayEntries.map((entry) => (
+              <div
+                key={entry.id}
+                className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 dark:border-racing-800 dark:bg-racing-900"
+              >
+                <span
+                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-base text-white"
+                  style={{ backgroundColor: entry.color }}
+                >
+                  {entryTypeIcon[entry.type]}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{entry.title}</p>
+                  {(entry.startTime || entry.endTime) && (
+                    <p className="text-xs text-gray-400">
+                      {entry.startTime ?? ''}{entry.endTime ? ` – ${entry.endTime}` : ''}
+                    </p>
+                  )}
+                </div>
+                {entry.endDate && entry.endDate > today && (
+                  <span className="flex-shrink-0 text-xs font-medium text-accent">
+                    {t('eventStatus.ongoing')}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div>

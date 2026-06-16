@@ -18,6 +18,7 @@
   "sections": {
     "dueThisWeek": "Diese Woche fällig",
     "upcomingDeadlines": "Anstehende Deadlines",
+    "todayCalendar": "Heute im Kalender",
     "upcomingEvents": "Nächste Events",
     "projectsOverview": "Projekte-Übersicht"
   },
