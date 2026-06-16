@@ -157,10 +157,11 @@ export interface WorkDayEntry {
 }
 
 export interface WorkTimeSettings {
-  weeklyHours: number
+  weeklyHours: number       // contract hours/week (e.g. 38.5)
   workDaysPerWeek: number
   defaultBreakMinutes: number
-  fridayHours?: number // separate target for Fridays (e.g. 7.25 for 7:15h)
+  weekdayHours?: number     // Mon-Thu schedule target (e.g. 8.0)
+  fridayHours?: number      // Friday schedule target (e.g. 7.25)
 }
 
 export interface WorkProfile {
@@ -169,6 +170,7 @@ export interface WorkProfile {
   weeklyHours: number
   workDaysPerWeek: number
   defaultBreakMinutes: number
+  weekdayHours?: number
   fridayHours?: number
 }
 

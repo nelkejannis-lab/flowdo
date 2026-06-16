@@ -9,6 +9,7 @@ const GBM_PROFILE: WorkProfile = {
   weeklyHours: 38.5,
   workDaysPerWeek: 5,
   defaultBreakMinutes: 45,
+  weekdayHours: 8.0,
   fridayHours: 7.25,
 }
 import { todayISO } from '../utils/date'
@@ -19,6 +20,7 @@ const defaultSettings: WorkTimeSettings = {
   weeklyHours: 38.5,
   workDaysPerWeek: 5,
   defaultBreakMinutes: 45,
+  weekdayHours: 8.0,
   fridayHours: 7.25,
 }
 
@@ -27,6 +29,7 @@ interface WorkTimeSettingsRow {
   work_days_per_week: number
   default_break_minutes: number
   friday_hours: number | null
+  weekday_hours: number | null
   settled_weekend_days: number
   running_started_at: string | null
   running_date: string | null
@@ -105,6 +108,7 @@ async function syncSettings(settings: WorkTimeSettings, settledWeekendDays: numb
     work_days_per_week: settings.workDaysPerWeek,
     default_break_minutes: settings.defaultBreakMinutes,
     friday_hours: settings.fridayHours ?? null,
+    weekday_hours: settings.weekdayHours ?? null,
     settled_weekend_days: settledWeekendDays,
     updated_at: new Date().toISOString(),
   })
@@ -171,6 +175,7 @@ export const useWorkTimeStore = create<WorkTimeState>()(
               workDaysPerWeek: settingsRow.work_days_per_week,
               defaultBreakMinutes: settingsRow.default_break_minutes,
               fridayHours: settingsRow.friday_hours ?? undefined,
+              weekdayHours: settingsRow.weekday_hours ?? undefined,
             }
           : get().settings
         const settledWeekendDays = settingsRow ? settingsRow.settled_weekend_days : get().settledWeekendDays
@@ -288,7 +293,14 @@ export const useWorkTimeStore = create<WorkTimeState>()(
         const profile = get().workProfiles.find((p) => p.id === id)
         if (!profile) return
         const { name: _name, id: _id, ...settingsFromProfile } = profile
-        const settings = { ...get().settings, ...settingsFromProfile }
+        const settings: WorkTimeSettings = {
+          ...get().settings,
+          weeklyHours: settingsFromProfile.weeklyHours,
+          workDaysPerWeek: settingsFromProfile.workDaysPerWeek,
+          defaultBreakMinutes: settingsFromProfile.defaultBreakMinutes,
+          weekdayHours: settingsFromProfile.weekdayHours,
+          fridayHours: settingsFromProfile.fridayHours,
+        }
         set({ activeProfileId: id, settings })
         void syncSettings(settings, get().settledWeekendDays)
       },

@@ -1,19 +1,28 @@
 import { isWeekend, isFriday, parseISO } from 'date-fns'
 import type { WorkDayEntry, WorkTimeSettings } from '../types'
 
+// Contract-based daily average (used for overtime overview vs contract)
 export function dailyTargetMinutes(settings: WorkTimeSettings): number {
   return (settings.weeklyHours * 60) / settings.workDaysPerWeek
 }
 
-export function fridayTargetMinutes(settings: WorkTimeSettings): number {
-  if (settings.fridayHours != null) return settings.fridayHours * 60
+// Mon-Thu schedule target (for table display)
+export function weekdayTargetMinutes(settings: WorkTimeSettings): number {
+  if (settings.weekdayHours != null) return settings.weekdayHours * 60
   return dailyTargetMinutes(settings)
 }
 
+// Friday schedule target (for table display)
+export function fridayTargetMinutes(settings: WorkTimeSettings): number {
+  if (settings.fridayHours != null) return settings.fridayHours * 60
+  return weekdayTargetMinutes(settings)
+}
+
+// Per-day schedule target (table "Soll" column)
 export function dayTargetMinutes(date: Date, settings: WorkTimeSettings): number {
   if (isWeekend(date)) return 0
   if (isFriday(date)) return fridayTargetMinutes(settings)
-  return dailyTargetMinutes(settings)
+  return weekdayTargetMinutes(settings)
 }
 
 export function netMinutes(entry?: WorkDayEntry): number {

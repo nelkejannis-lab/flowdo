@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Bell, CalendarDays, Clock, Download, Eye, EyeOff, Grid2x2, Instagram, Loader2, MessageCircle, RefreshCw, Sparkles, Trash2, Upload, Users, X } from 'lucide-react'
+import { Bell, CalendarDays, Clock, Download, Eye, EyeOff, Grid2x2, Instagram, Loader2, MessageCircle, Plus, RefreshCw, Sparkles, Trash2, Upload, Users, X } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { uploadAvatar } from '../lib/avatar'
 import { BOARD_COLORS } from '../store/boardsStore'
 import { useCalendarConnectionsStore } from '../store/calendarConnectionsStore'
 import { useSettingsStore, type FeatureKey } from '../store/settingsStore'
+import { useWorkTimeStore } from '../store/workTimeStore'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { useSearchParams } from 'react-router-dom'
 import { requestPermission, canNotify } from '../utils/notifications'
 import { SHORTCUTS } from '../hooks/useKeyboardShortcuts'
+import type { WorkProfile } from '../types'
 
 const FEATURE_ICONS: Record<FeatureKey, React.ReactNode> = {
   calendar: <CalendarDays size={18} />,
@@ -73,7 +75,15 @@ export default function SettingsPage() {
   const [savingPassword, setSavingPassword] = useState(false)
 
   const [searchParams] = useSearchParams()
-  const [activeTab, setActiveTab] = useState<'profil' | 'kalender' | 'funktionen' | 'datenschutz' | 'tastenkuerzel'>(searchParams.get('tab') === 'kalender' ? 'kalender' : 'profil')
+  const workProfiles = useWorkTimeStore((s) => s.workProfiles)
+  const activeProfileId = useWorkTimeStore((s) => s.activeProfileId)
+  const applyWorkProfile = useWorkTimeStore((s) => s.applyWorkProfile)
+  const addWorkProfile = useWorkTimeStore((s) => s.addWorkProfile)
+  const deleteWorkProfile = useWorkTimeStore((s) => s.deleteWorkProfile)
+  const [showAddProfile, setShowAddProfile] = useState(false)
+  const [newProfile, setNewProfile] = useState<Omit<WorkProfile, 'id'>>({ name: '', weeklyHours: 38.5, workDaysPerWeek: 5, defaultBreakMinutes: 45 })
+
+  const [activeTab, setActiveTab] = useState<'profil' | 'kalender' | 'funktionen' | 'datenschutz' | 'tastenkuerzel' | 'arbeitszeit'>(searchParams.get('tab') === 'kalender' ? 'kalender' : 'profil')
   const connections = useCalendarConnectionsStore((s) => s.connections)
   const fetchConnections = useCalendarConnectionsStore((s) => s.fetch)
   const disconnectCalendar = useCalendarConnectionsStore((s) => s.disconnect)
@@ -190,13 +200,13 @@ export default function SettingsPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 overflow-x-auto rounded-lg border border-gray-200 p-1 dark:border-racing-700 sm:w-fit">
-        {(['profil', 'kalender', 'funktionen', 'datenschutz', 'tastenkuerzel'] as const).map((tab) => (
+        {(['profil', 'kalender', 'funktionen', 'arbeitszeit', 'datenschutz', 'tastenkuerzel'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`flex-shrink-0 whitespace-nowrap rounded-md px-4 py-1.5 text-sm font-medium capitalize ${activeTab === tab ? 'bg-accent text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'}`}
           >
-            {tab === 'tastenkuerzel' ? 'Tastenkürzel' : t(`tabs.${tab}`)}
+            {tab === 'tastenkuerzel' ? 'Tastenkürzel' : tab === 'arbeitszeit' ? 'Arbeitszeit' : t(`tabs.${tab}`)}
           </button>
         ))}
       </div>
@@ -681,6 +691,106 @@ export default function SettingsPage() {
               {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
               {deleting ? t('privacy.deleting') : t('privacy.deleteButton')}
             </button>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'arbeitszeit' && (
+        <div className="flex flex-col gap-4">
+          <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+            <h2 className="mb-1 text-sm font-semibold">Abteilungsprofile / Department Profiles</h2>
+            <p className="mb-4 text-xs text-gray-400">Arbeitszeitregelungen für verschiedene Abteilungen — aktiviertes Profil wird für alle Berechnungen verwendet.</p>
+            <div className="flex flex-col gap-2">
+              {workProfiles.map((p) => (
+                <div key={p.id} className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 ${activeProfileId === p.id ? 'border-accent bg-accent/5' : 'border-gray-200 dark:border-racing-700'}`}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{p.name}</p>
+                    <p className="text-xs text-gray-400 truncate">
+                      {p.weeklyHours}h Vertrag · {p.workDaysPerWeek} Tage
+                      {p.weekdayHours != null ? ` · Mo–Do ${p.weekdayHours}h` : ''}
+                      {p.fridayHours != null ? ` · Fr ${p.fridayHours}h` : ''}
+                      · Pause {p.defaultBreakMinutes} Min.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => applyWorkProfile(p.id)}
+                    className={`flex-shrink-0 rounded-md px-2.5 py-1 text-xs font-semibold ${activeProfileId === p.id ? 'bg-accent text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-racing-800 dark:text-racing-200'}`}
+                  >
+                    {activeProfileId === p.id ? '✓ Aktiv' : 'Anwenden'}
+                  </button>
+                  {p.id !== 'gbm' && (
+                    <button onClick={() => deleteWorkProfile(p.id)} className="flex-shrink-0 p-1 text-gray-300 hover:text-red-500">
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              ))}
+
+              {!showAddProfile ? (
+                <button
+                  onClick={() => setShowAddProfile(true)}
+                  className="flex items-center gap-1.5 rounded-lg border border-dashed border-gray-200 px-3 py-2 text-xs text-gray-400 hover:border-accent hover:text-accent dark:border-racing-700"
+                >
+                  <Plus size={14} /> Neues Profil anlegen / New profile
+                </button>
+              ) : (
+                <div className="flex flex-col gap-2 rounded-lg border border-accent/30 bg-accent/5 p-3">
+                  <p className="text-xs font-semibold text-accent">Neues Profil</p>
+                  <input
+                    placeholder="Name (z.B. IT-Abteilung / Finance)"
+                    value={newProfile.name}
+                    onChange={(e) => setNewProfile((p) => ({ ...p, name: e.target.value }))}
+                    className="rounded-lg border border-gray-200 bg-transparent px-3 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="mb-0.5 block text-xs text-gray-400">Vertragsstunden/Woche</label>
+                      <input type="number" min={1} step={0.5} value={newProfile.weeklyHours}
+                        onChange={(e) => setNewProfile((p) => ({ ...p, weeklyHours: Number(e.target.value) }))}
+                        className="w-full rounded-lg border border-gray-200 bg-transparent px-2 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700" />
+                    </div>
+                    <div>
+                      <label className="mb-0.5 block text-xs text-gray-400">Arbeitstage/Woche</label>
+                      <input type="number" min={1} max={7} value={newProfile.workDaysPerWeek}
+                        onChange={(e) => setNewProfile((p) => ({ ...p, workDaysPerWeek: Number(e.target.value) }))}
+                        className="w-full rounded-lg border border-gray-200 bg-transparent px-2 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700" />
+                    </div>
+                    <div>
+                      <label className="mb-0.5 block text-xs text-gray-400">Mo–Do Stunden</label>
+                      <input type="number" min={0} step={0.25} placeholder="= Vertrag/Tage"
+                        value={newProfile.weekdayHours ?? ''}
+                        onChange={(e) => setNewProfile((p) => ({ ...p, weekdayHours: e.target.value === '' ? undefined : Number(e.target.value) }))}
+                        className="w-full rounded-lg border border-gray-200 bg-transparent px-2 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700" />
+                    </div>
+                    <div>
+                      <label className="mb-0.5 block text-xs text-gray-400">Freitag Stunden</label>
+                      <input type="number" min={0} step={0.25} placeholder="= Mo–Do"
+                        value={newProfile.fridayHours ?? ''}
+                        onChange={(e) => setNewProfile((p) => ({ ...p, fridayHours: e.target.value === '' ? undefined : Number(e.target.value) }))}
+                        className="w-full rounded-lg border border-gray-200 bg-transparent px-2 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700" />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="mb-0.5 block text-xs text-gray-400">Mittagspause (Min.)</label>
+                      <input type="number" min={0} step={5} value={newProfile.defaultBreakMinutes}
+                        onChange={(e) => setNewProfile((p) => ({ ...p, defaultBreakMinutes: Number(e.target.value) }))}
+                        className="w-full rounded-lg border border-gray-200 bg-transparent px-2 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700" />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { if (newProfile.name.trim()) { addWorkProfile(newProfile); setNewProfile({ name: '', weeklyHours: 38.5, workDaysPerWeek: 5, defaultBreakMinutes: 45 }); setShowAddProfile(false) } }}
+                      disabled={!newProfile.name.trim()}
+                      className="flex-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
+                    >
+                      Speichern
+                    </button>
+                    <button onClick={() => setShowAddProfile(false)} className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-500 dark:border-racing-700">
+                      Abbrechen
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
