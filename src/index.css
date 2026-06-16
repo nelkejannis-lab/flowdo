@@ -11,39 +11,42 @@
 }
 
 :root {
-  --accent: 71 114 250;
-  --accent-light: 110 143 255;
-  --accent-dark: 52 87 213;
+  /* Accent: near-black for light mode, overridden to near-white in dark */
+  --accent: 12 12 12;
+  --accent-light: 55 55 55;
+  --accent-dark: 0 0 0;
 
-  --racing-50: 230 239 234;
-  --racing-100: 194 217 204;
-  --racing-200: 143 185 161;
-  --racing-300: 92 154 119;
-  --racing-400: 47 119 82;
-  --racing-500: 27 94 60;
-  --racing-600: 21 80 52;
-  --racing-700: 15 61 41;
-  --racing-800: 11 46 31;
-  --racing-900: 8 34 24;
-  --racing-950: 4 20 14;
+  /* Neutral gray scale — used for dark mode surfaces */
+  --racing-50:  248 248 248;
+  --racing-100: 236 236 236;
+  --racing-200: 212 212 212;
+  --racing-300: 168 168 168;
+  --racing-400: 120 120 120;
+  --racing-500: 85 85 85;
+  --racing-600: 60 60 60;
+  --racing-700: 42 42 42;
+  --racing-800: 28 28 28;
+  --racing-900: 18 18 18;
+  --racing-950: 10 10 10;
 }
 
-.pink {
-  --accent: 236 72 153;
-  --accent-light: 244 114 182;
-  --accent-dark: 219 39 119;
+/* Dark mode: flip accent to near-white so buttons stay visible */
+.dark {
+  --accent: 240 240 240;
+  --accent-light: 255 255 255;
+  --accent-dark: 200 200 200;
+}
 
-  --racing-50: 254 240 248;
-  --racing-100: 251 214 236;
-  --racing-200: 242 168 212;
-  --racing-300: 224 102 184;
-  --racing-400: 194 70 158;
-  --racing-500: 153 51 122;
-  --racing-600: 122 41 96;
-  --racing-700: 92 31 71;
-  --racing-800: 61 21 48;
-  --racing-900: 42 15 32;
-  --racing-950: 26 10 20;
+/* Pink accent mode (optional, kept for toggle) */
+.pink {
+  --accent: 15 15 15;
+  --accent-light: 55 55 55;
+  --accent-dark: 0 0 0;
+}
+.dark.pink {
+  --accent: 240 240 240;
+  --accent-light: 255 255 255;
+  --accent-dark: 200 200 200;
 }
 
 html, body, #root {
@@ -59,7 +62,7 @@ body {
 }
 
 .dark body {
-  background: #1c1c1e;
+  background: #111111;
 }
 
 /* Apple-style scrollbars */
@@ -118,5 +121,8 @@ input, textarea, select {
 }
 
 input:focus, textarea:focus, select:focus {
-  box-shadow: 0 0 0 3px rgba(71,114,250,0.18);
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.10);
+}
+.dark input:focus, .dark textarea:focus, .dark select:focus {
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.10);
 }

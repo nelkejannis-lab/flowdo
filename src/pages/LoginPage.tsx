@@ -5,17 +5,15 @@ import { Eye, EyeOff, CalendarDays, CheckSquare, Clock, MessageCircle, ArrowRigh
 import { useAuthStore } from '../store/authStore'
 import { isSupabaseConfigured } from '../lib/supabase'
 
-const OWNER_ID = '6e6370e8-4dfc-4226-b5d5-8bcb6b9273f1'
-
 const FEATURES = [
-  { icon: CheckSquare, label: 'Tasks & Projects',   sub: 'Lists · Boards · Eisenhower', color: '#818cf8' },
-  { icon: CalendarDays, label: 'Calendar & Events', sub: 'Events · Invites · Teams',    color: '#34d399' },
-  { icon: Clock,        label: 'Time Tracking',     sub: 'Overtime · Profiles · Live',  color: '#fbbf24' },
-  { icon: MessageCircle,label: 'Team & Chat',       sub: 'Messages · Colleagues',       color: '#f472b6' },
+  { icon: CheckSquare,  label: 'Tasks & Projects',  sub: 'Lists · Boards · Eisenhower' },
+  { icon: CalendarDays, label: 'Calendar & Events', sub: 'Events · Invites · Teams'    },
+  { icon: Clock,        label: 'Time Tracking',     sub: 'Overtime · Profiles · Live'  },
+  { icon: MessageCircle,label: 'Team & Chat',       sub: 'Messages · Colleagues'       },
 ]
 
 /* ─── shared input style ─── */
-const inp = 'w-full rounded-xl border border-white/[.1] bg-white/[.06] px-3.5 py-2.5 text-[13.5px] text-white placeholder:text-white/30 transition-all duration-150 focus:border-violet-400/60 focus:bg-white/[.1] focus:outline-none'
+const inp = 'w-full rounded-xl border border-white/[.1] bg-white/[.05] px-3.5 py-2.5 text-[13.5px] text-white placeholder:text-white/25 transition-all duration-150 focus:border-white/30 focus:bg-white/[.09] focus:outline-none'
 
 export default function LoginPage() {
   const { t } = useTranslation('auth')
@@ -110,7 +108,7 @@ export default function LoginPage() {
                   const next = sel.name==='year' ? `${e.target.value}-${m}-${d}` : sel.name==='month' ? `${y}-${e.target.value}-${d}` : `${y}-${m}-${e.target.value}`
                   setBday(next)
                 }}
-                className="w-full rounded-xl border border-white/[.1] bg-white/[.06] px-2.5 py-2.5 text-[13px] text-white appearance-none focus:border-violet-400/60 focus:bg-white/[.1] focus:outline-none [color-scheme:dark]"
+                className="w-full rounded-xl border border-white/[.1] bg-white/[.05] px-2.5 py-2.5 text-[13px] text-white appearance-none focus:border-white/25 focus:bg-white/[.09] focus:outline-none [color-scheme:dark]"
               >
                 <option value="" disabled className="bg-[#1a1730] text-white/40">{sel.label}</option>
                 {sel.options.map((o) => typeof o === 'string'
@@ -145,7 +143,7 @@ export default function LoginPage() {
 
         {mode === 'login' && (
           <button type="button" onClick={() => switchMode('forgot')}
-            className="self-end text-[12px] font-medium text-violet-400 hover:text-violet-300 transition-colors">
+            className="self-end text-[12px] font-medium text-white/60 hover:text-white transition-colors">
             {t('forgotPasswordLink')}
           </button>
         )}
@@ -163,7 +161,7 @@ export default function LoginPage() {
 
         <button type="submit" disabled={busy}
           className="btn-glow mt-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-[13.5px] font-semibold text-white transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none"
-          style={{ background: 'linear-gradient(135deg, #6d62f0 0%, #a855f7 100%)' }}>
+          style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)' }}>
           {busy
             ? <span className="flex items-center gap-2"><span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />{t('buttons.pleaseWait')}</span>
             : <>{mode === 'login' ? 'Sign in' : mode === 'signup' ? 'Create account' : t('buttons.sendLink')}<ArrowRight size={14} /></>
@@ -180,7 +178,7 @@ export default function LoginPage() {
         <p className="mt-5 text-center text-[12px] text-white/30">
           {mode === 'login' ? t('buttons.noAccount') : t('buttons.hasAccount')}{' '}
           <button onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')}
-            className="font-semibold text-violet-400 hover:text-violet-300 transition-colors">
+            className="font-semibold text-white/60 hover:text-white transition-colors">
             {mode === 'login' ? t('buttons.register') : t('buttons.login')}
           </button>
         </p>
@@ -219,25 +217,26 @@ export default function LoginPage() {
           border: 1px solid rgba(255,255,255,.11);
           box-shadow: 0 32px 64px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.04) inset;
         }
-        /* feature card hover glow */
+        /* feature card hover */
         .feat-card {
-          transition: transform .2s cubic-bezier(.22,1,.36,1), background .2s, border-color .2s, box-shadow .2s;
+          transition: transform .22s cubic-bezier(.22,1,.36,1), background .22s, border-color .22s, box-shadow .22s;
         }
         .feat-card:hover {
           transform: translateY(-3px) scale(1.02);
           background: rgba(255,255,255,.07);
-          border-color: rgba(255,255,255,.14);
-          box-shadow: 0 8px 24px rgba(0,0,0,.3);
+          border-color: rgba(255,255,255,.16);
+          box-shadow: 0 8px 32px rgba(0,0,0,.4);
         }
-        /* submit btn hover */
+        /* submit btn */
+        .btn-glow { transition: transform .18s ease, box-shadow .18s ease; }
         .btn-glow:hover {
-          box-shadow: 0 0 28px rgba(109,98,240,.5), 0 4px 16px rgba(0,0,0,.3);
+          box-shadow: 0 0 0 1px rgba(255,255,255,.15), 0 8px 24px rgba(0,0,0,.4);
           transform: translateY(-1px);
         }
         .btn-glow:active { transform: translateY(0) scale(.98); }
         /* mobile bottom sheet */
         .glass-sheet {
-          background: linear-gradient(180deg, rgba(20,17,40,.97) 0%, rgba(14,12,28,.99) 100%);
+          background: linear-gradient(180deg, rgba(16,16,16,.98) 0%, rgba(10,10,10,1) 100%);
           backdrop-filter: blur(40px) saturate(180%);
           -webkit-backdrop-filter: blur(40px) saturate(180%);
           border-top: 1px solid rgba(255,255,255,.1);
@@ -248,14 +247,13 @@ export default function LoginPage() {
       {/* ══════════════════════════════════════════════════════════
           ROOT — dark starfield bg
       ══════════════════════════════════════════════════════════ */}
-      <div className="mc-grain relative min-h-screen overflow-hidden bg-[#07060f]">
+      <div className="mc-grain relative min-h-screen overflow-hidden bg-[#0a0a0a]">
 
-        {/* Ambient glow blobs */}
+        {/* Ambient — subtle white radials only, no color */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="mc-glow absolute -left-40 -top-40 h-[600px] w-[600px] rounded-full bg-violet-600/[.18] blur-[100px]" />
-          <div className="mc-glow absolute -right-32 top-[30%]  h-[440px] w-[440px] rounded-full bg-pink-500/[.12]   blur-[90px]" style={{animationDelay:'2.2s'}} />
-          <div className="mc-glow absolute bottom-[-10%] left-[35%] h-[360px] w-[360px] rounded-full bg-teal-400/[.08]  blur-[80px]" style={{animationDelay:'1.1s'}} />
-          <div className="mc-glow absolute top-[60%] left-[10%] h-[280px] w-[280px] rounded-full bg-blue-500/[.07]   blur-[70px]" style={{animationDelay:'3s'}} />
+          <div className="mc-glow absolute -left-48 -top-48 h-[640px] w-[640px] rounded-full bg-white/[.025] blur-[120px]" />
+          <div className="mc-glow absolute -right-32 top-[25%] h-[480px] w-[480px] rounded-full bg-white/[.018] blur-[100px]" style={{animationDelay:'2.5s'}} />
+          <div className="mc-glow absolute bottom-[-8%] left-[30%] h-[400px] w-[400px] rounded-full bg-white/[.015] blur-[90px]" style={{animationDelay:'1.2s'}} />
         </div>
 
         {/* ── DESKTOP layout (md+) ── */}
@@ -273,7 +271,7 @@ export default function LoginPage() {
               </div>
               <div>
                 <h1 className="text-4xl font-bold tracking-[-0.03em] text-white lg:text-5xl">
-                  Moon<span className="text-violet-400">Crew</span>
+                  Moon<span className="text-white/55">Crew</span>
                 </h1>
                 <p className="mt-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-white/25">
                   Work Organizer
@@ -290,13 +288,12 @@ export default function LoginPage() {
             <div className="mc-up d2 grid grid-cols-2 gap-2.5 w-full max-w-[360px]">
               {FEATURES.map((f, i) => (
                 <div key={f.label}
-                  className={`feat-card mc-up d${i+3} flex items-center gap-3 rounded-2xl border border-white/[.06] bg-white/[.03] px-3.5 py-3 backdrop-blur-sm cursor-default`}>
-                  <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg"
-                    style={{ backgroundColor: f.color + '1a' }}>
-                    <f.icon size={14} style={{ color: f.color }} />
+                  className={`feat-card mc-up d${i+3} flex items-center gap-3 rounded-2xl border border-white/[.07] bg-white/[.03] px-3.5 py-3 backdrop-blur-sm cursor-default`}>
+                  <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-white/[.07]">
+                    <f.icon size={14} className="text-white/60" />
                   </div>
                   <div>
-                    <p className="text-[11.5px] font-semibold text-white/85 leading-tight">{f.label}</p>
+                    <p className="text-[11.5px] font-semibold text-white/80 leading-tight">{f.label}</p>
                     <p className="text-[10px] text-white/30 leading-tight mt-0.5">{f.sub}</p>
                   </div>
                 </div>
@@ -314,7 +311,7 @@ export default function LoginPage() {
           <div className="w-[380px] flex-shrink-0 lg:w-[400px]">
             <div className="card-in glass w-full rounded-3xl p-7">
               <div className="mb-6 flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-500/20">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/[.08]">
                   <img src="/logo-full.svg" alt="" className="h-5 w-auto" />
                 </div>
                 <span className="text-[13px] font-semibold text-white/60">MoonCrew</span>
@@ -339,7 +336,7 @@ export default function LoginPage() {
                     className="h-20 w-auto drop-shadow-[0_0_28px_rgba(139,92,246,.55)]" />
                 </div>
                 <h1 className="mc-up d1 text-[28px] font-bold tracking-[-0.02em] text-white">
-                  Moon<span className="text-violet-400">Crew</span>
+                  Moon<span className="text-white/55">Crew</span>
                 </h1>
                 <p className="mc-up d2 mt-1 text-[11px] font-medium uppercase tracking-[0.18em] text-white/30">
                   Work Organizer
@@ -354,9 +351,8 @@ export default function LoginPage() {
                 {FEATURES.map((f) => (
                   <div key={f.label}
                     className="feat-card flex items-center gap-2.5 rounded-2xl border border-white/[.07] bg-white/[.04] px-3.5 py-3 backdrop-blur-sm cursor-default">
-                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg"
-                      style={{ backgroundColor: f.color + '1a' }}>
-                      <f.icon size={13} style={{ color: f.color }} />
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-white/[.07]">
+                      <f.icon size={13} className="text-white/60" />
                     </div>
                     <div>
                       <p className="text-[11.5px] font-semibold text-white/80">{f.label}</p>
@@ -370,7 +366,7 @@ export default function LoginPage() {
               <div className="mc-up d5 w-full space-y-2.5">
                 <button onClick={() => open('login')}
                   className="group flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-[13.5px] font-semibold text-white transition-all duration-200 hover:opacity-90 active:scale-[.98]"
-                  style={{ background: 'linear-gradient(135deg, #6d62f0, #a855f7)' }}>
+                  style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)' }}>
                   Sign in
                   <ArrowRight size={15} className="transition-transform duration-200 group-hover:translate-x-0.5" />
                 </button>
