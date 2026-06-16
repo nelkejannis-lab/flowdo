@@ -122,11 +122,12 @@ export default function WorkWeekView() {
               </div>
               <div className="flex items-center justify-end py-1 text-gray-400">{formatHM(target)}</div>
               <div
-                className={`flex items-center justify-end py-1 font-medium ${
+                className={`flex items-center justify-end gap-1 py-1 font-medium ${
                   diff > 0 ? 'text-emerald-500' : diff < 0 ? 'text-red-500' : 'text-gray-400'
                 }`}
               >
-                {diff === 0 ? '–' : `${diff > 0 ? '+' : ''}${formatHM(diff)}`}
+                {isLive || diff !== 0 ? `${diff > 0 ? '+' : ''}${formatHM(diff)}` : '–'}
+                {isLive && <span className="animate-pulse">●</span>}
               </div>
             </Fragment>
           )
