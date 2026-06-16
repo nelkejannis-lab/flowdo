@@ -27,11 +27,19 @@ interface SettingsState {
   language: Language
   featureVisibility: Record<FeatureKey, boolean>
   colorLabels: Record<string, string>
+  notifyAppointments: boolean
+  notifyChat: boolean
+  notifyTasks: boolean
+  appointmentReminderMinutes: number
   setMode: (mode: Mode) => void
   togglePinkAccent: () => void
   setLanguage: (language: Language) => void
   toggleFeature: (key: FeatureKey) => void
   setColorLabel: (hex: string, label: string) => void
+  setNotifyAppointments: (v: boolean) => void
+  setNotifyChat: (v: boolean) => void
+  setNotifyTasks: (v: boolean) => void
+  setAppointmentReminderMinutes: (v: number) => void
 }
 
 interface LegacyState {
@@ -46,6 +54,10 @@ export const useSettingsStore = create<SettingsState>()(
       language: 'de',
       featureVisibility: { ...DEFAULT_FEATURE_VISIBILITY },
       colorLabels: { ...DEFAULT_COLOR_LABELS },
+      notifyAppointments: true,
+      notifyChat: true,
+      notifyTasks: true,
+      appointmentReminderMinutes: 15,
       setMode: (mode) => set({ mode }),
       togglePinkAccent: () => set((s) => ({ pinkAccent: !s.pinkAccent })),
       setLanguage: (language) => {
@@ -56,6 +68,10 @@ export const useSettingsStore = create<SettingsState>()(
         set((s) => ({ featureVisibility: { ...s.featureVisibility, [key]: !s.featureVisibility[key] } })),
       setColorLabel: (hex, label) =>
         set((s) => ({ colorLabels: { ...s.colorLabels, [hex]: label } })),
+      setNotifyAppointments: (v) => set({ notifyAppointments: v }),
+      setNotifyChat: (v) => set({ notifyChat: v }),
+      setNotifyTasks: (v) => set({ notifyTasks: v }),
+      setAppointmentReminderMinutes: (v) => set({ appointmentReminderMinutes: v }),
     }),
     {
       name: 'flowdo-settings',

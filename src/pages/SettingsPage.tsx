@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { CalendarDays, Clock, Download, Eye, EyeOff, Grid2x2, Instagram, Loader2, MessageCircle, RefreshCw, Sparkles, Trash2, Upload, Users, X } from 'lucide-react'
+import { Bell, CalendarDays, Clock, Download, Eye, EyeOff, Grid2x2, Instagram, Loader2, MessageCircle, RefreshCw, Sparkles, Trash2, Upload, Users, X } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { uploadAvatar } from '../lib/avatar'
 import { BOARD_COLORS } from '../store/boardsStore'
@@ -9,6 +9,7 @@ import { useCalendarConnectionsStore } from '../store/calendarConnectionsStore'
 import { useSettingsStore, type FeatureKey } from '../store/settingsStore'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { useSearchParams } from 'react-router-dom'
+import { requestPermission, canNotify } from '../utils/notifications'
 
 const FEATURE_ICONS: Record<FeatureKey, React.ReactNode> = {
   calendar: <CalendarDays size={18} />,
@@ -28,6 +29,17 @@ export default function SettingsPage() {
   const setLanguage = useSettingsStore((s) => s.setLanguage)
   const featureVisibility = useSettingsStore((s) => s.featureVisibility)
   const toggleFeature = useSettingsStore((s) => s.toggleFeature)
+  const notifyAppointments = useSettingsStore((s) => s.notifyAppointments)
+  const notifyChat = useSettingsStore((s) => s.notifyChat)
+  const notifyTasks = useSettingsStore((s) => s.notifyTasks)
+  const appointmentReminderMinutes = useSettingsStore((s) => s.appointmentReminderMinutes)
+  const setNotifyAppointments = useSettingsStore((s) => s.setNotifyAppointments)
+  const setNotifyChat = useSettingsStore((s) => s.setNotifyChat)
+  const setNotifyTasks = useSettingsStore((s) => s.setNotifyTasks)
+  const setAppointmentReminderMinutes = useSettingsStore((s) => s.setAppointmentReminderMinutes)
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
+    canNotify() ? Notification.permission : 'denied'
+  )
   const profile = useAuthStore((s) => s.profile)
   const user = useAuthStore((s) => s.user)
   const updateProfile = useAuthStore((s) => s.updateProfile)
@@ -327,14 +339,114 @@ export default function SettingsPage() {
                         onClick={() => toggleFeature(key)}
                         className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${enabled ? 'bg-accent' : 'bg-gray-200 dark:bg-racing-700'}`}
                       >
-                        <span
-                          className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0'}`}
-                        />
+                        <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0'}`} />
                       </button>
                     </div>
                   )
                 })}
             </div>
+          </div>
+
+          {/* Benachrichtigungen */}
+          <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+            <div className="mb-3 flex items-center gap-2">
+              <Bell size={16} className="text-accent" />
+              <h2 className="text-sm font-semibold">Benachrichtigungen</h2>
+            </div>
+
+            {!canNotify() ? (
+              <p className="text-xs text-gray-400">Dein Browser unterstützt keine Benachrichtigungen.</p>
+            ) : notifPermission !== 'granted' ? (
+              <div className="flex flex-col gap-2">
+                <p className="text-xs text-gray-400">
+                  {notifPermission === 'denied'
+                    ? 'Benachrichtigungen wurden blockiert. Bitte erlaube sie in den Browser-Einstellungen.'
+                    : 'Erlaube Browser-Benachrichtigungen um Erinnerungen zu erhalten.'}
+                </p>
+                {notifPermission !== 'denied' && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const perm = await requestPermission()
+                      setNotifPermission(perm)
+                    }}
+                    className="self-start rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark"
+                  >
+                    Benachrichtigungen erlauben
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col divide-y divide-gray-100 dark:divide-racing-800">
+                {/* Termine */}
+                <div className="flex items-center gap-3 py-3">
+                  <CalendarDays size={16} className="flex-shrink-0 text-gray-400" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">Termine</p>
+                    <p className="text-xs text-gray-400">Erinnerung vor Terminen</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={notifyAppointments}
+                    onClick={() => setNotifyAppointments(!notifyAppointments)}
+                    className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${notifyAppointments ? 'bg-accent' : 'bg-gray-200 dark:bg-racing-700'}`}
+                  >
+                    <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${notifyAppointments ? 'translate-x-5' : 'translate-x-0'}`} />
+                  </button>
+                </div>
+                {notifyAppointments && (
+                  <div className="flex items-center gap-3 py-3 pl-7">
+                    <p className="min-w-0 flex-1 text-xs text-gray-500">Wie viele Minuten vorher?</p>
+                    <select
+                      value={appointmentReminderMinutes}
+                      onChange={(e) => setAppointmentReminderMinutes(Number(e.target.value))}
+                      className="rounded-lg border border-gray-200 bg-transparent px-2 py-1 text-xs focus:border-accent focus:outline-none dark:border-racing-700"
+                    >
+                      {[5, 10, 15, 30, 60].map((m) => (
+                        <option key={m} value={m}>{m} Minuten</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Chat */}
+                <div className="flex items-center gap-3 py-3">
+                  <MessageCircle size={16} className="flex-shrink-0 text-gray-400" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">Chat</p>
+                    <p className="text-xs text-gray-400">Neue Nachrichten</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={notifyChat}
+                    onClick={() => setNotifyChat(!notifyChat)}
+                    className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${notifyChat ? 'bg-accent' : 'bg-gray-200 dark:bg-racing-700'}`}
+                  >
+                    <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${notifyChat ? 'translate-x-5' : 'translate-x-0'}`} />
+                  </button>
+                </div>
+
+                {/* Tasks */}
+                <div className="flex items-center gap-3 py-3">
+                  <Clock size={16} className="flex-shrink-0 text-gray-400" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">Aufgaben</p>
+                    <p className="text-xs text-gray-400">Neue zugewiesene Aufgaben</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={notifyTasks}
+                    onClick={() => setNotifyTasks(!notifyTasks)}
+                    className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${notifyTasks ? 'bg-accent' : 'bg-gray-200 dark:bg-racing-700'}`}
+                  >
+                    <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${notifyTasks ? 'translate-x-5' : 'translate-x-0'}`} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

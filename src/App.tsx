@@ -21,6 +21,7 @@ import DatenschutzPage from './pages/legal/DatenschutzPage'
 import ImpressumPage from './pages/legal/ImpressumPage'
 import { useSettingsStore } from './store/settingsStore'
 import { useAuthStore } from './store/authStore'
+import { useNotifications } from './hooks/useNotifications'
 import { isSupabaseConfigured } from './lib/supabase'
 
 export default function App() {
@@ -32,6 +33,7 @@ export default function App() {
   const init = useAuthStore((s) => s.init)
   const loading = useAuthStore((s) => s.loading)
   const session = useAuthStore((s) => s.session)
+  useNotifications()
 
   useEffect(() => {
     const root = document.documentElement
