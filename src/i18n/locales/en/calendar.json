@@ -52,6 +52,22 @@
     "noneAway": "Nobody is currently away or on vacation.",
     "unknown": "Unknown"
   },
+  "termine": {
+    "title": "Appointments",
+    "add": "Add",
+    "empty": "No appointments",
+    "filters": {
+      "today": "Today",
+      "week": "This week",
+      "upcoming": "Upcoming",
+      "past": "Past",
+      "all": "All"
+    },
+    "tasks": "Tasks",
+    "appointments": "Appointments",
+    "noTasks": "No tasks",
+    "ongoing": "ongoing"
+  },
   "form": {
     "titleEdit": "Edit entry",
     "titleAdd": "Add",

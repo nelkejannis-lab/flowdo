@@ -52,6 +52,22 @@
     "noneAway": "Aktuell ist niemand außerhaus oder im Urlaub.",
     "unknown": "Unbekannt"
   },
+  "termine": {
+    "title": "Termine",
+    "add": "Hinzufügen",
+    "empty": "Keine Termine vorhanden",
+    "filters": {
+      "today": "Heute",
+      "week": "Diese Woche",
+      "upcoming": "Anstehend",
+      "past": "Vergangen",
+      "all": "Alle"
+    },
+    "tasks": "Aufgaben",
+    "appointments": "Termine",
+    "noTasks": "Keine Aufgaben",
+    "ongoing": "läuft"
+  },
   "form": {
     "titleEdit": "Eintrag bearbeiten",
     "titleAdd": "Hinzufügen",
