@@ -1,12 +1,19 @@
-import { isWeekend, parseISO } from 'date-fns'
+import { isWeekend, isFriday, parseISO } from 'date-fns'
 import type { WorkDayEntry, WorkTimeSettings } from '../types'
 
 export function dailyTargetMinutes(settings: WorkTimeSettings): number {
   return (settings.weeklyHours * 60) / settings.workDaysPerWeek
 }
 
+export function fridayTargetMinutes(settings: WorkTimeSettings): number {
+  if (settings.fridayHours != null) return settings.fridayHours * 60
+  return dailyTargetMinutes(settings)
+}
+
 export function dayTargetMinutes(date: Date, settings: WorkTimeSettings): number {
-  return isWeekend(date) ? 0 : dailyTargetMinutes(settings)
+  if (isWeekend(date)) return 0
+  if (isFriday(date)) return fridayTargetMinutes(settings)
+  return dailyTargetMinutes(settings)
 }
 
 export function netMinutes(entry?: WorkDayEntry): number {
@@ -53,9 +60,13 @@ export function durationBetween(startTime: string, endTime: string): number | nu
   return diff >= 0 ? diff : diff + 24 * 60
 }
 
-// Ab dieser Arbeitszeit an einem Wochenendtag gibt es einen vollen Ausgleichstag,
-// alles darüber zählt zusätzlich als Überstunden (7 Stunden 42 Minuten).
-export const WEEKEND_COMP_DAY_THRESHOLD_MINUTES = 7 * 60 + 42
+// Ab dieser Arbeitszeit an einem Wochenendtag gibt es einen vollen Ausgleichstag.
+export const WEEKEND_COMP_DAY_THRESHOLD_MINUTES = 6 * 60 // 6h minimum to earn a comp day
+
+export function weekendCompThreshold(settings: WorkTimeSettings): number {
+  // Use Friday hours as threshold if set, otherwise fall back to daily target
+  return fridayTargetMinutes(settings)
+}
 
 export interface OvertimeOverview {
   totalDiffMinutes: number
@@ -76,11 +87,11 @@ export function computeOverview(
     const net = netMinutes(entry)
 
     if (isWeekend(date)) {
-      if (net >= WEEKEND_COMP_DAY_THRESHOLD_MINUTES) {
+      const threshold = weekendCompThreshold(settings)
+      if (net >= threshold) {
         weekendDaysWorked++
-        // only hours above daily target count as overtime
-        const dailyTgt = dailyTargetMinutes(settings)
-        totalDiffMinutes += Math.max(0, net - dailyTgt)
+        // only hours above the full-day threshold count as overtime
+        totalDiffMinutes += Math.max(0, net - threshold)
       }
       // below threshold: weekend hours neither overtime nor comp day
     } else {

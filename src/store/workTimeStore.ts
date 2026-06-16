@@ -9,12 +9,14 @@ const defaultSettings: WorkTimeSettings = {
   weeklyHours: 38.5,
   workDaysPerWeek: 5,
   defaultBreakMinutes: 45,
+  fridayHours: 7.25,
 }
 
 interface WorkTimeSettingsRow {
   weekly_hours: number
   work_days_per_week: number
   default_break_minutes: number
+  friday_hours: number | null
   settled_weekend_days: number
   running_started_at: string | null
   running_date: string | null
@@ -87,6 +89,7 @@ async function syncSettings(settings: WorkTimeSettings, settledWeekendDays: numb
     weekly_hours: settings.weeklyHours,
     work_days_per_week: settings.workDaysPerWeek,
     default_break_minutes: settings.defaultBreakMinutes,
+    friday_hours: settings.fridayHours ?? null,
     settled_weekend_days: settledWeekendDays,
     updated_at: new Date().toISOString(),
   })
@@ -150,6 +153,7 @@ export const useWorkTimeStore = create<WorkTimeState>()(
               weeklyHours: Number(settingsRow.weekly_hours),
               workDaysPerWeek: settingsRow.work_days_per_week,
               defaultBreakMinutes: settingsRow.default_break_minutes,
+              fridayHours: settingsRow.friday_hours ?? undefined,
             }
           : get().settings
         const settledWeekendDays = settingsRow ? settingsRow.settled_weekend_days : get().settledWeekendDays

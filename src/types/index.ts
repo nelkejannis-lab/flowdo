@@ -160,6 +160,7 @@ export interface WorkTimeSettings {
   weeklyHours: number
   workDaysPerWeek: number
   defaultBreakMinutes: number
+  fridayHours?: number // separate target for Fridays (e.g. 7.25 for 7:15h)
 }
 
 export interface CalendarEvent {

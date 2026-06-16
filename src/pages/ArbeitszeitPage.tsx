@@ -50,6 +50,19 @@ function WorkTimeSettingsModal({ onClose }: { onClose: () => void }) {
             className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
           />
         </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-500">Freitag Regelarbeitszeit (h) / Friday target hours</label>
+          <input
+            type="number"
+            min={0}
+            step={0.25}
+            placeholder="wie Mo-Do / same as Mon-Thu"
+            value={settings.fridayHours ?? ''}
+            onChange={(e) => updateSettings({ fridayHours: e.target.value === '' ? undefined : Math.max(0, Number(e.target.value)) })}
+            className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+          />
+          <p className="mt-1 text-xs text-gray-400">GBM: 7,25 h (= 7:15h) · leer lassen = gleich wie Mo-Do</p>
+        </div>
         <button
           onClick={onClose}
           className="mt-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark"
