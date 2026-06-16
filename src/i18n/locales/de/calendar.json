@@ -88,8 +88,8 @@
     "startTimeOptional": "Von (Uhrzeit, optional)",
     "endTimeOptional": "Bis (Uhrzeit, optional)",
     "descriptionPlaceholder": "Beschreibung (optional)",
-    "inviteColleagues": "Kollegen einladen",
-    "wholeTeam": "Ganzes Team",
+    "inviteColleagues": "Einladen",
+    "wholeTeam": "Alle Kollegen",
     "color": "Farbe",
     "colorLabelPlaceholder": "Bezeichnung eingeben…",
     "recurrence": {

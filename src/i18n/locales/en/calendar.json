@@ -88,8 +88,8 @@
     "startTimeOptional": "From (time, optional)",
     "endTimeOptional": "To (time, optional)",
     "descriptionPlaceholder": "Description (optional)",
-    "inviteColleagues": "Invite colleagues",
-    "wholeTeam": "Whole team",
+    "inviteColleagues": "Invite",
+    "wholeTeam": "All colleagues",
     "color": "Color",
     "colorLabelPlaceholder": "Enter label…",
     "recurrence": {

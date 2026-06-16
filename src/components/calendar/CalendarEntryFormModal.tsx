@@ -7,6 +7,7 @@ import { useCalendarEntriesStore } from '../../store/calendarEntriesStore'
 import { useFriendsStore } from '../../store/friendsStore'
 import { useAuthStore } from '../../store/authStore'
 import { useSettingsStore } from '../../store/settingsStore'
+import { useTeamsStore } from '../../store/teamsStore'
 import { isSupabaseConfigured } from '../../lib/supabase'
 import type { CalendarEntry, CalendarEntryType, CalendarEvent } from '../../types'
 import { todayISO } from '../../utils/date'
@@ -58,6 +59,8 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
   const deleteEntry = useCalendarEntriesStore((s) => s.deleteEntry)
   const friends = useFriendsStore((s) => s.friends)
   const fetchFriends = useFriendsStore((s) => s.fetchAll)
+  const teams = useTeamsStore((s) => s.teams)
+  const fetchTeams = useTeamsStore((s) => s.fetch)
   const currentUserId = useAuthStore((s) => s.user?.id)
   const colorLabels = useSettingsStore((s) => s.colorLabels)
   const setColorLabel = useSettingsStore((s) => s.setColorLabel)
@@ -83,8 +86,8 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (isSupabaseConfigured && !editing) fetchFriends()
-  }, [fetchFriends, editing])
+    if (isSupabaseConfigured && !editing) { fetchFriends(); fetchTeams() }
+  }, [fetchFriends, fetchTeams, editing])
 
   useEffect(() => {
     if (!editing && kind !== 'event') {
@@ -311,43 +314,76 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
           className="rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
         />
 
-        {kind !== 'event' && isSupabaseConfigured && friends.length > 0 && (
+        {kind !== 'event' && isSupabaseConfigured && (friends.length > 0 || teams.length > 0) && (
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.inviteColleagues')}</label>
             <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  const allIds = friends.map((f) => f.profile.id)
-                  const allSelected = allIds.every((id) => invitedUserIds.includes(id))
-                  setInvitedUserIds(allSelected ? [] : allIds)
-                }}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                  friends.every((f) => invitedUserIds.includes(f.profile.id))
-                    ? 'border-accent bg-accent/10 text-accent'
-                    : 'border-gray-200 text-gray-500 hover:border-gray-300 dark:border-racing-700 dark:text-racing-200'
-                }`}
-              >
-                {t('form.wholeTeam')}
-              </button>
-              {friends.map((f) => {
-                const active = invitedUserIds.includes(f.profile.id)
+              {/* Ganzes Team */}
+              {friends.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const allIds = friends.map((f) => f.profile.id)
+                    const allSelected = allIds.every((id) => invitedUserIds.includes(id))
+                    setInvitedUserIds(allSelected ? [] : allIds)
+                  }}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                    friends.every((f) => invitedUserIds.includes(f.profile.id))
+                      ? 'border-accent bg-accent/10 text-accent'
+                      : 'border-gray-200 text-gray-500 hover:border-gray-300 dark:border-racing-700 dark:text-racing-200'
+                  }`}
+                >
+                  {t('form.wholeTeam')}
+                </button>
+              )}
+              {/* Teams als Gruppe */}
+              {teams.map((team) => {
+                const memberIds = team.members.map((m) => m.id)
+                const allIn = memberIds.length > 0 && memberIds.every((id) => invitedUserIds.includes(id))
                 return (
                   <button
                     type="button"
-                    key={f.profile.id}
-                    onClick={() => toggleInvitee(f.profile.id)}
+                    key={team.id}
+                    onClick={() => {
+                      if (allIn) {
+                        setInvitedUserIds((ids) => ids.filter((id) => !memberIds.includes(id)))
+                      } else {
+                        setInvitedUserIds((ids) => [...new Set([...ids, ...memberIds])])
+                      }
+                    }}
                     className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                      active
+                      allIn
                         ? 'border-accent bg-accent/10 text-accent'
                         : 'border-gray-200 text-gray-500 hover:border-gray-300 dark:border-racing-700 dark:text-racing-200'
                     }`}
                   >
-                    {f.profile.display_name}
+                    👥 {team.name}
                   </button>
                 )
               })}
             </div>
+            {/* Einzelne Kollegen */}
+            {friends.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {friends.map((f) => {
+                  const active = invitedUserIds.includes(f.profile.id)
+                  return (
+                    <button
+                      type="button"
+                      key={f.profile.id}
+                      onClick={() => toggleInvitee(f.profile.id)}
+                      className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                        active
+                          ? 'border-accent bg-accent/10 text-accent'
+                          : 'border-gray-200 text-gray-500 hover:border-gray-300 dark:border-racing-700 dark:text-racing-200'
+                      }`}
+                    >
+                      {f.profile.display_name}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
         )}
 
