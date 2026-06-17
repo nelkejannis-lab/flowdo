@@ -5,10 +5,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const GRAPH_BASE = 'https://graph.facebook.com/v21.0'
+// IGAA tokens use graph.instagram.com, EAA tokens use graph.facebook.com
+function baseUrl(token: string) {
+  return token.startsWith('IGAA')
+    ? 'https://graph.instagram.com/v21.0'
+    : 'https://graph.facebook.com/v21.0'
+}
 
-async function graphGet(path: string, params: Record<string, string>): Promise<any> {
-  const url = new URL(`${GRAPH_BASE}${path}`)
+async function graphGet(token: string, path: string, params: Record<string, string>): Promise<any> {
+  const url = new URL(`${baseUrl(token)}${path}`)
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
   const res = await fetch(url.toString())
   const json = await res.json()
@@ -53,43 +58,48 @@ Deno.serve(async (req) => {
     if (rowErr || !row) return respond({ error: 'Account nicht gefunden' }, 404)
 
     let { ig_user_id: igUserId, access_token: accessToken } = row
-    if (!accessToken) return respond({ error: 'Kein Access Token hinterlegt. Bitte Token ergänzen.' }, 400)
+    if (!accessToken) return respond({ error: 'Kein Access Token hinterlegt.' }, 400)
 
-    // IGAA tokens: Instagram Business Login — /me returns the IG user directly
-    // Auto-resolve the correct igUserId from the token if token is IGAA
-    if (accessToken.trim().startsWith('IGAA')) {
-      try {
-        const meRes = await graphGet('/me', { fields: 'id', access_token: accessToken })
-        if (meRes.id) igUserId = meRes.id
-      } catch { /* use stored igUserId as fallback */ }
-    }
+    const token = accessToken.trim()
+    const isIgaa = token.startsWith('IGAA')
 
     // ── 1. Profile ──────────────────────────────────────────────────────────
     let profile: any
     try {
-      profile = await graphGet(`/${igUserId}`, {
-        fields: 'followers_count,follows_count,media_count,name,biography,website,profile_picture_url',
-        access_token: accessToken,
-      })
+      if (isIgaa) {
+        // New Instagram Business Login: /me returns IG account directly
+        profile = await graphGet(token, '/me', {
+          fields: 'id,username,name,biography,website,profile_picture_url,followers_count,follows_count,media_count',
+          access_token: token,
+        })
+        igUserId = profile.id // auto-update igUserId from token
+      } else {
+        profile = await graphGet(token, `/${igUserId}`, {
+          fields: 'followers_count,follows_count,media_count,name,biography,website,profile_picture_url',
+          access_token: token,
+        })
+      }
     } catch (e: any) {
-      return respond({ error: `Instagram-Profil konnte nicht geladen werden: ${e.message}` }, 422)
+      return respond({ error: `Profil konnte nicht geladen werden: ${e.message}` }, 422)
     }
 
     await db.from('social_accounts').update({
+      ig_user_id: igUserId,
       name: profile.name ?? null,
       biography: profile.biography ?? null,
       website: profile.website ?? null,
       profile_picture_url: profile.profile_picture_url ?? null,
+      username: profile.username ?? row.username,
     }).eq('id', accountId)
 
     // ── 2. Account insights ─────────────────────────────────────────────────
     let reach, profileViews, accountsEngaged, totalInteractions, likes, comments, shares, saves, followsAndUnfollows
     try {
-      const ins = await graphGet(`/${igUserId}/insights`, {
+      const ins = await graphGet(token, `/${igUserId}/insights`, {
         metric: 'reach,profile_views,accounts_engaged,total_interactions,likes,comments,shares,saved,follows_and_unfollows',
         period: 'day',
         metric_type: 'total_value',
-        access_token: accessToken,
+        access_token: token,
       })
       reach = insightValue(ins.data, 'reach')
       profileViews = insightValue(ins.data, 'profile_views')
@@ -100,7 +110,7 @@ Deno.serve(async (req) => {
       shares = insightValue(ins.data, 'shares')
       saves = insightValue(ins.data, 'saved')
       followsAndUnfollows = insightValue(ins.data, 'follows_and_unfollows')
-    } catch { /* insights need instagram_manage_insights permission */ }
+    } catch { /* insights may need extra permissions */ }
 
     const today = new Date().toISOString().slice(0, 10)
     await db.from('social_metrics').upsert({
@@ -116,23 +126,24 @@ Deno.serve(async (req) => {
 
     // ── 3. Posts ────────────────────────────────────────────────────────────
     try {
-      const media = await graphGet(`/${igUserId}/media`, {
+      const media = await graphGet(token, `/${igUserId}/media`, {
         fields: 'id,caption,media_type,permalink,media_url,thumbnail_url,timestamp,like_count,comments_count',
         limit: '24',
-        access_token: accessToken,
+        access_token: token,
       })
       for (const item of media.data ?? []) {
         let pReach, pSaved, pShares, pTotal
         try {
-          const mi = await graphGet(`/${item.id}/insights`, {
+          const mi = await graphGet(token, `/${item.id}/insights`, {
             metric: 'reach,saved,shares,total_interactions',
-            access_token: accessToken,
+            access_token: token,
           })
           pReach = insightValue(mi.data, 'reach')
           pSaved = insightValue(mi.data, 'saved')
           pShares = insightValue(mi.data, 'shares')
           pTotal = insightValue(mi.data, 'total_interactions')
         } catch { /* some media types don't support insights */ }
+
         await db.from('social_posts').upsert({
           account_id: accountId, media_id: item.id,
           media_type: item.media_type ?? null, caption: item.caption ?? null,
@@ -147,16 +158,16 @@ Deno.serve(async (req) => {
 
     // ── 4. Stories ──────────────────────────────────────────────────────────
     try {
-      const st = await graphGet(`/${igUserId}/stories`, {
+      const st = await graphGet(token, `/${igUserId}/stories`, {
         fields: 'id,media_type,timestamp',
-        access_token: accessToken,
+        access_token: token,
       })
       for (const item of st.data ?? []) {
         let imp, sReach, replies, exits, tapsF, tapsB
         try {
-          const si = await graphGet(`/${item.id}/insights`, {
+          const si = await graphGet(token, `/${item.id}/insights`, {
             metric: 'impressions,reach,replies,navigation',
-            access_token: accessToken,
+            access_token: token,
           })
           imp = insightValue(si.data, 'impressions')
           sReach = insightValue(si.data, 'reach')
@@ -169,6 +180,7 @@ Deno.serve(async (req) => {
             if (a === 'tap_back') tapsB = e.value
           }
         } catch { /* story insights may be unavailable */ }
+
         await db.from('social_stories').upsert({
           account_id: accountId, media_id: item.id,
           media_type: item.media_type ?? null, posted_at: item.timestamp ?? null,
