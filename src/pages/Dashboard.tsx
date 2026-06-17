@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useSocialStore } from '../store/socialStore'
 import { differenceInCalendarDays, format, parseISO } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
-import { Plus, Clock, CalendarClock, Play, Square } from 'lucide-react'
+import { Plus, Clock, CalendarClock, Play, Square, Instagram, TrendingUp, Heart, Bookmark, Users } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTasksStore } from '../store/tasksStore'
 import { useBoardsStore } from '../store/boardsStore'
@@ -40,6 +41,10 @@ export default function Dashboard() {
   const fetchEvents = useEventsStore((s) => s.fetchAll)
   const calendarEntries = useCalendarEntriesStore((s) => s.entries)
   const fetchCalendarEntries = useCalendarEntriesStore((s) => s.fetchEntries)
+  const socialAccounts = useSocialStore((s) => s.accounts)
+  const socialMetrics = useSocialStore((s) => s.metrics)
+  const fetchSocialAccounts = useSocialStore((s) => s.fetchAccounts)
+  const fetchSocialAccountData = useSocialStore((s) => s.fetchAccountData)
   const featureVisibility = useSettingsStore((s) => s.featureVisibility)
   const dashboardVisibility = useSettingsStore((s) => s.dashboardVisibility)
   const onboardingPermissionsDone = useSettingsStore((s) => s.onboardingPermissionsDone)
@@ -55,8 +60,13 @@ export default function Dashboard() {
       fetchEvents()
       fetchCalendarEntries()
       fetchWorkTime()
+      fetchSocialAccounts()
     }
-  }, [fetchBoards, fetchMyProjectTasks, fetchTasks, fetchEvents, fetchCalendarEntries, fetchWorkTime])
+  }, [fetchBoards, fetchMyProjectTasks, fetchTasks, fetchEvents, fetchCalendarEntries, fetchWorkTime, fetchSocialAccounts])
+
+  useEffect(() => {
+    socialAccounts.forEach((a) => fetchSocialAccountData(a.id))
+  }, [socialAccounts, fetchSocialAccountData])
 
   const [, forceTick] = useState(0)
   useEffect(() => {
@@ -173,6 +183,67 @@ export default function Dashboard() {
               </button>
             </div>
           </>}
+        </div>
+      )}
+
+      {(featureVisibility.social ?? true) && socialAccounts.length > 0 && (
+        <div className="mb-6">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Instagram size={18} className="text-pink-500" />
+              Instagram
+            </h2>
+            <Link to="/social" className="text-sm font-medium text-accent hover:underline">Alle Konten</Link>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {socialAccounts.slice(0, 3).map((account) => {
+              const mList = socialMetrics[account.id] ?? []
+              const latest = mList[mList.length - 1]
+              const prev = mList[mList.length - 2]
+              const follDelta = latest && prev && prev.followersCount != null && latest.followersCount != null
+                ? latest.followersCount - prev.followersCount : null
+              const fmt = (n?: number | null) => n == null ? '–' : n >= 1000 ? (n / 1000).toFixed(1) + 'K' : String(n)
+              return (
+                <Link key={account.id} to={`/social/${account.id}`}
+                  className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm hover:shadow-md transition-shadow dark:border-racing-800 dark:bg-racing-900"
+                >
+                  <div className="flex items-center gap-3">
+                    {account.profilePictureUrl
+                      ? <img src={account.profilePictureUrl} alt="" className="h-10 w-10 flex-shrink-0 rounded-full object-cover ring-2 ring-pink-200" />
+                      : <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 via-red-500 to-yellow-400 text-white"><Instagram size={16} /></span>
+                    }
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-bold text-sm">@{account.username}</p>
+                      {follDelta !== null && (
+                        <p className={`text-xs flex items-center gap-0.5 ${follDelta >= 0 ? 'text-green-500' : 'text-red-400'}`}>
+                          <TrendingUp size={11} />
+                          {follDelta >= 0 ? '+' : ''}{follDelta} Follower
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1">
+                    <div className="text-center">
+                      <p className="text-[9px] text-gray-400 flex items-center justify-center gap-0.5"><Users size={9} />Follower</p>
+                      <p className="text-xs font-bold">{fmt(latest?.followersCount)}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[9px] text-gray-400">Reach</p>
+                      <p className="text-xs font-bold">{fmt(latest?.reach)}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[9px] text-gray-400 flex items-center justify-center gap-0.5"><Heart size={9} />Likes</p>
+                      <p className="text-xs font-bold">{fmt(latest?.likes)}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[9px] text-gray-400 flex items-center justify-center gap-0.5"><Bookmark size={9} />Saves</p>
+                      <p className="text-xs font-bold">{fmt(latest?.saves)}</p>
+                    </div>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
         </div>
       )}
 
