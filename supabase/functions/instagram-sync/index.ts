@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
       // Historical daily data for last 30 days
       // Only these metrics support true daily time-series with since/until:
       const ins = await graphGet(token, `/${igUserId}/insights`, {
-        metric: 'reach,profile_views,accounts_engaged,impressions,follower_count',
+        metric: 'reach,profile_views,accounts_engaged,follower_count,total_interactions,likes,comments,saves,shares',
         period: 'day',
         since: String(sinceTs),
         until: String(nowTs),
@@ -121,39 +121,26 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Upsert each day
+      // Upsert each day including engagement metrics
       for (const [date, vals] of Object.entries(byDate)) {
         await db.from('social_metrics').upsert({
           account_id: accountId,
           date,
-          followers_count: vals['follower_count'] != null ? vals['follower_count'] : (date === today ? (profile.followers_count ?? null) : null),
+          followers_count: vals['follower_count'] ?? (date === today ? (profile.followers_count ?? null) : null),
           follows_count: date === today ? (profile.follows_count ?? null) : null,
           media_count: date === today ? (profile.media_count ?? null) : null,
           reach: vals['reach'] ?? null,
           profile_views: vals['profile_views'] ?? null,
           accounts_engaged: vals['accounts_engaged'] ?? null,
+          total_interactions: vals['total_interactions'] ?? null,
+          likes: vals['likes'] ?? null,
+          comments: vals['comments'] ?? null,
+          saves: vals['saves'] ?? null,
+          shares: vals['shares'] ?? null,
         }, { onConflict: 'account_id,date', ignoreDuplicates: false })
       }
 
-      // Fetch today's engagement metrics (likes/comments/saves/shares) separately
-      // These are not available in historical time-series but work for today with period=day
-      let todayLikes: number | null = null, todayComments: number | null = null
-      let todaySaves: number | null = null, todayShares: number | null = null
-      let todayTotal: number | null = null
-      try {
-        const todayIns = await graphGet(token, `/${igUserId}/insights`, {
-          metric: 'total_interactions,likes,comments,saved,shares',
-          period: 'day',
-          access_token: token,
-        })
-        todayTotal = insightValue(todayIns.data, 'total_interactions') ?? null
-        todayLikes = insightValue(todayIns.data, 'likes') ?? null
-        todayComments = insightValue(todayIns.data, 'comments') ?? null
-        todaySaves = insightValue(todayIns.data, 'saved') ?? null
-        todayShares = insightValue(todayIns.data, 'shares') ?? null
-      } catch { /* engagement metrics may not be available */ }
-
-      // Ensure today always has full data
+      // Ensure today always has profile data even if not in byDate
       await db.from('social_metrics').upsert({
         account_id: accountId, date: today,
         followers_count: profile.followers_count ?? null,
@@ -162,11 +149,11 @@ Deno.serve(async (req) => {
         reach: byDate[today]?.['reach'] ?? null,
         profile_views: byDate[today]?.['profile_views'] ?? null,
         accounts_engaged: byDate[today]?.['accounts_engaged'] ?? null,
-        total_interactions: todayTotal,
-        likes: todayLikes,
-        comments: todayComments,
-        shares: todayShares,
-        saves: todaySaves,
+        total_interactions: byDate[today]?.['total_interactions'] ?? null,
+        likes: byDate[today]?.['likes'] ?? null,
+        comments: byDate[today]?.['comments'] ?? null,
+        saves: byDate[today]?.['saves'] ?? null,
+        shares: byDate[today]?.['shares'] ?? null,
       }, { onConflict: 'account_id,date' })
 
     } catch (e: any) {
