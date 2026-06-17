@@ -766,7 +766,7 @@ export default function SocialAccountDetailPage() {
   const [tokenInput, setTokenInput] = useState('')
   const [savingToken, setSavingToken] = useState(false)
   const [selectedPost, setSelectedPost] = useState<SocialPost | null>(null)
-  const [tab, setTab] = useState<'posts' | 'stories' | 'growth'>('posts')
+  const [tab, setTab] = useState<'posts' | 'analyse' | 'stories' | 'growth'>('posts')
   const [showEdit, setShowEdit] = useState(false)
   const [showShare, setShowShare] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -995,7 +995,7 @@ export default function SocialAccountDetailPage() {
 
       {/* Tabs */}
       <div className="mb-4 flex gap-1 rounded-xl border border-gray-100 bg-gray-50 p-1 dark:border-racing-800 dark:bg-racing-900">
-        {([['posts', 'Posts', <LayoutGrid size={14} />], ['stories', 'Stories', <Film size={14} />], ['growth', 'Wachstum', <TrendingUp size={14} />]] as const).map(([key, label, icon]) => (
+        {([['posts', 'Posts', <LayoutGrid size={14} />], ['analyse', 'Analyse', <TrendingUp size={14} />], ['stories', 'Stories', <Film size={14} />], ['growth', 'Wachstum', <UserPlus size={14} />]] as const).map(([key, label, icon]) => (
           <button key={key} onClick={() => setTab(key as any)}
             className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium transition-colors ${tab === key ? 'bg-white text-accent shadow-sm dark:bg-racing-800' : 'text-gray-500 hover:text-gray-700 dark:text-racing-400'}`}>
             {icon}{label}
@@ -1039,6 +1039,149 @@ export default function SocialAccountDetailPage() {
             </div>
           )
       )}
+
+      {/* Analyse Tab */}
+      {tab === 'analyse' && (() => {
+        const videos = accountPosts.filter(p => p.mediaType === 'VIDEO')
+        const images = accountPosts.filter(p => p.mediaType === 'IMAGE')
+        const carousels = accountPosts.filter(p => p.mediaType === 'CAROUSEL_ALBUM')
+
+        function avgEng(ps: typeof accountPosts) {
+          if (!ps.length || !followers) return 0
+          return ps.reduce((s, p) => s + ((p.likeCount ?? 0) + (p.commentsCount ?? 0)), 0) / ps.length / followers * 100
+        }
+        function avgSaves(ps: typeof accountPosts) {
+          const withSaves = ps.filter(p => p.saved !== undefined)
+          if (!withSaves.length) return null
+          return withSaves.reduce((s, p) => s + (p.saved ?? 0), 0) / withSaves.length
+        }
+
+        // Hashtag analysis from top posts
+        const topPosts = [...accountPosts].sort((a, b) =>
+          ((b.likeCount ?? 0) + (b.commentsCount ?? 0)) - ((a.likeCount ?? 0) + (a.commentsCount ?? 0))
+        ).slice(0, 8)
+        const hashtagFreq: Record<string, number> = {}
+        topPosts.forEach(p => {
+          (p.caption?.match(/#\w+/g) ?? []).forEach(tag => {
+            hashtagFreq[tag.toLowerCase()] = (hashtagFreq[tag.toLowerCase()] ?? 0) + 1
+          })
+        })
+        const topHashtags = Object.entries(hashtagFreq).sort((a, b) => b[1] - a[1]).slice(0, 10)
+
+        const types = [
+          { label: 'Reels/Video', icon: '🎬', posts: videos, color: '#8b5cf6' },
+          { label: 'Karussell', icon: '🖼️', posts: carousels, color: '#3b82f6' },
+          { label: 'Bilder', icon: '📷', posts: images, color: '#10b981' },
+        ].filter(t => t.posts.length > 0)
+
+        const maxEng = Math.max(...types.map(t => avgEng(t.posts)), 0.01)
+
+        return (
+          <div className="space-y-4">
+            {/* Post-Typ Performance */}
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-racing-800 dark:bg-racing-900">
+              <h3 className="mb-4 font-semibold">📊 Post-Typ Performance</h3>
+              {types.length === 0
+                ? <p className="text-sm text-gray-400">Noch keine Daten — synchronisiere zuerst.</p>
+                : (
+                  <div className="space-y-3">
+                    {types.map(t => {
+                      const eng = avgEng(t.posts)
+                      const saves = avgSaves(t.posts)
+                      return (
+                        <div key={t.label}>
+                          <div className="mb-1 flex items-center justify-between">
+                            <span className="text-sm font-medium">{t.icon} {t.label} <span className="text-gray-400">({t.posts.length} Posts)</span></span>
+                            <span className="text-sm font-bold" style={{ color: t.color }}>{eng.toFixed(2)}% Engagement</span>
+                          </div>
+                          <div className="h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-racing-700">
+                            <div className="h-full rounded-full transition-all" style={{ width: `${(eng / maxEng) * 100}%`, backgroundColor: t.color }} />
+                          </div>
+                          {saves !== null && (
+                            <p className="mt-0.5 text-xs text-gray-400">Ø {saves.toFixed(0)} Saves pro Post</p>
+                          )}
+                        </div>
+                      )
+                    })}
+                    <p className="mt-2 text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg px-3 py-2">
+                      💡 {types[0]?.label} erzielt bei dir die höchste Engagement-Rate — poste mehr davon!
+                    </p>
+                  </div>
+                )}
+            </div>
+
+            {/* Hashtag Analyse */}
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-racing-800 dark:bg-racing-900">
+              <h3 className="mb-1 font-semibold">#️⃣ Hashtags deiner Top-Posts</h3>
+              <p className="mb-3 text-xs text-gray-400">Hashtags die in deinen 8 engagement-stärksten Posts vorkommen</p>
+              {topHashtags.length === 0
+                ? <p className="text-sm text-gray-400">Keine Hashtags in den Top-Posts gefunden.</p>
+                : (
+                  <div className="flex flex-wrap gap-2">
+                    {topHashtags.map(([tag, count]) => (
+                      <span key={tag} className="flex items-center gap-1 rounded-full bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+                        {tag}
+                        <span className="rounded-full bg-indigo-200 px-1.5 text-[10px] font-bold text-indigo-800 dark:bg-indigo-800 dark:text-indigo-200">{count}×</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              <div className="mt-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 p-3">
+                <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1">💡 Hashtag-Strategie 2025</p>
+                <p className="text-xs text-amber-700 dark:text-amber-300">Nutze 5–10 Hashtags pro Post: 3× nischig (10K–100K Posts), 3× mittelgroß (100K–500K), 2× brand-spezifisch. Vermeide übersättigte Tags wie #love oder #instagood.</p>
+              </div>
+            </div>
+
+            {/* Top & Flop Posts */}
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-racing-800 dark:bg-racing-900">
+              <h3 className="mb-3 font-semibold">🏆 Top 3 vs. Flop 3</h3>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-green-500">Beste Posts</p>
+                  {topPosts.slice(0, 3).map((p, i) => (
+                    <button key={p.id} onClick={() => setSelectedPost(p)}
+                      className="mb-1.5 flex w-full items-center gap-2.5 rounded-xl p-2 text-left hover:bg-gray-50 dark:hover:bg-racing-800">
+                      <span className="text-sm font-bold text-green-500">#{i + 1}</span>
+                      {(p.thumbnailUrl || p.mediaUrl) && <img src={p.thumbnailUrl ?? p.mediaUrl} alt="" className="h-10 w-10 flex-shrink-0 rounded-lg object-cover" />}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs text-gray-600 dark:text-gray-300">{p.caption?.slice(0, 40) ?? 'Kein Caption'}…</p>
+                        <p className="text-xs font-semibold text-green-600">{fmt(p.likeCount)} Likes · {fmt(p.commentsCount)} Komm.</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-red-400">Schwächste Posts</p>
+                  {[...accountPosts].sort((a, b) =>
+                    ((a.likeCount ?? 0) + (a.commentsCount ?? 0)) - ((b.likeCount ?? 0) + (b.commentsCount ?? 0))
+                  ).slice(0, 3).map((p, i) => (
+                    <button key={p.id} onClick={() => setSelectedPost(p)}
+                      className="mb-1.5 flex w-full items-center gap-2.5 rounded-xl p-2 text-left hover:bg-gray-50 dark:hover:bg-racing-800">
+                      <span className="text-sm font-bold text-red-400">#{i + 1}</span>
+                      {(p.thumbnailUrl || p.mediaUrl) && <img src={p.thumbnailUrl ?? p.mediaUrl} alt="" className="h-10 w-10 flex-shrink-0 rounded-lg object-cover" />}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs text-gray-600 dark:text-gray-300">{p.caption?.slice(0, 40) ?? 'Kein Caption'}…</p>
+                        <p className="text-xs font-semibold text-red-400">{fmt(p.likeCount)} Likes · {fmt(p.commentsCount)} Komm.</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Content-Empfehlungen */}
+            <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-purple-50 p-5 dark:border-indigo-900 dark:from-indigo-900/10 dark:to-purple-900/10">
+              <h3 className="mb-3 font-semibold text-indigo-800 dark:text-indigo-300">🤖 Content-Empfehlungen basierend auf deinen Daten</h3>
+              <ul className="space-y-2">
+                {types[0] && <li className="flex items-start gap-2 text-sm text-indigo-700 dark:text-indigo-300"><span className="mt-0.5">→</span> Poste mehr <strong>{types[0].label}</strong> — das ist dein stärkstes Format ({avgEng(types[0].posts).toFixed(2)}% Ø Engagement)</li>}
+                {topHashtags.length > 0 && <li className="flex items-start gap-2 text-sm text-indigo-700 dark:text-indigo-300"><span className="mt-0.5">→</span> Nutze diese Hashtags öfter: <strong>{topHashtags.slice(0, 3).map(([t]) => t).join(', ')}</strong></li>}
+                <li className="flex items-start gap-2 text-sm text-indigo-700 dark:text-indigo-300"><span className="mt-0.5">→</span> Starte jeden Post mit einem starken Hook — analysiere was deine Top-Posts gemeinsam haben</li>
+                <li className="flex items-start gap-2 text-sm text-indigo-700 dark:text-indigo-300"><span className="mt-0.5">→</span> Antworte auf alle Kommentare deiner Top-Posts in den ersten 60 Minuten</li>
+              </ul>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Stories */}
       {tab === 'stories' && (
