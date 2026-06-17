@@ -492,6 +492,7 @@ export default function SocialAccountDetailPage() {
   const syncingId = useSocialStore((s) => s.syncingId)
 
   const [syncError, setSyncError] = useState<string | null>(null)
+  const [syncWarning, setSyncWarning] = useState<string | null>(null)
   const [tokenInput, setTokenInput] = useState('')
   const [savingToken, setSavingToken] = useState(false)
   const [selectedPost, setSelectedPost] = useState<SocialPost | null>(null)
@@ -541,8 +542,10 @@ export default function SocialAccountDetailPage() {
   async function handleSync() {
     if (!accountId) return
     setSyncError(null)
-    const err = await syncAccount(accountId)
-    if (err) setSyncError(err)
+    setSyncWarning(null)
+    const msg = await syncAccount(accountId)
+    if (msg?.startsWith('⚠️')) setSyncWarning(msg)
+    else if (msg) setSyncError(msg)
   }
 
   async function handleSaveToken(e: React.FormEvent) {
@@ -623,6 +626,17 @@ export default function SocialAccountDetailPage() {
               Speichern
             </button>
           </form>
+        </div>
+      )}
+
+      {/* Sync warning (permissions missing) */}
+      {syncWarning && (
+        <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
+          <p className="mb-1 flex items-center gap-1.5 font-semibold text-amber-700 dark:text-amber-400"><AlertTriangle size={15} /> Teilweise synchronisiert</p>
+          <p className="text-sm text-amber-700 dark:text-amber-300">{syncWarning.replace('⚠️ ', '')}</p>
+          <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+            Lösung: Füge in deiner Meta-App die Berechtigung <strong>instagram_business_manage_insights</strong> hinzu und erstelle einen neuen Token.
+          </p>
         </div>
       )}
 

@@ -308,6 +308,8 @@ export const useSocialStore = create<SocialState>()((set, get) => ({
 
       await Promise.all([get().fetchAccounts(), get().fetchAccountData(accountId)])
       set({ syncingId: null })
+      // Return warnings (missing permissions) as a soft message, not an error
+      if (res.data?.warnings?.length) return `⚠️ ${res.data.warnings[0]}`
       return null
     } catch (err) {
       set({ syncingId: null })

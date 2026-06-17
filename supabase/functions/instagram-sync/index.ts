@@ -94,6 +94,7 @@ Deno.serve(async (req) => {
 
     // ── 2. Account insights ─────────────────────────────────────────────────
     let reach, profileViews, accountsEngaged, totalInteractions, likes, comments, shares, saves, followsAndUnfollows
+    const warnings: string[] = []
     try {
       const ins = await graphGet(token, `/${igUserId}/insights`, {
         metric: 'reach,profile_views,accounts_engaged,total_interactions,likes,comments,shares,saved,follows_and_unfollows',
@@ -110,7 +111,9 @@ Deno.serve(async (req) => {
       shares = insightValue(ins.data, 'shares')
       saves = insightValue(ins.data, 'saved')
       followsAndUnfollows = insightValue(ins.data, 'follows_and_unfollows')
-    } catch { /* insights may need extra permissions */ }
+    } catch (e: any) {
+      warnings.push(`Account-Insights nicht verfügbar: ${e.message}. Benötigt Berechtigung "instagram_business_manage_insights".`)
+    }
 
     const today = new Date().toISOString().slice(0, 10)
     await db.from('social_metrics').upsert({
@@ -194,7 +197,7 @@ Deno.serve(async (req) => {
       .update({ last_synced_at: new Date().toISOString() })
       .eq('id', accountId)
 
-    return respond({ ok: true })
+    return respond({ ok: true, warnings: warnings.length ? warnings : undefined })
   } catch (err) {
     return respond({ error: err instanceof Error ? err.message : String(err) }, 500)
   }
