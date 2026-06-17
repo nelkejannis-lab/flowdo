@@ -7,6 +7,7 @@ import Logo from './Logo'
 import GlobalSearch from './GlobalSearch'
 import OfflineBanner from './OfflineBanner'
 import ToastContainer from './ToastContainer'
+import AiChatPanel from '../ai/AiChatPanel'
 
 export default function Layout() {
   const { t } = useTranslation('layout')
@@ -38,6 +39,7 @@ export default function Layout() {
         </div>
       </div>
       <ToastContainer />
+      <AiChatPanel />
     </>
   )
 }
