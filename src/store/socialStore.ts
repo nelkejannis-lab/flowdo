@@ -5,6 +5,7 @@ import type { SocialAccount, SocialMetric, SocialPost, SocialStory } from '../ty
 
 interface SocialAccountRow {
   id: string
+  owner_id: string
   platform: 'instagram'
   username: string
   ig_user_id: string
@@ -15,6 +16,7 @@ interface SocialAccountRow {
   profile_picture_url: string | null
   last_synced_at: string | null
   created_at: string
+  shared_with: string[] | null
 }
 
 interface SocialMetricRow {
@@ -66,6 +68,7 @@ interface SocialStoryRow {
 function toAccount(row: SocialAccountRow): SocialAccount {
   return {
     id: row.id,
+    ownerId: row.owner_id,
     platform: row.platform,
     username: row.username,
     igUserId: row.ig_user_id,
@@ -76,6 +79,7 @@ function toAccount(row: SocialAccountRow): SocialAccount {
     profilePictureUrl: row.profile_picture_url ?? undefined,
     lastSyncedAt: row.last_synced_at ?? undefined,
     createdAt: row.created_at,
+    sharedWith: row.shared_with ?? [],
   }
 }
 
@@ -142,10 +146,13 @@ interface SocialState {
   syncingId: string | null
   fetchAccounts: () => Promise<void>
   addAccount: (input: { username: string; igUserId: string; accessToken?: string }) => Promise<string | null>
+  updateAccount: (accountId: string, input: { username: string; igUserId: string }) => Promise<string | null>
   updateAccessToken: (accountId: string, accessToken: string) => Promise<string | null>
   deleteAccount: (id: string) => Promise<void>
   fetchAccountData: (accountId: string) => Promise<void>
   syncAccount: (accountId: string) => Promise<string | null>
+  shareWithUser: (accountId: string, targetUserId: string) => Promise<string | null>
+  unshareWithUser: (accountId: string, targetUserId: string) => Promise<string | null>
 }
 
 export const useSocialStore = create<SocialState>()((set, get) => ({
@@ -192,14 +199,36 @@ export const useSocialStore = create<SocialState>()((set, get) => ({
     return null
   },
 
+  updateAccount: async (accountId, input) => {
+    const { error } = await supabase
+      .from('social_accounts')
+      .update({ username: input.username.trim(), ig_user_id: input.igUserId.trim() })
+      .eq('id', accountId)
+    if (error) return error.message
+    await get().fetchAccounts()
+    return null
+  },
+
   updateAccessToken: async (accountId, accessToken) => {
     const { error } = await supabase
       .from('social_accounts')
       .update({ access_token: accessToken.trim() || null })
       .eq('id', accountId)
-
     if (error) return error.message
+    await get().fetchAccounts()
+    return null
+  },
 
+  shareWithUser: async (accountId, targetUserId) => {
+    const { error } = await supabase.rpc('social_account_share', { p_account_id: accountId, p_user_id: targetUserId })
+    if (error) return error.message
+    await get().fetchAccounts()
+    return null
+  },
+
+  unshareWithUser: async (accountId, targetUserId) => {
+    const { error } = await supabase.rpc('social_account_unshare', { p_account_id: accountId, p_user_id: targetUserId })
+    if (error) return error.message
     await get().fetchAccounts()
     return null
   },
@@ -263,7 +292,18 @@ export const useSocialStore = create<SocialState>()((set, get) => ({
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       })
 
-      if (res.error) throw new Error(res.error.message)
+      if (res.error) {
+        // Try to extract detailed message from Edge Function response body
+        let msg = res.error.message ?? 'Synchronisierung fehlgeschlagen'
+        try {
+          const ctx = (res.error as any).context
+          if (ctx) {
+            const body = typeof ctx.json === 'function' ? await ctx.json() : ctx
+            if (body?.error) msg = body.error
+          }
+        } catch { /* use original message */ }
+        throw new Error(msg)
+      }
       if (res.data?.error) throw new Error(res.data.error)
 
       await Promise.all([get().fetchAccounts(), get().fetchAccountData(accountId)])

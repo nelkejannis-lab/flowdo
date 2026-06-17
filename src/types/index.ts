@@ -100,6 +100,8 @@ export interface SocialAccount {
   profilePictureUrl?: string
   lastSyncedAt?: string
   createdAt: string
+  sharedWith?: string[]
+  ownerId?: string
 }
 
 export interface SocialMetric {

@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
-  ArrowLeft, Bookmark, Eye, Film, Heart, Image as ImageIcon,
+  ArrowLeft, Bookmark, Edit2, Eye, Film, Heart, Image as ImageIcon,
   Link2, MessageCircle, RefreshCw, Repeat2, Share2, Trash2,
-  TrendingUp, Users, X, ExternalLink, AlertTriangle, LayoutGrid,
+  TrendingUp, UserPlus, Users, X, ExternalLink, AlertTriangle, LayoutGrid, Check,
 } from 'lucide-react'
 import { useSocialStore } from '../store/socialStore'
+import { supabase } from '../lib/supabase'
 import type { SocialPost } from '../types'
 import { formatFriendlyDateTime } from '../utils/date'
 
@@ -196,6 +197,164 @@ function PostModal({ post, followers, onClose }: { post: SocialPost; followers: 
   )
 }
 
+// ── Edit Account Modal ────────────────────────────────────────────────────────
+
+function EditAccountModal({ account, onClose }: { account: { id: string; username: string; igUserId: string; accessToken?: string }; onClose: () => void }) {
+  const updateAccount = useSocialStore((s) => s.updateAccount)
+  const updateAccessToken = useSocialStore((s) => s.updateAccessToken)
+  const [username, setUsername] = useState(account.username)
+  const [igUserId, setIgUserId] = useState(account.igUserId)
+  const [token, setToken] = useState(account.accessToken ?? '')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault()
+    if (!username.trim() || !igUserId.trim()) return
+    setSaving(true)
+    setError(null)
+    const err1 = await updateAccount(account.id, { username, igUserId })
+    const err2 = token !== account.accessToken ? await updateAccessToken(account.id, token) : null
+    setSaving(false)
+    if (err1 || err2) { setError(err1 ?? err2); return }
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-racing-900">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="font-semibold text-lg">Account bearbeiten</h2>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-racing-800"><X size={18} /></button>
+        </div>
+        <form onSubmit={handleSave} className="flex flex-col gap-3">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-500">Instagram Username</label>
+            <input value={username} onChange={(e) => setUsername(e.target.value)}
+              className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700" />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-500">Instagram User-ID</label>
+            <input value={igUserId} onChange={(e) => setIgUserId(e.target.value)}
+              className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none dark:border-racing-700" />
+            <p className="mt-1 text-xs text-gray-400">Numerische ID aus dem Meta Graph API Explorer (/me/accounts)</p>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-500">Access Token</label>
+            <textarea value={token} onChange={(e) => setToken(e.target.value)} rows={3}
+              className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none dark:border-racing-700" />
+            <p className="mt-1 text-xs text-gray-400">Long-Lived Token (läuft nach 60 Tagen ab)</p>
+          </div>
+          {error && <p className="text-sm text-red-500">{error}</p>}
+          <div className="flex justify-end gap-2 pt-1">
+            <button type="button" onClick={onClose} className="rounded-lg border border-gray-200 px-4 py-2 text-sm hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800">Abbrechen</button>
+            <button type="submit" disabled={saving} className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-60">
+              {saving ? 'Speichern…' : 'Speichern'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ── Share Panel ───────────────────────────────────────────────────────────────
+
+interface ProfileResult { id: string; display_name: string; avatar_color: string; avatar_url?: string }
+
+function SharePanel({ account, currentUserId, onClose }: { account: { id: string; sharedWith?: string[] }; currentUserId: string; onClose: () => void }) {
+  const shareWithUser = useSocialStore((s) => s.shareWithUser)
+  const unshareWithUser = useSocialStore((s) => s.unshareWithUser)
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<ProfileResult[]>([])
+  const [sharedProfiles, setSharedProfiles] = useState<ProfileResult[]>([])
+  const [loading, setLoading] = useState(false)
+  const debounce = useRef<ReturnType<typeof setTimeout>>()
+
+  useEffect(() => {
+    if ((account.sharedWith ?? []).length === 0) { setSharedProfiles([]); return }
+    supabase.from('profiles').select('id,display_name,avatar_color,avatar_url')
+      .in('id', account.sharedWith!)
+      .then(({ data }) => setSharedProfiles((data ?? []) as ProfileResult[]))
+  }, [account.sharedWith])
+
+  function handleSearch(q: string) {
+    setQuery(q)
+    clearTimeout(debounce.current)
+    if (!q.trim()) { setResults([]); return }
+    debounce.current = setTimeout(async () => {
+      setLoading(true)
+      const { data } = await supabase.from('profiles').select('id,display_name,avatar_color,avatar_url')
+        .ilike('display_name', `%${q}%`).neq('id', currentUserId).limit(8)
+      setResults((data ?? []) as ProfileResult[])
+      setLoading(false)
+    }, 300)
+  }
+
+  const sharedIds = account.sharedWith ?? []
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-racing-900">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="font-semibold text-lg">Mit Nutzern teilen</h2>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-racing-800"><X size={18} /></button>
+        </div>
+
+        <input value={query} onChange={(e) => handleSearch(e.target.value)}
+          placeholder="Nutzer suchen…"
+          className="mb-3 w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700" />
+
+        {loading && <p className="text-xs text-gray-400 mb-2">Suche…</p>}
+
+        {results.length > 0 && (
+          <ul className="mb-4 divide-y divide-gray-100 rounded-xl border border-gray-100 dark:divide-racing-800 dark:border-racing-800">
+            {results.map((p) => {
+              const already = sharedIds.includes(p.id)
+              return (
+                <li key={p.id} className="flex items-center gap-3 px-3 py-2.5">
+                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                    style={{ backgroundColor: p.avatar_color }}>
+                    {p.avatar_url ? <img src={p.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover" /> : p.display_name.slice(0, 2).toUpperCase()}
+                  </div>
+                  <span className="flex-1 text-sm font-medium">{p.display_name}</span>
+                  <button onClick={() => already ? unshareWithUser(account.id, p.id) : shareWithUser(account.id, p.id)}
+                    className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${already ? 'bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500 dark:bg-racing-800' : 'bg-accent/10 text-accent hover:bg-accent hover:text-white'}`}>
+                    {already ? <><Check size={12} /> Geteilt</> : <><UserPlus size={12} /> Teilen</>}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+
+        {sharedProfiles.length > 0 && (
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">Geteilt mit</p>
+            <ul className="space-y-1">
+              {sharedProfiles.map((p) => (
+                <li key={p.id} className="flex items-center gap-3 rounded-xl px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-racing-800">
+                  <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                    style={{ backgroundColor: p.avatar_color }}>
+                    {p.avatar_url ? <img src={p.avatar_url} alt="" className="h-7 w-7 rounded-full object-cover" /> : p.display_name.slice(0, 2).toUpperCase()}
+                  </div>
+                  <span className="flex-1 text-sm">{p.display_name}</span>
+                  <button onClick={() => unshareWithUser(account.id, p.id)}
+                    className="rounded-lg p-1 text-gray-400 hover:text-red-500"><X size={14} /></button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-2 dark:bg-racing-800">
@@ -229,6 +388,13 @@ export default function SocialAccountDetailPage() {
   const [savingToken, setSavingToken] = useState(false)
   const [selectedPost, setSelectedPost] = useState<SocialPost | null>(null)
   const [tab, setTab] = useState<'posts' | 'stories' | 'growth'>('posts')
+  const [showEdit, setShowEdit] = useState(false)
+  const [showShare, setShowShare] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null))
+  }, [])
 
   const account = accounts.find((a) => a.id === accountId)
 
@@ -310,12 +476,25 @@ export default function SocialAccountDetailPage() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button onClick={handleSync} disabled={syncingId === accountId || !account.accessToken}
             className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-60">
             <RefreshCw size={14} className={syncingId === accountId ? 'animate-spin' : ''} />
-            {syncingId === accountId ? 'Synchronisiere…' : 'Jetzt synchronisieren'}
+            {syncingId === accountId ? 'Synchronisiere…' : 'Synchronisieren'}
           </button>
+          <button onClick={() => setShowEdit(true)}
+            className="flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-racing-700 dark:text-racing-200 dark:hover:bg-racing-800">
+            <Edit2 size={14} /> Bearbeiten
+          </button>
+          {account.ownerId === currentUserId && (
+            <button onClick={() => setShowShare(true)}
+              className="flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-racing-700 dark:text-racing-200 dark:hover:bg-racing-800">
+              <Share2 size={14} /> Teilen
+              {(account.sharedWith?.length ?? 0) > 0 && (
+                <span className="rounded-full bg-accent/10 px-1.5 text-xs text-accent">{account.sharedWith!.length}</span>
+              )}
+            </button>
+          )}
           <button onClick={async () => { await deleteAccount(accountId); navigate('/social') }}
             className="rounded-xl border border-gray-200 p-2 text-gray-400 hover:border-red-300 hover:text-red-500 dark:border-racing-700">
             <Trash2 size={14} />
@@ -473,6 +652,23 @@ export default function SocialAccountDetailPage() {
       {/* Post Modal */}
       {selectedPost && (
         <PostModal post={selectedPost} followers={followers} onClose={() => setSelectedPost(null)} />
+      )}
+
+      {/* Edit Modal */}
+      {showEdit && (
+        <EditAccountModal
+          account={{ id: accountId, username: account.username, igUserId: account.igUserId, accessToken: account.accessToken }}
+          onClose={() => setShowEdit(false)}
+        />
+      )}
+
+      {/* Share Panel */}
+      {showShare && currentUserId && (
+        <SharePanel
+          account={{ id: accountId, sharedWith: account.sharedWith }}
+          currentUserId={currentUserId}
+          onClose={() => setShowShare(false)}
+        />
       )}
     </div>
   )
