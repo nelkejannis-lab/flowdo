@@ -33,6 +33,12 @@ export const DEFAULT_COLOR_LABELS: Record<string, string> = Object.fromEntries(
   NAMED_COLORS.map((c) => [c.hex, c.label])
 )
 
+// Default: Ennepetal 58256
+const DEFAULT_WEATHER_CITY = 'Ennepetal'
+const DEFAULT_WEATHER_COORDS = { lat: 51.2957, lon: 7.3575 }
+
+interface WeatherCoords { lat: number; lon: number }
+
 interface SettingsState {
   mode: Mode
   pinkAccent: boolean
@@ -46,6 +52,7 @@ interface SettingsState {
   appointmentReminderMinutes: number
   onboardingPermissionsDone: boolean
   weatherCity: string
+  weatherCoords: WeatherCoords
   setMode: (mode: Mode) => void
   togglePinkAccent: () => void
   setLanguage: (language: Language) => void
@@ -58,6 +65,7 @@ interface SettingsState {
   setAppointmentReminderMinutes: (v: number) => void
   setOnboardingPermissionsDone: () => void
   setWeatherCity: (city: string) => void
+  setWeatherCoords: (coords: WeatherCoords) => void
 }
 
 interface LegacyState {
@@ -78,7 +86,8 @@ export const useSettingsStore = create<SettingsState>()(
       notifyTasks: true,
       appointmentReminderMinutes: 15,
       onboardingPermissionsDone: false,
-      weatherCity: 'Eneppetal',
+      weatherCity: DEFAULT_WEATHER_CITY,
+      weatherCoords: { ...DEFAULT_WEATHER_COORDS },
       setMode: (mode) => set({ mode }),
       togglePinkAccent: () => set((s) => ({ pinkAccent: !s.pinkAccent })),
       setLanguage: (language) => {
@@ -97,10 +106,11 @@ export const useSettingsStore = create<SettingsState>()(
       setAppointmentReminderMinutes: (v) => set({ appointmentReminderMinutes: v }),
       setOnboardingPermissionsDone: () => set({ onboardingPermissionsDone: true }),
       setWeatherCity: (city) => set({ weatherCity: city }),
+      setWeatherCoords: (coords) => set({ weatherCoords: coords }),
     }),
     {
       name: 'flowdo-settings',
-      version: 8, // bumped: add weatherCity, remove GPS, default Eneppetal
+      version: 9,
       migrate: (persisted, version) => {
         const legacy = persisted as LegacyState & Partial<SettingsState>
         if (version < 1) {
@@ -112,6 +122,8 @@ export const useSettingsStore = create<SettingsState>()(
             dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY },
           }
         }
+        const city = (legacy as any).weatherCity
+        const hasCustomCity = city && city !== 'Eneppetal' && city !== 'Ennepetal'
         return {
           ...legacy,
           language: legacy.language ?? 'de',
@@ -119,7 +131,8 @@ export const useSettingsStore = create<SettingsState>()(
           dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY },
           colorLabels: { ...DEFAULT_COLOR_LABELS, ...(legacy as any).colorLabels },
           onboardingPermissionsDone: false,
-          weatherCity: (legacy as any).weatherCity ?? 'Eneppetal',
+          weatherCity: hasCustomCity ? city : DEFAULT_WEATHER_CITY,
+          weatherCoords: (legacy as any).weatherCoords ?? { ...DEFAULT_WEATHER_COORDS },
         }
       },
       onRehydrateStorage: () => (state) => {

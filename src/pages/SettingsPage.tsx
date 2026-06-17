@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { BarChart2, Bell, CalendarClock, CalendarDays, CheckSquare, Clock, Cloud, Download, Eye, EyeOff, FolderKanban, Grid2x2, Instagram, Loader2, MapPin, MessageCircle, Plus, RefreshCw, Sparkles, Trash2, Upload, Users, X } from 'lucide-react'
@@ -27,27 +27,51 @@ const FEATURE_ICONS: Record<FeatureKey, React.ReactNode> = {
 
 const SUPABASE_ONLY_FEATURES: FeatureKey[] = ['aiScheduler', 'chat', 'friends', 'social']
 
+interface PlaceSuggestion { display_name: string; lat: string; lon: string }
+
+function shortPlaceName(s: PlaceSuggestion) {
+  return s.display_name.split(', ').slice(0, 3).join(', ')
+}
+
 function WeatherCitySettings() {
   const weatherCity = useSettingsStore((s) => s.weatherCity)
   const setWeatherCity = useSettingsStore((s) => s.setWeatherCity)
+  const setWeatherCoords = useSettingsStore((s) => s.setWeatherCoords)
   const [input, setInput] = useState(weatherCity)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState(false)
+  const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([])
+  const [searching, setSearching] = useState(false)
   const [saved, setSaved] = useState(false)
+  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const searchAbort = useRef<AbortController | null>(null)
 
-  async function save() {
-    const city = input.trim()
-    if (!city || city === weatherCity) return
-    setSaving(true); setError(false); setSaved(false)
-    try {
-      const ctrl = new AbortController()
-      setTimeout(() => ctrl.abort(), 4000)
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1`, { signal: ctrl.signal })
-      const json = await res.json()
-      if (!json?.[0]) { setError(true); setSaving(false); return }
-    } catch { setError(true); setSaving(false); return }
-    setWeatherCity(city)
-    setSaving(false); setSaved(true)
+  useEffect(() => { setInput(weatherCity) }, [weatherCity])
+
+  function onInput(val: string) {
+    setInput(val)
+    setSaved(false)
+    if (debounce.current) clearTimeout(debounce.current)
+    searchAbort.current?.abort()
+    if (val.trim().length < 2) { setSuggestions([]); return }
+    setSearching(true)
+    debounce.current = setTimeout(async () => {
+      searchAbort.current = new AbortController()
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(val)}&format=json&limit=5&accept-language=de`,
+          { signal: searchAbort.current.signal }
+        )
+        setSuggestions(await res.json())
+      } catch { /* aborted */ } finally { setSearching(false) }
+    }, 350)
+  }
+
+  function select(s: PlaceSuggestion) {
+    const name = shortPlaceName(s)
+    setWeatherCity(name)
+    setWeatherCoords({ lat: parseFloat(s.lat), lon: parseFloat(s.lon) })
+    setInput(name)
+    setSuggestions([])
+    setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
 
@@ -57,24 +81,31 @@ function WeatherCitySettings() {
         <MapPin size={16} className="text-accent" />
         <h2 className="text-sm font-semibold">Wetter-Standort / Weather location</h2>
       </div>
-      <p className="mb-3 text-xs text-gray-400">Stadt für das Wetter-Widget auf dem Dashboard. Auch direkt im Widget änderbar. / City for the weather widget. Can also be changed directly in the widget.</p>
-      <div className="flex items-center gap-2">
-        <input
-          value={input}
-          onChange={(e) => { setInput(e.target.value); setError(false); setSaved(false) }}
-          onKeyDown={(e) => e.key === 'Enter' && save()}
-          placeholder="z.B. Eneppetal"
-          className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-transparent px-2 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
-        />
-        <button
-          onClick={save}
-          disabled={saving || !input.trim() || input.trim() === weatherCity}
-          className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark disabled:opacity-50"
-        >
-          {saving ? '...' : saved ? '✓' : 'Speichern'}
-        </button>
+      <p className="mb-3 text-xs text-gray-400">Stadt oder PLZ — auch direkt im Widget änderbar. / City or ZIP — can also be changed in the widget.</p>
+      <div className="relative">
+        <div className="flex items-center gap-2">
+          <input
+            value={input}
+            onChange={(e) => onInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Escape' && setSuggestions([])}
+            placeholder="z.B. Ennepetal oder 58256"
+            className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-transparent px-2 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+          />
+          {searching && <span className="h-4 w-4 animate-spin rounded-full border-2 border-accent/30 border-t-accent flex-shrink-0" />}
+          {saved && <span className="text-xs font-semibold text-[#34c759]">✓ Gespeichert</span>}
+        </div>
+        {suggestions.length > 0 && (
+          <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-xl border border-gray-100 bg-white shadow-lg dark:border-racing-700 dark:bg-racing-800">
+            {suggestions.map((s, i) => (
+              <button key={i} onClick={() => select(s)}
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm hover:bg-gray-50 dark:hover:bg-racing-700 first:rounded-t-xl last:rounded-b-xl">
+                <MapPin size={12} className="flex-shrink-0 text-accent" />
+                <span className="truncate">{shortPlaceName(s)}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
-      {error && <p className="mt-1.5 text-xs text-red-400">Stadt nicht gefunden / City not found</p>}
     </div>
   )
 }
