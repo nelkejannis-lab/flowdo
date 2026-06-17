@@ -11,7 +11,7 @@ export default function InstagramCallbackPage() {
   const [message, setMessage] = useState('')
 
   useEffect(() => {
-    const code = searchParams.get('code')
+    const code = searchParams.get('code')?.replace(/#.*$/, '')
     const error = searchParams.get('error')
     const accountId = sessionStorage.getItem('ig_connect_account_id')
 
