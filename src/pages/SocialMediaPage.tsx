@@ -46,7 +46,17 @@ export default function SocialMediaPage() {
       </div>
 
       {error && <p className="mb-3 text-sm text-red-500">{error}</p>}
-      {syncError && <p className="mb-3 text-sm text-red-500">{syncError}</p>}
+      {syncError && (
+        <div className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-400">
+          <p className="font-semibold">Sync fehlgeschlagen:</p>
+          <p className="mt-1">{syncError}</p>
+          {syncError.includes('token') || syncError.includes('Token') || syncError.includes('OAuth') ? (
+            <p className="mt-2 text-xs opacity-80">
+              Tipp: Access Tokens laufen nach 60 Tagen ab. Erstelle einen neuen Long-Lived Token im Meta Graph API Explorer und aktualisiere ihn über "Token aktualisieren".
+            </p>
+          ) : null}
+        </div>
+      )}
 
       {accounts.length === 0 ? (
         <p className="py-8 text-center text-sm text-gray-400">

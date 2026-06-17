@@ -74,7 +74,7 @@ export default function AiChatPanel() {
   const navigate = useNavigate()
   const addEntry = useCalendarEntriesStore((s) => s.addEntry)
   const addTask = useTasksStore((s) => s.addTask)
-  const createBoard = useBoardsStore((s) => s.createBoard)
+  const addBoard = useBoardsStore((s) => s.addBoard)
 
   useEffect(() => {
     if (open && messages.length === 0) {
@@ -136,9 +136,7 @@ export default function AiChatPanel() {
           dueDate: (p.dueDate as string) ?? null,
           priority: (p.priority as 'low' | 'medium' | 'high') ?? 'medium',
           description: (p.description as string) ?? null,
-          completed: false,
           tags: [],
-          subtasks: [],
           evening: false,
         })
         return 'done'
@@ -153,12 +151,12 @@ export default function AiChatPanel() {
           endTime: (p.endTime as string) ?? null,
           description: (p.description as string) ?? null,
           color: '#10B981',
-          allDay: !p.startTime,
+          invitedUserIds: [],
         })
         return 'done'
       }
       if (action.type === 'create_board') {
-        await createBoard({
+        await addBoard({
           title: p.title as string,
           description: (p.description as string) ?? undefined,
           color: (p.color as string) ?? '#6366f1',
