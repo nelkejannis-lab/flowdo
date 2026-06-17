@@ -43,6 +43,7 @@ export default function InstagramCallbackPage() {
           if (ctx) {
             const body = typeof ctx.json === 'function' ? await ctx.json() : ctx
             if (body?.error) msg = body.error
+            if (body?.debug) msg += ` | Debug: ${JSON.stringify(body.debug)}`
           }
         } catch { /* use generic message */ }
         setStatus('error')
