@@ -92,40 +92,80 @@ Deno.serve(async (req) => {
       username: profile.username ?? row.username,
     }).eq('id', accountId)
 
-    // ── 2. Account insights ─────────────────────────────────────────────────
-    let reach, profileViews, accountsEngaged, totalInteractions, likes, comments, shares, saves, followsAndUnfollows
+    // ── 2. Account insights (today + 30-day historical backfill) ───────────
     const warnings: string[] = []
+    const today = new Date().toISOString().slice(0, 10)
+    const nowTs = Math.floor(Date.now() / 1000)
+    const sinceTs = nowTs - 30 * 24 * 3600
+
     try {
+      // Historical daily data for last 30 days
       const ins = await graphGet(token, `/${igUserId}/insights`, {
         metric: 'reach,profile_views,accounts_engaged,total_interactions,likes,comments,shares,saves,follows_and_unfollows',
         period: 'day',
-        metric_type: 'total_value',
+        since: String(sinceTs),
+        until: String(nowTs),
         access_token: token,
       })
-      reach = insightValue(ins.data, 'reach')
-      profileViews = insightValue(ins.data, 'profile_views')
-      accountsEngaged = insightValue(ins.data, 'accounts_engaged')
-      totalInteractions = insightValue(ins.data, 'total_interactions')
-      likes = insightValue(ins.data, 'likes')
-      comments = insightValue(ins.data, 'comments')
-      shares = insightValue(ins.data, 'shares')
-      saves = insightValue(ins.data, 'saved')
-      followsAndUnfollows = insightValue(ins.data, 'follows_and_unfollows')
+
+      // Build per-date map from the values arrays
+      const byDate: Record<string, Record<string, number>> = {}
+      for (const entry of ins.data ?? []) {
+        const name: string = entry.name
+        for (const v of entry.values ?? []) {
+          const date: string = v.end_time?.slice(0, 10)
+          if (!date) continue
+          if (!byDate[date]) byDate[date] = {}
+          byDate[date][name] = v.value ?? 0
+        }
+      }
+
+      // Upsert each day (follower count only available for today)
+      for (const [date, vals] of Object.entries(byDate)) {
+        await db.from('social_metrics').upsert({
+          account_id: accountId,
+          date,
+          followers_count: date === today ? (profile.followers_count ?? null) : null,
+          follows_count: date === today ? (profile.follows_count ?? null) : null,
+          media_count: date === today ? (profile.media_count ?? null) : null,
+          reach: vals['reach'] ?? null,
+          profile_views: vals['profile_views'] ?? null,
+          accounts_engaged: vals['accounts_engaged'] ?? null,
+          total_interactions: vals['total_interactions'] ?? null,
+          likes: vals['likes'] ?? null,
+          comments: vals['comments'] ?? null,
+          shares: vals['shares'] ?? null,
+          saves: vals['saves'] ?? null,
+          follows_and_unfollows: vals['follows_and_unfollows'] ?? null,
+        }, { onConflict: 'account_id,date', ignoreDuplicates: false })
+      }
+
+      // Ensure today always has follower count
+      await db.from('social_metrics').upsert({
+        account_id: accountId, date: today,
+        followers_count: profile.followers_count ?? null,
+        follows_count: profile.follows_count ?? null,
+        media_count: profile.media_count ?? null,
+        reach: byDate[today]?.['reach'] ?? null,
+        profile_views: byDate[today]?.['profile_views'] ?? null,
+        accounts_engaged: byDate[today]?.['accounts_engaged'] ?? null,
+        total_interactions: byDate[today]?.['total_interactions'] ?? null,
+        likes: byDate[today]?.['likes'] ?? null,
+        comments: byDate[today]?.['comments'] ?? null,
+        shares: byDate[today]?.['shares'] ?? null,
+        saves: byDate[today]?.['saves'] ?? null,
+      }, { onConflict: 'account_id,date' })
+
     } catch (e: any) {
       warnings.push(`Account-Insights nicht verfügbar: ${e.message}. Benötigt Berechtigung "instagram_business_manage_insights".`)
+      // Fallback: save today with just profile data
+      await db.from('social_metrics').upsert({
+        account_id: accountId, date: today,
+        followers_count: profile.followers_count ?? null,
+        follows_count: profile.follows_count ?? null,
+        media_count: profile.media_count ?? null,
+      }, { onConflict: 'account_id,date' })
     }
-
-    const today = new Date().toISOString().slice(0, 10)
-    await db.from('social_metrics').upsert({
-      account_id: accountId, date: today,
-      followers_count: profile.followers_count ?? null,
-      follows_count: profile.follows_count ?? null,
-      media_count: profile.media_count ?? null,
-      reach: reach ?? null, profile_views: profileViews ?? null,
-      accounts_engaged: accountsEngaged ?? null, total_interactions: totalInteractions ?? null,
-      likes: likes ?? null, comments: comments ?? null, shares: shares ?? null,
-      saves: saves ?? null, follows_and_unfollows: followsAndUnfollows ?? null,
-    }, { onConflict: 'account_id,date' })
 
     // ── 3. Posts ────────────────────────────────────────────────────────────
     try {
