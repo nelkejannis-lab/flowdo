@@ -1042,10 +1042,72 @@ export default function SocialAccountDetailPage() {
 
       {/* Analyse Tab */}
       {tab === 'analyse' && (() => {
+        // ── 30-day metric charts ───────────────────────────────────────────
+        const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30)
+        const last30 = accountMetrics.filter(m => new Date(m.date) >= cutoff)
+        const CHARTS = [
+          { key: 'followersCount' as const, label: 'Follower', color: '#8b5cf6', unit: '' },
+          { key: 'reach' as const, label: 'Reichweite', color: '#3b82f6', unit: '' },
+          { key: 'likes' as const, label: 'Likes', color: '#ec4899', unit: '' },
+          { key: 'comments' as const, label: 'Kommentare', color: '#f59e0b', unit: '' },
+          { key: 'saves' as const, label: 'Saves', color: '#10b981', unit: '' },
+          { key: 'shares' as const, label: 'Shares', color: '#06b6d4', unit: '' },
+          { key: 'profileViews' as const, label: 'Profilaufrufe', color: '#f97316', unit: '' },
+          { key: 'accountsEngaged' as const, label: 'Konten interagiert', color: '#a855f7', unit: '' },
+        ] as const
+
+        function MiniChart({ data, color, label, unit }: { data: { date: string; value: number }[]; color: string; label: string; unit: string }) {
+          if (data.length < 2) return (
+            <div className="rounded-xl border border-gray-100 bg-white dark:border-racing-800 dark:bg-racing-900 p-3 flex flex-col gap-1">
+              <p className="text-xs text-gray-400">{label}</p>
+              <p className="text-sm text-gray-300 dark:text-racing-600">Zu wenig Daten</p>
+            </div>
+          )
+          const vals = data.map(d => d.value)
+          const min = Math.min(...vals); const max = Math.max(...vals)
+          const range = max - min || 1
+          const W = 200; const H = 52; const PAD = 4
+          const points = data.map((d, i) => {
+            const x = PAD + (i / (data.length - 1)) * (W - PAD * 2)
+            const y = H - PAD - ((d.value - min) / range) * (H - PAD * 2)
+            return `${x},${y}`
+          }).join(' ')
+          const latest = vals[vals.length - 1]
+          const first = vals[0]
+          const delta = first > 0 ? ((latest - first) / first * 100) : null
+          const fmtV = (n: number) => n >= 1000000 ? (n/1000000).toFixed(1)+'M' : n >= 1000 ? (n/1000).toFixed(1)+'K' : String(n)
+          return (
+            <div className="rounded-xl border border-gray-100 bg-white dark:border-racing-800 dark:bg-racing-900 p-3 flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-400">{label}</p>
+                {delta !== null && (
+                  <span className={`text-[10px] font-semibold ${delta >= 0 ? 'text-green-500' : 'text-red-400'}`}>
+                    {delta >= 0 ? '▲' : '▼'}{Math.abs(delta).toFixed(1)}%
+                  </span>
+                )}
+              </div>
+              <p className="text-lg font-bold">{fmtV(latest)}{unit}</p>
+              <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 52 }}>
+                <defs>
+                  <linearGradient id={`grad-${label}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+                    <stop offset="100%" stopColor={color} stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                <polygon points={`${PAD},${H} ${points} ${W-PAD},${H}`} fill={`url(#grad-${label})`} />
+                <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx={data.map((d,i)=>PAD+(i/(data.length-1))*(W-PAD*2))[data.length-1]} cy={H-PAD-((latest-min)/range)*(H-PAD*2)} r="3" fill={color} />
+              </svg>
+            </div>
+          )
+        }
+
+        const hasChartData = last30.length >= 2
+
+        // Post-type analysis
         const videos = accountPosts.filter(p => p.mediaType === 'VIDEO')
         const images = accountPosts.filter(p => p.mediaType === 'IMAGE')
         const carousels = accountPosts.filter(p => p.mediaType === 'CAROUSEL_ALBUM')
-
         function avgEng(ps: typeof accountPosts) {
           if (!ps.length || !followers) return 0
           return ps.reduce((s, p) => s + ((p.likeCount ?? 0) + (p.commentsCount ?? 0)), 0) / ps.length / followers * 100
@@ -1055,29 +1117,45 @@ export default function SocialAccountDetailPage() {
           if (!withSaves.length) return null
           return withSaves.reduce((s, p) => s + (p.saved ?? 0), 0) / withSaves.length
         }
-
-        // Hashtag analysis from top posts
-        const topPosts = [...accountPosts].sort((a, b) =>
+        const topPosts2 = [...accountPosts].sort((a, b) =>
           ((b.likeCount ?? 0) + (b.commentsCount ?? 0)) - ((a.likeCount ?? 0) + (a.commentsCount ?? 0))
         ).slice(0, 8)
         const hashtagFreq: Record<string, number> = {}
-        topPosts.forEach(p => {
+        topPosts2.forEach(p => {
           (p.caption?.match(/#\w+/g) ?? []).forEach(tag => {
             hashtagFreq[tag.toLowerCase()] = (hashtagFreq[tag.toLowerCase()] ?? 0) + 1
           })
         })
         const topHashtags = Object.entries(hashtagFreq).sort((a, b) => b[1] - a[1]).slice(0, 10)
-
+        const topPosts = topPosts2
         const types = [
           { label: 'Reels/Video', icon: '🎬', posts: videos, color: '#8b5cf6' },
           { label: 'Karussell', icon: '🖼️', posts: carousels, color: '#3b82f6' },
           { label: 'Bilder', icon: '📷', posts: images, color: '#10b981' },
         ].filter(t => t.posts.length > 0)
-
         const maxEng = Math.max(...types.map(t => avgEng(t.posts)), 0.01)
 
         return (
           <div className="space-y-4">
+            {/* 30-day charts */}
+            {hasChartData && (
+              <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-racing-800 dark:bg-racing-900">
+                <h3 className="mb-4 font-semibold">📈 Letzte 30 Tage</h3>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                  {CHARTS.map(({ key, label, color, unit }) => {
+                    const data = last30
+                      .filter(m => m[key] != null)
+                      .map(m => ({ date: m.date, value: m[key] as number }))
+                    return <MiniChart key={key} data={data} color={color} label={label} unit={unit} />
+                  })}
+                </div>
+              </div>
+            )}
+            {!hasChartData && (
+              <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-racing-800 dark:bg-racing-900 text-center">
+                <p className="text-sm text-gray-400">Synchronisiere mehrere Tage um 30-Tage-Charts zu sehen.</p>
+              </div>
+            )}
             {/* Post-Typ Performance */}
             <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-racing-800 dark:bg-racing-900">
               <h3 className="mb-4 font-semibold">📊 Post-Typ Performance</h3>
