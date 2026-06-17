@@ -6,6 +6,19 @@ import { useSocialStore } from '../store/socialStore'
 import AddSocialAccountModal from '../components/social/AddSocialAccountModal'
 import { formatFriendlyDateTime } from '../utils/date'
 
+const IG_APP_ID = '1337831181889435'
+const IG_REDIRECT_URI = 'https://mooncrew.app/instagram-callback'
+const IG_SCOPES = 'instagram_business_basic,instagram_business_manage_insights,instagram_business_content_publish'
+
+function buildInstagramOAuthUrl() {
+  const url = new URL('https://www.instagram.com/oauth/authorize')
+  url.searchParams.set('client_id', IG_APP_ID)
+  url.searchParams.set('redirect_uri', IG_REDIRECT_URI)
+  url.searchParams.set('response_type', 'code')
+  url.searchParams.set('scope', IG_SCOPES)
+  return url.toString()
+}
+
 export default function SocialMediaPage() {
   const { t } = useTranslation('social')
   const accounts = useSocialStore((s) => s.accounts)
@@ -36,13 +49,22 @@ export default function SocialMediaPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{t('page.title')}</h1>
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-dark"
-        >
-          <Plus size={16} />
-          {t('page.addAccount')}
-        </button>
+        <div className="flex items-center gap-2">
+          <a
+            href={buildInstagramOAuthUrl()}
+            className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 px-3 py-2 text-sm font-semibold text-white hover:opacity-90"
+          >
+            <Instagram size={16} />
+            Mit Instagram verbinden
+          </a>
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800"
+          >
+            <Plus size={16} />
+            Manuell
+          </button>
+        </div>
       </div>
 
       {error && <p className="mb-3 text-sm text-red-500">{error}</p>}

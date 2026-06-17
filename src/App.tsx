@@ -19,6 +19,7 @@ import ChatPage from './pages/ChatPage'
 import SettingsPage from './pages/SettingsPage'
 import DatenschutzPage from './pages/legal/DatenschutzPage'
 import ImpressumPage from './pages/legal/ImpressumPage'
+import InstagramCallbackPage from './pages/InstagramCallbackPage'
 import { useSettingsStore } from './store/settingsStore'
 import { useAuthStore } from './store/authStore'
 import { useNotifications } from './hooks/useNotifications'
@@ -87,6 +88,7 @@ export default function App() {
         <Route path="/friends" element={featureVisibility.friends ? <FriendsPage /> : <Navigate to="/" replace />} />
         <Route path="/social" element={featureVisibility.social ? <SocialMediaPage /> : <Navigate to="/" replace />} />
         <Route path="/social/:accountId" element={featureVisibility.social ? <SocialAccountDetailPage /> : <Navigate to="/" replace />} />
+        <Route path="/instagram-callback" element={<InstagramCallbackPage />} />
         <Route path="/ki-termine" element={featureVisibility.aiScheduler ? <AiSchedulerPage /> : <Navigate to="/" replace />} />
         <Route path="/chat" element={featureVisibility.chat ? <ChatPage /> : <Navigate to="/" replace />} />
         <Route path="/einstellungen" element={<SettingsPage />} />
