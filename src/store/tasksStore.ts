@@ -112,6 +112,7 @@ const pendingTaskDeletes = new Map<string, { task: Task; timer: ReturnType<typeo
 
 interface TasksState {
   tasks: Task[]
+  taskOrder: string[]
   fetchAll: () => Promise<void>
   addTask: (input: NewTaskInput) => Task
   updateTask: (id: string, updates: Partial<Task>) => void
@@ -131,6 +132,7 @@ export const useTasksStore = create<TasksState>()(
   persist(
     (set, get) => ({
       tasks: [],
+      taskOrder: [],
 
       fetchAll: async () => {
         const userId = await getUserId()
@@ -152,7 +154,17 @@ export const useTasksStore = create<TasksState>()(
           await syncTask(task, userId)
         }
 
-        set({ tasks: [...localOnly, ...remote] })
+        const merged = [...localOnly, ...remote]
+        const order = get().taskOrder
+        if (order.length > 0) {
+          const orderMap = new Map(order.map((id, i) => [id, i]))
+          merged.sort((a, b) => {
+            const ai = orderMap.get(a.id) ?? Infinity
+            const bi = orderMap.get(b.id) ?? Infinity
+            return ai - bi
+          })
+        }
+        set({ tasks: merged })
       },
 
       addTask: (input) => {
@@ -223,7 +235,7 @@ export const useTasksStore = create<TasksState>()(
           const map = new Map(s.tasks.map((t) => [t.id, t]))
           const reordered = ids.map((id) => map.get(id)).filter(Boolean) as Task[]
           const rest = s.tasks.filter((t) => !ids.includes(t.id))
-          return { tasks: [...reordered, ...rest] }
+          return { tasks: [...reordered, ...rest], taskOrder: ids }
         })
       },
 

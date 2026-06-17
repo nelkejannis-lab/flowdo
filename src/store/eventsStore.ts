@@ -57,6 +57,7 @@ async function syncEvent(event: CalendarEvent, userId: string) {
 
 interface EventsState {
   events: CalendarEvent[]
+  deletedEventIds: string[]
   fetchAll: () => Promise<void>
   addEvent: (input: NewEventInput) => CalendarEvent
   updateEvent: (id: string, updates: Partial<CalendarEvent>) => void
@@ -67,10 +68,13 @@ export const useEventsStore = create<EventsState>()(
   persist(
     (set, get) => ({
       events: [],
+      deletedEventIds: [],
 
       fetchAll: async () => {
         const userId = await getUserId()
         if (!userId) return
+
+        const deleted = new Set([...get().deletedEventIds, ...pendingDeletes])
 
         const { data, error } = await supabase
           .from('calendar_events')
@@ -79,12 +83,17 @@ export const useEventsStore = create<EventsState>()(
           .order('date', { ascending: true })
         if (error) return
 
-        const remote = ((data ?? []) as CalendarEventRow[]).map(toEvent).filter((e) => !pendingDeletes.has(e.id))
+        const remote = ((data ?? []) as CalendarEventRow[]).map(toEvent).filter((e) => !deleted.has(e.id))
         const remoteIds = new Set(remote.map((e) => e.id))
-        const localOnly = get().events.filter((e) => !remoteIds.has(e.id))
+        const localOnly = get().events.filter((e) => !remoteIds.has(e.id) && !deleted.has(e.id))
 
         for (const event of localOnly) {
           await syncEvent(event, userId)
+        }
+
+        // Retry any persisted deletes that haven't reached Supabase yet
+        for (const id of get().deletedEventIds) {
+          void supabase.from('calendar_events').delete().eq('id', id).eq('owner_id', userId)
         }
 
         set({ events: [...localOnly, ...remote] })
@@ -125,10 +134,15 @@ export const useEventsStore = create<EventsState>()(
 
       deleteEvent: (id) => {
         pendingDeletes.add(id)
-        set((state) => ({ events: state.events.filter((e) => e.id !== id) }))
+        set((state) => ({
+          events: state.events.filter((e) => e.id !== id),
+          deletedEventIds: [...state.deletedEventIds, id],
+        }))
         void getUserId().then(async (userId) => {
           if (userId) await supabase.from('calendar_events').delete().eq('id', id)
           pendingDeletes.delete(id)
+          // Remove from persisted blacklist once Supabase confirmed
+          set((state) => ({ deletedEventIds: state.deletedEventIds.filter((x) => x !== id) }))
         })
       },
     }),
