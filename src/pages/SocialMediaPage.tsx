@@ -6,7 +6,7 @@ import { useSocialStore } from '../store/socialStore'
 import AddSocialAccountModal from '../components/social/AddSocialAccountModal'
 import { formatFriendlyDateTime } from '../utils/date'
 
-const IG_APP_ID = '1440630227832412'
+const IG_APP_ID = '1337831181889435'
 const IG_REDIRECT_URI = 'https://mooncrew.app/instagram-callback'
 const IG_SCOPES = 'instagram_business_basic,instagram_business_manage_insights,instagram_business_content_publish'
 
