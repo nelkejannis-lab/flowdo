@@ -130,7 +130,7 @@ export const useSettingsStore = create<SettingsState>()(
           featureVisibility: { ...DEFAULT_FEATURE_VISIBILITY, ...legacy.featureVisibility },
           dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY },
           colorLabels: { ...DEFAULT_COLOR_LABELS, ...(legacy as any).colorLabels },
-          onboardingPermissionsDone: false,
+          onboardingPermissionsDone: legacy.onboardingPermissionsDone ?? false,
           weatherCity: hasCustomCity ? city : DEFAULT_WEATHER_CITY,
           weatherCoords: (legacy as any).weatherCoords ?? { ...DEFAULT_WEATHER_COORDS },
         }
