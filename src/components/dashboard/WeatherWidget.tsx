@@ -15,16 +15,143 @@ interface Suggestion {
   lon: string
 }
 
-function weatherEmoji(code: number) {
-  if (code === 0) return '☀️'
-  if (code <= 2) return '⛅'
-  if (code === 3) return '☁️'
-  if (code <= 49) return '🌫️'
-  if (code <= 59) return '🌦️'
-  if (code <= 67) return '🌧️'
-  if (code <= 77) return '❄️'
-  if (code <= 82) return '🌨️'
-  return '⛈️'
+// ─── SVG Weather Icons ────────────────────────────────────────────────────────
+
+function IconSun() {
+  return (
+    <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+      <circle cx="28" cy="28" r="12" fill="#FFD93D" />
+      {[0,45,90,135,180,225,270,315].map((deg, i) => (
+        <line key={i}
+          x1={28 + 16 * Math.cos(deg * Math.PI/180)}
+          y1={28 + 16 * Math.sin(deg * Math.PI/180)}
+          x2={28 + 22 * Math.cos(deg * Math.PI/180)}
+          y2={28 + 22 * Math.sin(deg * Math.PI/180)}
+          stroke="#FFD93D" strokeWidth="2.5" strokeLinecap="round"
+        />
+      ))}
+    </svg>
+  )
+}
+
+function IconPartlyCloudy() {
+  return (
+    <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+      <circle cx="22" cy="22" r="10" fill="#FFD93D" opacity="0.9" />
+      {[0,60,120,180,240,300].map((deg, i) => (
+        <line key={i}
+          x1={22 + 13 * Math.cos(deg * Math.PI/180)}
+          y1={22 + 13 * Math.sin(deg * Math.PI/180)}
+          x2={22 + 17 * Math.cos(deg * Math.PI/180)}
+          y2={22 + 17 * Math.sin(deg * Math.PI/180)}
+          stroke="#FFD93D" strokeWidth="2" strokeLinecap="round"
+        />
+      ))}
+      <rect x="10" y="32" width="36" height="14" rx="7" fill="white" opacity="0.95" />
+      <circle cx="19" cy="34" r="8" fill="white" opacity="0.95" />
+      <circle cx="31" cy="32" r="10" fill="white" opacity="0.95" />
+    </svg>
+  )
+}
+
+function IconCloud() {
+  return (
+    <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+      <rect x="8" y="30" width="40" height="16" rx="8" fill="white" opacity="0.9" />
+      <circle cx="18" cy="32" r="10" fill="white" opacity="0.9" />
+      <circle cx="32" cy="28" r="13" fill="white" opacity="0.9" />
+    </svg>
+  )
+}
+
+function IconFog() {
+  return (
+    <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+      <rect x="8" y="18" width="40" height="14" rx="7" fill="white" opacity="0.7" />
+      <circle cx="16" cy="20" r="9" fill="white" opacity="0.7" />
+      <circle cx="30" cy="16" r="11" fill="white" opacity="0.7" />
+      <rect x="12" y="34" width="32" height="4" rx="2" fill="white" opacity="0.5" />
+      <rect x="8" y="41" width="40" height="4" rx="2" fill="white" opacity="0.4" />
+    </svg>
+  )
+}
+
+function IconDrizzle() {
+  return (
+    <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+      <rect x="8" y="16" width="40" height="16" rx="8" fill="white" opacity="0.9" />
+      <circle cx="18" cy="18" r="10" fill="white" opacity="0.9" />
+      <circle cx="32" cy="14" r="13" fill="white" opacity="0.9" />
+      {[[18,36],[28,40],[38,36],[23,44],[33,44]].map(([x,y],i) => (
+        <line key={i} x1={x} y1={y} x2={x-2} y2={y+6} stroke="#93C5FD" strokeWidth="2" strokeLinecap="round"/>
+      ))}
+    </svg>
+  )
+}
+
+function IconRain() {
+  return (
+    <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+      <rect x="6" y="14" width="44" height="17" rx="8.5" fill="white" opacity="0.9" />
+      <circle cx="17" cy="16" r="11" fill="white" opacity="0.9" />
+      <circle cx="33" cy="12" r="14" fill="white" opacity="0.9" />
+      {[[14,36],[24,33],[34,36],[44,33],[19,44],[29,41],[39,44]].map(([x,y],i) => (
+        <line key={i} x1={x} y1={y} x2={x-3} y2={y+8} stroke="#60A5FA" strokeWidth="2.5" strokeLinecap="round"/>
+      ))}
+    </svg>
+  )
+}
+
+function IconSnow() {
+  return (
+    <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+      <rect x="6" y="14" width="44" height="17" rx="8.5" fill="white" opacity="0.9" />
+      <circle cx="17" cy="16" r="11" fill="white" opacity="0.9" />
+      <circle cx="33" cy="12" r="14" fill="white" opacity="0.9" />
+      {[[16,37],[28,34],[40,37],[22,45],[34,45]].map(([cx,cy],i) => (
+        <g key={i}>
+          <circle cx={cx} cy={cy} r="3" fill="white" opacity="0.9"/>
+          <line x1={cx-5} y1={cy} x2={cx+5} y2={cy} stroke="white" strokeWidth="1.5" opacity="0.7"/>
+          <line x1={cx} y1={cy-5} x2={cx} y2={cy+5} stroke="white" strokeWidth="1.5" opacity="0.7"/>
+        </g>
+      ))}
+    </svg>
+  )
+}
+
+function IconThunder() {
+  return (
+    <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+      <rect x="6" y="10" width="44" height="18" rx="9" fill="white" opacity="0.8" />
+      <circle cx="17" cy="13" r="11" fill="white" opacity="0.8" />
+      <circle cx="33" cy="8" r="14" fill="white" opacity="0.8" />
+      <path d="M30 30 L22 44 L29 44 L24 56 L36 38 L29 38 Z" fill="#FBBF24" />
+    </svg>
+  )
+}
+
+function WeatherIcon({ code }: { code: number }) {
+  if (code === 0) return <IconSun />
+  if (code <= 2) return <IconPartlyCloudy />
+  if (code === 3) return <IconCloud />
+  if (code <= 49) return <IconFog />
+  if (code <= 59) return <IconDrizzle />
+  if (code <= 67) return <IconRain />
+  if (code <= 77) return <IconSnow />
+  if (code <= 82) return <IconRain />
+  return <IconThunder />
+}
+
+// Gradient background per weather condition
+function gradientFor(code: number) {
+  if (code === 0) return 'from-[#4A90D9] to-[#87CEEB]'         // clear → blue sky
+  if (code <= 2) return 'from-[#5B9BD5] to-[#A8C8E8]'          // partly cloudy
+  if (code === 3) return 'from-[#7B8FA8] to-[#A8B8C8]'         // overcast
+  if (code <= 49) return 'from-[#8A9BAA] to-[#B8C5CF]'         // fog
+  if (code <= 67) return 'from-[#4A6FA8] to-[#7A96BC]'         // rain
+  if (code <= 77) return 'from-[#6B8CAE] to-[#A8C0D4]'         // snow
+  if (code <= 82) return 'from-[#4A6FA8] to-[#7A96BC]'         // showers
+  return 'from-[#3D4F6B] to-[#5A6E8A]'                          // thunder
 }
 
 function weatherLabel(code: number) {
@@ -72,6 +199,8 @@ async function fetchWeather(lat: number, lon: number): Promise<WeatherData | nul
     return null
   }
 }
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function WeatherWidget() {
   const weatherCity = useSettingsStore((s) => s.weatherCity)
@@ -128,23 +257,14 @@ export default function WeatherWidget() {
   }
 
   function onKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'ArrowDown') {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIdx((i) => Math.min(i + 1, suggestions.length - 1)) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIdx((i) => Math.max(i - 1, 0)) }
+    else if (e.key === 'Enter') {
       e.preventDefault()
-      setActiveIdx((i) => Math.min(i + 1, suggestions.length - 1))
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      setActiveIdx((i) => Math.max(i - 1, 0))
-    } else if (e.key === 'Enter') {
-      e.preventDefault()
-      if (activeIdx >= 0 && suggestions[activeIdx]) {
-        select(suggestions[activeIdx])
-      } else if (suggestions.length > 0) {
-        select(suggestions[0])
-      }
-    } else if (e.key === 'Escape') {
-      setSuggestions([])
-      setEditing(false)
+      const target = activeIdx >= 0 ? suggestions[activeIdx] : suggestions[0]
+      if (target) select(target)
     }
+    else if (e.key === 'Escape') { setSuggestions([]); setEditing(false) }
   }
 
   function startEdit() {
@@ -155,6 +275,7 @@ export default function WeatherWidget() {
     setTimeout(() => { inputRef.current?.focus(); inputRef.current?.select() }, 50)
   }
 
+  // ── Edit mode ──
   if (editing) {
     return (
       <div className="relative rounded-xl border border-accent bg-white p-4 dark:bg-racing-900">
@@ -183,7 +304,7 @@ export default function WeatherWidget() {
                 onMouseEnter={() => setActiveIdx(i)}
                 className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm transition-colors ${
                   i === activeIdx ? 'bg-accent/10 text-accent' : 'hover:bg-gray-50 dark:hover:bg-racing-700'
-                } ${i === 0 ? 'rounded-t-xl' : ''} ${i === suggestions.length - 1 ? 'rounded-b-xl' : 'border-b border-gray-100 dark:border-racing-700'}`}
+                } ${i === 0 ? '' : 'border-t border-gray-100 dark:border-racing-700'}`}
               >
                 <MapPin size={12} className="flex-shrink-0 text-gray-400" />
                 <span className="truncate">{shortName(s)}</span>
@@ -199,40 +320,41 @@ export default function WeatherWidget() {
     )
   }
 
+  // ── Display mode ──
+  const gradient = data ? gradientFor(data.code) : 'from-[#7B8FA8] to-[#A8B8C8]'
+
   return (
     <button
       onClick={startEdit}
-      className="group flex w-full flex-col justify-between rounded-xl border border-gray-100 bg-white p-4 text-left transition-colors hover:border-accent dark:border-racing-800 dark:bg-racing-900 dark:hover:border-accent"
+      className={`group relative overflow-hidden rounded-xl bg-gradient-to-br ${gradient} p-4 text-left text-white transition-all hover:brightness-105 active:brightness-95`}
+      title="Klicken um Ort zu ändern"
     >
+      {/* City + icon row */}
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-1 text-[11px] font-medium text-white/70">
+          <MapPin size={10} />
+          <span className="truncate max-w-[90px]">{weatherCity}</span>
+        </div>
+        <div className="absolute right-3 top-2 opacity-90 drop-shadow-sm">
+          {data ? <WeatherIcon code={data.code} /> : null}
+        </div>
+      </div>
+
+      {/* Temperature */}
       {data ? (
         <>
-          {/* Top row: city + emoji */}
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-1 text-[11px] text-gray-400 group-hover:text-accent">
-              <MapPin size={10} />
-              <span className="truncate">{weatherCity}</span>
-            </div>
-            <span className="text-xl leading-none">{weatherEmoji(data.code)}</span>
+          <div className="mt-7">
+            <span className="text-4xl font-semibold tabular-nums leading-none drop-shadow">{data.temp}°</span>
           </div>
-
-          {/* Temperature */}
-          <div className="mt-1">
-            <span className="text-3xl font-semibold tabular-nums leading-none">{data.temp}°</span>
-          </div>
-
-          {/* Condition + max/min */}
           <div className="mt-1 flex items-end justify-between">
-            <span className="text-xs text-gray-500">{weatherLabel(data.code)}</span>
-            <span className="text-[11px] text-gray-400">
-              H:{data.tempMax}° L:{data.tempMin}°
-            </span>
+            <span className="text-xs font-medium text-white/80">{weatherLabel(data.code)}</span>
+            <span className="text-[11px] font-medium text-white/70">H:{data.tempMax}° L:{data.tempMin}°</span>
           </div>
         </>
       ) : (
-        <div className="flex flex-col gap-2">
-          <div className="h-3 w-20 animate-pulse rounded bg-gray-100 dark:bg-racing-800" />
-          <div className="h-8 w-14 animate-pulse rounded bg-gray-100 dark:bg-racing-800" />
-          <div className="h-3 w-28 animate-pulse rounded bg-gray-100 dark:bg-racing-800" />
+        <div className="mt-7 flex flex-col gap-2">
+          <div className="h-9 w-14 animate-pulse rounded bg-white/20" />
+          <div className="h-3 w-20 animate-pulse rounded bg-white/20" />
         </div>
       )}
     </button>
