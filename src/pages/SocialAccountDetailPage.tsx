@@ -976,14 +976,14 @@ export default function SocialAccountDetailPage() {
           icon={<Heart size={12} />} color="#f43f5e" sub="pro Post" metricKey="engagement" />
         <KpiCard label="Profil-Aufrufe" value={latest?.profileViews ?? '–'} icon={<Eye size={12} />} color="#f59e0b" metricKey="profileViews"
           trend={accountMetrics.map((m) => m.profileViews ?? 0)} delta={profileViewsDelta} />
-        <KpiCard label="Likes" value={accountPosts.length ? totalLikes : '–'} icon={<Heart size={12} />} color="#f43f5e" metricKey="likes"
-          sub={accountPosts.length ? `aus ${accountPosts.length} Posts` : undefined} delta={likesDelta} />
-        <KpiCard label="Kommentare" value={accountPosts.length ? totalComments : '–'} icon={<MessageCircle size={12} />} color="#3b82f6" metricKey="comments"
-          sub={accountPosts.length ? `aus ${accountPosts.length} Posts` : undefined} delta={commentsDelta} />
-        <KpiCard label="Gespeichert" value={accountPosts.length ? totalSaves : '–'} icon={<Bookmark size={12} />} color="#f59e0b" metricKey="saves"
-          sub={accountPosts.length ? `aus ${accountPosts.length} Posts` : undefined} delta={savesDelta} />
-        <KpiCard label="Geteilt" value={accountPosts.length ? totalShares : '–'} icon={<Repeat2 size={12} />} color="#8b5cf6" metricKey="shares"
-          sub={accountPosts.length ? `aus ${accountPosts.length} Posts` : undefined} delta={sharesDelta} />
+        <KpiCard label="Likes" value={latest?.likes ?? (accountPosts.length ? totalLikes : '–')} icon={<Heart size={12} />} color="#f43f5e" metricKey="likes"
+          sub={latest?.likes == null && accountPosts.length ? `aus ${accountPosts.length} Posts` : undefined} delta={likesDelta} />
+        <KpiCard label="Kommentare" value={latest?.comments ?? (accountPosts.length ? totalComments : '–')} icon={<MessageCircle size={12} />} color="#3b82f6" metricKey="comments"
+          sub={latest?.comments == null && accountPosts.length ? `aus ${accountPosts.length} Posts` : undefined} delta={commentsDelta} />
+        <KpiCard label="Gespeichert" value={latest?.saves ?? (accountPosts.length ? totalSaves : '–')} icon={<Bookmark size={12} />} color="#f59e0b" metricKey="saves"
+          sub={latest?.saves == null && accountPosts.length ? `aus ${accountPosts.length} Posts` : undefined} delta={savesDelta} />
+        <KpiCard label="Geteilt" value={latest?.shares ?? (accountPosts.length ? totalShares : '–')} icon={<Repeat2 size={12} />} color="#8b5cf6" metricKey="shares"
+          sub={latest?.shares == null && accountPosts.length ? `aus ${accountPosts.length} Posts` : undefined} delta={sharesDelta} />
       </div>
 
       {/* Best post highlight */}
