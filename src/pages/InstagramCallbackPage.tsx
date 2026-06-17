@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useSocialStore } from '../store/socialStore'
@@ -9,8 +9,11 @@ export default function InstagramCallbackPage() {
   const { fetchAccounts, addAccount } = useSocialStore()
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
+  const ran = useRef(false)
 
   useEffect(() => {
+    if (ran.current) return
+    ran.current = true
     const code = searchParams.get('code')?.replace(/#.*$/, '')
     const error = searchParams.get('error')
     const accountId = sessionStorage.getItem('ig_connect_account_id')
