@@ -5,6 +5,7 @@ import { useFriendsStore } from '../store/friendsStore'
 import { useAiSchedulerStore, type ParsedAppointment, type ColleagueAvailability, type BestSlotResult } from '../store/aiSchedulerStore'
 import { useCalendarEntriesStore } from '../store/calendarEntriesStore'
 import { isSupabaseConfigured } from '../lib/supabase'
+import AiChatPanel from '../components/ai/AiChatPanel'
 
 const DEFAULT_COLOR = '#10B981'
 
@@ -551,6 +552,8 @@ export default function AiSchedulerPage() {
           </div>
         </div>
       )}
+
+      <AiChatPanel />
     </div>
   )
 }
