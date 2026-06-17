@@ -43,6 +43,7 @@ export default function Dashboard() {
   const fetchCalendarEntries = useCalendarEntriesStore((s) => s.fetchEntries)
   const socialAccounts = useSocialStore((s) => s.accounts)
   const socialMetrics = useSocialStore((s) => s.metrics)
+  const socialPosts = useSocialStore((s) => s.posts)
   const fetchSocialAccounts = useSocialStore((s) => s.fetchAccounts)
   const fetchSocialAccountData = useSocialStore((s) => s.fetchAccountData)
   const featureVisibility = useSettingsStore((s) => s.featureVisibility)
@@ -196,6 +197,11 @@ export default function Dashboard() {
               const follDelta = latest && prev && prev.followersCount != null && latest.followersCount != null
                 ? latest.followersCount - prev.followersCount : null
               const fmt = (n?: number | null) => n == null ? '–' : n >= 1000 ? (n / 1000).toFixed(1) + 'K' : String(n)
+              const acctPosts = socialPosts[account.id] ?? []
+              const postLikes = acctPosts.reduce((s, p) => s + (p.likeCount ?? 0), 0)
+              const postSaves = acctPosts.reduce((s, p) => s + (p.saved ?? 0), 0)
+              const displayLikes = latest?.likes ?? (acctPosts.length ? postLikes : null)
+              const displaySaves = latest?.saves ?? (acctPosts.length ? postSaves : null)
               return (
                 <Link key={account.id} to={`/social/${account.id}`}
                   className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm hover:shadow-md transition-shadow dark:border-racing-800 dark:bg-racing-900"
@@ -226,11 +232,11 @@ export default function Dashboard() {
                     </div>
                     <div className="text-center">
                       <p className="text-[9px] text-gray-400 flex items-center justify-center gap-0.5"><Heart size={9} />Likes</p>
-                      <p className="text-xs font-bold">{fmt(latest?.likes)}</p>
+                      <p className="text-xs font-bold">{fmt(displayLikes)}</p>
                     </div>
                     <div className="text-center">
                       <p className="text-[9px] text-gray-400 flex items-center justify-center gap-0.5"><Bookmark size={9} />Saves</p>
-                      <p className="text-xs font-bold">{fmt(latest?.saves)}</p>
+                      <p className="text-xs font-bold">{fmt(displaySaves)}</p>
                     </div>
                   </div>
                 </Link>
