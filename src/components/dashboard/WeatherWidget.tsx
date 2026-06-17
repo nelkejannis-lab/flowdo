@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { MapPin, X } from 'lucide-react'
 import { useSettingsStore } from '../../store/settingsStore'
 
@@ -215,9 +216,11 @@ export default function WeatherWidget() {
   const [searching, setSearching] = useState(false)
   const [activeIdx, setActiveIdx] = useState(-1)
   const inputRef = useRef<HTMLInputElement>(null)
+  const editContainerRef = useRef<HTMLDivElement>(null)
   const searchAbort = useRef<AbortController | null>(null)
   const weatherAbort = useRef<AbortController | null>(null)
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null)
 
   useEffect(() => {
     if (weatherCoords) loadWeather(weatherCoords.lat, weatherCoords.lon)
@@ -267,6 +270,15 @@ export default function WeatherWidget() {
     else if (e.key === 'Escape') { setSuggestions([]); setEditing(false) }
   }
 
+  useLayoutEffect(() => {
+    if (suggestions.length > 0 && editContainerRef.current) {
+      const rect = editContainerRef.current.getBoundingClientRect()
+      setDropdownRect({ top: rect.bottom + 4, left: rect.left, width: rect.width })
+    } else {
+      setDropdownRect(null)
+    }
+  }, [suggestions])
+
   function startEdit() {
     setInput(weatherCity)
     setSuggestions([])
@@ -278,7 +290,7 @@ export default function WeatherWidget() {
   // ── Edit mode ──
   if (editing) {
     return (
-      <div className="relative rounded-xl border border-accent bg-white p-4 dark:bg-racing-900">
+      <div ref={editContainerRef} className="rounded-xl border border-accent bg-white p-4 dark:bg-racing-900">
         <div className="flex items-center gap-2">
           <MapPin size={14} className="flex-shrink-0 text-accent" />
           <input
@@ -295,8 +307,11 @@ export default function WeatherWidget() {
           }
         </div>
 
-        {suggestions.length > 0 && (
-          <div className="absolute left-0 right-0 top-full z-[100] mt-1 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl dark:border-racing-700 dark:bg-racing-800">
+        {dropdownRect && suggestions.length > 0 && createPortal(
+          <div
+            style={{ position: 'fixed', top: dropdownRect.top, left: dropdownRect.left, width: dropdownRect.width, zIndex: 9999 }}
+            className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl dark:border-racing-700 dark:bg-racing-800"
+          >
             {suggestions.map((s, i) => (
               <button
                 key={i}
@@ -310,7 +325,8 @@ export default function WeatherWidget() {
                 <span className="truncate">{shortName(s)}</span>
               </button>
             ))}
-          </div>
+          </div>,
+          document.body
         )}
 
         {input.trim().length >= 2 && !searching && suggestions.length === 0 && (
