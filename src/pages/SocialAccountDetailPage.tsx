@@ -818,11 +818,24 @@ export default function SocialAccountDetailPage() {
   const followerDelta = delta(followers || undefined, prevFollowers)
 
   const reachDelta = delta(periodAvg('reach', 0, 7), periodAvg('reach', 7, 7))
-  const likesDelta = delta(periodAvg('likes', 0, 7), periodAvg('likes', 7, 7))
-  const savesDelta = delta(periodAvg('saves', 0, 7), periodAvg('saves', 7, 7))
-  const commentsDelta = delta(periodAvg('comments', 0, 7), periodAvg('comments', 7, 7))
-  const sharesDelta = delta(periodAvg('shares', 0, 7), periodAvg('shares', 7, 7))
   const profileViewsDelta = delta(periodAvg('profileViews', 0, 7), periodAvg('profileViews', 7, 7))
+
+  // Likes/comments/saves/shares come from post data (Instagram doesn't provide account-level daily history)
+  function postSum(key: 'likeCount' | 'commentsCount' | 'saved' | 'shares', daysBack: number) {
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - daysBack)
+    const cutStr = cutoff.toISOString().slice(0, 10)
+    return accountPosts
+      .filter(p => p.postedAt && p.postedAt.slice(0, 10) >= cutStr)
+      .reduce((sum, p) => sum + (p[key] ?? 0), 0)
+  }
+  const totalLikes = accountPosts.reduce((s, p) => s + (p.likeCount ?? 0), 0)
+  const totalComments = accountPosts.reduce((s, p) => s + (p.commentsCount ?? 0), 0)
+  const totalSaves = accountPosts.reduce((s, p) => s + (p.saved ?? 0), 0)
+  const totalShares = accountPosts.reduce((s, p) => s + (p.shares ?? 0), 0)
+  const likesDelta = delta(postSum('likeCount', 30), postSum('likeCount', 60) - postSum('likeCount', 30))
+  const commentsDelta = delta(postSum('commentsCount', 30), postSum('commentsCount', 60) - postSum('commentsCount', 30))
+  const savesDelta = delta(postSum('saved', 30), postSum('saved', 60) - postSum('saved', 30))
+  const sharesDelta = delta(postSum('shares', 30), postSum('shares', 60) - postSum('shares', 30))
 
   // Engagement rate across all posts
   const avgEngagement = accountPosts.length > 0 && followers > 0
@@ -963,14 +976,14 @@ export default function SocialAccountDetailPage() {
           icon={<Heart size={12} />} color="#f43f5e" sub="pro Post" metricKey="engagement" />
         <KpiCard label="Profil-Aufrufe" value={latest?.profileViews ?? '–'} icon={<Eye size={12} />} color="#f59e0b" metricKey="profileViews"
           trend={accountMetrics.map((m) => m.profileViews ?? 0)} delta={profileViewsDelta} />
-        <KpiCard label="Likes" value={latest?.likes ?? '–'} icon={<Heart size={12} />} color="#f43f5e" metricKey="likes"
-          trend={accountMetrics.map((m) => m.likes ?? 0)} delta={likesDelta} />
-        <KpiCard label="Kommentare" value={latest?.comments ?? '–'} icon={<MessageCircle size={12} />} color="#3b82f6" metricKey="comments"
-          trend={accountMetrics.map((m) => m.comments ?? 0)} delta={commentsDelta} />
-        <KpiCard label="Gespeichert" value={latest?.saves ?? '–'} icon={<Bookmark size={12} />} color="#f59e0b" metricKey="saves"
-          trend={accountMetrics.map((m) => m.saves ?? 0)} delta={savesDelta} />
-        <KpiCard label="Geteilt" value={latest?.shares ?? '–'} icon={<Repeat2 size={12} />} color="#8b5cf6" metricKey="shares"
-          trend={accountMetrics.map((m) => m.shares ?? 0)} delta={sharesDelta} />
+        <KpiCard label="Likes" value={accountPosts.length ? totalLikes : '–'} icon={<Heart size={12} />} color="#f43f5e" metricKey="likes"
+          sub={accountPosts.length ? `aus ${accountPosts.length} Posts` : undefined} delta={likesDelta} />
+        <KpiCard label="Kommentare" value={accountPosts.length ? totalComments : '–'} icon={<MessageCircle size={12} />} color="#3b82f6" metricKey="comments"
+          sub={accountPosts.length ? `aus ${accountPosts.length} Posts` : undefined} delta={commentsDelta} />
+        <KpiCard label="Gespeichert" value={accountPosts.length ? totalSaves : '–'} icon={<Bookmark size={12} />} color="#f59e0b" metricKey="saves"
+          sub={accountPosts.length ? `aus ${accountPosts.length} Posts` : undefined} delta={savesDelta} />
+        <KpiCard label="Geteilt" value={accountPosts.length ? totalShares : '–'} icon={<Repeat2 size={12} />} color="#8b5cf6" metricKey="shares"
+          sub={accountPosts.length ? `aus ${accountPosts.length} Posts` : undefined} delta={sharesDelta} />
       </div>
 
       {/* Best post highlight */}
