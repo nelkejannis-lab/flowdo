@@ -310,19 +310,20 @@ export default function WeatherWidget() {
         {dropdownRect && suggestions.length > 0 && createPortal(
           <div
             style={{ position: 'fixed', top: dropdownRect.top, left: dropdownRect.left, width: dropdownRect.width, zIndex: 9999 }}
-            className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl dark:border-racing-700 dark:bg-racing-800"
+            className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl"
           >
             {suggestions.map((s, i) => (
               <button
                 key={i}
                 onMouseDown={(e) => { e.preventDefault(); select(s) }}
+                onTouchStart={(e) => { e.preventDefault(); select(s) }}
                 onMouseEnter={() => setActiveIdx(i)}
                 className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm transition-colors ${
-                  i === activeIdx ? 'bg-accent/10 text-accent' : 'hover:bg-gray-50 dark:hover:bg-racing-700'
-                } ${i === 0 ? '' : 'border-t border-gray-100 dark:border-racing-700'}`}
+                  i === activeIdx ? 'bg-blue-50 text-blue-600' : 'bg-white hover:bg-gray-50'
+                } ${i === 0 ? '' : 'border-t border-gray-100'}`}
               >
                 <MapPin size={12} className="flex-shrink-0 text-gray-400" />
-                <span className="truncate">{shortName(s)}</span>
+                <span className="truncate text-gray-800">{shortName(s)}</span>
               </button>
             ))}
           </div>,
