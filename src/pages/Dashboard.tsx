@@ -138,40 +138,39 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {(dashboardVisibility.weather ?? true) && (
-        <div className="mb-4">
-          <WeatherWidget />
+      {((dashboardVisibility.stats ?? true) || (dashboardVisibility.weather ?? true)) && (
+        <div className={`mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 ${(dashboardVisibility.weather ?? true) && (dashboardVisibility.stats ?? true) ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
+          {(dashboardVisibility.weather ?? true) && <WeatherWidget />}
+          {(dashboardVisibility.stats ?? true) && <>
+            <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('stats.dueThisWeek')}</p>
+              <p className="mt-1 text-3xl font-bold">{weekTasks.length}</p>
+            </div>
+            <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('stats.activeProjects')}</p>
+              <p className="mt-1 text-3xl font-bold">{boards.length}</p>
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-gray-400 flex items-center gap-1.5">
+                  <Clock size={14} className="text-accent" />
+                  {t('stats.workedToday')}
+                </p>
+                <p className="mt-1 text-3xl font-bold">{formatHM(workedMinutesToday)}</p>
+              </div>
+              <button
+                onClick={isWorkTimeRunning ? clockOut : clockIn}
+                className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-white shadow ${
+                  isWorkTimeRunning ? 'bg-red-500 hover:bg-red-600' : 'bg-accent hover:bg-accent-dark'
+                }`}
+                title={isWorkTimeRunning ? t('clockOut') : t('clockIn')}
+              >
+                {isWorkTimeRunning ? <Square size={16} /> : <Play size={18} className="ml-0.5" />}
+              </button>
+            </div>
+          </>}
         </div>
       )}
-
-      {dashboardVisibility.stats && <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('stats.dueThisWeek')}</p>
-          <p className="mt-1 text-3xl font-bold">{weekTasks.length}</p>
-        </div>
-        <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('stats.activeProjects')}</p>
-          <p className="mt-1 text-3xl font-bold">{boards.length}</p>
-        </div>
-        <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-400 flex items-center gap-1.5">
-              <Clock size={14} className="text-accent" />
-              {t('stats.workedToday')}
-            </p>
-            <p className="mt-1 text-3xl font-bold">{formatHM(workedMinutesToday)}</p>
-          </div>
-          <button
-            onClick={isWorkTimeRunning ? clockOut : clockIn}
-            className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-white shadow ${
-              isWorkTimeRunning ? 'bg-red-500 hover:bg-red-600' : 'bg-accent hover:bg-accent-dark'
-            }`}
-            title={isWorkTimeRunning ? t('clockOut') : t('clockIn')}
-          >
-            {isWorkTimeRunning ? <Square size={16} /> : <Play size={18} className="ml-0.5" />}
-          </button>
-        </div>
-      </div>}
 
       {dashboardVisibility.todayTasks && (todayEntries.length > 0 || allTasks.some((tk) => !tk.completed && (isDueToday(tk.dueDate) || isOverdue(tk.dueDate)))) && (
         <div className="mb-6">
