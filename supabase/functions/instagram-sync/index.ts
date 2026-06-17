@@ -52,8 +52,17 @@ Deno.serve(async (req) => {
 
     if (rowErr || !row) return respond({ error: 'Account nicht gefunden' }, 404)
 
-    const { ig_user_id: igUserId, access_token: accessToken } = row
+    let { ig_user_id: igUserId, access_token: accessToken } = row
     if (!accessToken) return respond({ error: 'Kein Access Token hinterlegt. Bitte Token ergänzen.' }, 400)
+
+    // IGAA tokens: Instagram Business Login — /me returns the IG user directly
+    // Auto-resolve the correct igUserId from the token if token is IGAA
+    if (accessToken.trim().startsWith('IGAA')) {
+      try {
+        const meRes = await graphGet('/me', { fields: 'id', access_token: accessToken })
+        if (meRes.id) igUserId = meRes.id
+      } catch { /* use stored igUserId as fallback */ }
+    }
 
     // ── 1. Profile ──────────────────────────────────────────────────────────
     let profile: any
@@ -63,7 +72,6 @@ Deno.serve(async (req) => {
         access_token: accessToken,
       })
     } catch (e: any) {
-      // Return readable error instead of generic "Failed to fetch"
       return respond({ error: `Instagram-Profil konnte nicht geladen werden: ${e.message}` }, 422)
     }
 

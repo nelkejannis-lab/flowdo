@@ -212,12 +212,13 @@ function EditAccountModal({ account, onClose }: { account: { id: string; usernam
   const [validating, setValidating] = useState(false)
   const [foundAccounts, setFoundAccounts] = useState<IgFound[] | null>(null)
   const [validateError, setValidateError] = useState<string | null>(null)
+  const [diagSteps, setDiagSteps] = useState<{ label: string; ok: boolean; detail: string }[] | null>(null)
 
   // Token format hints
   const tokenTrimmed = token.trim()
   const tokenHints: string[] = []
   if (token !== tokenTrimmed) tokenHints.push('⚠️ Token hat Leerzeichen/Zeilenumbrüche am Anfang oder Ende — werden beim Prüfen entfernt.')
-  if (tokenTrimmed && !tokenTrimmed.startsWith('EAA')) tokenHints.push('⚠️ Gültige Meta-Tokens beginnen mit "EAA". Prüfe ob du den richtigen Token kopiert hast.')
+  if (tokenTrimmed && !tokenTrimmed.startsWith('EAA') && !tokenTrimmed.startsWith('IGAA')) tokenHints.push('⚠️ Meta-Tokens beginnen mit "EAA" (ältere Apps) oder "IGAA" (neue Instagram API). Prüfe ob du den richtigen Token kopiert hast.')
   if (tokenTrimmed.length > 0 && tokenTrimmed.length < 100) tokenHints.push(`⚠️ Token ist sehr kurz (${tokenTrimmed.length} Zeichen). Long-Lived Tokens sind meist 150–300+ Zeichen.`)
 
   async function handleValidate() {
@@ -225,14 +226,15 @@ function EditAccountModal({ account, onClose }: { account: { id: string; usernam
     setValidating(true)
     setValidateError(null)
     setFoundAccounts(null)
+    setDiagSteps(null)
     const res = await supabase.functions.invoke('instagram-validate', { body: { accessToken: tokenTrimmed } })
     setValidating(false)
-    if (res.error || res.data?.error) {
-      setValidateError(res.data?.error ?? res.error?.message ?? 'Unbekannter Fehler')
-      return
-    }
-    if (res.data.igAccounts?.length === 0) {
-      setValidateError('Token ist gültig, aber es sind keine Instagram Business/Creator Accounts verknüpft. Stelle sicher, dass deine Facebook-Seite mit Instagram verbunden ist.')
+    if (res.error) { setValidateError(res.error.message); return }
+    const d = res.data
+    if (d?.steps) setDiagSteps(d.steps)
+    if (d?.error) { setValidateError(d.error); return }
+    if (!d?.valid || !d?.igAccounts?.length) {
+      setValidateError(null) // steps already show the problem
       return
     }
     setFoundAccounts(res.data.igAccounts)
@@ -289,18 +291,27 @@ function EditAccountModal({ account, onClose }: { account: { id: string; usernam
             </div>
           )}
 
+          {/* Diagnostic steps */}
+          {diagSteps && (
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-racing-700 dark:bg-racing-800">
+              <p className="mb-2 text-xs font-semibold text-gray-600 dark:text-gray-300">Diagnose:</p>
+              <ul className="space-y-1.5">
+                {diagSteps.map((s, i) => (
+                  <li key={i} className="flex items-start gap-2 text-xs">
+                    <span className={s.ok ? 'text-green-500 mt-0.5' : 'text-red-500 mt-0.5'}>{s.ok ? '✓' : '✗'}</span>
+                    <div>
+                      <span className="font-semibold">{s.label}: </span>
+                      <span className={s.ok ? 'text-gray-600 dark:text-gray-400' : 'text-red-600 dark:text-red-400'}>{s.detail}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {validateError && (
             <div className="rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-900/20">
-              <p className="text-xs font-semibold text-red-700 dark:text-red-400 mb-2">{validateError}</p>
-              <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">So erhältst du einen gültigen Token:</p>
-              <ol className="list-decimal pl-4 space-y-1 text-xs text-gray-600 dark:text-gray-400">
-                <li>Gehe zu <strong>developers.facebook.com/tools/explorer</strong></li>
-                <li>Wähle oben rechts deine App aus (oder erstelle eine)</li>
-                <li>Klicke auf <strong>"Generate Access Token"</strong></li>
-                <li>Aktiviere Berechtigungen: <code className="bg-white dark:bg-racing-800 px-1 rounded">instagram_basic</code>, <code className="bg-white dark:bg-racing-800 px-1 rounded">instagram_manage_insights</code>, <code className="bg-white dark:bg-racing-800 px-1 rounded">pages_show_list</code>, <code className="bg-white dark:bg-racing-800 px-1 rounded">pages_read_engagement</code></li>
-                <li>Kopiere den Token (beginnt mit <strong>EAA…</strong>)</li>
-                <li>Für einen Long-Lived Token: rufe auf<br/><code className="break-all bg-white dark:bg-racing-800 px-1 rounded text-[10px]">graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=APP_ID&client_secret=APP_SECRET&fb_exchange_token=SHORT_TOKEN</code></li>
-              </ol>
+              <p className="text-xs font-semibold text-red-700 dark:text-red-400">{validateError}</p>
             </div>
           )}
 
