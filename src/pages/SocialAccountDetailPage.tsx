@@ -94,18 +94,27 @@ function GrowthChart({ data }: { data: { date: string; followers: number }[] }) 
 
 // ── KPI Card ─────────────────────────────────────────────────────────────────
 
-function KpiCard({ label, value, sub, trend, icon, color = '#6366f1' }: {
-  label: string; value: string | number; sub?: string; trend?: number[]; icon: React.ReactNode; color?: string
+function KpiCard({ label, value, sub, trend, icon, color = '#6366f1', metricKey }: {
+  label: string; value: string | number; sub?: string; trend?: number[]; icon: React.ReactNode; color?: string; metricKey?: string
 }) {
+  const [showInfo, setShowInfo] = useState(false)
   return (
-    <div className="flex flex-col gap-2 rounded-2xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-      <div className="flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400">{icon}{label}</span>
+    <>
+      <div className="flex flex-col gap-2 rounded-2xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+        <div className="flex items-center justify-between">
+          <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400">{icon}{label}</span>
+          {metricKey && METRIC_INFO[metricKey] && (
+            <button onClick={() => setShowInfo(true)} className="rounded-full p-0.5 text-gray-300 hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors" title="Was bedeutet das?">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </button>
+          )}
+        </div>
+        <p className="text-2xl font-bold tracking-tight">{typeof value === 'number' ? fmt(value) : value}</p>
+        {sub && <p className="text-xs text-gray-400">{sub}</p>}
+        {trend && trend.length >= 2 && <Sparkline values={trend} color={color} />}
       </div>
-      <p className="text-2xl font-bold tracking-tight">{typeof value === 'number' ? fmt(value) : value}</p>
-      {sub && <p className="text-xs text-gray-400">{sub}</p>}
-      {trend && trend.length >= 2 && <Sparkline values={trend} color={color} />}
-    </div>
+      {showInfo && metricKey && <MetricExplainer metricKey={metricKey} label={label} onClose={() => setShowInfo(false)} />}
+    </>
   )
 }
 
@@ -116,6 +125,8 @@ function PostModal({ post, followers, onClose }: { post: SocialPost; followers: 
     ? ((post.likeCount + post.commentsCount) / followers) * 100
     : undefined
 
+  const { score, grade, color: scoreColor, tips: scoreTips } = calcPostScore(post, followers)
+  const captionStats = analyzeCaptionStyle(post.caption ?? '')
   const typeLabel = post.mediaType === 'VIDEO' ? 'Reel/Video' : post.mediaType === 'CAROUSEL_ALBUM' ? 'Karussell' : 'Bild'
   const typeColor = post.mediaType === 'VIDEO' ? 'bg-purple-100 text-purple-700' : post.mediaType === 'CAROUSEL_ALBUM' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
 
@@ -144,12 +155,8 @@ function PostModal({ post, followers, onClose }: { post: SocialPost; followers: 
           <div className="flex flex-col sm:flex-row">
             {/* Image */}
             {(post.thumbnailUrl || post.mediaUrl) && (
-              <div className="relative flex-shrink-0 bg-black sm:w-64">
-                <img
-                  src={post.thumbnailUrl ?? post.mediaUrl}
-                  alt=""
-                  className="h-64 w-full object-cover sm:h-full"
-                />
+              <div className="relative flex-shrink-0 bg-black sm:w-56">
+                <img src={post.thumbnailUrl ?? post.mediaUrl} alt="" className="h-56 w-full object-cover sm:h-full" />
                 {post.mediaType === 'VIDEO' && (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <Film size={40} className="text-white/80 drop-shadow" />
@@ -160,12 +167,24 @@ function PostModal({ post, followers, onClose }: { post: SocialPost; followers: 
 
             {/* Stats */}
             <div className="flex flex-1 flex-col gap-4 p-5">
-              {post.caption && (
-                <p className="text-sm leading-relaxed text-gray-700 dark:text-racing-200 line-clamp-4">{post.caption}</p>
-              )}
+              {/* Post Score */}
+              <div className="flex items-center gap-3 rounded-xl p-3" style={{ background: `${scoreColor}15`, border: `1px solid ${scoreColor}40` }}>
+                <div className="relative h-14 w-14 flex-shrink-0">
+                  <svg viewBox="0 0 36 36" className="h-14 w-14 -rotate-90">
+                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="currentColor" strokeOpacity="0.1" strokeWidth="3" />
+                    <circle cx="18" cy="18" r="15.9" fill="none" stroke={scoreColor} strokeWidth="3"
+                      strokeDasharray={`${score} 100`} strokeLinecap="round" />
+                  </svg>
+                  <span className="absolute inset-0 flex items-center justify-center text-sm font-bold" style={{ color: scoreColor }}>{score}</span>
+                </div>
+                <div>
+                  <p className="font-bold" style={{ color: scoreColor }}>{grade}</p>
+                  <p className="text-xs text-gray-500">Post-Performance Score</p>
+                </div>
+              </div>
 
-              {/* Main metrics grid */}
-              <div className="grid grid-cols-2 gap-2.5">
+              {/* Main metrics */}
+              <div className="grid grid-cols-2 gap-2">
                 <Stat icon={<Heart size={14} className="text-red-400" />} label="Likes" value={fmt(post.likeCount)} />
                 <Stat icon={<MessageCircle size={14} className="text-blue-400" />} label="Kommentare" value={fmt(post.commentsCount)} />
                 <Stat icon={<TrendingUp size={14} className="text-green-400" />} label="Reichweite" value={fmt(post.reach)} />
@@ -174,21 +193,62 @@ function PostModal({ post, followers, onClose }: { post: SocialPost; followers: 
                 <Stat icon={<Heart size={14} className="text-pink-400" />} label="Interaktionen" value={fmt(post.totalInteractions)} />
               </div>
 
-              {/* Engagement Rate */}
-              <div className="rounded-xl bg-gradient-to-br from-indigo-50 to-purple-50 p-3 dark:from-indigo-900/20 dark:to-purple-900/20">
-                <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Engagement Rate</p>
-                <p className="mt-0.5 text-2xl font-bold text-indigo-700 dark:text-indigo-300">{pct(engagement)}</p>
-                <p className="text-xs text-indigo-400">(Likes + Kommentare) / Follower</p>
-              </div>
-
-              {/* Reach rate */}
-              {post.reach !== undefined && followers > 0 && (
-                <div className="rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 p-3 dark:from-green-900/20 dark:to-emerald-900/20">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-green-600 dark:text-green-400">Reichweiten-Rate</p>
-                  <p className="mt-0.5 text-2xl font-bold text-green-700 dark:text-green-300">{pct((post.reach / followers) * 100)}</p>
-                  <p className="text-xs text-green-400">Reichweite / Follower</p>
+              {/* Rates */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-xl bg-indigo-50 p-3 dark:bg-indigo-900/20">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-500">Engagement Rate</p>
+                  <p className="text-xl font-bold text-indigo-700 dark:text-indigo-300">{pct(engagement)}</p>
+                  <p className="text-[10px] text-indigo-400">Likes+Komm. / Follower</p>
                 </div>
-              )}
+                {post.reach !== undefined && followers > 0 && (
+                  <div className="rounded-xl bg-green-50 p-3 dark:bg-green-900/20">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-green-500">Reichweiten-Rate</p>
+                    <p className="text-xl font-bold text-green-700 dark:text-green-300">{pct((post.reach / followers) * 100)}</p>
+                    <p className="text-[10px] text-green-400">Reichweite / Follower</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Caption + Tips */}
+          <div className="border-t border-gray-100 p-5 dark:border-racing-800 space-y-4">
+            {/* Caption */}
+            {post.caption && (
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">Caption-Analyse</p>
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  {captionStats.map((s, i) => (
+                    <div key={i} className="rounded-lg bg-gray-50 p-2 text-center dark:bg-racing-800">
+                      <p className="text-[10px] text-gray-400">{s.label}</p>
+                      <p className="text-sm font-bold" style={{ color: s.color }}>{s.value}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs leading-relaxed text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-racing-800 rounded-xl p-3 line-clamp-4">{post.caption}</p>
+              </div>
+            )}
+
+            {/* Improvement tips */}
+            {scoreTips.length > 0 && (
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-amber-500">💡 Verbesserungstipps für diesen Post</p>
+                <ul className="space-y-1.5">
+                  {scoreTips.map((tip, i) => (
+                    <li key={i} className="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
+                      <span className="mt-0.5 flex-shrink-0">→</span>{tip}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Caption formula tip */}
+            <div className="rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 p-3 dark:from-indigo-900/20 dark:to-purple-900/20">
+              <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-1">📖 Perfekte Caption-Formel</p>
+              <p className="text-xs text-indigo-700 dark:text-indigo-300 leading-relaxed">
+                <strong>Hook</strong> (1 starker Satz) → <strong>Wert</strong> (2–4 Sätze mit echtem Mehrwert) → <strong>Frage/CTA</strong> ("Was denkst du?" oder "Link in Bio") → <strong>Hashtags</strong> (5–10 nischige)
+              </p>
             </div>
           </div>
         </div>
@@ -495,6 +555,187 @@ function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; va
   )
 }
 
+// ── Metric definitions ────────────────────────────────────────────────────────
+const METRIC_INFO: Record<string, { what: string; good: string; tip: string; color: string }> = {
+  followers: {
+    what: 'Gesamtzahl der Accounts, die dir folgen.',
+    good: 'Wächst dein Account jeden Monat um 1–3%? Das ist gesundes organisches Wachstum.',
+    tip: 'Follower kaufen schadet dem Algorithmus. Echte Follower = höhere Reichweite für alle Posts.',
+    color: '#6366f1',
+  },
+  reach: {
+    what: 'Wie viele einzigartige Accounts deine Inhalte heute gesehen haben.',
+    good: 'Für Business-Accounts: 10–20% deiner Follower täglich ist sehr gut. Unter 5% deutet auf schwache Content-Qualität hin.',
+    tip: 'Reichweite steigt stark durch Shares und Saves — diese Aktionen signalisieren Instagram "wertvoller Content".',
+    color: '#10b981',
+  },
+  engagement: {
+    what: '(Likes + Kommentare) ÷ Follower × 100. Zeigt wie aktiv deine Community ist.',
+    good: '1–3% = Gut, 3–6% = Sehr gut, >6% = Exzellent. Unter 1% = Content oder Zielgruppe überarbeiten.',
+    tip: 'Stelle am Ende jedes Posts eine Frage. Kommentare haben 3× mehr Gewicht als Likes im Algorithmus.',
+    color: '#f43f5e',
+  },
+  profileViews: {
+    what: 'Wie viele Personen dein Profil heute besucht haben.',
+    good: 'Profil-Aufrufe > 10% der Reichweite = starker CTA in deinen Posts. Unter 2% = Bio oder Content überarbeiten.',
+    tip: 'Erste Zeile deiner Bio muss in 3 Sekunden klar machen WER du bist und WEM du hilfst.',
+    color: '#f59e0b',
+  },
+  likes: {
+    what: 'Gesamte Likes auf allen Posts heute.',
+    good: 'Likes allein sagen wenig. Wichtiger ist Likes ÷ Reichweite (sollte >3% sein).',
+    tip: 'Likes werden durch starke visuelle Hook-Momente in den ersten 0,5 Sekunden eines Reels ausgelöst.',
+    color: '#f43f5e',
+  },
+  comments: {
+    what: 'Gesamte Kommentare heute. Instagram wertet Kommentare 3× höher als Likes.',
+    good: 'Kommentarrate >1% deiner Reichweite = sehr gut. Unter 0,2% = kein Dialog-Element im Content.',
+    tip: 'Antworte auf JEDEN Kommentar in den ersten 60 Minuten — das verdoppelt die organische Reichweite.',
+    color: '#3b82f6',
+  },
+  saves: {
+    what: 'Wie oft Posts heute gespeichert wurden. Das stärkste Signal für den Algorithmus.',
+    good: 'Save-Rate >2% der Reichweite = Dein Content hat echten Mehrwert. Instagram pusht diesen Content massiv.',
+    tip: 'Tutorial-Posts, Listen und "Spar dir das für später"-Content erzielt die meisten Saves.',
+    color: '#f59e0b',
+  },
+  shares: {
+    what: 'Wie oft Inhalte per DM geteilt oder in Stories gepostet wurden.',
+    good: 'Share-Rate >1% = viral-worthy Content. Shares sind der stärkste Reichweiten-Multiplikator.',
+    tip: 'Relatable Content ("Das bin ich 😂") und überraschende Facts werden am häufigsten geteilt.',
+    color: '#8b5cf6',
+  },
+}
+
+// ── Algorithm Tips ────────────────────────────────────────────────────────────
+const ALGO_TIPS = [
+  { emoji: '⏰', title: 'Beste Posting-Zeiten', desc: 'Di–Do 7–9 Uhr oder 18–21 Uhr. Sonntag hat oft 20% höhere Engagement-Rates als Montag.' },
+  { emoji: '🔁', title: 'Konsistenz schlägt Qualität', desc: '4–5× pro Woche posten > 1× perfekten Post. Der Algorithmus bevorzugt aktive Accounts.' },
+  { emoji: '💬', title: 'Kommentare in der Golden Hour', desc: 'In den ersten 60 Min nach dem Post auf JEDEN Kommentar antworten. Das pusht Reichweite um bis zu 50%.' },
+  { emoji: '📌', title: 'Saves sind König', desc: 'Instagram wertet Saves als "wertvoller Content" und zeigt ihn mehr Nicht-Followern. Tutorial-Content = meiste Saves.' },
+  { emoji: '🎣', title: 'Hook in 3 Sekunden', desc: 'Erste 3 Sekunden eines Reels entscheiden über alles. Starte mit einer Frage, Überraschung oder boldery Statement.' },
+  { emoji: '#️⃣', title: 'Hashtag-Strategie 2024', desc: '5–10 nischige Hashtags (100K–500K Posts) schlagen 30 generische. Kombiniere: 3 Nische + 3 Mittelgroß + 2 Brand.' },
+  { emoji: '📖', title: 'Caption-Formel', desc: 'Hook (1 Satz) → Wert (2–4 Sätze) → CTA (Frage/Aufruf). Nutze Zeilenumbrüche für Lesbarkeit.' },
+  { emoji: '🎬', title: 'Reels pushen alles', desc: 'Reels bekommen 2–3× mehr Reichweite als Bilder. Auch 7-Sekunden-Reels mit starkem Hook performen gut.' },
+]
+
+function AlgorithmTipsPanel() {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="mb-6 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-purple-50 dark:border-indigo-900 dark:from-indigo-900/10 dark:to-purple-900/10">
+      <button onClick={() => setOpen(!open)}
+        className="flex w-full items-center justify-between px-5 py-4 text-left">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">🚀</span>
+          <div>
+            <p className="font-semibold text-indigo-800 dark:text-indigo-300">Instagram Algorithmus 2025 — Tipps & Tricks</p>
+            <p className="text-xs text-indigo-500">8 aktuelle Best Practices für maximale Reichweite</p>
+          </div>
+        </div>
+        <span className={`text-indigo-400 transition-transform ${open ? 'rotate-180' : ''}`}>▼</span>
+      </button>
+      {open && (
+        <div className="grid grid-cols-1 gap-3 px-5 pb-5 sm:grid-cols-2">
+          {ALGO_TIPS.map((tip, i) => (
+            <div key={i} className="rounded-xl bg-white/70 p-3 dark:bg-racing-900/50">
+              <p className="mb-1 font-semibold text-sm">{tip.emoji} {tip.title}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">{tip.desc}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Metric Explainer Modal ────────────────────────────────────────────────────
+function MetricExplainer({ metricKey, label, onClose }: { metricKey: string; label: string; onClose: () => void }) {
+  const info = METRIC_INFO[metricKey]
+  if (!info) return null
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+      <div className="relative z-10 w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl dark:bg-racing-900" onClick={e => e.stopPropagation()}>
+        <div className="mb-3 flex items-center justify-between">
+          <p className="font-semibold text-base">{label}</p>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+        </div>
+        <div className="space-y-3">
+          <div className="rounded-xl bg-gray-50 p-3 dark:bg-racing-800">
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Was bedeutet das?</p>
+            <p className="text-sm leading-relaxed">{info.what}</p>
+          </div>
+          <div className="rounded-xl bg-green-50 p-3 dark:bg-green-900/20">
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-green-600">Was ist gut?</p>
+            <p className="text-sm leading-relaxed text-green-800 dark:text-green-300">{info.good}</p>
+          </div>
+          <div className="rounded-xl bg-indigo-50 p-3 dark:bg-indigo-900/20">
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-indigo-600">💡 Tipp</p>
+            <p className="text-sm leading-relaxed text-indigo-800 dark:text-indigo-300">{info.tip}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Post Score ────────────────────────────────────────────────────────────────
+function calcPostScore(post: SocialPost, followers: number): { score: number; grade: string; color: string; tips: string[] } {
+  const tips: string[] = []
+  let score = 0
+
+  const eng = followers > 0 ? ((post.likeCount ?? 0) + (post.commentsCount ?? 0)) / followers * 100 : 0
+  if (eng >= 6) score += 30
+  else if (eng >= 3) score += 20
+  else if (eng >= 1) score += 10
+  else tips.push('Engagement-Rate unter 1% — stelle eine Frage am Ende der Caption.')
+
+  const saveRate = followers > 0 && post.saved ? post.saved / followers * 100 : 0
+  if (saveRate >= 2) score += 25
+  else if (saveRate >= 0.5) score += 15
+  else if (post.saved === undefined) score += 0
+  else tips.push('Wenige Saves — füge Mehrwert hinzu: Listen, Tutorials, Checklisten.')
+
+  const shareRate = followers > 0 && post.shares ? post.shares / followers * 100 : 0
+  if (shareRate >= 1) score += 25
+  else if (shareRate >= 0.2) score += 10
+  else if (post.shares !== undefined) tips.push('Wenige Shares — nutze relatable oder überraschende Inhalte.')
+
+  const caption = post.caption ?? ''
+  const hashtagCount = (caption.match(/#\w+/g) ?? []).length
+  if (hashtagCount >= 5 && hashtagCount <= 12) score += 10
+  else if (hashtagCount > 0) score += 5
+  else tips.push('Keine Hashtags — 5–10 nischige Hashtags können Reichweite um 20–30% steigern.')
+
+  if (caption.length > 50) score += 10
+  else if (caption.length > 0) { score += 5; tips.push('Caption sehr kurz — längere Captions mit Hook + Wert + Frage performen besser.') }
+  else tips.push('Kein Caption — ein starker Text-Hook erhöht die Verweildauer und Kommentare.')
+
+  const grade = score >= 80 ? '🏆 Exzellent' : score >= 60 ? '⭐ Gut' : score >= 40 ? '📈 Ausbaubar' : '💡 Lernpotenzial'
+  const color = score >= 80 ? '#10b981' : score >= 60 ? '#6366f1' : score >= 40 ? '#f59e0b' : '#f43f5e'
+
+  return { score: Math.min(score, 100), grade, color, tips }
+}
+
+function analyzeCaptionStyle(caption: string): { label: string; value: string; color: string }[] {
+  if (!caption) return []
+  const hashtags = (caption.match(/#\w+/g) ?? []).length
+  const emojis = (caption.match(/\p{Emoji}/gu) ?? []).length
+  const words = caption.trim().split(/\s+/).length
+  const hasQuestion = /\?/.test(caption)
+  const hasCTA = /link in bio|mehr dazu|jetzt|klick|schreib|kommentier|teil|save|sichern/i.test(caption)
+  const lines = caption.split('\n').length
+
+  return [
+    { label: 'Wörter', value: words.toString(), color: words > 30 ? '#10b981' : '#f59e0b' },
+    { label: 'Hashtags', value: hashtags.toString(), color: hashtags >= 5 && hashtags <= 12 ? '#10b981' : hashtags > 0 ? '#f59e0b' : '#f43f5e' },
+    { label: 'Emojis', value: emojis.toString(), color: emojis >= 2 && emojis <= 8 ? '#10b981' : emojis > 0 ? '#f59e0b' : '#6b7280' },
+    { label: 'Frage?', value: hasQuestion ? '✓ Ja' : '✗ Nein', color: hasQuestion ? '#10b981' : '#f43f5e' },
+    { label: 'CTA', value: hasCTA ? '✓ Ja' : '✗ Nein', color: hasCTA ? '#10b981' : '#f43f5e' },
+    { label: 'Absätze', value: lines.toString(), color: lines > 2 ? '#10b981' : '#f59e0b' },
+  ]
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function SocialAccountDetailPage() {
@@ -673,23 +914,26 @@ export default function SocialAccountDetailPage() {
         </div>
       )}
 
+      {/* Algorithm Tips */}
+      <AlgorithmTipsPanel />
+
       {/* KPIs */}
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <KpiCard label="Follower" value={followers} icon={<Users size={12} />} color="#6366f1"
+        <KpiCard label="Follower" value={followers} icon={<Users size={12} />} color="#6366f1" metricKey="followers"
           trend={accountMetrics.map((m) => m.followersCount ?? 0)} />
-        <KpiCard label="Reichweite" value={latest?.reach ?? '–'} icon={<TrendingUp size={12} />} color="#10b981"
+        <KpiCard label="Reichweite" value={latest?.reach ?? '–'} icon={<TrendingUp size={12} />} color="#10b981" metricKey="reach"
           trend={accountMetrics.map((m) => m.reach ?? 0)} />
         <KpiCard label="Ø Engagement" value={avgEngagement !== undefined ? pct(avgEngagement) : '–'}
-          icon={<Heart size={12} />} color="#f43f5e" sub="pro Post" />
-        <KpiCard label="Profil-Aufrufe" value={latest?.profileViews ?? '–'} icon={<Eye size={12} />} color="#f59e0b"
+          icon={<Heart size={12} />} color="#f43f5e" sub="pro Post" metricKey="engagement" />
+        <KpiCard label="Profil-Aufrufe" value={latest?.profileViews ?? '–'} icon={<Eye size={12} />} color="#f59e0b" metricKey="profileViews"
           trend={accountMetrics.map((m) => m.profileViews ?? 0)} />
-        <KpiCard label="Likes" value={latest?.likes ?? '–'} icon={<Heart size={12} />} color="#f43f5e"
+        <KpiCard label="Likes" value={latest?.likes ?? '–'} icon={<Heart size={12} />} color="#f43f5e" metricKey="likes"
           trend={accountMetrics.map((m) => m.likes ?? 0)} />
-        <KpiCard label="Kommentare" value={latest?.comments ?? '–'} icon={<MessageCircle size={12} />} color="#3b82f6"
+        <KpiCard label="Kommentare" value={latest?.comments ?? '–'} icon={<MessageCircle size={12} />} color="#3b82f6" metricKey="comments"
           trend={accountMetrics.map((m) => m.comments ?? 0)} />
-        <KpiCard label="Gespeichert" value={latest?.saves ?? '–'} icon={<Bookmark size={12} />} color="#f59e0b"
+        <KpiCard label="Gespeichert" value={latest?.saves ?? '–'} icon={<Bookmark size={12} />} color="#f59e0b" metricKey="saves"
           trend={accountMetrics.map((m) => m.saves ?? 0)} />
-        <KpiCard label="Geteilt" value={latest?.shares ?? '–'} icon={<Repeat2 size={12} />} color="#8b5cf6"
+        <KpiCard label="Geteilt" value={latest?.shares ?? '–'} icon={<Repeat2 size={12} />} color="#8b5cf6" metricKey="shares"
           trend={accountMetrics.map((m) => m.shares ?? 0)} />
       </div>
 
@@ -785,10 +1029,55 @@ export default function SocialAccountDetailPage() {
 
       {/* Growth chart */}
       {tab === 'growth' && (
+        <>
+        {/* Best posting times from real data */}
+        {accountPosts.length >= 3 && (() => {
+          const byHour: Record<number, { total: number; count: number }> = {}
+          const byDay: Record<number, { total: number; count: number }> = {}
+          const days = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
+          accountPosts.forEach(p => {
+            if (!p.postedAt) return
+            const d = new Date(p.postedAt)
+            const h = d.getHours()
+            const day = d.getDay()
+            const eng = (p.likeCount ?? 0) + (p.commentsCount ?? 0) + (p.saved ?? 0) * 3 + (p.shares ?? 0) * 2
+            byHour[h] = { total: (byHour[h]?.total ?? 0) + eng, count: (byHour[h]?.count ?? 0) + 1 }
+            byDay[day] = { total: (byDay[day]?.total ?? 0) + eng, count: (byDay[day]?.count ?? 0) + 1 }
+          })
+          const bestHours = Object.entries(byHour).sort((a, b) => (b[1].total / b[1].count) - (a[1].total / a[1].count)).slice(0, 3)
+          const bestDays = Object.entries(byDay).sort((a, b) => (b[1].total / b[1].count) - (a[1].total / a[1].count)).slice(0, 3)
+          return (
+            <div className="mb-4 rounded-2xl border border-gray-100 bg-white p-5 dark:border-racing-800 dark:bg-racing-900">
+              <h2 className="mb-3 font-semibold">📊 Deine besten Posting-Zeiten (aus echten Daten)</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">Beste Uhrzeiten</p>
+                  {bestHours.map(([h], i) => (
+                    <div key={h} className="mb-1.5 flex items-center gap-2">
+                      <span className="w-5 text-xs font-bold text-indigo-500">#{i + 1}</span>
+                      <span className="rounded-lg bg-indigo-50 px-2.5 py-1 text-sm font-semibold text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">{h}:00 Uhr</span>
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">Beste Wochentage</p>
+                  {bestDays.map(([d], i) => (
+                    <div key={d} className="mb-1.5 flex items-center gap-2">
+                      <span className="w-5 text-xs font-bold text-purple-500">#{i + 1}</span>
+                      <span className="rounded-lg bg-purple-50 px-2.5 py-1 text-sm font-semibold text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">{days[Number(d)]}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <p className="mt-3 text-xs text-gray-400">Basiert auf Ø Engagement (Likes + Kommentare + Saves×3 + Shares×2) deiner {accountPosts.length} gespeicherten Posts.</p>
+            </div>
+          )
+        })()}
         <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-racing-800 dark:bg-racing-900">
           <h2 className="mb-4 font-semibold">Follower-Wachstum</h2>
           <GrowthChart data={accountMetrics.filter((m) => m.followersCount !== undefined).map((m) => ({ date: m.date, followers: m.followersCount! }))} />
         </div>
+        </>
       )}
 
       {/* Post Modal */}
