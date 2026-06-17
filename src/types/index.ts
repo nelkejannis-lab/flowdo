@@ -142,6 +142,8 @@ export interface SocialStory {
   mediaId: string
   mediaType?: string
   postedAt?: string
+  mediaUrl?: string
+  thumbnailUrl?: string
   impressions?: number
   reach?: number
   replies?: number

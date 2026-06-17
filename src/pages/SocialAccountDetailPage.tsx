@@ -1184,54 +1184,110 @@ export default function SocialAccountDetailPage() {
       })()}
 
       {/* Stories */}
-      {tab === 'stories' && (
-        accountStories.length === 0
-          ? (
-            <div className="rounded-2xl border border-gray-100 bg-white p-8 dark:border-racing-800 dark:bg-racing-900 text-center">
-              <p className="text-2xl mb-2">📖</p>
-              <p className="font-medium text-gray-600 dark:text-gray-300 mb-1">Keine Story-Daten verfügbar</p>
-              <p className="text-sm text-gray-400 max-w-sm mx-auto">Instagram gibt Story-Daten nur für die letzten 24h zurück. Synchronisiere täglich um Story-Performance zu tracken.</p>
-              <div className="mt-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 p-3 text-left">
-                <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-1">💡 Story-Tipps für mehr Reichweite</p>
-                <ul className="text-xs text-indigo-700 dark:text-indigo-300 space-y-1">
-                  <li>→ 5–7 Stories täglich für maximale Algorithmus-Sichtbarkeit</li>
-                  <li>→ Erste Story des Tages bis 9 Uhr posten</li>
-                  <li>→ Umfragen & Fragen-Sticker erhöhen Antworten 3×</li>
-                  <li>→ Abbrüche (Exits) unter 20% anstreben</li>
-                </ul>
-              </div>
+      {tab === 'stories' && (() => {
+        const now = new Date()
+        const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString()
+        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0).toISOString()
+        const thisMonthStories = accountStories.filter(s => s.postedAt && s.postedAt >= thisMonthStart)
+        const lastMonthStories = accountStories.filter(s => s.postedAt && s.postedAt >= lastMonthStart && s.postedAt <= lastMonthEnd)
+        const avgReach = (arr: typeof accountStories) => arr.length ? Math.round(arr.reduce((a, s) => a + (s.reach ?? 0), 0) / arr.length) : 0
+        const avgRetention = (arr: typeof accountStories) => {
+          const valid = arr.filter(s => s.impressions && s.exits !== undefined)
+          if (!valid.length) return null
+          return valid.reduce((a, s) => a + (1 - (s.exits ?? 0) / s.impressions!) * 100, 0) / valid.length
+        }
+        const thisReach = avgReach(thisMonthStories)
+        const lastReach = avgReach(lastMonthStories)
+        const thisRet = avgRetention(thisMonthStories)
+        const lastRet = avgRetention(lastMonthStories)
+        return accountStories.length === 0 ? (
+          <div className="rounded-2xl border border-gray-100 bg-white p-8 dark:border-racing-800 dark:bg-racing-900 text-center">
+            <p className="text-2xl mb-2">📖</p>
+            <p className="font-medium text-gray-600 dark:text-gray-300 mb-1">Keine Story-Daten verfügbar</p>
+            <p className="text-sm text-gray-400 max-w-sm mx-auto mb-4">Instagram gibt Story-Daten nur für die letzten 24h zurück. Synchronisiere täglich um Story-Performance zu tracken.</p>
+            <div className="rounded-xl bg-indigo-50 dark:bg-indigo-900/20 p-3 text-left">
+              <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-1">💡 Story-Tipps für mehr Reichweite</p>
+              <ul className="text-xs text-indigo-700 dark:text-indigo-300 space-y-1">
+                <li>→ 5–7 Stories täglich für maximale Algorithmus-Sichtbarkeit</li>
+                <li>→ Erste Story des Tages bis 9 Uhr posten</li>
+                <li>→ Umfragen & Fragen-Sticker erhöhen Antworten 3×</li>
+                <li>→ Abbrüche (Exits) unter 20% anstreben — unter 10% = viral</li>
+              </ul>
             </div>
-          )
-          : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {accountStories.map((story) => {
-                const retentionRate = story.impressions && story.exits
-                  ? (1 - story.exits / story.impressions) * 100
-                  : undefined
-                return (
-                  <div key={story.id} className="rounded-2xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-                    <div className="mb-3 flex items-center justify-between">
-                      <p className="text-xs text-gray-400">{formatFriendlyDateTime(story.postedAt)}</p>
-                      {retentionRate !== undefined && (
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${retentionRate >= 80 ? 'bg-green-100 text-green-700' : retentionRate >= 60 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
-                          {retentionRate.toFixed(0)}% behalten
-                        </span>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {/* Month comparison */}
+            {(thisMonthStories.length > 0 || lastMonthStories.length > 0) && (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {[
+                  { label: 'Stories diesen Monat', val: thisMonthStories.length, prev: lastMonthStories.length, unit: '' },
+                  { label: 'Ø Reichweite', val: thisReach, prev: lastReach, unit: '' },
+                  { label: 'Ø Retention', val: thisRet !== null ? +thisRet.toFixed(1) : null, prev: lastRet !== null ? +lastRet.toFixed(1) : null, unit: '%' },
+                  { label: 'Ges. Antworten', val: thisMonthStories.reduce((a,s)=>a+(s.replies??0),0), prev: lastMonthStories.reduce((a,s)=>a+(s.replies??0),0), unit: '' },
+                ].map(({ label, val, prev, unit }) => {
+                  const delta = val !== null && prev !== null && prev > 0 ? ((val - prev) / prev * 100) : null
+                  return (
+                    <div key={label} className="rounded-xl border border-gray-100 bg-white p-3 dark:border-racing-800 dark:bg-racing-900">
+                      <p className="text-[10px] text-gray-400 mb-1">{label}</p>
+                      <p className="text-xl font-bold">{val !== null ? `${val}${unit}` : '–'}</p>
+                      {delta !== null && (
+                        <p className={`text-xs mt-0.5 ${delta >= 0 ? 'text-green-500' : 'text-red-400'}`}>
+                          {delta >= 0 ? '▲' : '▼'} {Math.abs(delta).toFixed(0)}% vs. Vormonat
+                        </p>
                       )}
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Stat icon={<Eye size={14} className="text-blue-400" />} label="Impressionen" value={fmt(story.impressions)} />
-                      <Stat icon={<TrendingUp size={14} className="text-green-400" />} label="Reichweite" value={fmt(story.reach)} />
-                      <Stat icon={<MessageCircle size={14} className="text-purple-400" />} label="Antworten" value={fmt(story.replies)} />
-                      <Stat icon={<X size={14} className="text-red-400" />} label="Abbrüche" value={fmt(story.exits)} />
-                      <Stat icon={<ArrowLeft size={14} className="text-gray-400" />} label="Zurück" value={fmt(story.tapsBack)} />
-                      <Stat icon={<ArrowLeft size={14} className="text-gray-400 rotate-180" />} label="Weiter" value={fmt(story.tapsForward)} />
+                  )
+                })}
+              </div>
+            )}
+            {/* Story cards */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {accountStories.map((story) => {
+                const retentionRate = story.impressions && story.exits !== undefined
+                  ? (1 - story.exits / story.impressions) * 100 : undefined
+                const thumb = story.thumbnailUrl || story.mediaUrl
+                return (
+                  <div key={story.id} className="rounded-2xl border border-gray-100 bg-white dark:border-racing-800 dark:bg-racing-900 overflow-hidden">
+                    {thumb && (
+                      <div className="relative h-32 bg-gray-100 dark:bg-racing-800">
+                        <img src={thumb} alt="" className="h-full w-full object-cover" />
+                        {retentionRate !== undefined && (
+                          <span className={`absolute top-2 right-2 text-xs font-bold px-2 py-0.5 rounded-full shadow ${retentionRate >= 80 ? 'bg-green-500 text-white' : retentionRate >= 60 ? 'bg-yellow-400 text-black' : 'bg-red-500 text-white'}`}>
+                            {retentionRate.toFixed(0)}% Retention
+                          </span>
+                        )}
+                        <span className="absolute bottom-2 left-2 text-xs bg-black/60 text-white px-2 py-0.5 rounded-full">
+                          {story.mediaType === 'VIDEO' ? '🎬 Video' : '🖼 Bild'}
+                        </span>
+                      </div>
+                    )}
+                    <div className="p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs text-gray-400">{formatFriendlyDateTime(story.postedAt)}</p>
+                        {!thumb && retentionRate !== undefined && (
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${retentionRate >= 80 ? 'bg-green-100 text-green-700' : retentionRate >= 60 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
+                            {retentionRate.toFixed(0)}% Retention
+                          </span>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        <Stat icon={<Eye size={12} className="text-blue-400" />} label="Impressionen" value={fmt(story.impressions)} />
+                        <Stat icon={<TrendingUp size={12} className="text-green-400" />} label="Reichweite" value={fmt(story.reach)} />
+                        <Stat icon={<MessageCircle size={12} className="text-purple-400" />} label="Antworten" value={fmt(story.replies)} />
+                        <Stat icon={<X size={12} className="text-red-400" />} label="Abbrüche" value={fmt(story.exits)} />
+                        <Stat icon={<ArrowLeft size={12} className="text-gray-400" />} label="Zurück" value={fmt(story.tapsBack)} />
+                        <Stat icon={<ArrowLeft size={12} className="text-gray-400 rotate-180" />} label="Weiter" value={fmt(story.tapsForward)} />
+                      </div>
                     </div>
                   </div>
                 )
               })}
             </div>
-          )
-      )}
+          </div>
+        )
+      })()}
 
       {/* Growth chart */}
       {tab === 'growth' && (

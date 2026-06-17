@@ -57,6 +57,8 @@ interface SocialStoryRow {
   media_id: string
   media_type: string | null
   posted_at: string | null
+  media_url: string | null
+  thumbnail_url: string | null
   impressions: number | null
   reach: number | null
   replies: number | null
@@ -126,6 +128,8 @@ function toStory(row: SocialStoryRow): SocialStory {
     mediaId: row.media_id,
     mediaType: row.media_type ?? undefined,
     postedAt: row.posted_at ?? undefined,
+    mediaUrl: row.media_url ?? undefined,
+    thumbnailUrl: row.thumbnail_url ?? undefined,
     impressions: row.impressions ?? undefined,
     reach: row.reach ?? undefined,
     replies: row.replies ?? undefined,

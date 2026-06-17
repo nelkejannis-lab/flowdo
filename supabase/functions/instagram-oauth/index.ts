@@ -20,23 +20,22 @@ Deno.serve(async (req) => {
     if (!code) return respond({ error: 'code fehlt' }, 400)
 
     // 1. Exchange code for short-lived token
-    const params = new URLSearchParams()
-    params.append('client_id', APP_ID)
-    params.append('client_secret', APP_SECRET)
-    params.append('grant_type', 'authorization_code')
-    params.append('redirect_uri', REDIRECT_URI)
-    params.append('code', code)
+    // Build body manually so redirect_uri is NOT percent-encoded (Instagram is picky)
+    const bodyStr = `client_id=${APP_ID}&client_secret=${APP_SECRET}&grant_type=authorization_code&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&code=${encodeURIComponent(code)}`
+    console.log('TOKEN EXCHANGE REQUEST:', { url: 'https://api.instagram.com/oauth/access_token', body: bodyStr })
 
     const shortRes = await fetch('https://api.instagram.com/oauth/access_token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString(),
+      body: bodyStr,
     })
-    const shortJson = await shortRes.json()
+    const shortText = await shortRes.text()
+    console.log('TOKEN EXCHANGE RESPONSE:', shortRes.status, shortText)
+    const shortJson = JSON.parse(shortText)
 
     if (shortJson.error_type || shortJson.error) {
       const msg = shortJson.error_message ?? shortJson.error?.message ?? JSON.stringify(shortJson)
-      return respond({ error: `Token-Austausch fehlgeschlagen: ${msg}` }, 422)
+      return respond({ error: `Token-Austausch fehlgeschlagen: ${msg}`, debug: { app_id: APP_ID, app_secret_prefix: APP_SECRET.slice(0,6), redirect_uri: REDIRECT_URI, code_prefix: code.slice(0, 20), sent_body: bodyStr, raw: shortText } }, 422)
     }
 
     const shortToken = shortJson.access_token

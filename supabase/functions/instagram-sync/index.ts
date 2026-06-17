@@ -162,31 +162,30 @@ Deno.serve(async (req) => {
     // ── 4. Stories ──────────────────────────────────────────────────────────
     try {
       const st = await graphGet(token, `/${igUserId}/stories`, {
-        fields: 'id,media_type,timestamp',
+        fields: 'id,media_type,timestamp,media_url,thumbnail_url',
         access_token: token,
       })
       for (const item of st.data ?? []) {
-        let imp, sReach, replies, exits, tapsF, tapsB
+        let imp: number | undefined, sReach: number | undefined, replies: number | undefined,
+            exits: number | undefined, tapsF: number | undefined, tapsB: number | undefined
         try {
           const si = await graphGet(token, `/${item.id}/insights`, {
-            metric: 'impressions,reach,replies,navigation',
+            metric: 'impressions,reach,replies,exits,taps_forward,taps_back',
             access_token: token,
           })
           imp = insightValue(si.data, 'impressions')
           sReach = insightValue(si.data, 'reach')
           replies = insightValue(si.data, 'replies')
-          const nav = (si.data ?? []).find((d: any) => d.name === 'navigation')
-          for (const e of nav?.total_value?.breakdowns?.[0]?.results ?? []) {
-            const a = e.dimension_values?.[0]
-            if (a === 'exited') exits = e.value
-            if (a === 'tap_forward') tapsF = e.value
-            if (a === 'tap_back') tapsB = e.value
-          }
+          exits = insightValue(si.data, 'exits')
+          tapsF = insightValue(si.data, 'taps_forward')
+          tapsB = insightValue(si.data, 'taps_back')
         } catch { /* story insights may be unavailable */ }
 
         await db.from('social_stories').upsert({
           account_id: accountId, media_id: item.id,
           media_type: item.media_type ?? null, posted_at: item.timestamp ?? null,
+          media_url: item.media_url ?? null,
+          thumbnail_url: item.thumbnail_url ?? null,
           impressions: imp ?? null, reach: sReach ?? null, replies: replies ?? null,
           exits: exits ?? null, taps_forward: tapsF ?? null, taps_back: tapsB ?? null,
         }, { onConflict: 'account_id,media_id' })
