@@ -13,6 +13,7 @@ import {
   closestCenter,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -45,14 +46,19 @@ const dateGroupLabelKeys: Record<string, string> = {
 }
 
 function SortableTaskItem({ task, onClick }: { task: Task; onClick: () => void }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
   return (
     <div ref={setNodeRef} style={style} className="flex items-center gap-1">
-      <div {...attributes} {...listeners} className="cursor-grab p-1 text-gray-300 hover:text-gray-500 dark:text-racing-600">
-        <GripVertical size={14} />
+      <div
+        ref={setActivatorNodeRef}
+        {...attributes}
+        {...listeners}
+        className="flex-shrink-0 cursor-grab touch-none p-1 text-gray-300 hover:text-gray-500 active:cursor-grabbing dark:text-racing-600"
+      >
+        <GripVertical size={16} />
       </div>
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         <TaskItem task={task} onClick={onClick} />
       </div>
     </div>
@@ -92,7 +98,8 @@ export default function TaskList({ tasks, groupByDate = false, emptyMessage, fla
   }, [activeTasks, groupByDate])
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
 
