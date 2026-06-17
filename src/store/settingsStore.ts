@@ -96,7 +96,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'flowdo-settings',
-      version: 5, // bumped: adds onboardingPermissionsDone
+      version: 6, // bumped: force dashboardVisibility reset so weather always visible
       migrate: (persisted, version) => {
         const legacy = persisted as LegacyState & Partial<SettingsState>
         if (version < 1) {
@@ -112,7 +112,8 @@ export const useSettingsStore = create<SettingsState>()(
           ...legacy,
           language: legacy.language ?? 'de',
           featureVisibility: { ...DEFAULT_FEATURE_VISIBILITY, ...legacy.featureVisibility },
-          dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY, ...(legacy as any).dashboardVisibility },
+          // Always reset dashboardVisibility to defaults so new widgets (weather) are always visible
+          dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY },
           colorLabels: { ...DEFAULT_COLOR_LABELS, ...(legacy as any).colorLabels },
         }
       },
