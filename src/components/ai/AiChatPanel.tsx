@@ -24,58 +24,38 @@ interface Action {
 
 const TODAY = format(new Date(), 'EEEE, d. MMMM yyyy', { locale: de })
 
-const SYSTEM_PROMPT = `Du bist ein KI-Assistent für die App Mooncrew – ein Arbeits-Organizer mit Kalender, Aufgaben, Projekten (Boards) und mehr.
-Heute ist ${TODAY}.
+const SYSTEM_PROMPT = `Du bist ein KI-Assistent für die App Mooncrew – ein Arbeits-Organizer mit Kalender, Aufgaben und Projekten.
+Heute ist ${TODAY} (${format(new Date(), 'yyyy-MM-dd')}).
 
-Du kannst die App vollständig per Text steuern. Erkenne aus der Nutzereingabe (auch Bilder oder Sprache) was der Nutzer möchte und antworte immer in diesem JSON-Format:
+Antworte AUSSCHLIESSLICH mit gültigem JSON in exakt diesem Format – nichts davor oder danach:
 
 {
-  "message": "Kurze freundliche Bestätigung auf Deutsch (1-2 Sätze)",
-  "actions": [
-    // EINER oder MEHRERE der folgenden Typen:
-
-    // Aufgabe erstellen:
-    { "type": "create_task", "label": "Aufgabe: [Titel]", "payload": {
-      "title": "string",
-      "dueDate": "yyyy-MM-dd oder null",
-      "priority": "low|medium|high",
-      "description": "string oder null"
-    }},
-
-    // Termin/Kalender-Eintrag erstellen:
-    { "type": "create_event", "label": "Termin: [Titel]", "payload": {
-      "title": "string",
-      "date": "yyyy-MM-dd",
-      "endDate": "yyyy-MM-dd oder null",
-      "startTime": "HH:MM oder null",
-      "endTime": "HH:MM oder null",
-      "description": "string oder null"
-    }},
-
-    // Projekt/Board erstellen:
-    { "type": "create_board", "label": "Projekt: [Titel]", "payload": {
-      "title": "string",
-      "description": "string oder null",
-      "color": "#HEX-Farbe"
-    }},
-
-    // Seite navigieren:
-    { "type": "navigate", "label": "Öffne [Seitenname]", "payload": {
-      "path": "/dashboard | /tasks | /calendar | /boards | /pomodoro | /ai-scheduler | /chat | /friends | /worktime | /eisenhower | /settings"
-    }}
-  ]
+  "message": "Kurze freundliche Bestätigung auf Deutsch",
+  "actions": [ ...alle erkannten Aktionen... ]
 }
 
-Wenn du nichts tun kannst oder nur eine Frage beantwortest, setze "actions": [].
-Antworte NUR mit gültigem JSON, nichts davor oder danach.
-Nutze relative Datumsangaben korrekt (heute=${format(new Date(), 'yyyy-MM-dd')}).
+Mögliche Action-Typen:
 
-Beispiele für Erkennungen:
-- "Erinnere mich morgen ans Zahnarzt" → create_task mit morgen als dueDate
-- "Meeting nächsten Dienstag 10 Uhr" → create_event
-- "Gehe zu den Einstellungen" → navigate zu /settings
-- "Erstelle ein Projekt namens Website-Relaunch" → create_board
-- "Öffne den Kalender" → navigate zu /calendar`
+Aufgabe erstellen:
+{ "type": "create_task", "label": "Aufgabe: TITEL", "payload": { "title": "string", "dueDate": "yyyy-MM-dd oder null", "priority": "low|medium|high", "description": "string oder null" }}
+
+Termin erstellen:
+{ "type": "create_event", "label": "Termin: TITEL", "payload": { "title": "string", "date": "yyyy-MM-dd", "endDate": "yyyy-MM-dd oder null", "startTime": "HH:MM oder null", "endTime": "HH:MM oder null", "description": "string oder null" }}
+
+Projekt erstellen:
+{ "type": "create_board", "label": "Projekt: TITEL", "payload": { "title": "string", "description": "string oder null", "color": "#6366f1" }}
+
+Navigieren:
+{ "type": "navigate", "label": "Öffne SEITE", "payload": { "path": "/dashboard|/tasks|/calendar|/boards|/pomodoro|/ai-scheduler|/chat|/friends|/worktime|/eisenhower|/settings" }}
+
+WICHTIGE REGELN:
+- Bei Screenshots oder Fotos von Aufgabenlisten, Kalendern, Tabellen oder To-Do-Listen: Extrahiere JEDEN erkennbaren Eintrag als eigene Action. Lasse nichts aus.
+- Datumsspalten wie "19. Jun", "26. Jun" → aktuelles Jahr verwenden → "2025-06-19", "2025-06-26"
+- Datumsbereiche wie "10. Aug - 1. Sep" → date: "2025-08-10", endDate: "2025-09-01"
+- Wenn ein Eintrag einen festen Termin hat → create_event, sonst → create_task mit dueDate
+- Bei vielen Einträgen (10+): alle trotzdem vollständig extrahieren
+- Wenn kein Jahr erkennbar ist: aktuelles Jahr (2025) annehmen
+- Antworte NUR mit JSON, kein Markdown, keine Erklärungen außerhalb des JSON`
 
 export default function AiChatPanel() {
   const [open, setOpen] = useState(false)
@@ -84,6 +64,7 @@ export default function AiChatPanel() {
   const [loading, setLoading] = useState(false)
   const [listening, setListening] = useState(false)
   const [pendingImage, setPendingImage] = useState<{ base64: string; mimeType: string; url: string } | null>(null)
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
 
   const fileRef = useRef<HTMLInputElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -235,11 +216,14 @@ export default function AiChatPanel() {
       }
       setMessages((prev) => [...prev, assistantMsg])
 
-      // Auto-execute all actions
+      // Auto-execute all actions with progress
       if (parsed.actions?.length) {
-        for (const action of parsed.actions) {
-          await executeAction(action)
+        setProgress({ done: 0, total: parsed.actions.length })
+        for (let i = 0; i < parsed.actions.length; i++) {
+          await executeAction(parsed.actions[i])
+          setProgress({ done: i + 1, total: parsed.actions.length })
         }
+        setProgress(null)
       }
     } catch (err) {
       setMessages((prev) => [...prev, {
@@ -322,14 +306,28 @@ export default function AiChatPanel() {
               </div>
             ))}
 
-            {loading && (
+            {(loading || progress) && (
               <div className="flex justify-start">
                 <div className="rounded-2xl rounded-tl-sm bg-gray-100 px-4 py-3 dark:bg-racing-800">
-                  <div className="flex gap-1">
-                    {[0, 150, 300].map((d) => (
-                      <span key={d} className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: `${d}ms` }} />
-                    ))}
-                  </div>
+                  {progress ? (
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-medium text-gray-600 dark:text-racing-300">
+                        Erstelle {progress.done} / {progress.total}…
+                      </p>
+                      <div className="h-1.5 w-40 overflow-hidden rounded-full bg-gray-200 dark:bg-racing-700">
+                        <div
+                          className="h-full rounded-full bg-accent transition-all duration-300"
+                          style={{ width: `${(progress.done / progress.total) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex gap-1">
+                      {[0, 150, 300].map((d) => (
+                        <span key={d} className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: `${d}ms` }} />
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
