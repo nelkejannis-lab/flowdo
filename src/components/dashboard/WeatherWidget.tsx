@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
-import { Cloud, CloudRain, Sun, CloudSnow, CloudLightning, Wind, MapPin, Check, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { MapPin, X } from 'lucide-react'
 import { useSettingsStore } from '../../store/settingsStore'
 
 interface WeatherData {
   temp: number
+  tempMax: number
+  tempMin: number
   code: number
-  wind: number
 }
 
 interface Suggestion {
@@ -14,13 +15,16 @@ interface Suggestion {
   lon: string
 }
 
-function weatherIcon(code: number) {
-  if (code === 0) return Sun
-  if (code <= 3) return Cloud
-  if (code <= 67) return CloudRain
-  if (code <= 77) return CloudSnow
-  if (code <= 82) return CloudRain
-  return CloudLightning
+function weatherEmoji(code: number) {
+  if (code === 0) return '☀️'
+  if (code <= 2) return '⛅'
+  if (code === 3) return '☁️'
+  if (code <= 49) return '🌫️'
+  if (code <= 59) return '🌦️'
+  if (code <= 67) return '🌧️'
+  if (code <= 77) return '❄️'
+  if (code <= 82) return '🌨️'
+  return '⛈️'
 }
 
 function weatherLabel(code: number) {
@@ -35,9 +39,13 @@ function weatherLabel(code: number) {
   return 'Gewitter'
 }
 
+function shortName(s: Suggestion) {
+  return s.display_name.split(', ').slice(0, 3).join(', ')
+}
+
 async function searchPlaces(query: string, signal: AbortSignal): Promise<Suggestion[]> {
   const res = await fetch(
-    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1&accept-language=de`,
+    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=6&accept-language=de`,
     { signal }
   )
   return res.json()
@@ -48,25 +56,20 @@ async function fetchWeather(lat: number, lon: number): Promise<WeatherData | nul
     const ctrl = new AbortController()
     setTimeout(() => ctrl.abort(), 6000)
     const res = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`,
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min&timezone=auto`,
       { signal: ctrl.signal }
     )
     const json = await res.json()
     const cw = json?.current_weather
     if (!cw) return null
-    return { temp: Math.round(cw.temperature), code: cw.weathercode, wind: Math.round(cw.windspeed) }
+    return {
+      temp: Math.round(cw.temperature),
+      tempMax: Math.round(json?.daily?.temperature_2m_max?.[0] ?? cw.temperature),
+      tempMin: Math.round(json?.daily?.temperature_2m_min?.[0] ?? cw.temperature),
+      code: cw.weathercode,
+    }
   } catch {
     return null
-  }
-}
-
-function shortName(s: Suggestion): string {
-  // Show city + state + country in a short form
-  try {
-    const parts = s.display_name.split(', ')
-    return parts.slice(0, 3).join(', ')
-  } catch {
-    return s.display_name
   }
 }
 
@@ -81,19 +84,18 @@ export default function WeatherWidget() {
   const [input, setInput] = useState('')
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [searching, setSearching] = useState(false)
+  const [activeIdx, setActiveIdx] = useState(-1)
   const inputRef = useRef<HTMLInputElement>(null)
   const searchAbort = useRef<AbortController | null>(null)
   const weatherAbort = useRef<AbortController | null>(null)
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    if (weatherCoords) {
-      loadWeatherFromCoords(weatherCoords.lat, weatherCoords.lon)
-    }
+    if (weatherCoords) loadWeather(weatherCoords.lat, weatherCoords.lon)
     return () => weatherAbort.current?.abort()
   }, [weatherCoords])
 
-  async function loadWeatherFromCoords(lat: number, lon: number) {
+  async function loadWeather(lat: number, lon: number) {
     weatherAbort.current?.abort()
     weatherAbort.current = new AbortController()
     setData(null)
@@ -101,38 +103,23 @@ export default function WeatherWidget() {
     if (!weatherAbort.current.signal.aborted) setData(weather)
   }
 
-  const searchDebounced = useCallback((query: string) => {
+  function onInput(val: string) {
+    setInput(val)
+    setActiveIdx(-1)
     if (debounceTimer.current) clearTimeout(debounceTimer.current)
     searchAbort.current?.abort()
-
-    if (query.trim().length < 2) {
-      setSuggestions([])
-      setSearching(false)
-      return
-    }
-
+    if (val.trim().length < 2) { setSuggestions([]); setSearching(false); return }
     setSearching(true)
     debounceTimer.current = setTimeout(async () => {
       searchAbort.current = new AbortController()
       try {
-        const results = await searchPlaces(query, searchAbort.current.signal)
+        const results = await searchPlaces(val, searchAbort.current.signal)
         setSuggestions(results ?? [])
-      } catch {
-        // aborted or network error
-      } finally {
-        setSearching(false)
-      }
-    }, 350)
-  }, [])
-
-  function startEdit() {
-    setInput(weatherCity)
-    setSuggestions([])
-    setEditing(true)
-    setTimeout(() => inputRef.current?.focus(), 50)
+      } catch { /* aborted */ } finally { setSearching(false) }
+    }, 300)
   }
 
-  function selectSuggestion(s: Suggestion) {
+  function select(s: Suggestion) {
     const name = shortName(s)
     setWeatherCity(name)
     setWeatherCoords({ lat: parseFloat(s.lat), lon: parseFloat(s.lon) })
@@ -140,43 +127,65 @@ export default function WeatherWidget() {
     setEditing(false)
   }
 
-  function cancelEdit() {
-    searchAbort.current?.abort()
-    if (debounceTimer.current) clearTimeout(debounceTimer.current)
-    setSuggestions([])
-    setEditing(false)
+  function onKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setActiveIdx((i) => Math.min(i + 1, suggestions.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setActiveIdx((i) => Math.max(i - 1, 0))
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      if (activeIdx >= 0 && suggestions[activeIdx]) {
+        select(suggestions[activeIdx])
+      } else if (suggestions.length > 0) {
+        select(suggestions[0])
+      }
+    } else if (e.key === 'Escape') {
+      setSuggestions([])
+      setEditing(false)
+    }
   }
 
-  const Icon = data ? weatherIcon(data.code) : Cloud
+  function startEdit() {
+    setInput(weatherCity)
+    setSuggestions([])
+    setActiveIdx(-1)
+    setEditing(true)
+    setTimeout(() => { inputRef.current?.focus(); inputRef.current?.select() }, 50)
+  }
 
   if (editing) {
     return (
       <div className="relative rounded-xl border border-accent bg-white p-4 dark:bg-racing-900">
-        <p className="mb-2 text-xs text-gray-400">Stadt oder PLZ eingeben / Enter city or postal code</p>
         <div className="flex items-center gap-2">
+          <MapPin size={14} className="flex-shrink-0 text-accent" />
           <input
             ref={inputRef}
             value={input}
-            onChange={(e) => { setInput(e.target.value); searchDebounced(e.target.value) }}
-            onKeyDown={(e) => { if (e.key === 'Escape') cancelEdit() }}
-            placeholder="z.B. Ennepetal oder 58256"
-            className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-transparent px-2 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+            onChange={(e) => onInput(e.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder="Stadt oder PLZ eingeben…"
+            className="min-w-0 flex-1 bg-transparent text-sm font-medium focus:outline-none"
           />
-          {searching && <span className="h-4 w-4 animate-spin rounded-full border-2 border-accent/30 border-t-accent flex-shrink-0" />}
-          <button onClick={cancelEdit} className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-gray-400 hover:text-gray-600">
-            <X size={14} />
-          </button>
+          {searching
+            ? <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-accent/30 border-t-accent flex-shrink-0" />
+            : <button onClick={() => setEditing(false)} className="text-gray-400 hover:text-gray-600"><X size={14} /></button>
+          }
         </div>
 
         {suggestions.length > 0 && (
-          <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-xl border border-gray-100 bg-white shadow-lg dark:border-racing-700 dark:bg-racing-800">
+          <div className="absolute left-0 right-0 top-full z-[100] mt-1 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl dark:border-racing-700 dark:bg-racing-800">
             {suggestions.map((s, i) => (
               <button
                 key={i}
-                onClick={() => selectSuggestion(s)}
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm hover:bg-gray-50 dark:hover:bg-racing-700 first:rounded-t-xl last:rounded-b-xl"
+                onMouseDown={(e) => { e.preventDefault(); select(s) }}
+                onMouseEnter={() => setActiveIdx(i)}
+                className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm transition-colors ${
+                  i === activeIdx ? 'bg-accent/10 text-accent' : 'hover:bg-gray-50 dark:hover:bg-racing-700'
+                } ${i === 0 ? 'rounded-t-xl' : ''} ${i === suggestions.length - 1 ? 'rounded-b-xl' : 'border-b border-gray-100 dark:border-racing-700'}`}
               >
-                <MapPin size={12} className="flex-shrink-0 text-accent" />
+                <MapPin size={12} className="flex-shrink-0 text-gray-400" />
                 <span className="truncate">{shortName(s)}</span>
               </button>
             ))}
@@ -184,7 +193,7 @@ export default function WeatherWidget() {
         )}
 
         {input.trim().length >= 2 && !searching && suggestions.length === 0 && (
-          <p className="mt-2 text-xs text-gray-400">Keine Ergebnisse / No results</p>
+          <p className="mt-2 text-xs text-gray-400">Keine Ergebnisse gefunden</p>
         )}
       </div>
     )
@@ -193,37 +202,38 @@ export default function WeatherWidget() {
   return (
     <button
       onClick={startEdit}
-      className="flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white p-4 text-left transition-colors hover:border-accent dark:border-racing-800 dark:bg-racing-900 dark:hover:border-accent"
-      title="Klicken um Ort zu ändern / Click to change city"
+      className="group flex w-full flex-col justify-between rounded-xl border border-gray-100 bg-white p-4 text-left transition-colors hover:border-accent dark:border-racing-800 dark:bg-racing-900 dark:hover:border-accent"
     >
       {data ? (
         <>
-          <Icon size={32} className="flex-shrink-0 text-sky-400" strokeWidth={1.5} />
-          <div className="min-w-0 flex-1">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-bold">{data.temp}°C</span>
-              <span className="text-sm text-gray-400">{weatherLabel(data.code)}</span>
+          {/* Top row: city + emoji */}
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-1 text-[11px] text-gray-400 group-hover:text-accent">
+              <MapPin size={10} />
+              <span className="truncate">{weatherCity}</span>
             </div>
-            <div className="mt-0.5 flex items-center gap-3 text-[11px] text-gray-400">
-              <span className="flex items-center gap-0.5 truncate">
-                <MapPin size={10} />
-                {weatherCity}
-              </span>
-              <span className="flex items-center gap-0.5">
-                <Wind size={10} />
-                {data.wind} km/h
-              </span>
-            </div>
+            <span className="text-xl leading-none">{weatherEmoji(data.code)}</span>
+          </div>
+
+          {/* Temperature */}
+          <div className="mt-1">
+            <span className="text-3xl font-semibold tabular-nums leading-none">{data.temp}°</span>
+          </div>
+
+          {/* Condition + max/min */}
+          <div className="mt-1 flex items-end justify-between">
+            <span className="text-xs text-gray-500">{weatherLabel(data.code)}</span>
+            <span className="text-[11px] text-gray-400">
+              H:{data.tempMax}° L:{data.tempMin}°
+            </span>
           </div>
         </>
       ) : (
-        <>
-          <div className="h-8 w-8 animate-pulse rounded-full bg-gray-100 dark:bg-racing-800" />
-          <div className="flex flex-col gap-1.5">
-            <div className="h-5 w-16 animate-pulse rounded bg-gray-100 dark:bg-racing-800" />
-            <div className="h-3 w-24 animate-pulse rounded bg-gray-100 dark:bg-racing-800" />
-          </div>
-        </>
+        <div className="flex flex-col gap-2">
+          <div className="h-3 w-20 animate-pulse rounded bg-gray-100 dark:bg-racing-800" />
+          <div className="h-8 w-14 animate-pulse rounded bg-gray-100 dark:bg-racing-800" />
+          <div className="h-3 w-28 animate-pulse rounded bg-gray-100 dark:bg-racing-800" />
+        </div>
       )}
     </button>
   )
