@@ -107,8 +107,12 @@ export default function Dashboard() {
 
   const nowTime = new Date().toTimeString().slice(0, 5)
   const todayEntries = calendarEntries.filter((e) => {
-    if (!(e.date <= today && (!e.endDate || e.endDate >= today))) return false
-    if (e.date === today) {
+    // Only show entries that are today or multi-day events spanning today
+    const isToday = e.date === today
+    const isMultiDaySpanningToday = e.date < today && e.endDate && e.endDate >= today
+    if (!isToday && !isMultiDaySpanningToday) return false
+    // Hide today's entries whose end time has already passed
+    if (isToday) {
       const endT = e.endTime ?? e.startTime
       if (endT && endT < nowTime) return false
     }
