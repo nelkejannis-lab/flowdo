@@ -186,15 +186,8 @@ export default function Dashboard() {
         </div>
       )}
 
-      {(featureVisibility.social ?? true) && socialAccounts.length > 0 && (
+      {false && socialAccounts.length > 0 && (
         <div className="mb-6">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Instagram size={18} className="text-pink-500" />
-              Instagram
-            </h2>
-            <Link to="/social" className="text-sm font-medium text-accent hover:underline">Alle Konten</Link>
-          </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {socialAccounts.slice(0, 3).map((account) => {
               const mList = socialMetrics[account.id] ?? []
