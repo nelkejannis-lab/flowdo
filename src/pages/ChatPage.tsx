@@ -6,6 +6,7 @@ import { useFriendsStore } from '../store/friendsStore'
 import { useTeamsStore } from '../store/teamsStore'
 import { useAuthStore } from '../store/authStore'
 import { isSupabaseConfigured } from '../lib/supabase'
+import UserAvatar from '../components/shared/UserAvatar'
 
 type ChatTarget = { type: 'dm'; userId: string } | { type: 'team'; teamId: string; teamName: string }
 
@@ -154,9 +155,7 @@ export default function ChatPage() {
               return (
                 <button key={profile.id} onClick={() => { setActive({ type: 'dm', userId: profile.id }); onSelect?.() }}
                   className={`flex w-full items-center gap-3 px-4 py-3 text-left ${isActive ? 'bg-accent/10' : 'hover:bg-gray-50 dark:hover:bg-racing-800'}`}>
-                  <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-white" style={{ backgroundColor: profile.avatar_color }}>
-                    {profile.display_name.slice(0, 2).toUpperCase()}
-                  </span>
+                  <UserAvatar name={profile.display_name} color={profile.avatar_color} avatarUrl={profile.avatar_url} size="lg" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between">
                       <p className={`truncate text-[15px] font-medium ${isActive ? 'text-accent' : ''}`}>{profile.display_name}</p>
@@ -236,9 +235,7 @@ export default function ChatPage() {
                   <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${isSame ? 'mt-0.5' : 'mt-2'}`}>
                     <div className={`flex gap-2 max-w-[78%] ${isMe ? 'flex-row-reverse' : ''}`}>
                       {!isSame && !isMe && (
-                        <span className="mt-auto flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white" style={{ backgroundColor: msg.fromUser?.avatar_color ?? '#888' }}>
-                          {(msg.fromUser?.display_name ?? '?').slice(0, 2).toUpperCase()}
-                        </span>
+                        <UserAvatar name={msg.fromUser?.display_name ?? '?'} color={msg.fromUser?.avatar_color ?? '#888'} avatarUrl={(msg.fromUser as any)?.avatar_url} size="xs" className="mt-auto" />
                       )}
                       {isSame && !isMe && <div className="w-7 flex-shrink-0" />}
                       <div className={`rounded-2xl px-3 py-2 shadow-sm ${isMe ? 'rounded-tr-sm bg-accent text-white' : 'rounded-tl-sm bg-white text-gray-800 dark:bg-racing-800 dark:text-racing-100'}`}>
@@ -271,10 +268,10 @@ export default function ChatPage() {
         <div className="flex flex-1 flex-col overflow-hidden bg-white dark:bg-racing-950 sm:hidden">
           <div className="flex items-center gap-3 bg-accent px-4 py-3">
             <button onClick={() => setActive(null)} className="mr-1 text-white/80 hover:text-white"><ArrowLeft size={22} /></button>
-            <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${active.type === 'team' ? 'bg-white/20' : ''}`}
-              style={active.type === 'dm' && activeProfile ? { backgroundColor: activeProfile.avatar_color } : {}}>
-              {headerName.slice(0, 2).toUpperCase()}
-            </span>
+            {active.type === 'dm' && activeProfile
+              ? <UserAvatar name={activeProfile.display_name} color={activeProfile.avatar_color} avatarUrl={activeProfile.avatar_url} size="md" />
+              : <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white/20 text-sm font-bold text-white">{headerName.slice(0, 2).toUpperCase()}</span>
+            }
             <div><p className="text-[15px] font-semibold text-white">{headerName}</p><p className="text-xs text-white/70">{headerSub}</p></div>
           </div>
           <MessagesArea />
@@ -303,10 +300,10 @@ export default function ChatPage() {
         ) : (
           <div className="flex flex-1 flex-col overflow-hidden">
             <div className="flex items-center gap-3 bg-accent px-4 py-3">
-              <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white/20 text-sm font-bold text-white"
-                style={active.type === 'dm' && activeProfile ? { backgroundColor: activeProfile.avatar_color } : {}}>
-                {headerName.slice(0, 2).toUpperCase()}
-              </span>
+              {active.type === 'dm' && activeProfile
+                ? <UserAvatar name={activeProfile.display_name} color={activeProfile.avatar_color} avatarUrl={activeProfile.avatar_url} size="md" />
+                : <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white/20 text-sm font-bold text-white">{headerName.slice(0, 2).toUpperCase()}</span>
+              }
               <div><p className="text-[15px] font-semibold text-white">{headerName}</p><p className="text-xs text-white/70">{headerSub}</p></div>
             </div>
             <MessagesArea />

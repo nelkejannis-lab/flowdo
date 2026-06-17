@@ -5,17 +5,7 @@ import { useFriendsStore } from '../store/friendsStore'
 import { useTeamsStore } from '../store/teamsStore'
 import { useTeamInvitesStore } from '../store/teamInvitesStore'
 import type { Profile } from '../store/authStore'
-
-function Avatar({ name, color }: { name: string; color: string }) {
-  return (
-    <span
-      className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
-      style={{ backgroundColor: color }}
-    >
-      {name.slice(0, 2).toUpperCase()}
-    </span>
-  )
-}
+import UserAvatar from '../components/shared/UserAvatar'
 
 export default function FriendsPage() {
   const { t } = useTranslation(['friends', 'common'])
@@ -121,7 +111,7 @@ export default function FriendsPage() {
                     onClick={() => selectSuggestion(p)}
                     className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-racing-800"
                   >
-                    <Avatar name={p.display_name} color={p.avatar_color} />
+                    <UserAvatar name={p.display_name} color={p.avatar_color} avatarUrl={p.avatar_url} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium">{p.display_name}</p>
                       <p className="truncate text-xs text-gray-400">@{p.username}</p>
@@ -153,7 +143,7 @@ export default function FriendsPage() {
                 key={req.id}
                 className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 dark:border-racing-800 dark:bg-racing-900"
               >
-                <Avatar name={req.profile.display_name} color={req.profile.avatar_color} />
+                <UserAvatar name={req.profile.display_name} color={req.profile.avatar_color} avatarUrl={(req.profile as any).avatar_url} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{req.profile.display_name}</p>
                   <p className="truncate text-xs text-gray-400">@{req.profile.username}</p>
@@ -187,7 +177,7 @@ export default function FriendsPage() {
                 key={req.id}
                 className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 dark:border-racing-800 dark:bg-racing-900"
               >
-                <Avatar name={req.profile.display_name} color={req.profile.avatar_color} />
+                <UserAvatar name={req.profile.display_name} color={req.profile.avatar_color} avatarUrl={(req.profile as any).avatar_url} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{req.profile.display_name}</p>
                   <p className="truncate text-xs text-gray-400">@{req.profile.username}</p>
@@ -219,7 +209,7 @@ export default function FriendsPage() {
                 key={f.id}
                 className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 dark:border-racing-800 dark:bg-racing-900"
               >
-                <Avatar name={f.profile.display_name} color={f.profile.avatar_color} />
+                <UserAvatar name={f.profile.display_name} color={f.profile.avatar_color} avatarUrl={(f.profile as any).avatar_url} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{f.profile.display_name}</p>
                   <p className="truncate text-xs text-gray-400">@{f.profile.username}</p>

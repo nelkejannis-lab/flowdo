@@ -5,6 +5,7 @@ import { useCommentsStore } from '../../store/commentsStore'
 import { useFriendsStore } from '../../store/friendsStore'
 import { useAuthStore } from '../../store/authStore'
 import { isSupabaseConfigured } from '../../lib/supabase'
+import UserAvatar from './UserAvatar'
 
 interface Props {
   taskId?: string
@@ -178,12 +179,7 @@ export default function CommentSection({ taskId, boardId }: Props) {
                 onMouseDown={(e) => { e.preventDefault(); insertMention(f.profile.display_name) }}
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-gray-50 dark:hover:bg-racing-800"
               >
-                <span
-                  className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[9px] font-semibold text-white"
-                  style={{ backgroundColor: f.profile.avatar_color }}
-                >
-                  {f.profile.display_name.slice(0, 2).toUpperCase()}
-                </span>
+                <UserAvatar name={f.profile.display_name} color={f.profile.avatar_color} avatarUrl={(f.profile as any).avatar_url} size="xs" />
                 <span className="font-medium">{f.profile.display_name}</span>
               </button>
             ))}
