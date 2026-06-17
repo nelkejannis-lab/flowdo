@@ -32,9 +32,23 @@ export default function InstagramCallbackPage() {
         body: { code, accountId: accountId || undefined },
       })
 
-      if (res.error || res.data?.error) {
+      // Extract error message — Supabase wraps non-2xx in res.error but body has details
+      if (res.error) {
+        let msg = res.error.message ?? 'Verbindung fehlgeschlagen'
+        try {
+          const ctx = (res.error as any).context
+          if (ctx) {
+            const body = typeof ctx.json === 'function' ? await ctx.json() : ctx
+            if (body?.error) msg = body.error
+          }
+        } catch { /* use generic message */ }
         setStatus('error')
-        setMessage(res.data?.error ?? res.error?.message ?? 'Verbindung fehlgeschlagen')
+        setMessage(msg)
+        return
+      }
+      if (res.data?.error) {
+        setStatus('error')
+        setMessage(res.data.error)
         return
       }
 
