@@ -1044,17 +1044,34 @@ export default function SocialAccountDetailPage() {
       {tab === 'analyse' && (() => {
         // ── 30-day metric charts ───────────────────────────────────────────
         const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30)
-        const last30 = accountMetrics.filter(m => new Date(m.date) >= cutoff)
-        const CHARTS = [
-          { key: 'followersCount' as const, label: 'Follower', color: '#8b5cf6', unit: '' },
-          { key: 'reach' as const, label: 'Reichweite', color: '#3b82f6', unit: '' },
-          { key: 'likes' as const, label: 'Likes', color: '#ec4899', unit: '' },
-          { key: 'comments' as const, label: 'Kommentare', color: '#f59e0b', unit: '' },
-          { key: 'saves' as const, label: 'Saves', color: '#10b981', unit: '' },
-          { key: 'shares' as const, label: 'Shares', color: '#06b6d4', unit: '' },
-          { key: 'profileViews' as const, label: 'Profilaufrufe', color: '#f97316', unit: '' },
-          { key: 'accountsEngaged' as const, label: 'Konten interagiert', color: '#a855f7', unit: '' },
-        ] as const
+        const cutoffStr = cutoff.toISOString().slice(0, 10)
+        const last30 = accountMetrics.filter(m => m.date >= cutoffStr)
+
+        // Aggregate likes/comments/saves/shares per day from posts (Instagram doesn't provide these historically)
+        const postsByDay: Record<string, { likes: number; comments: number; saves: number; shares: number; count: number }> = {}
+        accountPosts.forEach(p => {
+          if (!p.postedAt) return
+          const d = p.postedAt.slice(0, 10)
+          if (d < cutoffStr) return
+          if (!postsByDay[d]) postsByDay[d] = { likes: 0, comments: 0, saves: 0, shares: 0, count: 0 }
+          postsByDay[d].likes += p.likeCount ?? 0
+          postsByDay[d].comments += p.commentsCount ?? 0
+          postsByDay[d].saves += p.saved ?? 0
+          postsByDay[d].shares += p.shares ?? 0
+          postsByDay[d].count++
+        })
+        const postDays = Object.entries(postsByDay).sort(([a], [b]) => a.localeCompare(b))
+
+        const CHARTS: { label: string; color: string; unit: string; data: { date: string; value: number }[] }[] = [
+          { label: 'Follower', color: '#8b5cf6', unit: '', data: last30.filter(m => m.followersCount != null).map(m => ({ date: m.date, value: m.followersCount! })) },
+          { label: 'Reichweite', color: '#3b82f6', unit: '', data: last30.filter(m => m.reach != null).map(m => ({ date: m.date, value: m.reach! })) },
+          { label: 'Profilaufrufe', color: '#f97316', unit: '', data: last30.filter(m => m.profileViews != null).map(m => ({ date: m.date, value: m.profileViews! })) },
+          { label: 'Konten interagiert', color: '#a855f7', unit: '', data: last30.filter(m => m.accountsEngaged != null).map(m => ({ date: m.date, value: m.accountsEngaged! })) },
+          { label: 'Likes (Posts)', color: '#ec4899', unit: '', data: postDays.map(([d, v]) => ({ date: d, value: v.likes })) },
+          { label: 'Kommentare (Posts)', color: '#f59e0b', unit: '', data: postDays.map(([d, v]) => ({ date: d, value: v.comments })) },
+          { label: 'Saves (Posts)', color: '#10b981', unit: '', data: postDays.map(([d, v]) => ({ date: d, value: v.saves })) },
+          { label: 'Shares (Posts)', color: '#06b6d4', unit: '', data: postDays.map(([d, v]) => ({ date: d, value: v.shares })) },
+        ]
 
         function MiniChart({ data, color, label, unit }: { data: { date: string; value: number }[]; color: string; label: string; unit: string }) {
           if (data.length < 2) return (
@@ -1102,7 +1119,7 @@ export default function SocialAccountDetailPage() {
           )
         }
 
-        const hasChartData = last30.length >= 2
+        const hasChartData = last30.length >= 2 || postDays.length >= 2
 
         // Post-type analysis
         const videos = accountPosts.filter(p => p.mediaType === 'VIDEO')
@@ -1142,12 +1159,9 @@ export default function SocialAccountDetailPage() {
               <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-racing-800 dark:bg-racing-900">
                 <h3 className="mb-4 font-semibold">📈 Letzte 30 Tage</h3>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                  {CHARTS.map(({ key, label, color, unit }) => {
-                    const data = last30
-                      .filter(m => m[key] != null)
-                      .map(m => ({ date: m.date, value: m[key] as number }))
-                    return <MiniChart key={key} data={data} color={color} label={label} unit={unit} />
-                  })}
+                  {CHARTS.map(({ label, color, unit, data }) => (
+                    <MiniChart key={label} data={data} color={color} label={label} unit={unit} />
+                  ))}
                 </div>
               </div>
             )}

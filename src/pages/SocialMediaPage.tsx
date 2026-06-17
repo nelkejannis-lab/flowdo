@@ -8,7 +8,7 @@ import { formatFriendlyDateTime } from '../utils/date'
 
 const IG_APP_ID = '1960989051209185'
 const IG_REDIRECT_URI = 'https://mooncrew.app/instagram-callback'
-const IG_SCOPES = 'instagram_business_basic'
+const IG_SCOPES = 'instagram_business_basic,instagram_business_manage_insights,instagram_business_content_publish'
 
 function buildInstagramOAuthUrl() {
   const url = new URL('https://www.instagram.com/oauth/authorize')
