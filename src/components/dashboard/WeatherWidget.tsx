@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Cloud, CloudRain, Sun, CloudSnow, CloudLightning, Wind, MapPin } from 'lucide-react'
 
 interface WeatherData {
@@ -7,8 +7,6 @@ interface WeatherData {
   wind: number
   city?: string
 }
-
-const ICONS: Record<string, typeof Sun> = {}
 
 function icon(code: number) {
   if (code === 0) return Sun
@@ -31,90 +29,100 @@ function label(code: number) {
   return 'Gewitter'
 }
 
-async function fetchWithTimeout(url: string, ms: number) {
+const DE = { lat: 51.1657, lon: 10.4515, city: 'Deutschland' }
+
+async function fetchJson(url: string, ms: number, signal: AbortSignal) {
   const ctrl = new AbortController()
+  const combined = AbortSignal.any ? AbortSignal.any([signal, ctrl.signal]) : ctrl.signal
   const id = setTimeout(() => ctrl.abort(), ms)
   try {
-    const res = await fetch(url, { signal: ctrl.signal })
-    return res
+    const res = await fetch(url, { signal: combined })
+    return await res.json()
   } finally {
     clearTimeout(id)
   }
 }
 
-// Germany center as reliable fallback
-const DE = { lat: 51.1657, lon: 10.4515, city: 'Deutschland' }
+async function getGps(): Promise<{ lat: number; lon: number } | null> {
+  if (!navigator.geolocation) return null
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve({ lat: p.coords.latitude, lon: p.coords.longitude }),
+      () => resolve(null),
+      { timeout: 8000, maximumAge: 300000 },
+    )
+  })
+}
 
 export default function WeatherWidget() {
   const [data, setData] = useState<WeatherData | null>(null)
-  const mounted = useRef(true)
 
   useEffect(() => {
-    mounted.current = true
-    load()
-    return () => { mounted.current = false }
-  }, [])
+    const ctrl = new AbortController()
 
-  async function load() {
-    let lat = DE.lat
-    let lon = DE.lon
-    let city: string | undefined = DE.city
-
-    // 1. Try IP geolocation (2s timeout, no GPS prompt)
-    try {
-      const res = await fetchWithTimeout('https://ipwho.is/', 2000)
-      const json = await res.json()
-      if (json?.success && json.latitude && json.longitude) {
-        lat = json.latitude
-        lon = json.longitude
-        city = json.city || json.region || DE.city
+    // Hard 12s timeout — always shows something
+    const fallbackTimer = setTimeout(() => {
+      if (!ctrl.signal.aborted) {
+        setData({ temp: 0, code: 3, wind: 0, city: DE.city })
       }
-    } catch { /* use Germany fallback */ }
+    }, 12000)
 
-    // 2. Try GPS silently if already permitted (no popup, instant timeout)
-    if (navigator.geolocation) {
-      await new Promise<void>((resolve) => {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            lat = pos.coords.latitude
-            lon = pos.coords.longitude
-            city = undefined // will reverse-geocode below
-            resolve()
-          },
-          () => resolve(), // denied or unavailable — don't wait
-          { timeout: 8000, maximumAge: 300000 }
+    async function load() {
+      let lat = DE.lat
+      let lon = DE.lon
+      let city: string | undefined = DE.city
+
+      try {
+        const json = await fetchJson('https://ipwho.is/', 2000, ctrl.signal)
+        if (json?.success && json.latitude && json.longitude) {
+          lat = json.latitude
+          lon = json.longitude
+          city = json.city || json.region || DE.city
+        }
+      } catch { /* keep DE fallback */ }
+
+      const gps = await getGps()
+      if (gps && !ctrl.signal.aborted) {
+        lat = gps.lat
+        lon = gps.lon
+        city = undefined
+      }
+
+      if (ctrl.signal.aborted) return
+
+      try {
+        const json = await fetchJson(
+          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`,
+          6000,
+          ctrl.signal,
         )
-      })
+        const cw = json?.current_weather
+        if (!cw || ctrl.signal.aborted) return
+
+        if (!city) {
+          try {
+            const geo = await fetchJson(
+              `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+              3000,
+              ctrl.signal,
+            )
+            city = geo?.address?.city || geo?.address?.town || geo?.address?.village
+          } catch { city = undefined }
+        }
+
+        if (!ctrl.signal.aborted) {
+          clearTimeout(fallbackTimer)
+          setData({ temp: Math.round(cw.temperature), code: cw.weathercode, wind: Math.round(cw.windspeed), city })
+        }
+      } catch { /* fallback timer will handle it */ }
     }
 
-    // 3. Fetch weather (always succeeds unless network is down)
-    try {
-      const res = await fetchWithTimeout(
-        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`,
-        5000
-      )
-      const json = await res.json()
-      const cw = json?.current_weather
-      if (!cw) return
-      if (!mounted.current) return
-
-      // Reverse geocode only if we got GPS (city is undefined)
-      if (!city) {
-        try {
-          const gr = await fetchWithTimeout(
-            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
-            3000
-          )
-          const geo = await gr.json()
-          city = geo?.address?.city || geo?.address?.town || geo?.address?.village
-        } catch { city = undefined }
-      }
-
-      if (mounted.current) {
-        setData({ temp: Math.round(cw.temperature), code: cw.weathercode, wind: Math.round(cw.windspeed), city })
-      }
-    } catch { /* network down — widget stays in loading state, no crash */ }
-  }
+    load()
+    return () => {
+      ctrl.abort()
+      clearTimeout(fallbackTimer)
+    }
+  }, [])
 
   const Icon = data ? icon(data.code) : Cloud
 
