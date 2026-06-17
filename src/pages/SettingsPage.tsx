@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { BarChart2, Bell, CalendarClock, CalendarDays, CheckSquare, Clock, Cloud, Download, Eye, EyeOff, FolderKanban, Grid2x2, Instagram, Loader2, MessageCircle, Plus, RefreshCw, Sparkles, Trash2, Upload, Users, X } from 'lucide-react'
+import { BarChart2, Bell, CalendarClock, CalendarDays, CheckSquare, Clock, Cloud, Download, Eye, EyeOff, FolderKanban, Grid2x2, Instagram, Loader2, MapPin, MessageCircle, Plus, RefreshCw, Sparkles, Trash2, Upload, Users, X } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { uploadAvatar } from '../lib/avatar'
 import { BOARD_COLORS } from '../store/boardsStore'
@@ -46,6 +46,19 @@ export default function SettingsPage() {
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
     canNotify() ? Notification.permission : 'denied'
   )
+  const [locPermission, setLocPermission] = useState<PermissionState | 'unsupported'>(() => {
+    if (!navigator.geolocation) return 'unsupported'
+    return 'prompt'
+  })
+  const [requestingLoc, setRequestingLoc] = useState(false)
+
+  useEffect(() => {
+    if (!navigator.permissions) return
+    navigator.permissions.query({ name: 'geolocation' }).then((status) => {
+      setLocPermission(status.state)
+      status.onchange = () => setLocPermission(status.state)
+    }).catch(() => {})
+  }, [])
   const profile = useAuthStore((s) => s.profile)
   const user = useAuthStore((s) => s.user)
   const updateProfile = useAuthStore((s) => s.updateProfile)
@@ -501,6 +514,53 @@ export default function SettingsPage() {
                     <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${notifyTasks ? 'translate-x-5' : 'translate-x-0'}`} />
                   </button>
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* Standort */}
+          <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+            <div className="mb-3 flex items-center gap-2">
+              <MapPin size={16} className="text-accent" />
+              <h2 className="text-sm font-semibold">Standort / Location</h2>
+            </div>
+            {locPermission === 'unsupported' ? (
+              <p className="text-xs text-gray-400">Dein Browser unterstützt keine Standortabfrage.</p>
+            ) : locPermission === 'granted' ? (
+              <div className="flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-[#34c759]">Standort freigegeben</p>
+                  <p className="text-xs text-gray-400">Das Wetter-Widget nutzt deinen aktuellen Standort. / Location granted for weather.</p>
+                </div>
+                <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#34c759]/15">
+                  <MapPin size={16} className="text-[#34c759]" />
+                </span>
+              </div>
+            ) : locPermission === 'denied' ? (
+              <div className="flex flex-col gap-2">
+                <p className="text-xs text-gray-400">Standort wurde blockiert. Bitte erlaube den Standortzugriff direkt in den Browser-Einstellungen (Schloss-Symbol in der Adressleiste). / Location blocked — allow it via the lock icon in your browser's address bar.</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <p className="text-xs text-gray-400">Standort wird für das Wetter auf dem Dashboard benötigt. Keine Daten werden gespeichert. / Location is used for the weather widget. No data is stored.</p>
+                <button
+                  type="button"
+                  disabled={requestingLoc}
+                  onClick={async () => {
+                    setRequestingLoc(true)
+                    navigator.geolocation.getCurrentPosition(
+                      () => { setLocPermission('granted'); setRequestingLoc(false) },
+                      () => { setLocPermission('denied'); setRequestingLoc(false) },
+                      { timeout: 10000 }
+                    )
+                  }}
+                  className="flex items-center gap-2 self-start rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
+                >
+                  {requestingLoc
+                    ? <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    : <MapPin size={13} />}
+                  {requestingLoc ? 'Warte...' : 'Standort freigeben / Allow location'}
+                </button>
               </div>
             )}
           </div>
