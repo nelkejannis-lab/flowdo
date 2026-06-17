@@ -729,7 +729,7 @@ function calcPostScore(post: SocialPost, followers: number): { score: number; gr
 function analyzeCaptionStyle(caption: string): { label: string; value: string; color: string }[] {
   if (!caption) return []
   const hashtags = (caption.match(/#\w+/g) ?? []).length
-  const emojis = (caption.match(/\p{Emoji}/gu) ?? []).length
+  const emojis = (caption.match(/\p{Extended_Pictographic}/gu) ?? []).length
   const words = caption.trim().split(/\s+/).length
   const hasQuestion = /\?/.test(caption)
   const hasCTA = /link in bio|mehr dazu|jetzt|klick|schreib|kommentier|teil|save|sichern/i.test(caption)
