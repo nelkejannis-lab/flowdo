@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
     const warnings: string[] = []
     try {
       const ins = await graphGet(token, `/${igUserId}/insights`, {
-        metric: 'reach,profile_views,accounts_engaged,total_interactions,likes,comments,shares,saved,follows_and_unfollows',
+        metric: 'reach,profile_views,accounts_engaged,total_interactions,likes,comments,shares,saves,follows_and_unfollows',
         period: 'day',
         metric_type: 'total_value',
         access_token: token,
