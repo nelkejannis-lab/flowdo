@@ -82,7 +82,7 @@ export default function WeatherWidget() {
             resolve()
           },
           () => resolve(), // denied or unavailable — don't wait
-          { timeout: 0, maximumAge: 300000 } // only use cached position
+          { timeout: 8000, maximumAge: 300000 }
         )
       })
     }
