@@ -20,22 +20,23 @@ Deno.serve(async (req) => {
     if (!code) return respond({ error: 'code fehlt' }, 400)
 
     // 1. Exchange code for short-lived token
-    const form = new FormData()
-    form.append('client_id', APP_ID)
-    form.append('client_secret', APP_SECRET)
-    form.append('grant_type', 'authorization_code')
-    form.append('redirect_uri', REDIRECT_URI)
-    form.append('code', code)
+    const params = new URLSearchParams()
+    params.append('client_id', APP_ID)
+    params.append('client_secret', APP_SECRET)
+    params.append('grant_type', 'authorization_code')
+    params.append('redirect_uri', REDIRECT_URI)
+    params.append('code', code)
 
     const shortRes = await fetch('https://api.instagram.com/oauth/access_token', {
       method: 'POST',
-      body: form,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
     })
     const shortJson = await shortRes.json()
 
     if (shortJson.error_type || shortJson.error) {
-      const msg = shortJson.error_message ?? shortJson.error?.message ?? 'Token-Austausch fehlgeschlagen'
-      return respond({ error: msg }, 422)
+      const msg = shortJson.error_message ?? shortJson.error?.message ?? JSON.stringify(shortJson)
+      return respond({ error: `Token-Austausch fehlgeschlagen: ${msg}` }, 422)
     }
 
     const shortToken = shortJson.access_token

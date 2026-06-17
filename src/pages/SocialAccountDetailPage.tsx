@@ -94,8 +94,9 @@ function GrowthChart({ data }: { data: { date: string; followers: number }[] }) 
 
 // ── KPI Card ─────────────────────────────────────────────────────────────────
 
-function KpiCard({ label, value, sub, trend, icon, color = '#6366f1', metricKey }: {
+function KpiCard({ label, value, sub, trend, icon, color = '#6366f1', metricKey, delta }: {
   label: string; value: string | number; sub?: string; trend?: number[]; icon: React.ReactNode; color?: string; metricKey?: string
+  delta?: { pct: number; up: boolean } | null
 }) {
   const [showInfo, setShowInfo] = useState(false)
   return (
@@ -103,14 +104,22 @@ function KpiCard({ label, value, sub, trend, icon, color = '#6366f1', metricKey 
       <div className="flex flex-col gap-2 rounded-2xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400">{icon}{label}</span>
-          {metricKey && METRIC_INFO[metricKey] && (
-            <button onClick={() => setShowInfo(true)} className="rounded-full p-0.5 text-gray-300 hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors" title="Was bedeutet das?">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            </button>
-          )}
+          <div className="flex items-center gap-1">
+            {delta && (
+              <span className={`text-xs font-semibold ${delta.up ? 'text-green-500' : 'text-red-400'}`}>
+                {delta.up ? '▲' : '▼'}{delta.pct.toFixed(1)}%
+              </span>
+            )}
+            {metricKey && METRIC_INFO[metricKey] && (
+              <button onClick={() => setShowInfo(true)} className="rounded-full p-0.5 text-gray-300 hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors" title="Was bedeutet das?">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </button>
+            )}
+          </div>
         </div>
         <p className="text-2xl font-bold tracking-tight">{typeof value === 'number' ? fmt(value) : value}</p>
         {sub && <p className="text-xs text-gray-400">{sub}</p>}
+        {delta && <p className="text-[10px] text-gray-400">vs. Vorwoche</p>}
         {trend && trend.length >= 2 && <Sparkline values={trend} color={color} />}
       </div>
       {showInfo && metricKey && <MetricExplainer metricKey={metricKey} label={label} onClose={() => setShowInfo(false)} />}
@@ -788,6 +797,33 @@ export default function SocialAccountDetailPage() {
   const accountStories = stories[accountId] ?? []
   const followers = latest?.followersCount ?? 0
 
+  // Period comparison helpers
+  function periodAvg(key: keyof typeof latest, daysBack: number, span: number) {
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - daysBack)
+    const end = new Date(); end.setDate(end.getDate() - (daysBack - span))
+    const slice = accountMetrics.filter(m => { const d = new Date(m.date); return d >= cutoff && d < end })
+    if (!slice.length) return undefined
+    const vals = slice.map(m => (m[key] as number | undefined) ?? 0).filter(v => v > 0)
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : undefined
+  }
+  function delta(curr: number | undefined, prev: number | undefined): { pct: number; up: boolean } | null {
+    if (curr == null || prev == null || prev === 0) return null
+    const p = ((curr - prev) / prev) * 100
+    return { pct: Math.abs(p), up: p >= 0 }
+  }
+
+  const prevFollowers = accountMetrics.length >= 2
+    ? accountMetrics[accountMetrics.length - 8]?.followersCount
+    : undefined
+  const followerDelta = delta(followers || undefined, prevFollowers)
+
+  const reachDelta = delta(periodAvg('reach', 0, 7), periodAvg('reach', 7, 7))
+  const likesDelta = delta(periodAvg('likes', 0, 7), periodAvg('likes', 7, 7))
+  const savesDelta = delta(periodAvg('saves', 0, 7), periodAvg('saves', 7, 7))
+  const commentsDelta = delta(periodAvg('comments', 0, 7), periodAvg('comments', 7, 7))
+  const sharesDelta = delta(periodAvg('shares', 0, 7), periodAvg('shares', 7, 7))
+  const profileViewsDelta = delta(periodAvg('profileViews', 0, 7), periodAvg('profileViews', 7, 7))
+
   // Engagement rate across all posts
   const avgEngagement = accountPosts.length > 0 && followers > 0
     ? accountPosts.reduce((sum, p) => sum + ((p.likeCount ?? 0) + (p.commentsCount ?? 0)), 0) / accountPosts.length / followers * 100
@@ -920,21 +956,21 @@ export default function SocialAccountDetailPage() {
       {/* KPIs */}
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <KpiCard label="Follower" value={followers} icon={<Users size={12} />} color="#6366f1" metricKey="followers"
-          trend={accountMetrics.map((m) => m.followersCount ?? 0)} />
+          trend={accountMetrics.map((m) => m.followersCount ?? 0)} delta={followerDelta} />
         <KpiCard label="Reichweite" value={latest?.reach ?? '–'} icon={<TrendingUp size={12} />} color="#10b981" metricKey="reach"
-          trend={accountMetrics.map((m) => m.reach ?? 0)} />
+          trend={accountMetrics.map((m) => m.reach ?? 0)} delta={reachDelta} />
         <KpiCard label="Ø Engagement" value={avgEngagement !== undefined ? pct(avgEngagement) : '–'}
           icon={<Heart size={12} />} color="#f43f5e" sub="pro Post" metricKey="engagement" />
         <KpiCard label="Profil-Aufrufe" value={latest?.profileViews ?? '–'} icon={<Eye size={12} />} color="#f59e0b" metricKey="profileViews"
-          trend={accountMetrics.map((m) => m.profileViews ?? 0)} />
+          trend={accountMetrics.map((m) => m.profileViews ?? 0)} delta={profileViewsDelta} />
         <KpiCard label="Likes" value={latest?.likes ?? '–'} icon={<Heart size={12} />} color="#f43f5e" metricKey="likes"
-          trend={accountMetrics.map((m) => m.likes ?? 0)} />
+          trend={accountMetrics.map((m) => m.likes ?? 0)} delta={likesDelta} />
         <KpiCard label="Kommentare" value={latest?.comments ?? '–'} icon={<MessageCircle size={12} />} color="#3b82f6" metricKey="comments"
-          trend={accountMetrics.map((m) => m.comments ?? 0)} />
+          trend={accountMetrics.map((m) => m.comments ?? 0)} delta={commentsDelta} />
         <KpiCard label="Gespeichert" value={latest?.saves ?? '–'} icon={<Bookmark size={12} />} color="#f59e0b" metricKey="saves"
-          trend={accountMetrics.map((m) => m.saves ?? 0)} />
+          trend={accountMetrics.map((m) => m.saves ?? 0)} delta={savesDelta} />
         <KpiCard label="Geteilt" value={latest?.shares ?? '–'} icon={<Repeat2 size={12} />} color="#8b5cf6" metricKey="shares"
-          trend={accountMetrics.map((m) => m.shares ?? 0)} />
+          trend={accountMetrics.map((m) => m.shares ?? 0)} delta={sharesDelta} />
       </div>
 
       {/* Best post highlight */}
@@ -1007,22 +1043,49 @@ export default function SocialAccountDetailPage() {
       {/* Stories */}
       {tab === 'stories' && (
         accountStories.length === 0
-          ? <p className="py-10 text-center text-sm text-gray-400">Keine aktiven Stories (nur letzte 24h verfügbar).</p>
+          ? (
+            <div className="rounded-2xl border border-gray-100 bg-white p-8 dark:border-racing-800 dark:bg-racing-900 text-center">
+              <p className="text-2xl mb-2">📖</p>
+              <p className="font-medium text-gray-600 dark:text-gray-300 mb-1">Keine Story-Daten verfügbar</p>
+              <p className="text-sm text-gray-400 max-w-sm mx-auto">Instagram gibt Story-Daten nur für die letzten 24h zurück. Synchronisiere täglich um Story-Performance zu tracken.</p>
+              <div className="mt-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 p-3 text-left">
+                <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-1">💡 Story-Tipps für mehr Reichweite</p>
+                <ul className="text-xs text-indigo-700 dark:text-indigo-300 space-y-1">
+                  <li>→ 5–7 Stories täglich für maximale Algorithmus-Sichtbarkeit</li>
+                  <li>→ Erste Story des Tages bis 9 Uhr posten</li>
+                  <li>→ Umfragen & Fragen-Sticker erhöhen Antworten 3×</li>
+                  <li>→ Abbrüche (Exits) unter 20% anstreben</li>
+                </ul>
+              </div>
+            </div>
+          )
           : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {accountStories.map((story) => (
-                <div key={story.id} className="rounded-2xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-                  <p className="mb-3 text-xs text-gray-400">{formatFriendlyDateTime(story.postedAt)}</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Stat icon={<Eye size={14} className="text-blue-400" />} label="Impressionen" value={fmt(story.impressions)} />
-                    <Stat icon={<TrendingUp size={14} className="text-green-400" />} label="Reichweite" value={fmt(story.reach)} />
-                    <Stat icon={<MessageCircle size={14} className="text-purple-400" />} label="Antworten" value={fmt(story.replies)} />
-                    <Stat icon={<X size={14} className="text-red-400" />} label="Abbrüche" value={fmt(story.exits)} />
-                    <Stat icon={<ArrowLeft size={14} className="text-gray-400" />} label="Zurück" value={fmt(story.tapsBack)} />
-                    <Stat icon={<ArrowLeft size={14} className="text-gray-400 rotate-180" />} label="Weiter" value={fmt(story.tapsForward)} />
+              {accountStories.map((story) => {
+                const retentionRate = story.impressions && story.exits
+                  ? (1 - story.exits / story.impressions) * 100
+                  : undefined
+                return (
+                  <div key={story.id} className="rounded-2xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+                    <div className="mb-3 flex items-center justify-between">
+                      <p className="text-xs text-gray-400">{formatFriendlyDateTime(story.postedAt)}</p>
+                      {retentionRate !== undefined && (
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${retentionRate >= 80 ? 'bg-green-100 text-green-700' : retentionRate >= 60 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
+                          {retentionRate.toFixed(0)}% behalten
+                        </span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Stat icon={<Eye size={14} className="text-blue-400" />} label="Impressionen" value={fmt(story.impressions)} />
+                      <Stat icon={<TrendingUp size={14} className="text-green-400" />} label="Reichweite" value={fmt(story.reach)} />
+                      <Stat icon={<MessageCircle size={14} className="text-purple-400" />} label="Antworten" value={fmt(story.replies)} />
+                      <Stat icon={<X size={14} className="text-red-400" />} label="Abbrüche" value={fmt(story.exits)} />
+                      <Stat icon={<ArrowLeft size={14} className="text-gray-400" />} label="Zurück" value={fmt(story.tapsBack)} />
+                      <Stat icon={<ArrowLeft size={14} className="text-gray-400 rotate-180" />} label="Weiter" value={fmt(story.tapsForward)} />
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )
       )}

@@ -260,8 +260,8 @@ export default function AiChatPanel() {
       {/* Panel */}
       {open && (
         <div
-          className="fixed bottom-24 right-6 z-40 flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-racing-700 dark:bg-racing-900"
-          style={{ width: 360, maxWidth: 'calc(100vw - 24px)', height: 540 }}
+          className="fixed bottom-20 right-3 z-40 flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-racing-700 dark:bg-racing-900 sm:bottom-24 sm:right-6"
+          style={{ width: 'min(420px, calc(100vw - 12px))', height: 'min(600px, calc(100dvh - 90px))' }}
         >
           {/* Header */}
           <div className="flex items-center gap-2.5 bg-accent px-4 py-3">
@@ -350,14 +350,14 @@ export default function AiChatPanel() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={onKeyDown}
-                placeholder={'Was soll ich tun? z.B. "Erstelle eine Aufgabe für morgen"'}
-                rows={1}
-                className="flex-1 resize-none rounded-xl bg-gray-100 px-3 py-2 text-sm focus:outline-none dark:bg-racing-800 dark:text-racing-100"
-                style={{ maxHeight: 96 }}
+                placeholder={'Frag mich alles… z.B. "Erstelle eine Aufgabe für morgen"'}
+                rows={2}
+                className="flex-1 resize-none rounded-xl bg-gray-100 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 dark:bg-racing-800 dark:text-racing-100"
+                style={{ minHeight: 52, maxHeight: 120 }}
                 onInput={(e) => {
                   const t = e.target as HTMLTextAreaElement
                   t.style.height = 'auto'
-                  t.style.height = Math.min(t.scrollHeight, 96) + 'px'
+                  t.style.height = Math.min(t.scrollHeight, 120) + 'px'
                 }}
               />
               <div className="flex flex-col gap-1.5">

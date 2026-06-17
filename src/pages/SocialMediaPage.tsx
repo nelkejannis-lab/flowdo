@@ -94,42 +94,46 @@ export default function SocialMediaPage() {
                 to={`/social/${account.id}`}
                 className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:border-racing-800 dark:bg-racing-900"
               >
-                <div className="flex items-center gap-2">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 via-red-500 to-yellow-400 text-white">
-                    <Instagram size={18} />
-                  </span>
+                <div className="flex items-center gap-3">
+                  {account.profilePictureUrl
+                    ? <img src={account.profilePictureUrl} alt="" className="h-12 w-12 flex-shrink-0 rounded-full object-cover ring-2 ring-pink-200" />
+                    : <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 via-red-500 to-yellow-400 text-white"><Instagram size={20} /></span>
+                  }
                   <div className="min-w-0 flex-1">
-                    <h3 className="truncate font-semibold">@{account.username}</h3>
+                    <h3 className="truncate font-bold">@{account.username}</h3>
+                    {account.name && <p className="text-xs text-gray-500 truncate">{account.name}</p>}
                     <p className="text-xs text-gray-400">
-                      {account.lastSyncedAt ? t('page.lastSynced', { date: formatFriendlyDateTime(account.lastSyncedAt) }) : t('page.notSyncedYet')}
+                      {account.lastSyncedAt ? formatFriendlyDateTime(account.lastSyncedAt) : 'Noch nicht synchronisiert'}
                     </p>
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault()
-                      handleSync(account.id)
-                    }}
-                    disabled={syncingId === account.id}
-                    title={t('page.syncNow')}
-                    className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-accent dark:hover:bg-racing-800 disabled:opacity-60"
-                  >
+                  <button onClick={(e) => { e.preventDefault(); handleSync(account.id) }}
+                    disabled={syncingId === account.id} title="Synchronisieren"
+                    className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-accent dark:hover:bg-racing-800 disabled:opacity-60">
                     <RefreshCw size={16} className={syncingId === account.id ? 'animate-spin' : ''} />
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-lg bg-gray-50 p-2 dark:bg-racing-800">
-                    <p className="flex items-center gap-1 text-xs text-gray-400">
-                      <Users size={12} />
-                      {t('page.stats.followers')}
-                    </p>
-                    <p className="text-lg font-bold">{latest?.followersCount ?? '–'}</p>
+                <div className="grid grid-cols-4 gap-2">
+                  <div className="rounded-lg bg-gray-50 p-2 dark:bg-racing-800 text-center">
+                    <p className="text-[10px] text-gray-400">Follower</p>
+                    <p className="text-sm font-bold">{latest?.followersCount != null ? (latest.followersCount >= 1000 ? (latest.followersCount/1000).toFixed(1)+'K' : latest.followersCount) : '–'}</p>
                   </div>
-                  <div className="rounded-lg bg-gray-50 p-2 dark:bg-racing-800">
-                    <p className="text-xs text-gray-400">{t('page.stats.reachToday')}</p>
-                    <p className="text-lg font-bold">{latest?.reach ?? '–'}</p>
+                  <div className="rounded-lg bg-gray-50 p-2 dark:bg-racing-800 text-center">
+                    <p className="text-[10px] text-gray-400">Reichweite</p>
+                    <p className="text-sm font-bold">{latest?.reach ?? '–'}</p>
+                  </div>
+                  <div className="rounded-lg bg-gray-50 p-2 dark:bg-racing-800 text-center">
+                    <p className="text-[10px] text-gray-400">Likes</p>
+                    <p className="text-sm font-bold">{latest?.likes ?? '–'}</p>
+                  </div>
+                  <div className="rounded-lg bg-gray-50 p-2 dark:bg-racing-800 text-center">
+                    <p className="text-[10px] text-gray-400">Saves</p>
+                    <p className="text-sm font-bold">{latest?.saves ?? '–'}</p>
                   </div>
                 </div>
+                {account.biography && (
+                  <p className="text-xs text-gray-400 line-clamp-1">{account.biography}</p>
+                )}
               </Link>
             )
           })}
