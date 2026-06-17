@@ -199,6 +199,8 @@ function PostModal({ post, followers, onClose }: { post: SocialPost; followers: 
 
 // ── Edit Account Modal ────────────────────────────────────────────────────────
 
+interface IgFound { igUserId: string; igUsername: string; igName: string; profilePic?: string; followers?: number }
+
 function EditAccountModal({ account, onClose }: { account: { id: string; username: string; igUserId: string; accessToken?: string }; onClose: () => void }) {
   const updateAccount = useSocialStore((s) => s.updateAccount)
   const updateAccessToken = useSocialStore((s) => s.updateAccessToken)
@@ -207,6 +209,33 @@ function EditAccountModal({ account, onClose }: { account: { id: string; usernam
   const [token, setToken] = useState(account.accessToken ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [validating, setValidating] = useState(false)
+  const [foundAccounts, setFoundAccounts] = useState<IgFound[] | null>(null)
+  const [validateError, setValidateError] = useState<string | null>(null)
+
+  async function handleValidate() {
+    if (!token.trim()) return
+    setValidating(true)
+    setValidateError(null)
+    setFoundAccounts(null)
+    const res = await supabase.functions.invoke('instagram-validate', { body: { accessToken: token.trim() } })
+    setValidating(false)
+    if (res.error || res.data?.error) {
+      setValidateError(res.data?.error ?? res.error?.message ?? 'Unbekannter Fehler')
+      return
+    }
+    if (res.data.igAccounts?.length === 0) {
+      setValidateError('Token ist gültig, aber es sind keine Instagram Business/Creator Accounts verknüpft. Stelle sicher, dass deine Facebook-Seite mit Instagram verbunden ist.')
+      return
+    }
+    setFoundAccounts(res.data.igAccounts)
+  }
+
+  function selectAccount(ig: IgFound) {
+    setIgUserId(ig.igUserId)
+    setUsername(ig.igUsername || username)
+    setFoundAccounts(null)
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -223,30 +252,75 @@ function EditAccountModal({ account, onClose }: { account: { id: string; usernam
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-racing-900">
+      <div className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-racing-900 max-h-[90vh] overflow-y-auto">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-semibold text-lg">Account bearbeiten</h2>
           <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-racing-800"><X size={18} /></button>
         </div>
-        <form onSubmit={handleSave} className="flex flex-col gap-3">
+        <form onSubmit={handleSave} className="flex flex-col gap-4">
+
+          {/* Token first — validate to auto-fill ID */}
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-500">Access Token</label>
+            <textarea value={token} onChange={(e) => { setToken(e.target.value); setFoundAccounts(null); setValidateError(null) }} rows={3}
+              className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none dark:border-racing-700" />
+            <div className="mt-1.5 flex items-center justify-between">
+              <p className="text-xs text-gray-400">Long-Lived User Access Token</p>
+              <button type="button" onClick={handleValidate} disabled={validating || !token.trim()}
+                className="flex items-center gap-1 rounded-lg bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-100 disabled:opacity-50 dark:bg-indigo-900/30 dark:text-indigo-400">
+                {validating ? <RefreshCw size={11} className="animate-spin" /> : <Check size={11} />}
+                {validating ? 'Prüfe…' : 'Token prüfen & IG-Accounts laden'}
+              </button>
+            </div>
+          </div>
+
+          {/* Validate error */}
+          {validateError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-400">
+              {validateError}
+            </div>
+          )}
+
+          {/* Found IG accounts — click to select */}
+          {foundAccounts && foundAccounts.length > 0 && (
+            <div>
+              <p className="mb-2 text-xs font-semibold text-green-600 dark:text-green-400">✓ Token gültig — wähle den richtigen Account:</p>
+              <ul className="space-y-2">
+                {foundAccounts.map((ig) => (
+                  <li key={ig.igUserId}>
+                    <button type="button" onClick={() => selectAccount(ig)}
+                      className="flex w-full items-center gap-3 rounded-xl border-2 border-transparent bg-gray-50 px-3 py-2.5 text-left hover:border-accent hover:bg-accent/5 dark:bg-racing-800">
+                      {ig.profilePic
+                        ? <img src={ig.profilePic} alt="" className="h-9 w-9 rounded-full object-cover flex-shrink-0" />
+                        : <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-yellow-400 text-sm text-white font-bold">@</div>
+                      }
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold">@{ig.igUsername || ig.igName}</p>
+                        <p className="text-xs text-gray-400">ID: {ig.igUserId} · {ig.followers?.toLocaleString('de-DE') ?? '–'} Follower</p>
+                      </div>
+                      <span className="text-xs font-medium text-accent">Auswählen →</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-500">Instagram Username</label>
             <input value={username} onChange={(e) => setUsername(e.target.value)}
               className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700" />
           </div>
+
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500">Instagram User-ID</label>
+            <label className="mb-1 block text-xs font-medium text-gray-500">Instagram User-ID (numerisch)</label>
             <input value={igUserId} onChange={(e) => setIgUserId(e.target.value)}
               className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none dark:border-racing-700" />
-            <p className="mt-1 text-xs text-gray-400">Numerische ID aus dem Meta Graph API Explorer (/me/accounts)</p>
+            <p className="mt-1 text-xs text-gray-400">Tipp: "Token prüfen" lädt alle verknüpften IG-Accounts und füllt die ID automatisch aus.</p>
           </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500">Access Token</label>
-            <textarea value={token} onChange={(e) => setToken(e.target.value)} rows={3}
-              className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none dark:border-racing-700" />
-            <p className="mt-1 text-xs text-gray-400">Long-Lived Token (läuft nach 60 Tagen ab)</p>
-          </div>
+
           {error && <p className="text-sm text-red-500">{error}</p>}
+
           <div className="flex justify-end gap-2 pt-1">
             <button type="button" onClick={onClose} className="rounded-lg border border-gray-200 px-4 py-2 text-sm hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800">Abbrechen</button>
             <button type="submit" disabled={saving} className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-60">
