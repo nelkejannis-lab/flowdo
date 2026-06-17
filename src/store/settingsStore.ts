@@ -45,6 +45,7 @@ interface SettingsState {
   notifyTasks: boolean
   appointmentReminderMinutes: number
   onboardingPermissionsDone: boolean
+  weatherCity: string
   setMode: (mode: Mode) => void
   togglePinkAccent: () => void
   setLanguage: (language: Language) => void
@@ -56,6 +57,7 @@ interface SettingsState {
   setNotifyTasks: (v: boolean) => void
   setAppointmentReminderMinutes: (v: number) => void
   setOnboardingPermissionsDone: () => void
+  setWeatherCity: (city: string) => void
 }
 
 interface LegacyState {
@@ -76,6 +78,7 @@ export const useSettingsStore = create<SettingsState>()(
       notifyTasks: true,
       appointmentReminderMinutes: 15,
       onboardingPermissionsDone: false,
+      weatherCity: 'Eneppetal',
       setMode: (mode) => set({ mode }),
       togglePinkAccent: () => set((s) => ({ pinkAccent: !s.pinkAccent })),
       setLanguage: (language) => {
@@ -93,10 +96,11 @@ export const useSettingsStore = create<SettingsState>()(
       setNotifyTasks: (v) => set({ notifyTasks: v }),
       setAppointmentReminderMinutes: (v) => set({ appointmentReminderMinutes: v }),
       setOnboardingPermissionsDone: () => set({ onboardingPermissionsDone: true }),
+      setWeatherCity: (city) => set({ weatherCity: city }),
     }),
     {
       name: 'flowdo-settings',
-      version: 7, // bumped: reset onboardingPermissionsDone so all users see location prompt again
+      version: 8, // bumped: add weatherCity, remove GPS, default Eneppetal
       migrate: (persisted, version) => {
         const legacy = persisted as LegacyState & Partial<SettingsState>
         if (version < 1) {
@@ -115,6 +119,7 @@ export const useSettingsStore = create<SettingsState>()(
           dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY },
           colorLabels: { ...DEFAULT_COLOR_LABELS, ...(legacy as any).colorLabels },
           onboardingPermissionsDone: false,
+          weatherCity: (legacy as any).weatherCity ?? 'Eneppetal',
         }
       },
       onRehydrateStorage: () => (state) => {

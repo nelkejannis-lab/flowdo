@@ -27,6 +27,58 @@ const FEATURE_ICONS: Record<FeatureKey, React.ReactNode> = {
 
 const SUPABASE_ONLY_FEATURES: FeatureKey[] = ['aiScheduler', 'chat', 'friends', 'social']
 
+function WeatherCitySettings() {
+  const weatherCity = useSettingsStore((s) => s.weatherCity)
+  const setWeatherCity = useSettingsStore((s) => s.setWeatherCity)
+  const [input, setInput] = useState(weatherCity)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  async function save() {
+    const city = input.trim()
+    if (!city || city === weatherCity) return
+    setSaving(true); setError(false); setSaved(false)
+    try {
+      const ctrl = new AbortController()
+      setTimeout(() => ctrl.abort(), 4000)
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1`, { signal: ctrl.signal })
+      const json = await res.json()
+      if (!json?.[0]) { setError(true); setSaving(false); return }
+    } catch { setError(true); setSaving(false); return }
+    setWeatherCity(city)
+    setSaving(false); setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  return (
+    <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+      <div className="mb-3 flex items-center gap-2">
+        <MapPin size={16} className="text-accent" />
+        <h2 className="text-sm font-semibold">Wetter-Standort / Weather location</h2>
+      </div>
+      <p className="mb-3 text-xs text-gray-400">Stadt für das Wetter-Widget auf dem Dashboard. Auch direkt im Widget änderbar. / City for the weather widget. Can also be changed directly in the widget.</p>
+      <div className="flex items-center gap-2">
+        <input
+          value={input}
+          onChange={(e) => { setInput(e.target.value); setError(false); setSaved(false) }}
+          onKeyDown={(e) => e.key === 'Enter' && save()}
+          placeholder="z.B. Eneppetal"
+          className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-transparent px-2 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+        />
+        <button
+          onClick={save}
+          disabled={saving || !input.trim() || input.trim() === weatherCity}
+          className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark disabled:opacity-50"
+        >
+          {saving ? '...' : saved ? '✓' : 'Speichern'}
+        </button>
+      </div>
+      {error && <p className="mt-1.5 text-xs text-red-400">Stadt nicht gefunden / City not found</p>}
+    </div>
+  )
+}
+
 export default function SettingsPage() {
   const { t, i18n } = useTranslation(['settings', 'common'])
   const language = useSettingsStore((s) => s.language)
@@ -46,19 +98,6 @@ export default function SettingsPage() {
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
     canNotify() ? Notification.permission : 'denied'
   )
-  const [locPermission, setLocPermission] = useState<PermissionState | 'unsupported'>(() => {
-    if (!navigator.geolocation) return 'unsupported'
-    return 'prompt'
-  })
-  const [requestingLoc, setRequestingLoc] = useState(false)
-
-  useEffect(() => {
-    if (!navigator.permissions) return
-    navigator.permissions.query({ name: 'geolocation' }).then((status) => {
-      setLocPermission(status.state)
-      status.onchange = () => setLocPermission(status.state)
-    }).catch(() => {})
-  }, [])
   const profile = useAuthStore((s) => s.profile)
   const user = useAuthStore((s) => s.user)
   const updateProfile = useAuthStore((s) => s.updateProfile)
@@ -518,52 +557,8 @@ export default function SettingsPage() {
             )}
           </div>
 
-          {/* Standort */}
-          <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-            <div className="mb-3 flex items-center gap-2">
-              <MapPin size={16} className="text-accent" />
-              <h2 className="text-sm font-semibold">Standort / Location</h2>
-            </div>
-            {locPermission === 'unsupported' ? (
-              <p className="text-xs text-gray-400">Dein Browser unterstützt keine Standortabfrage.</p>
-            ) : locPermission === 'granted' ? (
-              <div className="flex items-center gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-[#34c759]">Standort freigegeben</p>
-                  <p className="text-xs text-gray-400">Das Wetter-Widget nutzt deinen aktuellen Standort. / Location granted for weather.</p>
-                </div>
-                <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#34c759]/15">
-                  <MapPin size={16} className="text-[#34c759]" />
-                </span>
-              </div>
-            ) : locPermission === 'denied' ? (
-              <div className="flex flex-col gap-2">
-                <p className="text-xs text-gray-400">Standort wurde blockiert. Bitte erlaube den Standortzugriff direkt in den Browser-Einstellungen (Schloss-Symbol in der Adressleiste). / Location blocked — allow it via the lock icon in your browser's address bar.</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <p className="text-xs text-gray-400">Standort wird für das Wetter auf dem Dashboard benötigt. Keine Daten werden gespeichert. / Location is used for the weather widget. No data is stored.</p>
-                <button
-                  type="button"
-                  disabled={requestingLoc}
-                  onClick={async () => {
-                    setRequestingLoc(true)
-                    navigator.geolocation.getCurrentPosition(
-                      () => { setLocPermission('granted'); setRequestingLoc(false) },
-                      () => { setLocPermission('denied'); setRequestingLoc(false) },
-                      { timeout: 10000 }
-                    )
-                  }}
-                  className="flex items-center gap-2 self-start rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
-                >
-                  {requestingLoc
-                    ? <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    : <MapPin size={13} />}
-                  {requestingLoc ? 'Warte...' : 'Standort freigeben / Allow location'}
-                </button>
-              </div>
-            )}
-          </div>
+          {/* Wetter-Standort */}
+          <WeatherCitySettings />
         </div>
       )}
 
