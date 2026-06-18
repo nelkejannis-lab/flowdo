@@ -53,7 +53,7 @@ export default function Dashboard() {
   const [showForm, setShowForm] = useState(false)
   const [showEntries, setShowEntries] = useState(true)
   const [showWeekEntries, setShowWeekEntries] = useState(true)
-  const DEFAULT_WIDGET_ORDER = ['weather', 'workoffice', 'stats_week', 'stats_projects']
+  const DEFAULT_WIDGET_ORDER = ['weather', 'workoffice', 'stats_projects']
   const [widgetOrder, setWidgetOrder] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem('dashWidgetOrder') ?? 'null') ?? DEFAULT_WIDGET_ORDER } catch { return DEFAULT_WIDGET_ORDER }
   })
