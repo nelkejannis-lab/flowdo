@@ -62,7 +62,72 @@ export default function WorkWeekView() {
         </button>
       </div>
 
-      <div className="overflow-x-auto -mx-1">
+      {/* Mobile card layout */}
+      <div className="block sm:hidden divide-y divide-gray-100 dark:divide-racing-800">
+        {days.map((day) => {
+          const iso = toISODate(day)
+          const entry = entries[iso]
+          const target = dayTargetMinutes(day, settings)
+          const isLive = isRunning && iso === runningDate
+          const isSick = entry?.sickDay ?? false
+          const net = netMinutes(entry) + (isLive ? liveMinutes : 0)
+          const liveEndTime = isLive ? new Date().toTimeString().slice(0, 5) : null
+          const diff = net - target
+          return (
+            <div key={iso} className={`p-3 ${isToday(day) ? 'bg-accent/5' : ''}`}>
+              <div className="flex items-center justify-between mb-2">
+                <span className={`text-sm font-semibold ${isToday(day) ? 'text-accent' : ''}`}>
+                  {format(day, 'EEEE, d.MM.', { locale: dateLocale })}
+                </span>
+                {isSick ? (
+                  <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                    <Thermometer size={10} /> Krank
+                  </span>
+                ) : (
+                  <span className={`text-xs font-semibold ${diff > 0 ? 'text-emerald-500' : diff < 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                    {(entry || isLive) ? `${diff > 0 ? '+' : ''}${formatHM(diff)}` : '–'}
+                    {isLive && ' ●'}
+                  </span>
+                )}
+              </div>
+              {isSick ? (
+                <button onClick={() => unmarkSickDay(iso)} className="text-[11px] text-gray-400 hover:text-red-500 underline">zurückziehen</button>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <p className="text-[10px] text-gray-400 mb-0.5">{t('week.columns.from')}</p>
+                    <input type="time" value={entry?.startTime ?? ''} onChange={(e) => setDayTimes(iso, e.target.value, entry?.endTime ?? '')}
+                      className="w-full rounded border border-gray-200 bg-transparent px-1.5 py-1 text-sm focus:border-accent focus:outline-none dark:border-racing-700" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400 mb-0.5">{t('week.columns.to')}</p>
+                    {isLive
+                      ? <span className="block w-full px-1.5 py-1 text-sm font-medium text-accent animate-pulse">{liveEndTime} ●</span>
+                      : <input type="time" value={entry?.endTime ?? ''} onChange={(e) => setDayTimes(iso, entry?.startTime ?? '', e.target.value)}
+                          className="w-full rounded border border-gray-200 bg-transparent px-1.5 py-1 text-sm focus:border-accent focus:outline-none dark:border-racing-700" />
+                    }
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400 mb-0.5">{t('week.columns.break')} min</p>
+                    <input type="number" min={0} step={5} value={entry ? entry.breakMinutes : ''} placeholder={String(settings.defaultBreakMinutes)}
+                      onChange={(e) => setBreakMinutes(iso, Math.max(0, Number(e.target.value)))}
+                      className="w-full rounded border border-gray-200 bg-transparent px-1.5 py-1 text-sm focus:border-accent focus:outline-none dark:border-racing-700" />
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })}
+        <div className="flex items-center justify-between p-3 text-sm font-semibold">
+          <span>{t('week.total')}</span>
+          <span className={weekNet - weekTarget > 0 ? 'text-emerald-500' : weekNet - weekTarget < 0 ? 'text-red-500' : 'text-gray-400'}>
+            {formatHM(weekNet)} / {formatHM(weekTarget)}
+          </span>
+        </div>
+      </div>
+
+      {/* Desktop table layout */}
+      <div className="hidden sm:block overflow-x-auto -mx-1">
       <div className="grid grid-cols-[minmax(90px,1fr)_auto_auto_auto_auto_auto_auto] items-center gap-x-2 gap-y-1 p-3 text-sm min-w-[560px]">
         <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">{t('week.columns.day')}</div>
         <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">{t('week.columns.from')}</div>
@@ -175,7 +240,7 @@ export default function WorkWeekView() {
           {weekNet - weekTarget === 0 ? '–' : `${weekNet - weekTarget > 0 ? '+' : ''}${formatHM(weekNet - weekTarget)}`}
         </div>
       </div>
-      </div>{/* /overflow-x-auto */}
+      </div>{/* /hidden sm:block overflow-x-auto */}
     </div>
   )
 }

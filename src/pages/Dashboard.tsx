@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useSocialStore } from '../store/socialStore'
 import { differenceInCalendarDays, format, parseISO } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
-import { Plus, Clock, CalendarClock, Play, Square, Instagram, TrendingUp, Heart, Bookmark, Users } from 'lucide-react'
+import { Plus, CalendarClock, Instagram, TrendingUp, Heart, Bookmark, Users } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTasksStore } from '../store/tasksStore'
 import { useBoardsStore } from '../store/boardsStore'
@@ -17,13 +17,15 @@ import TaskList from '../components/tasks/TaskList'
 import TaskFormModal from '../components/tasks/TaskFormModal'
 import BoardCard from '../components/boards/BoardCard'
 import WeatherWidget from '../components/dashboard/WeatherWidget'
-import WorkTimeWidget from '../components/dashboard/WorkTimeWidget'
-import OfficeWidget from '../components/office/OfficeWidget'
+import WorkOfficeWidget from '../components/office/WorkOfficeWidget'
 import OfficePromptModal from '../components/office/OfficePromptModal'
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core'
+import { SortableContext, sortableKeyboardCoordinates, useSortable, horizontalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { GripHorizontal } from 'lucide-react'
 import OnboardingPermissions from '../components/dashboard/OnboardingPermissions'
 import { useSettingsStore } from '../store/settingsStore'
 import { isDueThisWeek, isDueToday, isOverdue, todayISO } from '../utils/date'
-import { formatHM, netMinutes } from '../utils/worktime'
 
 export default function Dashboard() {
   const { t, i18n } = useTranslation('dashboard')
@@ -36,10 +38,6 @@ export default function Dashboard() {
   const fetchMyProjectTasks = useProjectTasksStore((s) => s.fetchMyTasks)
   const workEntries = useWorkTimeStore((s) => s.entries)
   const fetchWorkTime = useWorkTimeStore((s) => s.fetchAll)
-  const isWorkTimeRunning = useWorkTimeStore((s) => s.isRunning)
-  const runningStartedAt = useWorkTimeStore((s) => s.runningStartedAt)
-  const clockIn = useWorkTimeStore((s) => s.clockIn)
-  const clockOut = useWorkTimeStore((s) => s.clockOut)
   const events = useEventsStore((s) => s.events)
   const fetchEvents = useEventsStore((s) => s.fetchAll)
   const calendarEntries = useCalendarEntriesStore((s) => s.entries)
@@ -55,6 +53,24 @@ export default function Dashboard() {
   const [showForm, setShowForm] = useState(false)
   const [showEntries, setShowEntries] = useState(true)
   const [showWeekEntries, setShowWeekEntries] = useState(true)
+  const DEFAULT_WIDGET_ORDER = ['weather', 'workoffice', 'stats_week', 'stats_projects']
+  const [widgetOrder, setWidgetOrder] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('dashWidgetOrder') ?? 'null') ?? DEFAULT_WIDGET_ORDER } catch { return DEFAULT_WIDGET_ORDER }
+  })
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+  function handleWidgetDragEnd(e: DragEndEvent) {
+    const { active, over } = e
+    if (over && active.id !== over.id) {
+      setWidgetOrder((prev) => {
+        const next = arrayMove(prev, prev.indexOf(String(active.id)), prev.indexOf(String(over.id)))
+        localStorage.setItem('dashWidgetOrder', JSON.stringify(next))
+        return next
+      })
+    }
+  }
 
   useEffect(() => {
     fetchBoards()
@@ -72,13 +88,6 @@ export default function Dashboard() {
     socialAccounts.forEach((a) => fetchSocialAccountData(a.id))
   }, [socialAccounts, fetchSocialAccountData])
 
-  const [, forceTick] = useState(0)
-  useEffect(() => {
-    if (!isWorkTimeRunning) return
-    const interval = setInterval(() => forceTick((n) => n + 1), 1000)
-    return () => clearInterval(interval)
-  }, [isWorkTimeRunning])
-
   const allTasks = [...tasks, ...myProjectTasks]
 
   function eisenhowerRank(t: { urgent: boolean; important: boolean; priority: string }): number {
@@ -95,8 +104,9 @@ export default function Dashboard() {
     )
   }
 
+  // "Diese Woche" = only future tasks this week, NOT overdue/today (those go in Heute)
   const weekTasks = sortByEisenhower(
-    allTasks.filter((t) => !t.completed && (isOverdue(t.dueDate) || isDueToday(t.dueDate) || isDueThisWeek(t.dueDate)))
+    allTasks.filter((t) => !t.completed && isDueThisWeek(t.dueDate) && !isDueToday(t.dueDate) && !isOverdue(t.dueDate))
   )
 
   const upcomingBoards = boards
@@ -138,10 +148,6 @@ export default function Dashboard() {
     .sort((a, b) => (a.date < b.date ? -1 : 1))
     .slice(0, 3)
 
-  const liveMinutes =
-    isWorkTimeRunning && runningStartedAt ? (Date.now() - new Date(runningStartedAt).getTime()) / 60000 : 0
-  const workedMinutesToday = netMinutes(workEntries[todayISO()]) + liveMinutes
-
   return (
     <div>
       <OfficePromptModal />
@@ -157,41 +163,7 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {((dashboardVisibility.stats ?? true) || (dashboardVisibility.weather ?? true)) && (
-        <div className={`mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4`}>
-          {(dashboardVisibility.weather ?? true) && <WeatherWidget />}
-          <WorkTimeWidget />
-          <OfficeWidget />
-          {(dashboardVisibility.stats ?? true) && <>
-            <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('stats.dueThisWeek')}</p>
-              <p className="mt-1 text-3xl font-bold">{weekTasks.length}</p>
-            </div>
-            <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('stats.activeProjects')}</p>
-              <p className="mt-1 text-3xl font-bold">{boards.length}</p>
-            </div>
-            <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-gray-400 flex items-center gap-1.5">
-                  <Clock size={14} className="text-accent" />
-                  {t('stats.workedToday')}
-                </p>
-                <p className="mt-1 text-3xl font-bold">{formatHM(workedMinutesToday)}</p>
-              </div>
-              <button
-                onClick={isWorkTimeRunning ? clockOut : clockIn}
-                className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-white shadow ${
-                  isWorkTimeRunning ? 'bg-red-500 hover:bg-red-600' : 'bg-accent hover:bg-accent-dark'
-                }`}
-                title={isWorkTimeRunning ? t('clockOut') : t('clockIn')}
-              >
-                {isWorkTimeRunning ? <Square size={16} /> : <Play size={18} className="ml-0.5" />}
-              </button>
-            </div>
-          </>}
-        </div>
-      )}
+      {/* Widget grid — rendered after task sections via CSS order */}
 
       {false && socialAccounts.length > 0 && (
         <div className="mb-6">
@@ -283,6 +255,39 @@ export default function Dashboard() {
           />
         </div>
       )}
+
+      {/* ── Drag & Drop Widget Grid ── */}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleWidgetDragEnd}>
+        <SortableContext items={widgetOrder} strategy={horizontalListSortingStrategy}>
+          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {widgetOrder.map((id) => {
+              if (id === 'weather' && (dashboardVisibility.weather ?? true)) return (
+                <SortableWidget key="weather" id="weather"><WeatherWidget /></SortableWidget>
+              )
+              if (id === 'workoffice') return (
+                <SortableWidget key="workoffice" id="workoffice"><WorkOfficeWidget /></SortableWidget>
+              )
+              if (id === 'stats_week' && (dashboardVisibility.stats ?? true)) return (
+                <SortableWidget key="stats_week" id="stats_week">
+                  <div className="flex flex-col justify-center rounded-xl border border-gray-100 bg-white p-4 h-full dark:border-racing-800 dark:bg-racing-900">
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('stats.dueThisWeek')}</p>
+                    <p className="mt-1 text-3xl font-bold">{weekTasks.length}</p>
+                  </div>
+                </SortableWidget>
+              )
+              if (id === 'stats_projects' && (dashboardVisibility.stats ?? true)) return (
+                <SortableWidget key="stats_projects" id="stats_projects">
+                  <div className="flex flex-col justify-center rounded-xl border border-gray-100 bg-white p-4 h-full dark:border-racing-800 dark:bg-racing-900">
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('stats.activeProjects')}</p>
+                    <p className="mt-1 text-3xl font-bold">{boards.length}</p>
+                  </div>
+                </SortableWidget>
+              )
+              return null
+            })}
+          </div>
+        </SortableContext>
+      </DndContext>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {dashboardVisibility.upcomingDeadlines !== false && <div>
@@ -397,6 +402,28 @@ export default function Dashboard() {
       {showForm && (
         <TaskFormModal defaultDueDate={todayISO()} onClose={() => setShowForm(false)} />
       )}
+    </div>
+  )
+}
+
+function SortableWidget({ id, children }: { id: string; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
+      className="relative group"
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="absolute right-2 top-2 z-10 cursor-grab rounded p-0.5 opacity-0 group-hover:opacity-40 hover:!opacity-80 active:cursor-grabbing touch-none"
+        title="Verschieben"
+        tabIndex={-1}
+      >
+        <GripHorizontal size={13} className="text-gray-500" />
+      </button>
+      {children}
     </div>
   )
 }

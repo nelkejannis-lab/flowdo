@@ -9,12 +9,20 @@ interface HourlyPoint {
   code: number
 }
 
+interface DailyPoint {
+  label: string // e.g. "Mo", "Di"
+  tempMax: number
+  tempMin: number
+  code: number
+}
+
 interface WeatherData {
   temp: number
   tempMax: number
   tempMin: number
   code: number
   hourly: HourlyPoint[]
+  daily: DailyPoint[]
 }
 
 interface Suggestion {
@@ -186,31 +194,46 @@ async function searchPlaces(query: string, signal: AbortSignal): Promise<Suggest
   return res.json()
 }
 
+const DAY_LABELS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
+
 async function fetchWeather(lat: number, lon: number): Promise<WeatherData | null> {
   try {
     const ctrl = new AbortController()
     setTimeout(() => ctrl.abort(), 6000)
     const res = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min&hourly=temperature_2m,weathercode&forecast_days=2&timezone=auto`,
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode_dominant&hourly=temperature_2m,weathercode&forecast_days=7&timezone=auto`,
       { signal: ctrl.signal }
     )
     const json = await res.json()
     const cw = json?.current_weather
     if (!cw) return null
 
-    // Build next 5 hourly points from current time
+    // Build next 6 hourly points from current time
     const nowHour = new Date().getHours()
     const times: string[] = json?.hourly?.time ?? []
     const temps: number[] = json?.hourly?.temperature_2m ?? []
     const codes: number[] = json?.hourly?.weathercode ?? []
     const hourly: HourlyPoint[] = []
-    for (let i = 0; i < times.length && hourly.length < 5; i++) {
-      const h = new Date(times[i]).getHours()
-      const dayOffset = new Date(times[i]).getDate() - new Date().getDate()
+    for (let i = 0; i < times.length && hourly.length < 6; i++) {
+      const t = new Date(times[i])
+      const h = t.getHours()
+      const dayOffset = t.getDate() - new Date().getDate()
       if (dayOffset === 0 && h <= nowHour) continue
       if (dayOffset < 0) continue
       hourly.push({ time: `${String(h).padStart(2, '0')}:00`, temp: Math.round(temps[i]), code: codes[i] })
     }
+
+    // Build 7-day daily forecast (skip today = index 0)
+    const dailyDates: string[] = json?.daily?.time ?? []
+    const dailyMax: number[] = json?.daily?.temperature_2m_max ?? []
+    const dailyMin: number[] = json?.daily?.temperature_2m_min ?? []
+    const dailyCodes: number[] = json?.daily?.weathercode_dominant ?? []
+    const daily: DailyPoint[] = dailyDates.slice(1, 7).map((dateStr, i) => ({
+      label: DAY_LABELS[new Date(dateStr).getDay()],
+      tempMax: Math.round(dailyMax[i + 1] ?? 0),
+      tempMin: Math.round(dailyMin[i + 1] ?? 0),
+      code: dailyCodes[i + 1] ?? 0,
+    }))
 
     return {
       temp: Math.round(cw.temperature),
@@ -218,6 +241,7 @@ async function fetchWeather(lat: number, lon: number): Promise<WeatherData | nul
       tempMin: Math.round(json?.daily?.temperature_2m_min?.[0] ?? cw.temperature),
       code: cw.weathercode,
       hourly,
+      daily,
     }
   } catch {
     return null
@@ -457,14 +481,31 @@ export default function WeatherWidget() {
                 </div>
 
                 {data.hourly.length > 0 && (
-                  <div className="mt-6 border-t border-white/20 pt-4">
+                  <div className="mt-5 border-t border-white/20 pt-4">
                     <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/60">Nächste Stunden</p>
                     <div className="flex justify-between">
                       {data.hourly.map((h, i) => (
-                        <div key={i} className="flex flex-col items-center gap-1.5">
-                          <span className="text-sm font-semibold">{h.temp}°</span>
+                        <div key={i} className="flex flex-col items-center gap-1">
+                          <span className="text-xs font-semibold">{h.temp}°</span>
                           <SmallWeatherIcon code={h.code} />
-                          <span className="text-[11px] text-white/60">{h.time}</span>
+                          <span className="text-[10px] text-white/60">{h.time}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {data.daily.length > 0 && (
+                  <div className="mt-4 border-t border-white/20 pt-4">
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/60">Nächste 6 Tage</p>
+                    <div className="space-y-1.5">
+                      {data.daily.map((d, i) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <span className="w-7 text-xs font-semibold text-white/80">{d.label}</span>
+                          <SmallWeatherIcon code={d.code} />
+                          <span className="flex-1 text-xs text-white/60">{weatherLabel(d.code)}</span>
+                          <span className="text-xs font-semibold">{d.tempMax}°</span>
+                          <span className="text-xs text-white/50">{d.tempMin}°</span>
                         </div>
                       ))}
                     </div>
