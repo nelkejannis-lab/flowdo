@@ -256,6 +256,35 @@ export default function Dashboard() {
         </div>
       )}
 
+      {dashboardVisibility.upcomingDeadlines !== false && (weekTasks.length > 0 || weekEntries.length > 0) && (
+        <div className="mb-6">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-semibold">{t('sections.dueThisWeek')}</h2>
+            <div className="flex items-center gap-3">
+              {weekEntries.length > 0 && (
+                <label className="flex cursor-pointer items-center gap-1.5 text-xs text-gray-400">
+                  <span>Termine</span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={showWeekEntries}
+                    onClick={() => setShowWeekEntries((v) => !v)}
+                    className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${showWeekEntries ? 'bg-[#34c759]' : 'bg-gray-200 dark:bg-racing-700'}`}
+                  >
+                    <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${showWeekEntries ? 'translate-x-5' : 'translate-x-0'}`} />
+                  </button>
+                </label>
+              )}
+              <Link to="/tasks/week" className="text-sm font-medium text-accent hover:underline">
+                {t('showAll')}
+              </Link>
+            </div>
+          </div>
+          {showWeekEntries && <CalendarEntriesBlock entries={weekEntries} label="Termine diese Woche" today={today} />}
+          <TaskList tasks={weekTasks} groupByDate emptyMessage={t('noTasksThisWeek')} />
+        </div>
+      )}
+
       {/* ── Drag & Drop Widget Grid ── */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleWidgetDragEnd}>
         <SortableContext items={widgetOrder} strategy={horizontalListSortingStrategy}>
@@ -314,33 +343,6 @@ export default function Dashboard() {
       </DndContext>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {dashboardVisibility.upcomingDeadlines !== false && <div>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">{t('sections.dueThisWeek')}</h2>
-            <div className="flex items-center gap-3">
-              {weekEntries.length > 0 && (
-                <label className="flex cursor-pointer items-center gap-1.5 text-xs text-gray-400">
-                  <span>Termine</span>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={showWeekEntries}
-                    onClick={() => setShowWeekEntries((v) => !v)}
-                    className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${showWeekEntries ? 'bg-[#34c759]' : 'bg-gray-200 dark:bg-racing-700'}`}
-                  >
-                    <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${showWeekEntries ? 'translate-x-5' : 'translate-x-0'}`} />
-                  </button>
-                </label>
-              )}
-              <Link to="/tasks/week" className="text-sm font-medium text-accent hover:underline">
-                {t('showAll')}
-              </Link>
-            </div>
-          </div>
-          {showWeekEntries && <CalendarEntriesBlock entries={weekEntries} label="Termine diese Woche" today={today} />}
-          <TaskList tasks={weekTasks} groupByDate emptyMessage={t('noTasksThisWeek')} />
-        </div>}
-
         <div className="flex flex-col gap-6">
           {dashboardVisibility.upcomingDeadlines && <div>
             <div className="mb-3 flex items-center justify-between">
