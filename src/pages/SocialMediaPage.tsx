@@ -23,6 +23,7 @@ export default function SocialMediaPage() {
   const { t } = useTranslation('social')
   const accounts = useSocialStore((s) => s.accounts)
   const metrics = useSocialStore((s) => s.metrics)
+  const posts = useSocialStore((s) => s.posts)
   const fetchAccounts = useSocialStore((s) => s.fetchAccounts)
   const fetchAccountData = useSocialStore((s) => s.fetchAccountData)
   const syncAccount = useSocialStore((s) => s.syncAccount)
@@ -88,6 +89,12 @@ export default function SocialMediaPage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {accounts.map((account) => {
             const latest = metrics[account.id]?.[metrics[account.id].length - 1]
+            const acctPosts = posts[account.id] ?? []
+            const postLikes = acctPosts.reduce((s, p) => s + (p.likeCount ?? 0), 0)
+            const postSaves = acctPosts.reduce((s, p) => s + (p.saved ?? 0), 0)
+            const displayLikes = latest?.likes ?? (acctPosts.length ? postLikes : null)
+            const displaySaves = latest?.saves ?? (acctPosts.length ? postSaves : null)
+            const fmt = (n: number | null | undefined) => n == null ? '–' : n >= 1000 ? (n / 1000).toFixed(1) + 'K' : String(n)
             return (
               <Link
                 key={account.id}
@@ -124,11 +131,11 @@ export default function SocialMediaPage() {
                   </div>
                   <div className="rounded-lg bg-gray-50 p-2 dark:bg-racing-800 text-center">
                     <p className="text-[10px] text-gray-400">Likes</p>
-                    <p className="text-sm font-bold">{latest?.likes ?? '–'}</p>
+                    <p className="text-sm font-bold">{fmt(displayLikes)}</p>
                   </div>
                   <div className="rounded-lg bg-gray-50 p-2 dark:bg-racing-800 text-center">
                     <p className="text-[10px] text-gray-400">Saves</p>
-                    <p className="text-sm font-bold">{latest?.saves ?? '–'}</p>
+                    <p className="text-sm font-bold">{fmt(displaySaves)}</p>
                   </div>
                 </div>
                 {account.biography && (
