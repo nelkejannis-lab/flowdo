@@ -269,18 +269,42 @@ export default function Dashboard() {
               )
               if (id === 'stats_week' && (dashboardVisibility.stats ?? true)) return (
                 <SortableWidget key="stats_week" id="stats_week">
-                  <div className="flex flex-col justify-center rounded-xl border border-gray-100 bg-white p-4 h-full dark:border-racing-800 dark:bg-racing-900">
-                    <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('stats.dueThisWeek')}</p>
-                    <p className="mt-1 text-3xl font-bold">{weekTasks.length}</p>
-                  </div>
+                  <Link to="/tasks/week" className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-white p-4 h-full hover:border-accent/30 hover:shadow-sm transition-all dark:border-racing-800 dark:bg-racing-900">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">{t('stats.dueThisWeek')}</span>
+                    <div className="flex items-end gap-2">
+                      <span className="text-4xl font-bold tabular-nums leading-none">{weekTasks.length}</span>
+                      <span className="mb-1 text-sm text-gray-400">Aufgaben</span>
+                    </div>
+                    <div className="mt-auto flex flex-col gap-1">
+                      {weekTasks.slice(0, 3).map((tk) => (
+                        <div key={tk.id} className="flex items-center gap-1.5 truncate text-xs text-gray-500">
+                          <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${tk.priority === 'high' ? 'bg-red-400' : tk.priority === 'medium' ? 'bg-amber-400' : 'bg-gray-300'}`} />
+                          <span className="truncate">{tk.title}</span>
+                        </div>
+                      ))}
+                      {weekTasks.length > 3 && <span className="text-[10px] text-gray-400">+{weekTasks.length - 3} weitere</span>}
+                    </div>
+                  </Link>
                 </SortableWidget>
               )
               if (id === 'stats_projects' && (dashboardVisibility.stats ?? true)) return (
                 <SortableWidget key="stats_projects" id="stats_projects">
-                  <div className="flex flex-col justify-center rounded-xl border border-gray-100 bg-white p-4 h-full dark:border-racing-800 dark:bg-racing-900">
-                    <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('stats.activeProjects')}</p>
-                    <p className="mt-1 text-3xl font-bold">{boards.length}</p>
-                  </div>
+                  <Link to="/projekte" className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-white p-4 h-full hover:border-accent/30 hover:shadow-sm transition-all dark:border-racing-800 dark:bg-racing-900">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">{t('stats.activeProjects')}</span>
+                    <div className="flex items-end gap-2">
+                      <span className="text-4xl font-bold tabular-nums leading-none">{boards.length}</span>
+                      <span className="mb-1 text-sm text-gray-400">Projekte</span>
+                    </div>
+                    <div className="mt-auto flex flex-col gap-1">
+                      {boards.slice(0, 3).map((b) => (
+                        <div key={b.id} className="flex items-center gap-1.5 truncate text-xs text-gray-500">
+                          <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: b.color ?? '#6366f1' }} />
+                          <span className="truncate">{b.title}</span>
+                        </div>
+                      ))}
+                      {boards.length > 3 && <span className="text-[10px] text-gray-400">+{boards.length - 3} weitere</span>}
+                    </div>
+                  </Link>
                 </SortableWidget>
               )
               return null
@@ -412,7 +436,7 @@ function SortableWidget({ id, children }: { id: string; children: React.ReactNod
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
-      className="relative group"
+      className="relative group flex flex-col"
     >
       <button
         {...attributes}

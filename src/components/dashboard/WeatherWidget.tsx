@@ -201,7 +201,7 @@ async function fetchWeather(lat: number, lon: number): Promise<WeatherData | nul
     const ctrl = new AbortController()
     setTimeout(() => ctrl.abort(), 6000)
     const res = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode_dominant&hourly=temperature_2m,weathercode&forecast_days=7&timezone=auto`,
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&hourly=temperature_2m,weathercode&forecast_days=7&timezone=auto`,
       { signal: ctrl.signal }
     )
     const json = await res.json()
@@ -227,7 +227,7 @@ async function fetchWeather(lat: number, lon: number): Promise<WeatherData | nul
     const dailyDates: string[] = json?.daily?.time ?? []
     const dailyMax: number[] = json?.daily?.temperature_2m_max ?? []
     const dailyMin: number[] = json?.daily?.temperature_2m_min ?? []
-    const dailyCodes: number[] = json?.daily?.weathercode_dominant ?? []
+    const dailyCodes: number[] = json?.daily?.weathercode ?? []
     const daily: DailyPoint[] = dailyDates.slice(1, 7).map((dateStr, i) => ({
       label: DAY_LABELS[new Date(dateStr).getDay()],
       tempMax: Math.round(dailyMax[i + 1] ?? 0),
