@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Home, Building2, Play, Square, Users, ChevronDown, ChevronUp } from 'lucide-react'
 import { useWorkTimeStore } from '../../store/workTimeStore'
 import { useOfficeStore } from '../../store/officeStore'
+import BadgeChip from '../ui/BadgeChip'
 import { todayISO } from '../../utils/date'
 import { dayTargetMinutes, formatHM, netMinutes } from '../../utils/worktime'
 
@@ -167,7 +168,7 @@ export default function WorkOfficeWidget() {
   )
 }
 
-function ColleagueChip({ entry, color }: { entry: { id: string; displayName?: string; avatarUrl?: string }; color: 'indigo' | 'blue' }) {
+function ColleagueChip({ entry, color }: { entry: { id: string; displayName?: string; avatarUrl?: string; badge?: string | null }; color: 'indigo' | 'blue' }) {
   const bg = color === 'indigo' ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'bg-blue-50 dark:bg-blue-900/20'
   const text = color === 'indigo' ? 'text-indigo-700 dark:text-indigo-300' : 'text-blue-700 dark:text-blue-300'
   return (
@@ -177,6 +178,7 @@ function ColleagueChip({ entry, color }: { entry: { id: string; displayName?: st
         : <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-current/20 text-[8px] font-bold">{(entry.displayName ?? '?')[0].toUpperCase()}</span>
       }
       {entry.displayName}
+      {entry.badge && <BadgeChip badge={entry.badge} size="xs" />}
     </span>
   )
 }

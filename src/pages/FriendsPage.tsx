@@ -4,11 +4,25 @@ import { useTranslation } from 'react-i18next'
 import { useFriendsStore } from '../store/friendsStore'
 import { useTeamsStore } from '../store/teamsStore'
 import { useTeamInvitesStore } from '../store/teamInvitesStore'
+import { useAuthStore } from '../store/authStore'
 import type { Profile } from '../store/authStore'
 import UserAvatar from '../components/shared/UserAvatar'
+import BadgeChip from '../components/ui/BadgeChip'
 
 export default function FriendsPage() {
   const { t } = useTranslation(['friends', 'common'])
+  const profile = useAuthStore((s) => s.profile)
+  const setBadgeForUser = useAuthStore((s) => s.setBadgeForUser)
+  const isAdmin = profile?.is_admin ?? false
+  const [editingBadgeId, setEditingBadgeId] = useState<string | null>(null)
+  const [badgeInput, setBadgeInput] = useState('')
+
+  async function saveBadge(userId: string) {
+    await setBadgeForUser(userId, badgeInput.trim() || null)
+    setEditingBadgeId(null)
+    await fetchAll()
+  }
+
   const {
     friends,
     incoming,
@@ -211,8 +225,33 @@ export default function FriendsPage() {
               >
                 <UserAvatar name={f.profile.display_name} color={f.profile.avatar_color} avatarUrl={(f.profile as any).avatar_url} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{f.profile.display_name}</p>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <p className="truncate text-sm font-medium">{f.profile.display_name}</p>
+                    <BadgeChip badge={(f.profile as any).badge} size="xs" />
+                  </div>
                   <p className="truncate text-xs text-gray-400">@{f.profile.username}</p>
+                  {/* Admin badge editor */}
+                  {isAdmin && editingBadgeId === f.profile.id ? (
+                    <div className="mt-1.5 flex items-center gap-1">
+                      <input
+                        autoFocus
+                        value={badgeInput}
+                        onChange={(e) => setBadgeInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') saveBadge(f.profile.id); if (e.key === 'Escape') setEditingBadgeId(null) }}
+                        placeholder="Badge-Titel..."
+                        className="flex-1 rounded border border-gray-200 bg-transparent px-1.5 py-0.5 text-xs focus:border-accent focus:outline-none dark:border-racing-700"
+                      />
+                      <button onClick={() => saveBadge(f.profile.id)} className="text-emerald-500 hover:text-emerald-600"><Check size={13} /></button>
+                      <button onClick={() => setEditingBadgeId(null)} className="text-gray-400 hover:text-red-500"><X size={13} /></button>
+                    </div>
+                  ) : isAdmin ? (
+                    <button
+                      onClick={() => { setEditingBadgeId(f.profile.id); setBadgeInput((f.profile as any).badge ?? '') }}
+                      className="mt-0.5 flex items-center gap-0.5 text-[10px] text-gray-400 hover:text-accent"
+                    >
+                      <Pencil size={9} /> Badge vergeben
+                    </button>
+                  ) : null}
                 </div>
                 <button
                   onClick={() => removeFriend(f.id)}

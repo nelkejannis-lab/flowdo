@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bot, Image, Mic, MicOff, Send, Sparkles, X, Calendar, CheckSquare, ArrowRight, UserPlus, Users } from 'lucide-react'
+import { Bot, Image, Mic, MicOff, Send, Sparkles, X, Calendar, CheckSquare, ArrowRight, Users } from 'lucide-react'
+import BadgeChip from '../ui/BadgeChip'
 import { supabase } from '../../lib/supabase'
 import { useCalendarEntriesStore } from '../../store/calendarEntriesStore'
 import { useTasksStore } from '../../store/tasksStore'
@@ -484,6 +485,7 @@ export default function AiChatPanel() {
                                           : <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-current/20 text-[8px]">{(f.profile.display_name ?? '?')[0]}</span>
                                         }
                                         {f.profile.display_name ?? f.profile.username}
+                                        {f.profile.badge && <BadgeChip badge={f.profile.badge} size="xs" />}
                                       </button>
                                     )
                                   })}

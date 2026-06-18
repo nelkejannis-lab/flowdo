@@ -12,6 +12,7 @@ export interface Profile {
   is_admin?: boolean
   job_title?: string | null
   work_location?: string | null
+  badge?: string | null
   created_at: string
 }
 
@@ -23,6 +24,7 @@ interface ProfileUpdate {
   birthday?: string | null
   job_title?: string | null
   work_location?: string | null
+  badge?: string | null
 }
 
 interface AuthState {
@@ -40,6 +42,7 @@ interface AuthState {
   requestPasswordReset: (email: string) => Promise<string | null>
   exportUserData: () => Promise<string | null>
   deleteAccount: () => Promise<string | null>
+  setBadgeForUser: (userId: string, badge: string | null) => Promise<string | null>
 }
 
 export const useAuthStore = create<AuthState>()((set, get) => ({
@@ -154,6 +157,11 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     a.click()
     URL.revokeObjectURL(url)
     return null
+  },
+
+  setBadgeForUser: async (userId, badge) => {
+    const { error } = await supabase.from('profiles').update({ badge }).eq('id', userId)
+    return error?.message ?? null
   },
 
   deleteAccount: async () => {

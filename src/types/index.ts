@@ -196,6 +196,7 @@ export interface CalendarEntryInvitee {
   username: string
   display_name: string
   avatar_color: string
+  badge?: string | null
 }
 
 export interface CalendarEntry {

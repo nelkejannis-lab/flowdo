@@ -12,6 +12,7 @@ export interface OfficeEntry {
   note?: string
   displayName?: string
   avatarUrl?: string
+  badge?: string | null
 }
 
 interface OfficeStore {
@@ -49,7 +50,7 @@ export const useOfficeStore = create<OfficeStore>((set, get) => ({
     const userIds = [...new Set(data.map((r) => r.user_id))]
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, display_name, avatar_url')
+      .select('id, display_name, avatar_url, badge')
       .in('id', userIds)
 
     const profileMap = new Map(profiles?.map((p) => [p.id, p]) ?? [])
@@ -62,6 +63,7 @@ export const useOfficeStore = create<OfficeStore>((set, get) => ({
       note: r.note ?? undefined,
       displayName: profileMap.get(r.user_id)?.display_name ?? 'Unbekannt',
       avatarUrl: profileMap.get(r.user_id)?.avatar_url ?? undefined,
+      badge: profileMap.get(r.user_id)?.badge ?? null,
     }))
 
     const own = entries.find((e) => e.userId === user.id) ?? null
