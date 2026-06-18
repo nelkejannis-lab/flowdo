@@ -63,7 +63,7 @@ WICHTIGE REGELN:
 - Datumsbereiche wie "10. Aug - 1. Sep" → date: "2025-08-10", endDate: "2025-09-01"
 - Wenn ein Eintrag einen festen Termin hat → create_event, sonst → create_task mit dueDate
 - Bei vielen Einträgen (10+): alle trotzdem vollständig extrahieren
-- Wenn kein Jahr erkennbar ist: aktuelles Jahr (2025) annehmen
+- Wenn kein Jahr erkennbar ist: aktuelles Jahr (${new Date().getFullYear()}) annehmen
 - Antworte NUR mit JSON, kein Markdown, keine Erklärungen außerhalb des JSON`
 
 export default function AiChatPanel() {
@@ -209,7 +209,7 @@ export default function AiChatPanel() {
     const updatedActions = [...msg.actions]
     for (let i = 0; i < updatedActions.length; i++) {
       const result = await executeAction(updatedActions[i])
-      updatedActions[i] = { ...updatedActions[i], status: result.status }
+      updatedActions[i] = { ...updatedActions[i], status: result.status, ...(result.error ? { errorMsg: result.error } : {}) } as Action & { errorMsg?: string }
       setMessages((prev) => {
         const next = [...prev]
         next[msgIdx] = { ...next[msgIdx], actions: [...updatedActions], awaitingConfirm: false }
@@ -505,6 +505,7 @@ export default function AiChatPanel() {
                       {m.actions.map((a, j) => (
                         <span
                           key={j}
+                          title={(a as any).errorMsg ?? undefined}
                           className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium ${
                             a.status === 'done'
                               ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
@@ -515,6 +516,9 @@ export default function AiChatPanel() {
                         >
                           {a.status === 'done' ? '✓' : a.status === 'error' ? '✗' : (iconFor[a.type] ?? <CheckSquare size={11} />)}
                           {a.label}
+                          {a.status === 'error' && (a as any).errorMsg && (
+                            <span className="ml-1 opacity-70">— {(a as any).errorMsg}</span>
+                          )}
                         </span>
                       ))}
                     </div>
