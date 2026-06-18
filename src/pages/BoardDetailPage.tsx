@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { DndContext, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
-import { ArrowLeft, Building2, Globe, MessageSquare, Pencil, Plus, UserPlus, Users, X } from 'lucide-react'
+import { ArrowLeft, Building2, Check, ChevronDown, ChevronRight, Globe, MessageSquare, Pencil, Plus, UserPlus, Users, X } from 'lucide-react'
 import { useBoardsStore } from '../store/boardsStore'
 import { useBoardInvitesStore } from '../store/boardInvitesStore'
 import { useProjectTasksStore } from '../store/projectTasksStore'
@@ -40,9 +40,16 @@ export default function BoardDetailPage() {
   const fetchFriends = useFriendsStore((s) => s.fetchAll)
   const currentUserId = useAuthStore((s) => s.user?.id)
 
+  const addTask = useProjectTasksStore((s) => s.addTask)
+  const updateTask = useProjectTasksStore((s) => s.updateTask)
+  const deleteTask = useProjectTasksStore((s) => s.deleteTask)
+  const toggleTaskCompleted = useProjectTasksStore((s) => s.toggleTaskCompleted)
+
   const [editingBoard, setEditingBoard] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [newTaskColumnId, setNewTaskColumnId] = useState<string | null>(null)
+  const [todoInput, setTodoInput] = useState('')
+  const [todosOpen, setTodosOpen] = useState(true)
   const [showMembers, setShowMembers] = useState(false)
   const [memberError, setMemberError] = useState<string | null>(null)
   const [invitedIds, setInvitedIds] = useState<string[]>([])
@@ -350,6 +357,105 @@ export default function BoardDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Project Todos — tasks with no dueDate and no column (project-internal) */}
+      {(() => {
+        const todos = tasks.filter((t) => t.boardId === boardId && !t.dueDate && !t.columnId)
+        const openTodos = todos.filter((t) => !t.completed)
+        const doneTodos = todos.filter((t) => t.completed)
+        return (
+          <div className="mt-6 rounded-xl border border-gray-100 bg-white dark:border-racing-800 dark:bg-racing-900">
+            <button
+              onClick={() => setTodosOpen((o) => !o)}
+              className="flex w-full items-center justify-between p-4"
+            >
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <Check size={15} className="text-accent" />
+                Projekt-Todos
+                {openTodos.length > 0 && (
+                  <span className="rounded-full bg-accent/10 px-2 text-xs font-medium text-accent">{openTodos.length}</span>
+                )}
+              </span>
+              {todosOpen ? <ChevronDown size={16} className="text-gray-400" /> : <ChevronRight size={16} className="text-gray-400" />}
+            </button>
+
+            {todosOpen && (
+              <div className="border-t border-gray-100 p-4 dark:border-racing-800">
+                {/* Quick add */}
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault()
+                    if (!todoInput.trim() || !boardId) return
+                    await addTask({ title: todoInput.trim(), boardId, columnId: undefined, priority: 'medium', urgent: false, important: false })
+                    setTodoInput('')
+                  }}
+                  className="mb-3 flex items-center gap-2"
+                >
+                  <input
+                    value={todoInput}
+                    onChange={(e) => setTodoInput(e.target.value)}
+                    placeholder="Todo hinzufügen…"
+                    className="flex-1 rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!todoInput.trim()}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-white hover:bg-accent-dark disabled:opacity-40"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </form>
+
+                {/* Open todos */}
+                <div className="flex flex-col gap-1">
+                  {openTodos.map((todo) => (
+                    <div key={todo.id} className="group flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-racing-800">
+                      <button
+                        onClick={() => toggleTaskCompleted(todo.id)}
+                        className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 border-gray-300 hover:border-accent dark:border-racing-600"
+                      />
+                      <span className="flex-1 text-sm">{todo.title}</span>
+                      <button
+                        onClick={() => deleteTask(todo.id)}
+                        className="hidden text-gray-300 hover:text-red-500 group-hover:flex"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                  {openTodos.length === 0 && doneTodos.length === 0 && (
+                    <p className="py-2 text-center text-xs text-gray-400">Keine Todos. Füge oben einen hinzu.</p>
+                  )}
+                </div>
+
+                {/* Done todos */}
+                {doneTodos.length > 0 && (
+                  <div className="mt-2 border-t border-gray-100 pt-2 dark:border-racing-800">
+                    <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Erledigt ({doneTodos.length})</p>
+                    {doneTodos.map((todo) => (
+                      <div key={todo.id} className="group flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-gray-50 dark:hover:bg-racing-800">
+                        <button
+                          onClick={() => toggleTaskCompleted(todo.id)}
+                          className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 border-accent bg-accent text-white"
+                        >
+                          <Check size={10} />
+                        </button>
+                        <span className="flex-1 text-sm text-gray-400 line-through">{todo.title}</span>
+                        <button
+                          onClick={() => deleteTask(todo.id)}
+                          className="hidden text-gray-300 hover:text-red-500 group-hover:flex"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )
+      })()}
 
       {editingBoard && <BoardFormModal board={board} onClose={() => setEditingBoard(false)} />}
       {editingTask && <ProjectTaskFormModal board={board} task={editingTask} onClose={() => setEditingTask(null)} />}

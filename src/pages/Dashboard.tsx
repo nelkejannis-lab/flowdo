@@ -17,6 +17,7 @@ import TaskList from '../components/tasks/TaskList'
 import TaskFormModal from '../components/tasks/TaskFormModal'
 import BoardCard from '../components/boards/BoardCard'
 import WeatherWidget from '../components/dashboard/WeatherWidget'
+import WorkTimeWidget from '../components/dashboard/WorkTimeWidget'
 import OnboardingPermissions from '../components/dashboard/OnboardingPermissions'
 import { useSettingsStore } from '../store/settingsStore'
 import { isDueThisWeek, isDueToday, isOverdue, todayISO } from '../utils/date'
@@ -154,8 +155,9 @@ export default function Dashboard() {
       </div>
 
       {((dashboardVisibility.stats ?? true) || (dashboardVisibility.weather ?? true)) && (
-        <div className={`mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 ${(dashboardVisibility.weather ?? true) && (dashboardVisibility.stats ?? true) ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
+        <div className={`mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4`}>
           {(dashboardVisibility.weather ?? true) && <WeatherWidget />}
+          <WorkTimeWidget />
           {(dashboardVisibility.stats ?? true) && <>
             <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
               <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('stats.dueThisWeek')}</p>

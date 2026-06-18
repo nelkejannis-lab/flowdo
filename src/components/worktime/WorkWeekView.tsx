@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState } from 'react'
 import { addDays, addWeeks, eachDayOfInterval, format, isToday, startOfWeek } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
 import { useTranslation } from 'react-i18next'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Thermometer } from 'lucide-react'
 import { useWorkTimeStore } from '../../store/workTimeStore'
 import { toISODate } from '../../utils/date'
 import { dayTargetMinutes, formatHM, netMinutes } from '../../utils/worktime'
@@ -15,6 +15,8 @@ export default function WorkWeekView() {
   const settings = useWorkTimeStore((s) => s.settings)
   const setBreakMinutes = useWorkTimeStore((s) => s.setBreakMinutes)
   const setDayTimes = useWorkTimeStore((s) => s.setDayTimes)
+  const markSickDay = useWorkTimeStore((s) => s.markSickDay)
+  const unmarkSickDay = useWorkTimeStore((s) => s.unmarkSickDay)
   const isRunning = useWorkTimeStore((s) => s.isRunning)
   const runningStartedAt = useWorkTimeStore((s) => s.runningStartedAt)
   const runningDate = useWorkTimeStore((s) => s.runningDate)
@@ -75,14 +77,38 @@ export default function WorkWeekView() {
           const entry = entries[iso]
           const target = dayTargetMinutes(day, settings)
           const isLive = isRunning && iso === runningDate
+          const isSick = entry?.sickDay ?? false
           const net = netMinutes(entry) + (isLive ? liveMinutes : 0)
           const liveEndTime = isLive ? new Date().toTimeString().slice(0, 5) : null
           const diff = net - target
+
+          if (isSick) {
+            return (
+              <Fragment key={iso}>
+                <div className={`flex items-center gap-2 py-1 ${isToday(day) ? 'font-semibold text-accent' : ''}`}>
+                  {format(day, 'EEEE, d.MM.', { locale: dateLocale })}
+                </div>
+                <div className="col-span-4 flex items-center gap-1.5 py-1">
+                  <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                    <Thermometer size={11} /> Krank
+                  </span>
+                  <button onClick={() => unmarkSickDay(iso)} className="text-[10px] text-gray-400 hover:text-red-500 underline">zurückziehen</button>
+                </div>
+                <div className="flex items-center justify-end py-1 text-gray-400">{formatHM(target)}</div>
+                <div className="flex items-center justify-end py-1 font-medium text-emerald-500">±0:00</div>
+              </Fragment>
+            )
+          }
 
           return (
             <Fragment key={iso}>
               <div className={`flex items-center gap-2 py-1 ${isToday(day) ? 'font-semibold text-accent' : ''}`}>
                 {format(day, 'EEEE, d.MM.', { locale: dateLocale })}
+                {target > 0 && !entry && (
+                  <button onClick={() => markSickDay(iso)} className="ml-auto text-[10px] text-gray-300 hover:text-amber-500" title="Als krank melden">
+                    <Thermometer size={12} />
+                  </button>
+                )}
               </div>
               <div className="flex items-center justify-end py-1">
                 <input

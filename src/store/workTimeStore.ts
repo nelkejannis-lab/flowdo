@@ -43,6 +43,7 @@ interface WorkTimeEntryRow {
   break_minutes: number
   start_time: string | null
   end_time: string | null
+  sick_day: boolean | null
 }
 
 interface WorkTimeState {
@@ -67,6 +68,8 @@ interface WorkTimeState {
   addWorkProfile: (profile: Omit<WorkProfile, 'id'>) => void
   deleteWorkProfile: (id: string) => void
   applyWorkProfile: (id: string) => void
+  markSickDay: (date: string) => void
+  unmarkSickDay: (date: string) => void
   incrementSettledWeekendDays: () => void
   decrementSettledWeekendDays: () => void
   incrementManualCompDays: () => void
@@ -95,6 +98,7 @@ async function syncEntry(entry: WorkDayEntry) {
     break_minutes: entry.breakMinutes,
     start_time: entry.startTime ?? null,
     end_time: entry.endTime ?? null,
+    sick_day: entry.sickDay ?? false,
     updated_at: new Date().toISOString(),
   })
 }
@@ -174,6 +178,7 @@ export const useWorkTimeStore = create<WorkTimeState>()(
             breakMinutes: row.break_minutes,
             startTime: row.start_time ?? undefined,
             endTime: row.end_time ?? undefined,
+            sickDay: row.sick_day ?? false,
           }
         }
 
@@ -332,6 +337,27 @@ export const useWorkTimeStore = create<WorkTimeState>()(
         }
         set({ activeProfileId: id, settings })
         void syncSettings(settings, get().settledWeekendDays, get().workProfiles, id)
+      },
+      markSickDay: (date) => {
+        const state = get()
+        const entry = ensureEntry(state.entries, date, state.settings.defaultBreakMinutes)
+        const target = (() => {
+          const d = new Date(date + 'T12:00:00')
+          const dow = d.getDay()
+          if (dow === 0 || dow === 6) return 0
+          if (dow === 5) return Math.round((state.settings.fridayHours ?? state.settings.weeklyHours / state.settings.workDaysPerWeek) * 60)
+          return Math.round((state.settings.weekdayHours ?? state.settings.weeklyHours / state.settings.workDaysPerWeek) * 60)
+        })()
+        const updated = { ...entry, sickDay: true, workedMinutes: target, breakMinutes: 0, startTime: undefined, endTime: undefined }
+        set({ entries: { ...state.entries, [date]: updated } })
+        void syncEntry(updated)
+      },
+      unmarkSickDay: (date) => {
+        const state = get()
+        const entry = ensureEntry(state.entries, date, state.settings.defaultBreakMinutes)
+        const updated = { ...entry, sickDay: false, workedMinutes: 0 }
+        set({ entries: { ...state.entries, [date]: updated } })
+        void syncEntry(updated)
       },
       incrementManualCompDays: () => set((s) => ({ manualCompDays: s.manualCompDays + 1 })),
       takeCompDay: () => set((s) => ({ takenCompDays: s.takenCompDays + 1 })),

@@ -158,6 +158,7 @@ export interface WorkDayEntry {
   breakMinutes: number
   startTime?: string // HH:mm
   endTime?: string // HH:mm
+  sickDay?: boolean // true = krank, zählt als Soll-Zeit, kein Tracking
 }
 
 export interface WorkTimeSettings {

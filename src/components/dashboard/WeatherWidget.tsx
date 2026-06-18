@@ -3,11 +3,18 @@ import { createPortal } from 'react-dom'
 import { MapPin, X } from 'lucide-react'
 import { useSettingsStore } from '../../store/settingsStore'
 
+interface HourlyPoint {
+  time: string // HH:MM
+  temp: number
+  code: number
+}
+
 interface WeatherData {
   temp: number
   tempMax: number
   tempMin: number
   code: number
+  hourly: HourlyPoint[]
 }
 
 interface Suggestion {
@@ -184,21 +191,46 @@ async function fetchWeather(lat: number, lon: number): Promise<WeatherData | nul
     const ctrl = new AbortController()
     setTimeout(() => ctrl.abort(), 6000)
     const res = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min&timezone=auto`,
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min&hourly=temperature_2m,weathercode&forecast_days=2&timezone=auto`,
       { signal: ctrl.signal }
     )
     const json = await res.json()
     const cw = json?.current_weather
     if (!cw) return null
+
+    // Build next 5 hourly points from current time
+    const nowHour = new Date().getHours()
+    const times: string[] = json?.hourly?.time ?? []
+    const temps: number[] = json?.hourly?.temperature_2m ?? []
+    const codes: number[] = json?.hourly?.weathercode ?? []
+    const hourly: HourlyPoint[] = []
+    for (let i = 0; i < times.length && hourly.length < 5; i++) {
+      const h = new Date(times[i]).getHours()
+      const dayOffset = new Date(times[i]).getDate() - new Date().getDate()
+      if (dayOffset === 0 && h <= nowHour) continue
+      if (dayOffset < 0) continue
+      hourly.push({ time: `${String(h).padStart(2, '0')}:00`, temp: Math.round(temps[i]), code: codes[i] })
+    }
+
     return {
       temp: Math.round(cw.temperature),
       tempMax: Math.round(json?.daily?.temperature_2m_max?.[0] ?? cw.temperature),
       tempMin: Math.round(json?.daily?.temperature_2m_min?.[0] ?? cw.temperature),
       code: cw.weathercode,
+      hourly,
     }
   } catch {
     return null
   }
+}
+
+// Small inline icon for hourly forecast
+function SmallWeatherIcon({ code }: { code: number }) {
+  const color = code === 0 ? '#FFD93D' : code <= 2 ? '#FFD93D' : code <= 3 ? '#9CA3AF' : code <= 49 ? '#9CA3AF' : '#60A5FA'
+  if (code === 0) return <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4" fill={color}/>{[0,45,90,135,180,225,270,315].map((d,i)=><line key={i} x1={8+5*Math.cos(d*Math.PI/180)} y1={8+5*Math.sin(d*Math.PI/180)} x2={8+7*Math.cos(d*Math.PI/180)} y2={8+7*Math.sin(d*Math.PI/180)} stroke={color} strokeWidth="1.5" strokeLinecap="round"/>)}</svg>
+  if (code <= 2) return <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="6" cy="6" r="3" fill="#FFD93D"/><ellipse cx="9" cy="10" rx="5" ry="3" fill="white" opacity="0.9"/><circle cx="6" cy="9" rx="3" ry="3" fill="white" opacity="0.9"/></svg>
+  if (code <= 67) return <svg width="16" height="16" viewBox="0 0 16 16"><ellipse cx="8" cy="7" rx="6" ry="4" fill="#9CA3AF"/>{code > 49 && <><line x1="5" y1="12" x2="4" y2="15" stroke="#60A5FA" strokeWidth="1.5" strokeLinecap="round"/><line x1="9" y1="12" x2="8" y2="15" stroke="#60A5FA" strokeWidth="1.5" strokeLinecap="round"/></>}</svg>
+  return <svg width="16" height="16" viewBox="0 0 16 16"><ellipse cx="8" cy="7" rx="6" ry="4" fill="#9CA3AF"/></svg>
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -211,6 +243,7 @@ export default function WeatherWidget() {
 
   const [data, setData] = useState<WeatherData | null>(null)
   const [editing, setEditing] = useState(false)
+  const [showDetail, setShowDetail] = useState(false)
   const [input, setInput] = useState('')
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [searching, setSearching] = useState(false)
@@ -341,39 +374,107 @@ export default function WeatherWidget() {
   const gradient = data ? gradientFor(data.code) : 'from-[#7B8FA8] to-[#A8B8C8]'
 
   return (
-    <button
-      onClick={startEdit}
-      className={`group relative overflow-hidden rounded-xl bg-gradient-to-br ${gradient} p-4 text-left text-white transition-all hover:brightness-105 active:brightness-95`}
-      title="Klicken um Ort zu ändern"
-    >
-      {/* City + icon row */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-1 text-[11px] font-medium text-white/70">
-          <MapPin size={10} />
-          <span className="truncate max-w-[90px]">{weatherCity}</span>
+    <>
+      <button
+        onClick={() => setShowDetail(true)}
+        className={`group relative overflow-hidden rounded-xl bg-gradient-to-br ${gradient} p-4 text-left text-white transition-all hover:brightness-105 active:brightness-95`}
+        title="Klicken für Details"
+      >
+        {/* City + icon row */}
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-1 text-[11px] font-medium text-white/70">
+            <MapPin size={10} />
+            <span className="truncate max-w-[90px]">{weatherCity}</span>
+          </div>
+          <div className="absolute right-3 top-2 opacity-90 drop-shadow-sm">
+            {data ? <WeatherIcon code={data.code} /> : null}
+          </div>
         </div>
-        <div className="absolute right-3 top-2 opacity-90 drop-shadow-sm">
-          {data ? <WeatherIcon code={data.code} /> : null}
-        </div>
-      </div>
 
-      {/* Temperature */}
-      {data ? (
-        <>
-          <div className="mt-7">
-            <span className="text-4xl font-semibold tabular-nums leading-none drop-shadow">{data.temp}°</span>
+        {/* Temperature */}
+        {data ? (
+          <>
+            <div className="mt-7">
+              <span className="text-4xl font-semibold tabular-nums leading-none drop-shadow">{data.temp}°</span>
+            </div>
+            <div className="mt-1 flex items-end justify-between">
+              <span className="text-xs font-medium text-white/80">{weatherLabel(data.code)}</span>
+              <span className="text-[11px] font-medium text-white/70">H:{data.tempMax}° L:{data.tempMin}°</span>
+            </div>
+            {/* 5h hourly forecast bar */}
+            {data.hourly.length > 0 && (
+              <div className="mt-3 flex items-end justify-between border-t border-white/20 pt-2">
+                {data.hourly.map((h, i) => (
+                  <div key={i} className="flex flex-col items-center gap-0.5">
+                    <span className="text-[10px] font-semibold text-white/90">{h.temp}°</span>
+                    <SmallWeatherIcon code={h.code} />
+                    <span className="text-[9px] text-white/60">{h.time}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="mt-7 flex flex-col gap-2">
+            <div className="h-9 w-14 animate-pulse rounded bg-white/20" />
+            <div className="h-3 w-20 animate-pulse rounded bg-white/20" />
           </div>
-          <div className="mt-1 flex items-end justify-between">
-            <span className="text-xs font-medium text-white/80">{weatherLabel(data.code)}</span>
-            <span className="text-[11px] font-medium text-white/70">H:{data.tempMax}° L:{data.tempMin}°</span>
+        )}
+      </button>
+
+      {/* Detail modal */}
+      {showDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowDetail(false)} />
+          <div className={`relative z-10 w-full max-w-sm overflow-hidden rounded-2xl bg-gradient-to-br ${gradient} text-white shadow-2xl`}>
+            <div className="flex items-center justify-between p-4 pb-0">
+              <div className="flex items-center gap-1.5 text-sm font-medium text-white/80">
+                <MapPin size={14} />
+                <span>{weatherCity}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowDetail(false); startEdit() }}
+                  className="flex items-center gap-1 rounded-lg bg-white/20 px-2.5 py-1 text-xs font-medium hover:bg-white/30"
+                >
+                  <MapPin size={11} /> Ort ändern
+                </button>
+                <button onClick={() => setShowDetail(false)} className="rounded-lg p-1 hover:bg-white/20">
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {data && (
+              <div className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-6xl font-light tabular-nums">{data.temp}°</div>
+                    <div className="mt-1 text-lg font-medium text-white/80">{weatherLabel(data.code)}</div>
+                    <div className="mt-0.5 text-sm text-white/60">H:{data.tempMax}° · T:{data.tempMin}°</div>
+                  </div>
+                  <WeatherIcon code={data.code} />
+                </div>
+
+                {data.hourly.length > 0 && (
+                  <div className="mt-6 border-t border-white/20 pt-4">
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/60">Nächste Stunden</p>
+                    <div className="flex justify-between">
+                      {data.hourly.map((h, i) => (
+                        <div key={i} className="flex flex-col items-center gap-1.5">
+                          <span className="text-sm font-semibold">{h.temp}°</span>
+                          <SmallWeatherIcon code={h.code} />
+                          <span className="text-[11px] text-white/60">{h.time}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        </>
-      ) : (
-        <div className="mt-7 flex flex-col gap-2">
-          <div className="h-9 w-14 animate-pulse rounded bg-white/20" />
-          <div className="h-3 w-20 animate-pulse rounded bg-white/20" />
         </div>
       )}
-    </button>
+    </>
   )
 }
