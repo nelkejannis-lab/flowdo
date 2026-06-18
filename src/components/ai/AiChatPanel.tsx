@@ -149,8 +149,8 @@ export default function AiChatPanel() {
   function stopVoice() { recognitionRef.current?.stop(); setListening(false) }
 
   async function executeAction(action: Action): Promise<{ status: 'done' | 'error'; error?: string }> {
-    const title = action.editTitle ?? action.payload.title as string
-    const date = action.editDate ?? action.payload.date as string ?? action.payload.dueDate as string
+    const title = (action.editTitle || (action.payload.title as string)) || ''
+    const date = (action.editDate || (action.payload.date as string) || (action.payload.dueDate as string)) || ''
     const priority = (action.editPriority ?? action.payload.priority as string ?? 'medium') as 'low' | 'medium' | 'high'
     const startTime = (action.editStartTime || (action.payload.startTime as string)) || undefined
     const endTime = (action.editEndTime || (action.payload.endTime as string)) || undefined

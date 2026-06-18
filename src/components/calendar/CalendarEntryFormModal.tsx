@@ -179,18 +179,16 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
     onClose()
   }
 
+  const isOwner = !entry || entry.ownerId === currentUserId
+
   function handleDelete() {
+    if (!isOwner) return
     if (event) {
       deleteEvent(event.id)
       onClose()
     } else if (entry) {
-      const entryId = entry.id
-      void deleteEntry(entryId)
-      useToastStore.getState().show({
-        message: 'Termin gelöscht',
-        action: { label: 'Rückgängig', onClick: () => useCalendarEntriesStore.getState().undoDelete(entryId) },
-        duration: 5000,
-      })
+      void deleteEntry(entry.id)
+      useToastStore.getState().show({ message: 'Termin gelöscht', duration: 3000 })
       onClose()
     }
   }
@@ -456,7 +454,7 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
         {error && <p className="text-sm text-red-500">{error}</p>}
 
         <div className="mt-2 flex items-center justify-between">
-          {editing ? (
+          {editing && isOwner ? (
             <button
               type="button"
               onClick={handleDelete}
@@ -464,12 +462,14 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
             >
               {t('form.delete')}
             </button>
+          ) : editing && !isOwner ? (
+            <span className="text-xs text-gray-400">Nur der Ersteller kann bearbeiten</span>
           ) : (
             <span />
           )}
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || (!!editing && !isOwner)}
             className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
           >
             {saving

@@ -31,8 +31,6 @@ export interface NewCalendarEntryInput {
   recurrence?: CalendarEntry['recurrence']
 }
 
-const pendingEntryDeletes = new Map<string, { entry: CalendarEntry; timer: ReturnType<typeof setTimeout> }>()
-
 interface CalendarEntriesState {
   entries: CalendarEntry[]
   loading: boolean
@@ -153,22 +151,10 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()((set, get)
   },
 
   deleteEntry: async (id) => {
-    const entry = get().entries.find((e) => e.id === id)
-    if (!entry) return
     set((state) => ({ entries: state.entries.filter((e) => e.id !== id) }))
-    const timer = setTimeout(async () => {
-      pendingEntryDeletes.delete(id)
-      await supabase.from('calendar_entry_invites').delete().eq('entry_id', id)
-      await supabase.from('calendar_entries').delete().eq('id', id)
-    }, 5000)
-    pendingEntryDeletes.set(id, { entry, timer })
+    await supabase.from('calendar_entry_invites').delete().eq('entry_id', id)
+    await supabase.from('calendar_entries').delete().eq('id', id)
   },
 
-  undoDelete: (id) => {
-    const item = pendingEntryDeletes.get(id)
-    if (!item) return
-    clearTimeout(item.timer)
-    pendingEntryDeletes.delete(id)
-    set((s) => ({ entries: [item.entry, ...s.entries] }))
-  },
+  undoDelete: (_id) => { /* no-op: immediate delete */ },
 }))
