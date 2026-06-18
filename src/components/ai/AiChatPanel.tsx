@@ -33,8 +33,13 @@ interface Message {
 
 const TODAY = format(new Date(), 'EEEE, d. MMMM yyyy', { locale: de })
 
-const SYSTEM_PROMPT = `Du bist ein KI-Assistent für die App Mooncrew – ein Arbeits-Organizer mit Kalender, Aufgaben und Projekten.
-Heute ist ${TODAY} (${format(new Date(), 'yyyy-MM-dd')}).
+function buildSystemPrompt(friendsList: { id: string; name: string }[]) {
+  const yr = new Date().getFullYear()
+  const friendsBlock = friendsList.length > 0
+    ? `\nBekannte Personen (für Termin-Einladungen):\n${friendsList.map((f) => `- "${f.name}" → id: "${f.id}"`).join('\n')}\nWenn der Nutzer eine Person einlädt, füge ihre ID in invitedUserIds ein.`
+    : ''
+  return `Du bist ein KI-Assistent für die App Mooncrew – ein Arbeits-Organizer mit Kalender, Aufgaben und Projekten.
+Heute ist ${TODAY} (${format(new Date(), 'yyyy-MM-dd')}).${friendsBlock}
 
 Antworte AUSSCHLIESSLICH mit gültigem JSON in exakt diesem Format – nichts davor oder danach:
 
@@ -49,7 +54,7 @@ Aufgabe erstellen:
 { "type": "create_task", "label": "Aufgabe: TITEL", "payload": { "title": "string", "dueDate": "yyyy-MM-dd oder null", "priority": "low|medium|high", "description": "string oder null" }}
 
 Termin erstellen:
-{ "type": "create_event", "label": "Termin: TITEL", "payload": { "title": "string", "date": "yyyy-MM-dd", "endDate": "yyyy-MM-dd oder null", "startTime": "HH:MM oder null", "endTime": "HH:MM oder null", "description": "string oder null" }}
+{ "type": "create_event", "label": "Termin: TITEL", "payload": { "title": "string", "date": "yyyy-MM-dd", "endDate": "yyyy-MM-dd oder null", "startTime": "HH:MM oder null", "endTime": "HH:MM oder null", "description": "string oder null", "invitedUserIds": ["user-id-1", ...] }}
 
 Projekt erstellen:
 { "type": "create_board", "label": "Projekt: TITEL", "payload": { "title": "string", "description": "string oder null", "color": "#6366f1" }}
@@ -59,12 +64,13 @@ Navigieren:
 
 WICHTIGE REGELN:
 - Bei Screenshots oder Fotos von Aufgabenlisten, Kalendern, Tabellen oder To-Do-Listen: Extrahiere JEDEN erkennbaren Eintrag als eigene Action. Lasse nichts aus.
-- Datumsspalten wie "19. Jun", "26. Jun" → aktuelles Jahr verwenden → "2025-06-19", "2025-06-26"
-- Datumsbereiche wie "10. Aug - 1. Sep" → date: "2025-08-10", endDate: "2025-09-01"
+- Datumsspalten wie "19. Jun", "26. Jun" → aktuelles Jahr verwenden → "${yr}-06-19", "${yr}-06-26"
+- Datumsbereiche wie "10. Aug - 1. Sep" → date: "${yr}-08-10", endDate: "${yr}-09-01"
 - Wenn ein Eintrag einen festen Termin hat → create_event, sonst → create_task mit dueDate
 - Bei vielen Einträgen (10+): alle trotzdem vollständig extrahieren
-- Wenn kein Jahr erkennbar ist: aktuelles Jahr (${new Date().getFullYear()}) annehmen
+- Wenn kein Jahr erkennbar ist: aktuelles Jahr (${yr}) annehmen
 - Antworte NUR mit JSON, kein Markdown, keine Erklärungen außerhalb des JSON`
+}
 
 export default function AiChatPanel() {
   const [open, setOpen] = useState(false)
@@ -276,10 +282,14 @@ export default function AiChatPanel() {
     setLoading(true)
 
     try {
+      const friendsList = friends.map((f) => ({
+        id: f.profile.id,
+        name: f.profile.display_name ?? f.profile.username ?? f.profile.id,
+      }))
       const { data, error } = await supabase.functions.invoke('ai-chat', {
         body: {
           messages: history.map((m) => ({ role: m.role, content: m.content })),
-          systemPrompt: SYSTEM_PROMPT,
+          systemPrompt: buildSystemPrompt(friendsList),
           imageBase64: imgToSend?.base64 ?? null,
           imageMimeType: imgToSend?.mimeType ?? null,
         },
@@ -302,7 +312,7 @@ export default function AiChatPanel() {
         editStartTime: (a.payload.startTime ?? '') as string,
         editEndTime: (a.payload.endTime ?? '') as string,
         editDescription: (a.payload.description ?? '') as string,
-        editInvitees: [],
+        editInvitees: (a.payload.invitedUserIds as string[] | undefined) ?? [],
       }))
 
       const assistantMsg: Message = {
