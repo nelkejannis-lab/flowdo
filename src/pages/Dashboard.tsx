@@ -18,6 +18,8 @@ import TaskFormModal from '../components/tasks/TaskFormModal'
 import BoardCard from '../components/boards/BoardCard'
 import WeatherWidget from '../components/dashboard/WeatherWidget'
 import WorkTimeWidget from '../components/dashboard/WorkTimeWidget'
+import OfficeWidget from '../components/office/OfficeWidget'
+import OfficePromptModal from '../components/office/OfficePromptModal'
 import OnboardingPermissions from '../components/dashboard/OnboardingPermissions'
 import { useSettingsStore } from '../store/settingsStore'
 import { isDueThisWeek, isDueToday, isOverdue, todayISO } from '../utils/date'
@@ -142,6 +144,7 @@ export default function Dashboard() {
 
   return (
     <div>
+      <OfficePromptModal />
       {!onboardingPermissionsDone && <OnboardingPermissions />}
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{t('title')}</h1>
@@ -158,6 +161,7 @@ export default function Dashboard() {
         <div className={`mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4`}>
           {(dashboardVisibility.weather ?? true) && <WeatherWidget />}
           <WorkTimeWidget />
+          <OfficeWidget />
           {(dashboardVisibility.stats ?? true) && <>
             <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
               <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('stats.dueThisWeek')}</p>
