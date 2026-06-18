@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bot, Image, Mic, MicOff, Send, Sparkles, X, Calendar, CheckSquare, ArrowRight } from 'lucide-react'
+import { Bot, Image, Mic, MicOff, Send, Sparkles, X, Calendar, CheckSquare, ArrowRight, UserPlus, Users } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useCalendarEntriesStore } from '../../store/calendarEntriesStore'
 import { useTasksStore } from '../../store/tasksStore'
 import { useBoardsStore } from '../../store/boardsStore'
+import { useFriendsStore } from '../../store/friendsStore'
 import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
 
@@ -16,6 +17,10 @@ interface Action {
   editTitle?: string
   editDate?: string
   editPriority?: string
+  editStartTime?: string
+  editEndTime?: string
+  editDescription?: string
+  editInvitees?: string[] // user IDs
 }
 
 interface Message {
@@ -80,6 +85,10 @@ export default function AiChatPanel() {
   const addEntry = useCalendarEntriesStore((s) => s.addEntry)
   const addTask = useTasksStore((s) => s.addTask)
   const addBoard = useBoardsStore((s) => s.addBoard)
+  const friends = useFriendsStore((s) => s.friends)
+  const fetchFriends = useFriendsStore((s) => s.fetchAll)
+
+  useEffect(() => { fetchFriends() }, [])
 
   useEffect(() => {
     if (open && messages.length === 0) {
@@ -133,10 +142,13 @@ export default function AiChatPanel() {
   function stopVoice() { recognitionRef.current?.stop(); setListening(false) }
 
   async function executeAction(action: Action): Promise<{ status: 'done' | 'error'; error?: string }> {
-    // Use edited values if available
     const title = action.editTitle ?? action.payload.title as string
     const date = action.editDate ?? action.payload.date as string ?? action.payload.dueDate as string
     const priority = (action.editPriority ?? action.payload.priority as string ?? 'medium') as 'low' | 'medium' | 'high'
+    const startTime = (action.editStartTime || (action.payload.startTime as string)) || undefined
+    const endTime = (action.editEndTime || (action.payload.endTime as string)) || undefined
+    const description = (action.editDescription || (action.payload.description as string)) || undefined
+    const invitedUserIds = action.editInvitees ?? []
     const p = action.payload
 
     try {
@@ -146,7 +158,7 @@ export default function AiChatPanel() {
           title,
           dueDate: date || undefined,
           priority,
-          description: (p.description as string) || undefined,
+          description,
           tags: [],
           evening: false,
         })
@@ -160,11 +172,11 @@ export default function AiChatPanel() {
           title,
           date,
           endDate: (p.endDate as string) || undefined,
-          startTime: (p.startTime as string) || undefined,
-          endTime: (p.endTime as string) || undefined,
-          description: (p.description as string) || undefined,
+          startTime: startTime || undefined,
+          endTime: endTime || undefined,
+          description,
           color: '#10B981',
-          invitedUserIds: [],
+          invitedUserIds,
         })
         if (errMsg) return { status: 'error', error: errMsg }
         return { status: 'done' }
@@ -221,11 +233,27 @@ export default function AiChatPanel() {
     })
   }
 
-  function updateActionEdit(msgIdx: number, actionIdx: number, field: 'editTitle' | 'editDate' | 'editPriority', value: string) {
+  function updateActionEdit(msgIdx: number, actionIdx: number, field: 'editTitle' | 'editDate' | 'editPriority' | 'editStartTime' | 'editEndTime' | 'editDescription', value: string) {
     setMessages((prev) => {
       const next = [...prev]
       const actions = [...(next[msgIdx].actions ?? [])]
       actions[actionIdx] = { ...actions[actionIdx], [field]: value }
+      next[msgIdx] = { ...next[msgIdx], actions }
+      return next
+    })
+  }
+
+  function toggleInvitee(msgIdx: number, actionIdx: number, userId: string) {
+    setMessages((prev) => {
+      const next = [...prev]
+      const actions = [...(next[msgIdx].actions ?? [])]
+      const current = actions[actionIdx].editInvitees ?? []
+      actions[actionIdx] = {
+        ...actions[actionIdx],
+        editInvitees: current.includes(userId)
+          ? current.filter((id) => id !== userId)
+          : [...current, userId],
+      }
       next[msgIdx] = { ...next[msgIdx], actions }
       return next
     })
@@ -271,6 +299,10 @@ export default function AiChatPanel() {
         editTitle: (a.payload.title ?? a.payload.path ?? '') as string,
         editDate: (a.payload.date ?? a.payload.dueDate ?? '') as string,
         editPriority: (a.payload.priority ?? 'medium') as string,
+        editStartTime: (a.payload.startTime ?? '') as string,
+        editEndTime: (a.payload.endTime ?? '') as string,
+        editDescription: (a.payload.description ?? '') as string,
+        editInvitees: [],
       }))
 
       const assistantMsg: Message = {
@@ -354,21 +386,25 @@ export default function AiChatPanel() {
                       </p>
                       <div className="space-y-2">
                         {m.actions.map((a, j) => (
-                          <div key={j} className="flex flex-col gap-1 rounded-lg bg-white p-2 shadow-sm dark:bg-racing-800">
+                          <div key={j} className="flex flex-col gap-1.5 rounded-lg bg-white p-2.5 shadow-sm dark:bg-racing-800">
                             <div className="flex items-center gap-1.5">
                               <span className="text-amber-600 dark:text-amber-400">{iconFor[a.type] ?? <CheckSquare size={11} />}</span>
-                              <span className="text-[10px] font-medium uppercase tracking-wide text-gray-400">{a.type.replace('_', ' ')}</span>
+                              <span className="text-[10px] font-medium uppercase tracking-wide text-gray-400">
+                                {a.type === 'create_task' ? 'Aufgabe' : a.type === 'create_event' ? 'Termin' : a.type === 'create_board' ? 'Projekt' : 'Navigation'}
+                              </span>
                             </div>
+                            {/* Title */}
                             <input
                               className="w-full rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs dark:border-racing-600 dark:bg-racing-700 dark:text-racing-100"
                               value={a.editTitle ?? ''}
                               onChange={(e) => updateActionEdit(i, j, 'editTitle', e.target.value)}
                               placeholder="Titel"
                             />
+                            {/* Date row */}
                             {(a.type === 'create_task' || a.type === 'create_event') && (
-                              <div className="flex gap-1.5">
+                              <div className="flex gap-1.5 flex-wrap">
                                 <input
-                                  className="flex-1 rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs dark:border-racing-600 dark:bg-racing-700 dark:text-racing-100"
+                                  className="flex-1 min-w-[100px] rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs dark:border-racing-600 dark:bg-racing-700 dark:text-racing-100"
                                   type="date"
                                   value={a.editDate ?? ''}
                                   onChange={(e) => updateActionEdit(i, j, 'editDate', e.target.value)}
@@ -384,6 +420,64 @@ export default function AiChatPanel() {
                                     <option value="high">Hoch</option>
                                   </select>
                                 )}
+                              </div>
+                            )}
+                            {/* Time row for events */}
+                            {a.type === 'create_event' && (
+                              <div className="flex gap-1.5 items-center">
+                                <span className="text-[10px] text-gray-400">Von</span>
+                                <input
+                                  type="time"
+                                  className="flex-1 rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs dark:border-racing-600 dark:bg-racing-700 dark:text-racing-100"
+                                  value={a.editStartTime ?? ''}
+                                  onChange={(e) => updateActionEdit(i, j, 'editStartTime', e.target.value)}
+                                />
+                                <span className="text-[10px] text-gray-400">Bis</span>
+                                <input
+                                  type="time"
+                                  className="flex-1 rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs dark:border-racing-600 dark:bg-racing-700 dark:text-racing-100"
+                                  value={a.editEndTime ?? ''}
+                                  onChange={(e) => updateActionEdit(i, j, 'editEndTime', e.target.value)}
+                                />
+                              </div>
+                            )}
+                            {/* Description */}
+                            {(a.type === 'create_task' || a.type === 'create_event') && (
+                              <input
+                                className="w-full rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs dark:border-racing-600 dark:bg-racing-700 dark:text-racing-100"
+                                value={a.editDescription ?? ''}
+                                onChange={(e) => updateActionEdit(i, j, 'editDescription', e.target.value)}
+                                placeholder="Notiz / Beschreibung"
+                              />
+                            )}
+                            {/* Invitees for events */}
+                            {a.type === 'create_event' && friends.length > 0 && (
+                              <div>
+                                <p className="mb-1 flex items-center gap-1 text-[10px] font-medium text-gray-400">
+                                  <Users size={10} /> Personen einladen
+                                </p>
+                                <div className="flex flex-wrap gap-1">
+                                  {friends.map((f) => {
+                                    const selected = (a.editInvitees ?? []).includes(f.profile.id)
+                                    return (
+                                      <button
+                                        key={f.profile.id}
+                                        onClick={() => toggleInvitee(i, j, f.profile.id)}
+                                        className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition ${
+                                          selected
+                                            ? 'bg-accent text-white'
+                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-racing-700 dark:text-racing-200'
+                                        }`}
+                                      >
+                                        {f.profile.avatar_url
+                                          ? <img src={f.profile.avatar_url} className="h-3.5 w-3.5 rounded-full" alt="" />
+                                          : <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-current/20 text-[8px]">{(f.profile.display_name ?? '?')[0]}</span>
+                                        }
+                                        {f.profile.display_name ?? f.profile.username}
+                                      </button>
+                                    )
+                                  })}
+                                </div>
                               </div>
                             )}
                           </div>
