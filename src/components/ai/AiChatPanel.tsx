@@ -8,18 +8,22 @@ import { useBoardsStore } from '../../store/boardsStore'
 import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
 
+interface Action {
+  type: string
+  label: string
+  payload: Record<string, unknown>
+  status?: 'pending' | 'done' | 'error'
+  editTitle?: string
+  editDate?: string
+  editPriority?: string
+}
+
 interface Message {
   role: 'user' | 'assistant'
   content: string
   imageUrl?: string
   actions?: Action[]
-}
-
-interface Action {
-  type: string
-  label: string
-  payload: Record<string, unknown>
-  done?: boolean
+  awaitingConfirm?: boolean
 }
 
 const TODAY = format(new Date(), 'EEEE, d. MMMM yyyy', { locale: de })
@@ -65,6 +69,7 @@ export default function AiChatPanel() {
   const [listening, setListening] = useState(false)
   const [pendingImage, setPendingImage] = useState<{ base64: string; mimeType: string; url: string } | null>(null)
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
+  const [confirmingMsgIdx, setConfirmingMsgIdx] = useState<number | null>(null)
 
   const fileRef = useRef<HTMLInputElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -127,50 +132,103 @@ export default function AiChatPanel() {
 
   function stopVoice() { recognitionRef.current?.stop(); setListening(false) }
 
-  async function executeAction(action: Action): Promise<string> {
+  async function executeAction(action: Action): Promise<{ status: 'done' | 'error'; error?: string }> {
+    // Use edited values if available
+    const title = action.editTitle ?? action.payload.title as string
+    const date = action.editDate ?? action.payload.date as string ?? action.payload.dueDate as string
+    const priority = (action.editPriority ?? action.payload.priority as string ?? 'medium') as 'low' | 'medium' | 'high'
     const p = action.payload
+
     try {
       if (action.type === 'create_task') {
+        if (!title) return { status: 'error', error: 'Kein Titel' }
         await addTask({
-          title: p.title as string,
-          dueDate: (p.dueDate as string) ?? null,
-          priority: (p.priority as 'low' | 'medium' | 'high') ?? 'medium',
-          description: (p.description as string) ?? null,
+          title,
+          dueDate: date || undefined,
+          priority,
+          description: (p.description as string) || undefined,
           tags: [],
           evening: false,
         })
-        return 'done'
+        return { status: 'done' }
       }
       if (action.type === 'create_event') {
-        await addEntry({
+        if (!title) return { status: 'error', error: 'Kein Titel' }
+        if (!date) return { status: 'error', error: 'Kein Datum' }
+        const errMsg = await addEntry({
           type: 'termin',
-          title: p.title as string,
-          date: p.date as string,
-          endDate: (p.endDate as string) ?? null,
-          startTime: (p.startTime as string) ?? null,
-          endTime: (p.endTime as string) ?? null,
-          description: (p.description as string) ?? null,
+          title,
+          date,
+          endDate: (p.endDate as string) || undefined,
+          startTime: (p.startTime as string) || undefined,
+          endTime: (p.endTime as string) || undefined,
+          description: (p.description as string) || undefined,
           color: '#10B981',
           invitedUserIds: [],
         })
-        return 'done'
+        if (errMsg) return { status: 'error', error: errMsg }
+        return { status: 'done' }
       }
       if (action.type === 'create_board') {
+        if (!title) return { status: 'error', error: 'Kein Titel' }
         await addBoard({
-          title: p.title as string,
-          description: (p.description as string) ?? undefined,
+          title,
+          description: (p.description as string) || undefined,
           color: (p.color as string) ?? '#6366f1',
         })
-        return 'done'
+        return { status: 'done' }
       }
       if (action.type === 'navigate') {
         navigate(p.path as string)
-        return 'done'
+        return { status: 'done' }
       }
     } catch (err) {
-      return 'error'
+      return { status: 'error', error: err instanceof Error ? err.message : String(err) }
     }
-    return 'done'
+    return { status: 'done' }
+  }
+
+  async function confirmActions(msgIdx: number) {
+    const msg = messages[msgIdx]
+    if (!msg?.actions?.length) return
+    setConfirmingMsgIdx(null)
+    setProgress({ done: 0, total: msg.actions.length })
+
+    const updatedActions = [...msg.actions]
+    for (let i = 0; i < updatedActions.length; i++) {
+      const result = await executeAction(updatedActions[i])
+      updatedActions[i] = { ...updatedActions[i], status: result.status }
+      setMessages((prev) => {
+        const next = [...prev]
+        next[msgIdx] = { ...next[msgIdx], actions: [...updatedActions], awaitingConfirm: false }
+        return next
+      })
+      setProgress({ done: i + 1, total: updatedActions.length })
+    }
+    setProgress(null)
+  }
+
+  function declineActions(msgIdx: number) {
+    setConfirmingMsgIdx(null)
+    setMessages((prev) => {
+      const next = [...prev]
+      next[msgIdx] = {
+        ...next[msgIdx],
+        awaitingConfirm: false,
+        actions: (next[msgIdx].actions ?? []).map((a) => ({ ...a, status: 'error' as const })),
+      }
+      return next
+    })
+  }
+
+  function updateActionEdit(msgIdx: number, actionIdx: number, field: 'editTitle' | 'editDate' | 'editPriority', value: string) {
+    setMessages((prev) => {
+      const next = [...prev]
+      const actions = [...(next[msgIdx].actions ?? [])]
+      actions[actionIdx] = { ...actions[actionIdx], [field]: value }
+      next[msgIdx] = { ...next[msgIdx], actions }
+      return next
+    })
   }
 
   async function send() {
@@ -207,22 +265,21 @@ export default function AiChatPanel() {
         if (jsonMatch) parsed = JSON.parse(jsonMatch[0])
       } catch { /* keep raw as message */ }
 
+      const actionsWithEdits: Action[] = (parsed.actions ?? []).map((a) => ({
+        ...a,
+        status: 'pending' as const,
+        editTitle: (a.payload.title ?? a.payload.path ?? '') as string,
+        editDate: (a.payload.date ?? a.payload.dueDate ?? '') as string,
+        editPriority: (a.payload.priority ?? 'medium') as string,
+      }))
+
       const assistantMsg: Message = {
         role: 'assistant',
         content: parsed.message ?? raw,
-        actions: parsed.actions ?? [],
+        actions: actionsWithEdits,
+        awaitingConfirm: actionsWithEdits.length > 0,
       }
       setMessages((prev) => [...prev, assistantMsg])
-
-      // Auto-execute all actions with progress
-      if (parsed.actions?.length) {
-        setProgress({ done: 0, total: parsed.actions.length })
-        for (let i = 0; i < parsed.actions.length; i++) {
-          await executeAction(parsed.actions[i])
-          setProgress({ done: i + 1, total: parsed.actions.length })
-        }
-        setProgress(null)
-      }
     } catch (err) {
       setMessages((prev) => [...prev, {
         role: 'assistant',
@@ -289,12 +346,80 @@ export default function AiChatPanel() {
                       <p className="whitespace-pre-wrap">{m.content}</p>
                     </div>
                   )}
-                  {/* Action chips */}
-                  {m.actions && m.actions.length > 0 && (
+                  {/* Action confirmation UI */}
+                  {m.actions && m.actions.length > 0 && m.awaitingConfirm && (
+                    <div className="w-full rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
+                      <p className="mb-2 text-xs font-semibold text-amber-700 dark:text-amber-400">
+                        Soll ich das ausführen?
+                      </p>
+                      <div className="space-y-2">
+                        {m.actions.map((a, j) => (
+                          <div key={j} className="flex flex-col gap-1 rounded-lg bg-white p-2 shadow-sm dark:bg-racing-800">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-amber-600 dark:text-amber-400">{iconFor[a.type] ?? <CheckSquare size={11} />}</span>
+                              <span className="text-[10px] font-medium uppercase tracking-wide text-gray-400">{a.type.replace('_', ' ')}</span>
+                            </div>
+                            <input
+                              className="w-full rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs dark:border-racing-600 dark:bg-racing-700 dark:text-racing-100"
+                              value={a.editTitle ?? ''}
+                              onChange={(e) => updateActionEdit(i, j, 'editTitle', e.target.value)}
+                              placeholder="Titel"
+                            />
+                            {(a.type === 'create_task' || a.type === 'create_event') && (
+                              <div className="flex gap-1.5">
+                                <input
+                                  className="flex-1 rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs dark:border-racing-600 dark:bg-racing-700 dark:text-racing-100"
+                                  type="date"
+                                  value={a.editDate ?? ''}
+                                  onChange={(e) => updateActionEdit(i, j, 'editDate', e.target.value)}
+                                />
+                                {a.type === 'create_task' && (
+                                  <select
+                                    className="rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs dark:border-racing-600 dark:bg-racing-700 dark:text-racing-100"
+                                    value={a.editPriority ?? 'medium'}
+                                    onChange={(e) => updateActionEdit(i, j, 'editPriority', e.target.value)}
+                                  >
+                                    <option value="low">Niedrig</option>
+                                    <option value="medium">Mittel</option>
+                                    <option value="high">Hoch</option>
+                                  </select>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-2.5 flex gap-2">
+                        <button
+                          onClick={() => confirmActions(i)}
+                          className="flex-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90"
+                        >
+                          Alle ausführen ({m.actions.length})
+                        </button>
+                        <button
+                          onClick={() => declineActions(i)}
+                          className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50 dark:border-racing-600 dark:text-racing-300"
+                        >
+                          Ablehnen
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {/* Executed action chips */}
+                  {m.actions && m.actions.length > 0 && !m.awaitingConfirm && (
                     <div className="flex flex-wrap gap-1.5">
                       {m.actions.map((a, j) => (
-                        <span key={j} className="flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                          {iconFor[a.type] ?? <CheckSquare size={11} />}
+                        <span
+                          key={j}
+                          className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                            a.status === 'done'
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                              : a.status === 'error'
+                              ? 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                              : 'bg-gray-100 text-gray-500'
+                          }`}
+                        >
+                          {a.status === 'done' ? '✓' : a.status === 'error' ? '✗' : (iconFor[a.type] ?? <CheckSquare size={11} />)}
                           {a.label}
                         </span>
                       ))}
