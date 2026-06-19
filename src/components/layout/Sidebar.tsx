@@ -96,6 +96,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const featureVisibility = useSettingsStore((s) => s.featureVisibility)
   const navOrder = useSettingsStore((s) => s.navOrder ?? DEFAULT_NAV_ORDER)
   const setNavOrder = useSettingsStore((s) => s.setNavOrder)
+  const navVisibility = useSettingsStore((s) => s.navVisibility)
   const profile = useAuthStore((s) => s.profile)
   const signOut = useAuthStore((s) => s.signOut)
   const openSearch = useSearchStore((s) => s.open)
@@ -149,7 +150,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     { key: 'projekte', to: '/projekte', icon: <Trello size={18} />, label: t('sidebar.projects.all'), visible: true, exact: true },
   ]
   const navItemMap = Object.fromEntries(allNavItems.map((n) => [n.key, n])) as Record<NavItemKey, NavDef>
-  const sortedNavItems = navOrder.map((k) => navItemMap[k]).filter(Boolean)
+  const sortedNavItems = navOrder.map((k) => navItemMap[k]).filter(Boolean).filter((item) => {
+    // Always show dashboard + calendar; for others check navVisibility
+    if (item.key === 'dashboard' || item.key === 'calendar') return item.visible
+    return (navVisibility?.[item.key] ?? true) && item.visible
+  })
 
   function toggleFolder(id: string) {
     setOpenFolders((prev) => {

@@ -127,6 +127,8 @@ export default function SettingsPage() {
   const toggleDashboardWidget = useSettingsStore((s) => s.toggleDashboardWidget)
   const navOrder = useSettingsStore((s) => s.navOrder ?? DEFAULT_NAV_ORDER)
   const setNavOrder = useSettingsStore((s) => s.setNavOrder)
+  const navVisibility = useSettingsStore((s) => s.navVisibility)
+  const toggleNavItem = useSettingsStore((s) => s.toggleNavItem)
   const notifyAppointments = useSettingsStore((s) => s.notifyAppointments)
   const notifyChat = useSettingsStore((s) => s.notifyChat)
   const notifyTasks = useSettingsStore((s) => s.notifyTasks)
@@ -430,7 +432,7 @@ export default function SettingsPage() {
       {activeTab === 'funktionen' && (
         <div className="flex flex-col gap-4">
           {/* Sidebar Reihenfolge */}
-          <SidebarOrderSection navOrder={navOrder} setNavOrder={setNavOrder} featureVisibility={featureVisibility} toggleFeature={toggleFeature} />
+          <SidebarOrderSection navOrder={navOrder} setNavOrder={setNavOrder} navVisibility={navVisibility} toggleNavItem={toggleNavItem} />
 
           {/* Dashboard Widgets */}
           <DashboardWidgetSection dashboardVisibility={dashboardVisibility} toggleDashboardWidget={toggleDashboardWidget} />
@@ -951,11 +953,11 @@ import {
 interface SidebarOrderSectionProps {
   navOrder: NavItemKey[]
   setNavOrder: (o: NavItemKey[]) => void
-  featureVisibility: Record<FeatureKey, boolean>
-  toggleFeature: (k: FeatureKey) => void
+  navVisibility: Record<NavItemKey, boolean>
+  toggleNavItem: (k: NavItemKey) => void
 }
 
-function SidebarOrderSection({ navOrder, setNavOrder, featureVisibility, toggleFeature }: SidebarOrderSectionProps) {
+function SidebarOrderSection({ navOrder, setNavOrder, navVisibility, toggleNavItem }: SidebarOrderSectionProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -973,15 +975,15 @@ function SidebarOrderSection({ navOrder, setNavOrder, featureVisibility, toggleF
   return (
     <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
       <h2 className="mb-1 text-sm font-semibold">Seitenleiste</h2>
-      <p className="mb-3 text-xs text-gray-400">Ziehe Einträge um die Reihenfolge zu ändern. Schalter aktiviert/deaktiviert den Eintrag.</p>
+      <p className="mb-3 text-xs text-gray-400">Reihenfolge per Drag ändern · Dashboard &amp; Kalender sind immer sichtbar</p>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={fullOrder} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col divide-y divide-gray-100 dark:divide-racing-800">
             {fullOrder.map((key) => {
               const meta = NAV_META[key]
               if (!meta) return null
-              const hasToggle = !!meta.featureKey
-              const enabled = hasToggle ? featureVisibility[meta.featureKey!] : true
+              const alwaysOn = key === 'dashboard' || key === 'calendar'
+              const enabled = alwaysOn ? true : (navVisibility?.[key] ?? true)
               return (
                 <SortableSettingsRow
                   key={key}
@@ -989,8 +991,8 @@ function SidebarOrderSection({ navOrder, setNavOrder, featureVisibility, toggleF
                   icon={meta.icon}
                   label={meta.label}
                   enabled={enabled}
-                  hasToggle={hasToggle}
-                  onToggle={hasToggle ? () => toggleFeature(meta.featureKey!) : undefined}
+                  hasToggle={!alwaysOn}
+                  onToggle={alwaysOn ? undefined : () => toggleNavItem(key)}
                 />
               )
             })}

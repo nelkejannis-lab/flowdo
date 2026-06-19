@@ -13,6 +13,26 @@ export const DEFAULT_NAV_ORDER: NavItemKey[] = [
   'dashboard', 'week', 'inbox', 'tasks', 'calendar', 'termine', 'pomodoro', 'eisenhower', 'worktime', 'aiScheduler', 'chat', 'friends', 'social', 'projekte',
 ]
 
+// Items that can never be hidden
+export const NAV_ALWAYS_VISIBLE: NavItemKey[] = ['dashboard', 'calendar']
+
+export const DEFAULT_NAV_VISIBILITY: Record<NavItemKey, boolean> = {
+  dashboard: true,
+  week: true,
+  inbox: true,
+  tasks: true,
+  calendar: true,
+  termine: true,
+  pomodoro: true,
+  eisenhower: true,
+  worktime: true,
+  aiScheduler: true,
+  chat: true,
+  friends: true,
+  social: true,
+  projekte: true,
+}
+
 export const DEFAULT_FEATURE_VISIBILITY: Record<FeatureKey, boolean> = {
   calendar: true,
   eisenhower: true,
@@ -53,6 +73,7 @@ interface SettingsState {
   dashboardVisibility: Record<DashboardWidget, boolean>
   colorLabels: Record<string, string>
   navOrder: NavItemKey[]
+  navVisibility: Record<NavItemKey, boolean>
   notifyAppointments: boolean
   notifyChat: boolean
   notifyTasks: boolean
@@ -72,6 +93,7 @@ interface SettingsState {
   setAppointmentReminderMinutes: (v: number) => void
   setOnboardingPermissionsDone: () => void
   setNavOrder: (order: NavItemKey[]) => void
+  toggleNavItem: (key: NavItemKey) => void
   setWeatherCity: (city: string) => void
   setWeatherCoords: (coords: WeatherCoords) => void
 }
@@ -89,6 +111,7 @@ export const useSettingsStore = create<SettingsState>()(
       featureVisibility: { ...DEFAULT_FEATURE_VISIBILITY },
       dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY },
       navOrder: [...DEFAULT_NAV_ORDER],
+      navVisibility: { ...DEFAULT_NAV_VISIBILITY },
       colorLabels: { ...DEFAULT_COLOR_LABELS },
       notifyAppointments: true,
       notifyChat: true,
@@ -115,6 +138,13 @@ export const useSettingsStore = create<SettingsState>()(
       setAppointmentReminderMinutes: (v) => set({ appointmentReminderMinutes: v }),
       setOnboardingPermissionsDone: () => set({ onboardingPermissionsDone: true }),
       setNavOrder: (navOrder) => set({ navOrder }),
+      toggleNavItem: (key) =>
+        set((s) => ({
+          navVisibility: {
+            ...s.navVisibility,
+            [key]: !s.navVisibility[key],
+          },
+        })),
       setWeatherCity: (city) => set({ weatherCity: city }),
       setWeatherCoords: (coords) => set({ weatherCoords: coords }),
     }),
@@ -140,6 +170,7 @@ export const useSettingsStore = create<SettingsState>()(
           featureVisibility: { ...DEFAULT_FEATURE_VISIBILITY, ...legacy.featureVisibility },
           dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY },
           navOrder: (legacy as any).navOrder ?? [...DEFAULT_NAV_ORDER],
+          navVisibility: { ...DEFAULT_NAV_VISIBILITY, ...(legacy as any).navVisibility },
           colorLabels: { ...DEFAULT_COLOR_LABELS, ...(legacy as any).colorLabels },
           onboardingPermissionsDone: legacy.onboardingPermissionsDone ?? false,
           weatherCity: hasCustomCity ? city : DEFAULT_WEATHER_CITY,
