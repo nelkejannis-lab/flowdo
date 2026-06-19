@@ -319,21 +319,21 @@ export default function CalendarPage() {
             <button
               onClick={() => setAbsenceFilter(absenceFilter === 'reise' ? null : 'reise')}
               className={`flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium transition-colors ${absenceFilter === 'reise' ? 'bg-blue-500 text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'}`}
-              title="Außerhaus"
+              title={t('absence.offsite')}
             >
-              <Home size={12} /> Außerhaus
+              <Home size={12} /> {t('absence.offsite')}
             </button>
             <button
               onClick={() => setAbsenceFilter(absenceFilter === 'urlaub' ? null : 'urlaub')}
               className={`flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium transition-colors ${absenceFilter === 'urlaub' ? 'bg-emerald-500 text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'}`}
-              title="Urlaub"
+              title={t('absence.vacation')}
             >
-              <Plane size={12} /> Urlaub
+              <Plane size={12} /> {t('absence.vacation')}
             </button>
           </div>
           <button
             onClick={() => setShowUpcoming((v) => !v)}
-            title="Anstehende Ereignisse"
+            title={t('absence.upcomingTooltip')}
             className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm transition-colors ${showUpcoming ? 'border-accent bg-accent/10 text-accent' : 'border-gray-200 hover:bg-gray-50 dark:border-racing-700'}`}
           >
             <PanelRight size={14} />
@@ -449,9 +449,11 @@ export default function CalendarPage() {
 }
 
 function UpcomingPanel({ tasks, entries }: { tasks: Task[]; entries: CalendarEntry[] }) {
+  const { t, i18n } = useTranslation('calendar')
+  const dateLocale = i18n.language === 'en' ? enUS : de
   const today = new Date().toISOString().slice(0, 10)
   const upcomingTasks = tasks
-    .filter((t) => !t.completed && t.dueDate && t.dueDate >= today)
+    .filter((tk) => !tk.completed && tk.dueDate && tk.dueDate >= today)
     .sort((a, b) => (a.dueDate! < b.dueDate! ? -1 : 1))
     .slice(0, 8)
   const upcomingEntries = entries
@@ -468,18 +470,18 @@ function UpcomingPanel({ tasks, entries }: { tasks: Task[]; entries: CalendarEnt
     <div className="w-64 flex-shrink-0 rounded-xl border border-gray-100 bg-white p-3 dark:border-racing-800 dark:bg-racing-900">
       <div className="mb-3 flex items-center gap-1.5">
         <ListTodo size={14} className="text-accent" />
-        <h3 className="text-sm font-semibold">Anstehend</h3>
+        <h3 className="text-sm font-semibold">{t('absence.upcoming')}</h3>
       </div>
       <div className="space-y-3">
         {upcomingEntries.length > 0 && (
           <div>
-            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400">Termine</p>
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400">{t('absence.appointments')}</p>
             <div className="space-y-1">
               {upcomingEntries.map((e) => (
                 <div key={e.id} className="rounded-lg bg-gray-50 px-2.5 py-1.5 dark:bg-racing-800">
                   <p className="text-xs font-medium truncate">{e.title}</p>
                   <p className="text-[10px] text-gray-400">
-                    {format(new Date(e.date), 'EEE d. MMM', { locale: de })}
+                    {format(new Date(e.date), 'EEE d. MMM', { locale: dateLocale })}
                     {e.startTime && ` · ${e.startTime}`}
                   </p>
                 </div>
@@ -489,14 +491,14 @@ function UpcomingPanel({ tasks, entries }: { tasks: Task[]; entries: CalendarEnt
         )}
         {upcomingTasks.length > 0 && (
           <div>
-            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400">Aufgaben</p>
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400">{t('absence.tasks')}</p>
             <div className="space-y-1">
-              {upcomingTasks.map((t) => (
-                <div key={t.id} className="flex items-center gap-2 rounded-lg bg-gray-50 px-2.5 py-1.5 dark:bg-racing-800">
-                  <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${priorityColors[t.priority] ?? 'bg-gray-400'}`} />
+              {upcomingTasks.map((tk) => (
+                <div key={tk.id} className="flex items-center gap-2 rounded-lg bg-gray-50 px-2.5 py-1.5 dark:bg-racing-800">
+                  <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${priorityColors[tk.priority] ?? 'bg-gray-400'}`} />
                   <div className="min-w-0">
-                    <p className="text-xs font-medium truncate">{t.title}</p>
-                    {t.dueDate && <p className="text-[10px] text-gray-400">{format(new Date(t.dueDate), 'EEE d. MMM', { locale: de })}</p>}
+                    <p className="text-xs font-medium truncate">{tk.title}</p>
+                    {tk.dueDate && <p className="text-[10px] text-gray-400">{format(new Date(tk.dueDate), 'EEE d. MMM', { locale: dateLocale })}</p>}
                   </div>
                 </div>
               ))}
@@ -504,7 +506,7 @@ function UpcomingPanel({ tasks, entries }: { tasks: Task[]; entries: CalendarEnt
           </div>
         )}
         {upcomingEntries.length === 0 && upcomingTasks.length === 0 && (
-          <p className="text-xs text-gray-400 text-center py-4">Nichts anstehend 🎉</p>
+          <p className="text-xs text-gray-400 text-center py-4">{t('absence.nothing')}</p>
         )}
       </div>
     </div>

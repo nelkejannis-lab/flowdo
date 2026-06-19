@@ -21,6 +21,9 @@
     "empty": "No colleagues added yet.",
     "remove": "Remove"
   },
+  "badge": {
+    "assign": "Assign badge"
+  },
   "teams": {
     "heading": "Teams",
     "create": "Create team",

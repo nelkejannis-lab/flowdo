@@ -68,6 +68,16 @@
     "noTasks": "No tasks",
     "ongoing": "ongoing"
   },
+  "absence": {
+    "offsite": "Off-site",
+    "vacation": "Vacation",
+    "upcomingTooltip": "Upcoming events",
+    "upcoming": "Upcoming",
+    "appointments": "Appointments",
+    "tasks": "Tasks",
+    "nothing": "Nothing coming up 🎉"
+  },
+  "ownerOnly": "Only the creator can edit",
   "form": {
     "titleEdit": "Edit entry",
     "titleAdd": "Add",

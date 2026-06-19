@@ -463,7 +463,7 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
               {t('form.delete')}
             </button>
           ) : editing && !isOwner ? (
-            <span className="text-xs text-gray-400">Nur der Ersteller kann bearbeiten</span>
+            <span className="text-xs text-gray-400">{t('ownerOnly')}</span>
           ) : (
             <span />
           )}

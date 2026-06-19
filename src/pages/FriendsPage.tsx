@@ -249,7 +249,7 @@ export default function FriendsPage() {
                       onClick={() => { setEditingBadgeId(f.profile.id); setBadgeInput((f.profile as any).badge ?? '') }}
                       className="mt-0.5 flex items-center gap-0.5 text-[10px] text-gray-400 hover:text-accent"
                     >
-                      <Pencil size={9} /> Badge vergeben
+                      <Pencil size={9} /> {t('badge.assign')}
                     </button>
                   ) : null}
                 </div>

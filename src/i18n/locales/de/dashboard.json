@@ -22,6 +22,19 @@
     "upcomingEvents": "Nächste Events",
     "projectsOverview": "Projekte-Übersicht"
   },
+  "morningReport": {
+    "greetingMorning": "Guten Morgen",
+    "greetingMidday": "Hallo",
+    "greetingAfternoon": "Guten Tag",
+    "daily": "Dein Tagesbericht",
+    "weekly": "Dein Wochenbericht",
+    "todayAppointments": "Heute — Termine",
+    "todayDue": "Heute fällig",
+    "weekAppointments": "Diese Woche — Termine",
+    "weekDue": "Diese Woche fällig",
+    "emptyDay": "Heute nichts geplant — frei! 🎉",
+    "letsGo": "Los geht's! 🚀"
+  },
   "eventStatus": {
     "ongoing": "läuft",
     "today": "Heute",

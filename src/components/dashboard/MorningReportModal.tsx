@@ -1,6 +1,7 @@
 import { format, isMonday } from 'date-fns'
-import { de } from 'date-fns/locale'
+import { de, enUS } from 'date-fns/locale'
 import { X, Sun, CalendarDays, CheckSquare, AlertCircle, TrendingUp } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 interface Task {
   id: string
@@ -30,12 +31,17 @@ const priorityColors: Record<string, string> = {
   low: 'text-blue-400',
 }
 
-const isWeekly = isMonday(new Date())
-const hour = new Date().getHours()
-
 export default function MorningReportModal({ todayTasks, weekTasks, todayEntries, weekEntries, onClose }: Props) {
-  const dayLabel = format(new Date(), 'EEEE, d. MMMM', { locale: de })
-  const greeting = hour < 10 ? 'Guten Morgen' : hour < 13 ? 'Hallo' : 'Guten Tag'
+  const { t, i18n } = useTranslation('dashboard')
+  const dateLocale = i18n.language === 'en' ? enUS : de
+  const isWeekly = isMonday(new Date())
+  const hour = new Date().getHours()
+  const dayLabel = format(new Date(), 'EEEE, d. MMMM', { locale: dateLocale })
+  const greeting = hour < 10
+    ? t('morningReport.greetingMorning')
+    : hour < 13
+    ? t('morningReport.greetingMidday')
+    : t('morningReport.greetingAfternoon')
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
@@ -49,7 +55,7 @@ export default function MorningReportModal({ todayTasks, weekTasks, todayEntries
             <Sun size={20} className="text-yellow-300" />
             <div>
               <p className="text-sm font-medium opacity-80">{greeting}!</p>
-              <h2 className="font-bold">{isWeekly ? 'Dein Wochenbericht' : 'Dein Tagesbericht'}</h2>
+              <h2 className="font-bold">{isWeekly ? t('morningReport.weekly') : t('morningReport.daily')}</h2>
               <p className="text-xs opacity-70">{dayLabel}</p>
             </div>
           </div>
@@ -60,7 +66,7 @@ export default function MorningReportModal({ todayTasks, weekTasks, todayEntries
           {todayEntries.length > 0 && (
             <section>
               <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                <CalendarDays size={12} /> Heute — Termine
+                <CalendarDays size={12} /> {t('morningReport.todayAppointments')}
               </h3>
               <div className="space-y-1">
                 {todayEntries.map((e) => (
@@ -77,13 +83,13 @@ export default function MorningReportModal({ todayTasks, weekTasks, todayEntries
           {todayTasks.length > 0 && (
             <section>
               <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                <CheckSquare size={12} /> Heute fällig
+                <CheckSquare size={12} /> {t('morningReport.todayDue')}
               </h3>
               <div className="space-y-1">
-                {todayTasks.map((t) => (
-                  <div key={t.id} className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 dark:bg-racing-800">
-                    <span className={`h-1.5 w-1.5 rounded-full bg-current flex-shrink-0 ${priorityColors[t.priority] ?? 'text-gray-400'}`} />
-                    <span className="text-sm">{t.title}</span>
+                {todayTasks.map((tk) => (
+                  <div key={tk.id} className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 dark:bg-racing-800">
+                    <span className={`h-1.5 w-1.5 rounded-full bg-current flex-shrink-0 ${priorityColors[tk.priority] ?? 'text-gray-400'}`} />
+                    <span className="text-sm">{tk.title}</span>
                   </div>
                 ))}
               </div>
@@ -96,7 +102,7 @@ export default function MorningReportModal({ todayTasks, weekTasks, todayEntries
               {weekEntries.length > 0 && (
                 <section>
                   <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    <TrendingUp size={12} /> Diese Woche — Termine
+                    <TrendingUp size={12} /> {t('morningReport.weekAppointments')}
                   </h3>
                   <div className="space-y-1">
                     {weekEntries.slice(0, 5).map((e) => (
@@ -105,23 +111,23 @@ export default function MorningReportModal({ todayTasks, weekTasks, todayEntries
                         <span className="text-sm">{e.title}</span>
                       </div>
                     ))}
-                    {weekEntries.length > 5 && <p className="text-xs text-gray-400 pl-3">+{weekEntries.length - 5} weitere</p>}
+                    {weekEntries.length > 5 && <p className="text-xs text-gray-400 pl-3">+{weekEntries.length - 5}</p>}
                   </div>
                 </section>
               )}
               {weekTasks.length > 0 && (
                 <section>
                   <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    <AlertCircle size={12} /> Diese Woche fällig
+                    <AlertCircle size={12} /> {t('morningReport.weekDue')}
                   </h3>
                   <div className="space-y-1">
-                    {weekTasks.slice(0, 6).map((t) => (
-                      <div key={t.id} className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 dark:bg-racing-800">
-                        <span className={`h-1.5 w-1.5 rounded-full bg-current flex-shrink-0 ${priorityColors[t.priority] ?? 'text-gray-400'}`} />
-                        <span className="text-sm">{t.title}</span>
+                    {weekTasks.slice(0, 6).map((tk) => (
+                      <div key={tk.id} className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 dark:bg-racing-800">
+                        <span className={`h-1.5 w-1.5 rounded-full bg-current flex-shrink-0 ${priorityColors[tk.priority] ?? 'text-gray-400'}`} />
+                        <span className="text-sm">{tk.title}</span>
                       </div>
                     ))}
-                    {weekTasks.length > 6 && <p className="text-xs text-gray-400 pl-3">+{weekTasks.length - 6} weitere</p>}
+                    {weekTasks.length > 6 && <p className="text-xs text-gray-400 pl-3">+{weekTasks.length - 6}</p>}
                   </div>
                 </section>
               )}
@@ -129,7 +135,7 @@ export default function MorningReportModal({ todayTasks, weekTasks, todayEntries
           )}
 
           {todayTasks.length === 0 && todayEntries.length === 0 && !isWeekly && (
-            <p className="py-4 text-center text-sm text-gray-400">Heute nichts geplant — frei! 🎉</p>
+            <p className="py-4 text-center text-sm text-gray-400">{t('morningReport.emptyDay')}</p>
           )}
         </div>
 
@@ -138,7 +144,7 @@ export default function MorningReportModal({ todayTasks, weekTasks, todayEntries
             onClick={onClose}
             className="w-full rounded-xl bg-accent py-2.5 text-sm font-semibold text-white hover:opacity-90"
           >
-            Los geht's! 🚀
+            {t('morningReport.letsGo')}
           </button>
         </div>
       </div>

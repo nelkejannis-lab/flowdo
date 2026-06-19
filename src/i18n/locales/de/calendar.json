@@ -68,6 +68,16 @@
     "noTasks": "Keine Aufgaben",
     "ongoing": "läuft"
   },
+  "absence": {
+    "offsite": "Außerhaus",
+    "vacation": "Urlaub",
+    "upcomingTooltip": "Anstehende Ereignisse",
+    "upcoming": "Anstehend",
+    "appointments": "Termine",
+    "tasks": "Aufgaben",
+    "nothing": "Nichts anstehend 🎉"
+  },
+  "ownerOnly": "Nur der Ersteller kann bearbeiten",
   "form": {
     "titleEdit": "Eintrag bearbeiten",
     "titleAdd": "Hinzufügen",
