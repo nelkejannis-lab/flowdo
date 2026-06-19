@@ -150,7 +150,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'flowdo-settings',
-      version: 9,
+      version: 10,
       migrate: (persisted, version) => {
         const legacy = persisted as LegacyState & Partial<SettingsState>
         if (version < 1) {
@@ -164,12 +164,15 @@ export const useSettingsStore = create<SettingsState>()(
         }
         const city = (legacy as any).weatherCity
         const hasCustomCity = city && city !== 'Eneppetal' && city !== 'Ennepetal'
+        const existingNavOrder = ((legacy as any).navOrder ?? []) as NavItemKey[]
+        const missingNavItems = DEFAULT_NAV_ORDER.filter((k) => !existingNavOrder.includes(k))
+        const mergedNavOrder = existingNavOrder.length > 0 ? [...existingNavOrder, ...missingNavItems] : [...DEFAULT_NAV_ORDER]
         return {
           ...legacy,
           language: legacy.language ?? 'de',
           featureVisibility: { ...DEFAULT_FEATURE_VISIBILITY, ...legacy.featureVisibility },
           dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY },
-          navOrder: (legacy as any).navOrder ?? [...DEFAULT_NAV_ORDER],
+          navOrder: mergedNavOrder,
           navVisibility: { ...DEFAULT_NAV_VISIBILITY, ...(legacy as any).navVisibility },
           colorLabels: { ...DEFAULT_COLOR_LABELS, ...(legacy as any).colorLabels },
           onboardingPermissionsDone: legacy.onboardingPermissionsDone ?? false,
