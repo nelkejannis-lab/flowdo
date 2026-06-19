@@ -1,4 +1,5 @@
 // Redirects the user to the OAuth provider's login page
+// JWT verification disabled — this function only builds a public redirect URL
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -15,7 +16,7 @@ Deno.serve(async (req: Request) => {
 
   if (provider === 'google') {
     const clientId = Deno.env.get('GOOGLE_CLIENT_ID')
-    if (!clientId) return new Response('GOOGLE_CLIENT_ID not set', { status: 500 })
+    if (!clientId) return new Response('GOOGLE_CLIENT_ID not set', { status: 500, headers: corsHeaders })
 
     const params = new URLSearchParams({
       client_id: clientId,
@@ -31,7 +32,7 @@ Deno.serve(async (req: Request) => {
 
   if (provider === 'microsoft') {
     const clientId = Deno.env.get('MICROSOFT_CLIENT_ID')
-    if (!clientId) return new Response('MICROSOFT_CLIENT_ID not set', { status: 500 })
+    if (!clientId) return new Response('MICROSOFT_CLIENT_ID not set', { status: 500, headers: corsHeaders })
 
     const params = new URLSearchParams({
       client_id: clientId,
@@ -43,5 +44,5 @@ Deno.serve(async (req: Request) => {
     return Response.redirect(`https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params}`)
   }
 
-  return new Response('Unknown provider', { status: 400 })
+  return new Response('Unknown provider', { status: 400, headers: corsHeaders })
 })
