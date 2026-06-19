@@ -7,6 +7,12 @@ export type Mode = 'light' | 'dark'
 export type Language = 'de' | 'en'
 export type FeatureKey = 'calendar' | 'eisenhower' | 'worktime' | 'aiScheduler' | 'chat' | 'friends' | 'social' | 'weather'
 
+export type NavItemKey = 'dashboard' | 'week' | 'inbox' | 'tasks' | 'calendar' | 'termine' | 'pomodoro' | 'eisenhower' | 'worktime' | 'aiScheduler' | 'chat' | 'friends' | 'social' | 'projekte'
+
+export const DEFAULT_NAV_ORDER: NavItemKey[] = [
+  'dashboard', 'week', 'inbox', 'tasks', 'calendar', 'termine', 'pomodoro', 'eisenhower', 'worktime', 'aiScheduler', 'chat', 'friends', 'social', 'projekte',
+]
+
 export const DEFAULT_FEATURE_VISIBILITY: Record<FeatureKey, boolean> = {
   calendar: true,
   eisenhower: true,
@@ -46,6 +52,7 @@ interface SettingsState {
   featureVisibility: Record<FeatureKey, boolean>
   dashboardVisibility: Record<DashboardWidget, boolean>
   colorLabels: Record<string, string>
+  navOrder: NavItemKey[]
   notifyAppointments: boolean
   notifyChat: boolean
   notifyTasks: boolean
@@ -64,6 +71,7 @@ interface SettingsState {
   setNotifyTasks: (v: boolean) => void
   setAppointmentReminderMinutes: (v: number) => void
   setOnboardingPermissionsDone: () => void
+  setNavOrder: (order: NavItemKey[]) => void
   setWeatherCity: (city: string) => void
   setWeatherCoords: (coords: WeatherCoords) => void
 }
@@ -80,6 +88,7 @@ export const useSettingsStore = create<SettingsState>()(
       language: 'de',
       featureVisibility: { ...DEFAULT_FEATURE_VISIBILITY },
       dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY },
+      navOrder: [...DEFAULT_NAV_ORDER],
       colorLabels: { ...DEFAULT_COLOR_LABELS },
       notifyAppointments: true,
       notifyChat: true,
@@ -105,6 +114,7 @@ export const useSettingsStore = create<SettingsState>()(
       setNotifyTasks: (v) => set({ notifyTasks: v }),
       setAppointmentReminderMinutes: (v) => set({ appointmentReminderMinutes: v }),
       setOnboardingPermissionsDone: () => set({ onboardingPermissionsDone: true }),
+      setNavOrder: (navOrder) => set({ navOrder }),
       setWeatherCity: (city) => set({ weatherCity: city }),
       setWeatherCoords: (coords) => set({ weatherCoords: coords }),
     }),
@@ -129,6 +139,7 @@ export const useSettingsStore = create<SettingsState>()(
           language: legacy.language ?? 'de',
           featureVisibility: { ...DEFAULT_FEATURE_VISIBILITY, ...legacy.featureVisibility },
           dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY },
+          navOrder: (legacy as any).navOrder ?? [...DEFAULT_NAV_ORDER],
           colorLabels: { ...DEFAULT_COLOR_LABELS, ...(legacy as any).colorLabels },
           onboardingPermissionsDone: legacy.onboardingPermissionsDone ?? false,
           weatherCity: hasCustomCity ? city : DEFAULT_WEATHER_CITY,

@@ -27,7 +27,26 @@ import {
   Bell,
   MessageCircle,
   Search,
+  GripVertical,
 } from 'lucide-react'
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { type NavItemKey, DEFAULT_NAV_ORDER } from '../../store/settingsStore'
 import { useSearchStore } from '../../store/searchStore'
 import { useMessagesStore } from '../../store/messagesStore'
 import { useBoardsStore } from '../../store/boardsStore'
@@ -75,6 +94,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pinkAccent = useSettingsStore((s) => s.pinkAccent)
   const togglePinkAccent = useSettingsStore((s) => s.togglePinkAccent)
   const featureVisibility = useSettingsStore((s) => s.featureVisibility)
+  const navOrder = useSettingsStore((s) => s.navOrder ?? DEFAULT_NAV_ORDER)
+  const setNavOrder = useSettingsStore((s) => s.setNavOrder)
   const profile = useAuthStore((s) => s.profile)
   const signOut = useAuthStore((s) => s.signOut)
   const openSearch = useSearchStore((s) => s.open)
@@ -92,6 +113,43 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       fetchBoards()
     }
   }, [fetchBoards, fetchFolders, fetchTaskIncoming, fetchBoardIncoming, fetchTeamIncoming, fetchConversations, fetchNotifications, checkBirthdays])
+
+  const navSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
+  function handleNavDragEnd(e: DragEndEvent) {
+    const { active, over } = e
+    if (over && active.id !== over.id) {
+      const oldIndex = navOrder.indexOf(active.id as NavItemKey)
+      const newIndex = navOrder.indexOf(over.id as NavItemKey)
+      if (oldIndex !== -1 && newIndex !== -1) {
+        setNavOrder(arrayMove(navOrder, oldIndex, newIndex))
+      }
+    }
+  }
+
+  // Full nav item definitions
+  type NavDef = { key: NavItemKey; to: string; icon: React.ReactNode; label: React.ReactNode; visible: boolean; exact?: boolean }
+  const allNavItems: NavDef[] = [
+    { key: 'dashboard', to: '/', icon: <LayoutDashboard size={18} />, label: t('sidebar.nav.dashboard'), visible: true, exact: true },
+    { key: 'week', to: '/tasks/week', icon: <CheckCircle2 size={18} />, label: t('sidebar.nav.thisWeek'), visible: true },
+    { key: 'inbox', to: '/tasks/inbox', icon: <Inbox size={18} />, label: t('sidebar.nav.inbox'), visible: true },
+    { key: 'tasks', to: '/tasks', icon: <ListTodo size={18} />, label: t('sidebar.nav.allTasks'), visible: true, exact: true },
+    { key: 'calendar', to: '/calendar', icon: <CalendarDays size={18} />, label: t('sidebar.nav.calendar'), visible: !!featureVisibility.calendar },
+    { key: 'termine', to: '/termine', icon: <CalendarClock size={18} />, label: 'Termine', visible: true },
+    { key: 'pomodoro', to: '/pomodoro', icon: <Timer size={18} />, label: 'Pomodoro', visible: true },
+    { key: 'eisenhower', to: '/eisenhower', icon: <Grid2x2 size={18} />, label: t('sidebar.nav.eisenhower'), visible: !!featureVisibility.eisenhower },
+    { key: 'worktime', to: '/arbeitszeit', icon: <Clock size={18} />, label: t('sidebar.nav.worktime'), visible: !!featureVisibility.worktime },
+    { key: 'aiScheduler', to: '/ki-termine', icon: <Sparkles size={18} />, label: t('sidebar.nav.aiScheduler'), visible: isSupabaseConfigured && !!featureVisibility.aiScheduler },
+    { key: 'chat', to: '/chat', icon: <MessageCircle size={18} />, label: t('sidebar.nav.chat'), visible: isSupabaseConfigured && !!featureVisibility.chat },
+    { key: 'friends', to: '/friends', icon: <Users size={18} />, label: t('sidebar.nav.friends'), visible: isSupabaseConfigured && !!featureVisibility.friends },
+    { key: 'social', to: '/social', icon: <Instagram size={18} />, label: t('sidebar.nav.social'), visible: isSupabaseConfigured && !!featureVisibility.social },
+    { key: 'projekte', to: '/projekte', icon: <Trello size={18} />, label: t('sidebar.projects.all'), visible: true, exact: true },
+  ]
+  const navItemMap = Object.fromEntries(allNavItems.map((n) => [n.key, n])) as Record<NavItemKey, NavDef>
+  const sortedNavItems = navOrder.map((k) => navItemMap[k]).filter(Boolean)
 
   function toggleFolder(id: string) {
     setOpenFolders((prev) => {
@@ -168,83 +226,30 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
       </div>
 
-      <nav onClick={onClose} className="flex flex-col gap-1">
-        <NavLink to="/" end className={navItemClass}>
-          <LayoutDashboard size={18} />
-          {t('sidebar.nav.dashboard')}
-        </NavLink>
-        <NavLink to="/tasks/week" className={navItemClass}>
-          <CheckCircle2 size={18} />
-          {t('sidebar.nav.thisWeek')}
-        </NavLink>
-        <NavLink to="/tasks/inbox" className={navItemClass}>
-          <Inbox size={18} />
-          {t('sidebar.nav.inbox')}
-        </NavLink>
-        <NavLink to="/tasks" end className={navItemClass}>
-          <ListTodo size={18} />
-          {t('sidebar.nav.allTasks')}
-        </NavLink>
-        {featureVisibility.calendar && (
-          <NavLink to="/calendar" className={navItemClass}>
-            <CalendarDays size={18} />
-            {t('sidebar.nav.calendar')}
-          </NavLink>
-        )}
-        <NavLink to="/termine" className={navItemClass}>
-          <CalendarClock size={18} />
-          Termine
-        </NavLink>
-        {featureVisibility.eisenhower && (
-          <NavLink to="/eisenhower" className={navItemClass}>
-            <Grid2x2 size={18} />
-            {t('sidebar.nav.eisenhower')}
-          </NavLink>
-        )}
-        <NavLink to="/pomodoro" className={navItemClass}>
-          <Timer size={18} />
-          Pomodoro
-        </NavLink>
-        {featureVisibility.worktime && (
-          <NavLink to="/arbeitszeit" className={navItemClass}>
-            <Clock size={18} />
-            {t('sidebar.nav.worktime')}
-          </NavLink>
-        )}
-        {isSupabaseConfigured && featureVisibility.aiScheduler && (
-          <NavLink to="/ki-termine" className={navItemClass}>
-            <Sparkles size={18} />
-            {t('sidebar.nav.aiScheduler')}
-          </NavLink>
-        )}
-        {isSupabaseConfigured && featureVisibility.chat && (
-          <NavLink to="/chat" className={navItemClass} onClick={onClose}>
-            <span className="relative">
-              <MessageCircle size={18} />
-              {unreadMessages > 0 && (
-                <span className="absolute -right-1.5 -top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-accent text-[8px] font-bold text-white">
-                  {unreadMessages > 9 ? '9+' : unreadMessages}
-                </span>
-              )}
-            </span>
-            {t('sidebar.nav.chat')}
-          </NavLink>
-        )}
-        {isSupabaseConfigured && featureVisibility.friends && (
-          <NavLink to="/friends" className={navItemClass}>
-            <Users size={18} />
-            {t('sidebar.nav.friends')}
-          </NavLink>
-        )}
-        {isSupabaseConfigured && featureVisibility.social && (
-          <NavLink to="/social" className={navItemClass}>
-            <Instagram size={18} />
-            {t('sidebar.nav.social')}
-          </NavLink>
-        )}
-      </nav>
+      <DndContext sensors={navSensors} collisionDetection={closestCenter} onDragEnd={handleNavDragEnd}>
+        <SortableContext items={navOrder} strategy={verticalListSortingStrategy}>
+          <nav className="flex flex-col gap-0.5">
+            {sortedNavItems.filter((item) => item.visible).map((item) => (
+              <SortableNavItem key={item.key} id={item.key} to={item.to} exact={item.exact} onClose={onClose}>
+                {item.key === 'chat' ? (
+                  <span className="relative flex-shrink-0">{item.icon}
+                    {unreadMessages > 0 && (
+                      <span className="absolute -right-1.5 -top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-accent text-[8px] font-bold text-white">
+                        {unreadMessages > 9 ? '9+' : unreadMessages}
+                      </span>
+                    )}
+                  </span>
+                ) : (
+                  <span className="flex-shrink-0">{item.icon}</span>
+                )}
+                <span className="flex-1 truncate">{item.label}</span>
+              </SortableNavItem>
+            ))}
+          </nav>
+        </SortableContext>
+      </DndContext>
 
-      <div className="mt-6">
+      <div className="mt-4">
         <div className="mb-2 flex items-center justify-between px-2">
           <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
             {t('sidebar.projects.title')}
@@ -401,5 +406,45 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       </div>
       </aside>
     </>
+  )
+}
+
+interface SortableNavItemProps {
+  id: string
+  to: string
+  exact?: boolean
+  onClose: () => void
+  children: React.ReactNode
+}
+
+function SortableNavItem({ id, to, exact, onClose, children }: SortableNavItemProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+  const navItemClass = ({ isActive }: { isActive: boolean }) =>
+    `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+      isActive
+        ? 'bg-accent/10 text-accent shadow-sm'
+        : 'text-gray-600 hover:bg-black/[0.04] dark:text-racing-100 dark:hover:bg-white/[0.06]'
+    }`
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+      className="group relative flex items-center"
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="absolute left-0 z-10 flex cursor-grab items-center justify-center rounded p-1 opacity-0 group-hover:opacity-40 hover:!opacity-80 active:cursor-grabbing touch-none"
+        style={{ left: -2 }}
+        tabIndex={-1}
+        onClick={(e) => e.preventDefault()}
+      >
+        <GripVertical size={12} className="text-gray-400" />
+      </button>
+      <NavLink to={to} end={exact} className={navItemClass} onClick={onClose} style={{ paddingLeft: '12px', flex: 1 }}>
+        {children}
+      </NavLink>
+    </div>
   )
 }

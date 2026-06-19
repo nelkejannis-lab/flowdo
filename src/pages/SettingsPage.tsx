@@ -1,12 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { BarChart2, Bell, CalendarClock, CalendarDays, CheckSquare, Clock, Cloud, Download, Eye, EyeOff, FolderKanban, Grid2x2, Instagram, Loader2, MapPin, MessageCircle, Plus, RefreshCw, Sparkles, Trash2, Upload, Users, X } from 'lucide-react'
+import { BarChart2, Bell, CalendarClock, CalendarDays, CheckSquare, Clock, Cloud, Download, Eye, EyeOff, FolderKanban, Grid2x2, GripVertical, Instagram, Loader2, MapPin, MessageCircle, Plus, RefreshCw, Sparkles, Timer, Trash2, Trello, Upload, Users, X } from 'lucide-react'
+import {
+  DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy, arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useAuthStore } from '../store/authStore'
 import { uploadAvatar } from '../lib/avatar'
 import { BOARD_COLORS } from '../store/boardsStore'
 import { useCalendarConnectionsStore } from '../store/calendarConnectionsStore'
-import { useSettingsStore, type DashboardWidget, type FeatureKey } from '../store/settingsStore'
+import { useSettingsStore, type DashboardWidget, type FeatureKey, type NavItemKey, DEFAULT_NAV_ORDER } from '../store/settingsStore'
 import { useWorkTimeStore } from '../store/workTimeStore'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { useSearchParams } from 'react-router-dom'
@@ -118,6 +125,8 @@ export default function SettingsPage() {
   const toggleFeature = useSettingsStore((s) => s.toggleFeature)
   const dashboardVisibility = useSettingsStore((s) => s.dashboardVisibility)
   const toggleDashboardWidget = useSettingsStore((s) => s.toggleDashboardWidget)
+  const navOrder = useSettingsStore((s) => s.navOrder ?? DEFAULT_NAV_ORDER)
+  const setNavOrder = useSettingsStore((s) => s.setNavOrder)
   const notifyAppointments = useSettingsStore((s) => s.notifyAppointments)
   const notifyChat = useSettingsStore((s) => s.notifyChat)
   const notifyTasks = useSettingsStore((s) => s.notifyTasks)
@@ -420,71 +429,11 @@ export default function SettingsPage() {
 
       {activeTab === 'funktionen' && (
         <div className="flex flex-col gap-4">
-          <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-            <h2 className="mb-1 text-sm font-semibold">{t('features.title')}</h2>
-            <p className="mb-3 text-xs text-gray-400">{t('features.description')}</p>
-            <div className="flex flex-col divide-y divide-gray-100 dark:divide-racing-800">
-              {(Object.keys(FEATURE_ICONS) as FeatureKey[])
-                .filter((key) => !SUPABASE_ONLY_FEATURES.includes(key) || isSupabaseConfigured)
-                .map((key) => {
-                  const enabled = featureVisibility[key]
-                  return (
-                    <div key={key} className="flex items-center gap-3 py-3">
-                      <span className="flex-shrink-0 text-gray-400">{FEATURE_ICONS[key]}</span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium">{t(`features.items.${key}.label`)}</p>
-                        <p className="text-xs text-gray-400">{t(`features.items.${key}.description`)}</p>
-                      </div>
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={enabled}
-                        onClick={() => toggleFeature(key)}
-                        className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${enabled ? 'bg-[#34c759]' : 'bg-gray-200 dark:bg-racing-700'}`}
-                      >
-                        <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0'}`} />
-                      </button>
-                    </div>
-                  )
-                })}
-            </div>
-          </div>
+          {/* Sidebar Reihenfolge */}
+          <SidebarOrderSection navOrder={navOrder} setNavOrder={setNavOrder} featureVisibility={featureVisibility} toggleFeature={toggleFeature} />
 
-          {/* Dashboard */}
-          <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-            <h2 className="mb-1 text-sm font-semibold">Dashboard</h2>
-            <p className="mb-3 text-xs text-gray-400">Wähle aus, was auf deinem Dashboard angezeigt wird.</p>
-            <div className="flex flex-col divide-y divide-gray-100 dark:divide-racing-800">
-              {([
-                { key: 'weather' as DashboardWidget, icon: <Cloud size={18} />, label: 'Wetter', desc: 'Aktuelles Wetter deines Standorts' },
-                { key: 'stats' as DashboardWidget, icon: <BarChart2 size={18} />, label: 'Statistiken', desc: 'Aufgaben, Projekte und Arbeitszeit' },
-                { key: 'todayTasks' as DashboardWidget, icon: <CheckSquare size={18} />, label: 'Heute', desc: 'Heutige Aufgaben und Termine' },
-                { key: 'upcomingDeadlines' as DashboardWidget, icon: <Clock size={18} />, label: 'Deadlines', desc: 'Anstehende Projekt-Deadlines' },
-                { key: 'nextEvents' as DashboardWidget, icon: <CalendarClock size={18} />, label: 'Events', desc: 'Nächste Ereignisse' },
-                { key: 'projectsOverview' as DashboardWidget, icon: <FolderKanban size={18} />, label: 'Projektübersicht', desc: 'Alle aktiven Projekte' },
-              ]).map(({ key, icon, label, desc }) => {
-                const enabled = dashboardVisibility[key]
-                return (
-                  <div key={key} className="flex items-center gap-3 py-3">
-                    <span className="flex-shrink-0 text-gray-400">{icon}</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{label}</p>
-                      <p className="text-xs text-gray-400">{desc}</p>
-                    </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={enabled}
-                      onClick={() => toggleDashboardWidget(key)}
-                      className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${enabled ? 'bg-[#34c759]' : 'bg-gray-200 dark:bg-racing-700'}`}
-                    >
-                      <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0'}`} />
-                    </button>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+          {/* Dashboard Widgets */}
+          <DashboardWidgetSection dashboardVisibility={dashboardVisibility} toggleDashboardWidget={toggleDashboardWidget} />
 
           {/* Benachrichtigungen */}
           <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
@@ -971,6 +920,167 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+      )}
+    </div>
+  )
+}
+
+// ── Sidebar order + feature toggles ──────────────────────────────────────
+const NAV_META: Record<NavItemKey, { icon: React.ReactNode; label: string; featureKey?: FeatureKey; supabaseOnly?: boolean }> = {
+  dashboard:   { icon: <LayoutDashboard size={16} />, label: 'Dashboard' },
+  week:        { icon: <CheckCircle2 size={16} />, label: 'Diese Woche' },
+  inbox:       { icon: <Inbox size={16} />, label: 'Posteingang' },
+  tasks:       { icon: <ListTodo size={16} />, label: 'Alle Aufgaben' },
+  calendar:    { icon: <CalendarDays size={16} />, label: 'Kalender', featureKey: 'calendar' },
+  termine:     { icon: <CalendarClock size={16} />, label: 'Termine' },
+  pomodoro:    { icon: <Timer size={16} />, label: 'Pomodoro' },
+  eisenhower:  { icon: <Grid2x2 size={16} />, label: 'Eisenhower', featureKey: 'eisenhower' },
+  worktime:    { icon: <Clock size={16} />, label: 'Arbeitszeit', featureKey: 'worktime' },
+  aiScheduler: { icon: <Sparkles size={16} />, label: 'KI-Assistent', featureKey: 'aiScheduler', supabaseOnly: true },
+  chat:        { icon: <MessageCircle size={16} />, label: 'Chat', featureKey: 'chat', supabaseOnly: true },
+  friends:     { icon: <Users size={16} />, label: 'Kollegen', featureKey: 'friends', supabaseOnly: true },
+  social:      { icon: <Instagram size={16} />, label: 'Social Media', featureKey: 'social', supabaseOnly: true },
+  projekte:    { icon: <Trello size={16} />, label: 'Projekte' },
+}
+
+// Reuse icons from outer scope
+import {
+  LayoutDashboard, CheckCircle2, Inbox, ListTodo,
+} from 'lucide-react'
+
+interface SidebarOrderSectionProps {
+  navOrder: NavItemKey[]
+  setNavOrder: (o: NavItemKey[]) => void
+  featureVisibility: Record<FeatureKey, boolean>
+  toggleFeature: (k: FeatureKey) => void
+}
+
+function SidebarOrderSection({ navOrder, setNavOrder, featureVisibility, toggleFeature }: SidebarOrderSectionProps) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+  function onDragEnd(e: DragEndEvent) {
+    const { active, over } = e
+    if (over && active.id !== over.id) {
+      const oldIdx = navOrder.indexOf(active.id as NavItemKey)
+      const newIdx = navOrder.indexOf(over.id as NavItemKey)
+      if (oldIdx !== -1 && newIdx !== -1) setNavOrder(arrayMove(navOrder, oldIdx, newIdx))
+    }
+  }
+  const fullOrder = [...navOrder, ...DEFAULT_NAV_ORDER.filter((k) => !navOrder.includes(k))]
+
+  return (
+    <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+      <h2 className="mb-1 text-sm font-semibold">Seitenleiste</h2>
+      <p className="mb-3 text-xs text-gray-400">Ziehe Einträge um die Reihenfolge zu ändern. Schalter aktiviert/deaktiviert den Eintrag.</p>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <SortableContext items={fullOrder} strategy={verticalListSortingStrategy}>
+          <div className="flex flex-col divide-y divide-gray-100 dark:divide-racing-800">
+            {fullOrder.map((key) => {
+              const meta = NAV_META[key]
+              if (!meta) return null
+              const hasToggle = !!meta.featureKey
+              const enabled = hasToggle ? featureVisibility[meta.featureKey!] : true
+              return (
+                <SortableSettingsRow
+                  key={key}
+                  id={key}
+                  icon={meta.icon}
+                  label={meta.label}
+                  enabled={enabled}
+                  hasToggle={hasToggle}
+                  onToggle={hasToggle ? () => toggleFeature(meta.featureKey!) : undefined}
+                />
+              )
+            })}
+          </div>
+        </SortableContext>
+      </DndContext>
+    </div>
+  )
+}
+
+// ── Dashboard widgets ─────────────────────────────────────────────────────
+const DASH_WIDGETS: { key: DashboardWidget; icon: React.ReactNode; label: string; desc: string }[] = [
+  { key: 'weather',          icon: <Cloud size={16} />,       label: 'Wetter',          desc: 'Aktuelles Wetter deines Standorts' },
+  { key: 'stats',            icon: <BarChart2 size={16} />,   label: 'Statistiken',     desc: 'Aufgaben & Projekte' },
+  { key: 'todayTasks',       icon: <CheckSquare size={16} />, label: 'Heute',           desc: 'Heutige Aufgaben und Termine' },
+  { key: 'upcomingDeadlines',icon: <Clock size={16} />,       label: 'Deadlines',       desc: 'Anstehende Projekt-Deadlines' },
+  { key: 'nextEvents',       icon: <CalendarClock size={16} />, label: 'Events',        desc: 'Nächste Ereignisse' },
+  { key: 'projectsOverview', icon: <FolderKanban size={16} />,label: 'Projektübersicht',desc: 'Alle aktiven Projekte' },
+]
+
+function DashboardWidgetSection({ dashboardVisibility, toggleDashboardWidget }: { dashboardVisibility: Record<DashboardWidget, boolean>; toggleDashboardWidget: (k: DashboardWidget) => void }) {
+  return (
+    <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+      <h2 className="mb-1 text-sm font-semibold">Dashboard-Widgets</h2>
+      <p className="mb-3 text-xs text-gray-400">Wähle aus, welche Bereiche auf dem Dashboard sichtbar sind.</p>
+      <div className="flex flex-col divide-y divide-gray-100 dark:divide-racing-800">
+        {DASH_WIDGETS.map(({ key, icon, label, desc }) => {
+          const enabled = dashboardVisibility[key]
+          return (
+            <div key={key} className="flex items-center gap-3 py-3">
+              <span className="flex-shrink-0 text-gray-400">{icon}</span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">{label}</p>
+                <p className="text-xs text-gray-400">{desc}</p>
+              </div>
+              <Toggle enabled={enabled} onToggle={() => toggleDashboardWidget(key)} />
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── Shared UI helpers ─────────────────────────────────────────────────────
+function Toggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={enabled}
+      onClick={onToggle}
+      className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${enabled ? 'bg-[#34c759]' : 'bg-gray-200 dark:bg-racing-700'}`}
+    >
+      <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+    </button>
+  )
+}
+
+interface SortableSettingsRowProps {
+  id: string
+  icon: React.ReactNode
+  label: string
+  enabled: boolean
+  hasToggle: boolean
+  onToggle?: () => void
+}
+
+function SortableSettingsRow({ id, icon, label, enabled, hasToggle, onToggle }: SortableSettingsRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+      className="flex items-center gap-3 py-2.5"
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="cursor-grab rounded p-1 text-gray-300 hover:text-gray-500 active:cursor-grabbing touch-none"
+        tabIndex={-1}
+      >
+        <GripVertical size={14} />
+      </button>
+      <span className="flex-shrink-0 text-gray-400">{icon}</span>
+      <p className={`flex-1 text-sm font-medium ${!enabled && hasToggle ? 'text-gray-400' : ''}`}>{label}</p>
+      {hasToggle && onToggle ? (
+        <Toggle enabled={enabled} onToggle={onToggle} />
+      ) : (
+        <span className="text-[10px] text-gray-300">immer an</span>
       )}
     </div>
   )
