@@ -65,13 +65,16 @@ function toEntry(row: CalendarEntryRow & { recurrence?: string | null }): Calend
   }
 }
 
-async function setInvites(entryId: string, userIds: string[]) {
-  await supabase.from('calendar_entry_invites').delete().eq('entry_id', entryId)
+async function setInvites(entryId: string, userIds: string[]): Promise<string | null> {
+  const { error: delErr } = await supabase.from('calendar_entry_invites').delete().eq('entry_id', entryId)
+  if (delErr) return delErr.message
   if (userIds.length > 0) {
-    await supabase
+    const { error: insErr } = await supabase
       .from('calendar_entry_invites')
       .insert(userIds.map((userId) => ({ entry_id: entryId, user_id: userId })))
+    if (insErr) return insErr.message
   }
+  return null
 }
 
 export const useCalendarEntriesStore = create<CalendarEntriesState>()((set, get) => ({
@@ -117,10 +120,14 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()((set, get)
       .select('id')
       .single()
 
-    if (error) return error.message
+    if (error) {
+      console.error('[addEntry] Supabase error:', error.code, error.message, error.details, error.hint)
+      return error.message
+    }
 
     if (input.invitedUserIds.length > 0) {
-      await setInvites(data.id, input.invitedUserIds)
+      const inviteErr = await setInvites(data.id, input.invitedUserIds)
+      if (inviteErr) console.error('[addEntry] setInvites error:', inviteErr)
     }
 
     await get().fetchEntries()

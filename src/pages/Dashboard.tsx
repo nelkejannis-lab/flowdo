@@ -24,6 +24,7 @@ import { SortableContext, sortableKeyboardCoordinates, useSortable, horizontalLi
 import { CSS } from '@dnd-kit/utilities'
 import { GripHorizontal } from 'lucide-react'
 import OnboardingPermissions from '../components/dashboard/OnboardingPermissions'
+import MorningReportModal from '../components/dashboard/MorningReportModal'
 import { useSettingsStore } from '../store/settingsStore'
 import { isDueThisWeek, isDueToday, isOverdue, todayISO } from '../utils/date'
 
@@ -53,6 +54,12 @@ export default function Dashboard() {
   const [showForm, setShowForm] = useState(false)
   const [showEntries, setShowEntries] = useState(true)
   const [showWeekEntries, setShowWeekEntries] = useState(true)
+  const [showMorningReport, setShowMorningReport] = useState(() => {
+    const hour = new Date().getHours()
+    const today = new Date().toISOString().slice(0, 10)
+    const dismissed = localStorage.getItem('morningReportDismissed')
+    return hour >= 5 && hour < 12 && dismissed !== today
+  })
   const DEFAULT_WIDGET_ORDER = ['weather', 'workoffice', 'stats_week', 'stats_projects']
   const [widgetOrder, setWidgetOrder] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem('dashWidgetOrder') ?? 'null') ?? DEFAULT_WIDGET_ORDER } catch { return DEFAULT_WIDGET_ORDER }
@@ -104,9 +111,9 @@ export default function Dashboard() {
     )
   }
 
-  // "Diese Woche" = only future tasks this week, NOT overdue/today (those go in Heute)
+  // "Diese Woche" = all non-completed tasks this week incl. today (overdue excluded)
   const weekTasks = sortByEisenhower(
-    allTasks.filter((t) => !t.completed && isDueThisWeek(t.dueDate) && !isDueToday(t.dueDate) && !isOverdue(t.dueDate))
+    allTasks.filter((t) => !t.completed && isDueThisWeek(t.dueDate) && !isOverdue(t.dueDate))
   )
 
   const upcomingBoards = boards
@@ -151,6 +158,18 @@ export default function Dashboard() {
   return (
     <div>
       <OfficePromptModal />
+      {showMorningReport && (
+        <MorningReportModal
+          todayTasks={allTasks.filter((t) => !t.completed && (isDueToday(t.dueDate) || isOverdue(t.dueDate)))}
+          weekTasks={weekTasks}
+          todayEntries={todayEntries}
+          weekEntries={weekEntries}
+          onClose={() => {
+            setShowMorningReport(false)
+            localStorage.setItem('morningReportDismissed', new Date().toISOString().slice(0, 10))
+          }}
+        />
+      )}
       {!onboardingPermissionsDone && <OnboardingPermissions />}
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{t('title')}</h1>

@@ -10,7 +10,7 @@ import {
 } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
 import { useTranslation } from 'react-i18next'
-import { ChevronLeft, ChevronRight, Plus, Users, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Users, X, Plane, Home, ListTodo, PanelRight } from 'lucide-react'
 import { useFriendsStore } from '../store/friendsStore'
 import { useTeamsStore } from '../store/teamsStore'
 import { useCalendarConnectionsStore } from '../store/calendarConnectionsStore'
@@ -30,6 +30,7 @@ import { mergeCalendarEntries } from '../utils/mergeEntries'
 import type { CalendarEntry, CalendarEvent, Task } from '../types'
 
 type ViewMode = 'month' | 'week' | 'day'
+type AbsenceFilter = null | 'urlaub' | 'reise'
 
 export default function CalendarPage() {
   const { t, i18n } = useTranslation('calendar')
@@ -46,6 +47,8 @@ export default function CalendarPage() {
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null)
   const [editingEntry, setEditingEntry] = useState<CalendarEntry | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
+  const [absenceFilter, setAbsenceFilter] = useState<AbsenceFilter>(null)
+  const [showUpcoming, setShowUpcoming] = useState(false)
   const [showBirthdays, setShowBirthdays] = useState(false)
   const birthdayRef = useRef<HTMLDivElement>(null)
   const friends = useFriendsStore((s) => s.friends)
@@ -99,6 +102,7 @@ export default function CalendarPage() {
     for (const [provider, prefix] of Object.entries(providerPrefixes)) {
       if (e.title.startsWith(prefix) && disabledCalendars.has(provider)) return false
     }
+    if (absenceFilter && e.type !== absenceFilter) return false
     return true
   }))
 
@@ -310,6 +314,30 @@ export default function CalendarPage() {
               )}
             </div>
           )}
+          {/* Abwesenheits-Filter */}
+          <div className="flex items-center gap-1 rounded-lg border border-gray-200 p-1 dark:border-racing-700">
+            <button
+              onClick={() => setAbsenceFilter(absenceFilter === 'reise' ? null : 'reise')}
+              className={`flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium transition-colors ${absenceFilter === 'reise' ? 'bg-blue-500 text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'}`}
+              title="Außerhaus"
+            >
+              <Home size={12} /> Außerhaus
+            </button>
+            <button
+              onClick={() => setAbsenceFilter(absenceFilter === 'urlaub' ? null : 'urlaub')}
+              className={`flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium transition-colors ${absenceFilter === 'urlaub' ? 'bg-emerald-500 text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'}`}
+              title="Urlaub"
+            >
+              <Plane size={12} /> Urlaub
+            </button>
+          </div>
+          <button
+            onClick={() => setShowUpcoming((v) => !v)}
+            title="Anstehende Ereignisse"
+            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm transition-colors ${showUpcoming ? 'border-accent bg-accent/10 text-accent' : 'border-gray-200 hover:bg-gray-50 dark:border-racing-700'}`}
+          >
+            <PanelRight size={14} />
+          </button>
           <button
             onClick={() => setShowAddForm(true)}
             className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:bg-accent-dark"
@@ -363,6 +391,7 @@ export default function CalendarPage() {
         </div>
 
         {isSupabaseConfigured && <TeamAvailabilitySidebar entries={filteredEntries} />}
+        {showUpcoming && <UpcomingPanel tasks={tasks} entries={entries} />}
       </div>
 
       {/* Team reise/urlaub panel */}
@@ -406,6 +435,7 @@ export default function CalendarPage() {
       )}
 
       {editingTask && <TaskFormModal task={editingTask} onClose={() => setEditingTask(null)} />}
+
       {newTaskDate && (
         <TaskFormModal defaultDueDate={newTaskDate} onClose={() => setNewTaskDate(null)} />
       )}
@@ -414,6 +444,69 @@ export default function CalendarPage() {
       )}
       {editingEvent && <CalendarEntryFormModal event={editingEvent} onClose={() => setEditingEvent(null)} />}
       {editingEntry && <CalendarEntryFormModal entry={editingEntry} onClose={() => setEditingEntry(null)} />}
+    </div>
+  )
+}
+
+function UpcomingPanel({ tasks, entries }: { tasks: Task[]; entries: CalendarEntry[] }) {
+  const today = new Date().toISOString().slice(0, 10)
+  const upcomingTasks = tasks
+    .filter((t) => !t.completed && t.dueDate && t.dueDate >= today)
+    .sort((a, b) => (a.dueDate! < b.dueDate! ? -1 : 1))
+    .slice(0, 8)
+  const upcomingEntries = entries
+    .filter((e) => e.date >= today)
+    .sort((a, b) => {
+      if (a.date !== b.date) return a.date < b.date ? -1 : 1
+      return (a.startTime ?? '') < (b.startTime ?? '') ? -1 : 1
+    })
+    .slice(0, 8)
+
+  const priorityColors: Record<string, string> = { high: 'bg-red-400', medium: 'bg-amber-400', low: 'bg-blue-400' }
+
+  return (
+    <div className="w-64 flex-shrink-0 rounded-xl border border-gray-100 bg-white p-3 dark:border-racing-800 dark:bg-racing-900">
+      <div className="mb-3 flex items-center gap-1.5">
+        <ListTodo size={14} className="text-accent" />
+        <h3 className="text-sm font-semibold">Anstehend</h3>
+      </div>
+      <div className="space-y-3">
+        {upcomingEntries.length > 0 && (
+          <div>
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400">Termine</p>
+            <div className="space-y-1">
+              {upcomingEntries.map((e) => (
+                <div key={e.id} className="rounded-lg bg-gray-50 px-2.5 py-1.5 dark:bg-racing-800">
+                  <p className="text-xs font-medium truncate">{e.title}</p>
+                  <p className="text-[10px] text-gray-400">
+                    {format(new Date(e.date), 'EEE d. MMM', { locale: de })}
+                    {e.startTime && ` · ${e.startTime}`}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {upcomingTasks.length > 0 && (
+          <div>
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400">Aufgaben</p>
+            <div className="space-y-1">
+              {upcomingTasks.map((t) => (
+                <div key={t.id} className="flex items-center gap-2 rounded-lg bg-gray-50 px-2.5 py-1.5 dark:bg-racing-800">
+                  <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${priorityColors[t.priority] ?? 'bg-gray-400'}`} />
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium truncate">{t.title}</p>
+                    {t.dueDate && <p className="text-[10px] text-gray-400">{format(new Date(t.dueDate), 'EEE d. MMM', { locale: de })}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {upcomingEntries.length === 0 && upcomingTasks.length === 0 && (
+          <p className="text-xs text-gray-400 text-center py-4">Nichts anstehend 🎉</p>
+        )}
+      </div>
     </div>
   )
 }
