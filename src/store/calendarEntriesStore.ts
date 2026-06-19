@@ -159,8 +159,13 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()((set, get)
 
   deleteEntry: async (id) => {
     set((state) => ({ entries: state.entries.filter((e) => e.id !== id) }))
-    await supabase.from('calendar_entry_invites').delete().eq('entry_id', id)
-    await supabase.from('calendar_entries').delete().eq('id', id)
+    // CASCADE on FK deletes calendar_entry_invites automatically
+    const { error } = await supabase.from('calendar_entries').delete().eq('id', id)
+    if (error) {
+      console.error('[deleteEntry] failed:', error.message)
+      // Restore entry in local state if DB delete failed
+      await get().fetchEntries()
+    }
   },
 
   undoDelete: (_id) => { /* no-op: immediate delete */ },
