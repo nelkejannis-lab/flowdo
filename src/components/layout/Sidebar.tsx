@@ -115,6 +115,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     }
   }, [fetchBoards, fetchFolders, fetchTaskIncoming, fetchBoardIncoming, fetchTeamIncoming, fetchConversations, fetchNotifications, checkBirthdays])
 
+  // Self-heal stale persisted navOrder that predates newer nav items (e.g. worktime, pomodoro)
+  useEffect(() => {
+    const missing = DEFAULT_NAV_ORDER.filter((k) => !navOrder.includes(k))
+    if (missing.length > 0) setNavOrder([...navOrder, ...missing])
+  }, [navOrder, setNavOrder])
+
   const navSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
