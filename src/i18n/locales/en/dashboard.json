@@ -1,6 +1,7 @@
 {
   "title": "Dashboard",
-  "addTask": "Task",
+  "addTask": "Add",
+  "quickAddPlaceholder": "Quickly add a task…",
   "showAll": "Show all",
   "allProjects": "All projects",
   "calendar": "Calendar",

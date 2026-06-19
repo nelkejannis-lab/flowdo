@@ -1,6 +1,8 @@
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 
+import pomodoroDe from './locales/de/pomodoro.json'
+import pomodoroEn from './locales/en/pomodoro.json'
 import commonDe from './locales/de/common.json'
 import layoutDe from './locales/de/layout.json'
 import dashboardDe from './locales/de/dashboard.json'
@@ -52,6 +54,7 @@ export const resources = {
     settings: settingsDe,
     auth: authDe,
     legal: legalDe,
+    pomodoro: pomodoroDe,
   },
   en: {
     common: commonEn,
@@ -69,6 +72,7 @@ export const resources = {
     settings: settingsEn,
     auth: authEn,
     legal: legalEn,
+    pomodoro: pomodoroEn,
   },
 } as const
 

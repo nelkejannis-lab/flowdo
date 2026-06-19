@@ -51,7 +51,9 @@ export default function Dashboard() {
   const featureVisibility = useSettingsStore((s) => s.featureVisibility)
   const dashboardVisibility = useSettingsStore((s) => s.dashboardVisibility)
   const onboardingPermissionsDone = useSettingsStore((s) => s.onboardingPermissionsDone)
+  const addTask = useTasksStore((s) => s.addTask)
   const [showForm, setShowForm] = useState(false)
+  const [quickInput, setQuickInput] = useState('')
   const [showEntries, setShowEntries] = useState(true)
   const [showWeekEntries, setShowWeekEntries] = useState(true)
   const [showMorningReport, setShowMorningReport] = useState(() => {
@@ -171,15 +173,35 @@ export default function Dashboard() {
         />
       )}
       {!onboardingPermissionsDone && <OnboardingPermissions />}
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t('title')}</h1>
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-dark"
+      <div className="mb-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h1 className="text-2xl font-semibold">{t('title')}</h1>
+        </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            const title = quickInput.trim()
+            if (!title) return
+            addTask({ title, priority: 'medium', tags: [], evening: false })
+            setQuickInput('')
+          }}
+          className="flex gap-2"
         >
-          <Plus size={16} />
-          {t('addTask')}
-        </button>
+          <input
+            value={quickInput}
+            onChange={(e) => setQuickInput(e.target.value)}
+            placeholder={t('quickAddPlaceholder')}
+            className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-accent dark:border-racing-700 dark:bg-racing-900"
+          />
+          <button
+            type="submit"
+            disabled={!quickInput.trim()}
+            className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-40"
+          >
+            <Plus size={16} />
+            {t('addTask')}
+          </button>
+        </form>
       </div>
 
       {/* Widget grid — rendered after task sections via CSS order */}

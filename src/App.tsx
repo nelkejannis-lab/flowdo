@@ -17,12 +17,14 @@ import SocialAccountDetailPage from './pages/SocialAccountDetailPage'
 import AiSchedulerPage from './pages/AiSchedulerPage'
 import ChatPage from './pages/ChatPage'
 import SettingsPage from './pages/SettingsPage'
+import PomodoroPage from './pages/PomodoroPage'
 import DatenschutzPage from './pages/legal/DatenschutzPage'
 import ImpressumPage from './pages/legal/ImpressumPage'
 import InstagramCallbackPage from './pages/InstagramCallbackPage'
 import { useSettingsStore } from './store/settingsStore'
 import { useAuthStore } from './store/authStore'
 import { useNotifications } from './hooks/useNotifications'
+import { useCalendarReminders } from './hooks/useCalendarReminders'
 import { isSupabaseConfigured } from './lib/supabase'
 import ErrorBoundary from './components/layout/ErrorBoundary'
 import TaskFormModal from './components/tasks/TaskFormModal'
@@ -38,6 +40,7 @@ export default function App() {
   const loading = useAuthStore((s) => s.loading)
   const session = useAuthStore((s) => s.session)
   useNotifications()
+  useCalendarReminders()
 
   const [showNewTask, setShowNewTask] = useState(false)
   useKeyboardShortcuts({ onNewTask: () => setShowNewTask(true) })
@@ -89,6 +92,7 @@ export default function App() {
         <Route path="/social" element={featureVisibility.social ? <SocialMediaPage /> : <Navigate to="/" replace />} />
         <Route path="/social/:accountId" element={featureVisibility.social ? <SocialAccountDetailPage /> : <Navigate to="/" replace />} />
         <Route path="/instagram-callback" element={<InstagramCallbackPage />} />
+        <Route path="/pomodoro" element={<PomodoroPage />} />
         <Route path="/ki-termine" element={featureVisibility.aiScheduler ? <AiSchedulerPage /> : <Navigate to="/" replace />} />
         <Route path="/chat" element={featureVisibility.chat ? <ChatPage /> : <Navigate to="/" replace />} />
         <Route path="/einstellungen" element={<SettingsPage />} />

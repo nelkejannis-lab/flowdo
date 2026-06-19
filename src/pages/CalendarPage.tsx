@@ -3,7 +3,11 @@ import {
   addDays,
   addMonths,
   addWeeks,
+  endOfMonth,
+  endOfWeek,
   format,
+  startOfMonth,
+  startOfWeek,
   subDays,
   subMonths,
   subWeeks,
@@ -27,6 +31,7 @@ import { useCalendarEntriesStore } from '../store/calendarEntriesStore'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { toISODate } from '../utils/date'
 import { mergeCalendarEntries } from '../utils/mergeEntries'
+import { expandRecurringEntries } from '../utils/recurrence'
 import type { CalendarEntry, CalendarEvent, Task } from '../types'
 
 type ViewMode = 'month' | 'week' | 'day'
@@ -98,7 +103,22 @@ export default function CalendarPage() {
     microsoft: '[Outlook]',
     ical: '[iCal]',
   }
-  const filteredEntries = mergeCalendarEntries(entries.filter((e) => {
+  // Compute visible date range for recurrence expansion
+  const rangeStart = format(
+    view === 'month' ? startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 })
+    : view === 'week' ? startOfWeek(currentDate, { weekStartsOn: 1 })
+    : currentDate,
+    'yyyy-MM-dd'
+  )
+  const rangeEnd = format(
+    view === 'month' ? endOfWeek(endOfMonth(currentDate), { weekStartsOn: 1 })
+    : view === 'week' ? addDays(startOfWeek(currentDate, { weekStartsOn: 1 }), 6)
+    : currentDate,
+    'yyyy-MM-dd'
+  )
+  const expandedEntries = expandRecurringEntries(entries, rangeStart, rangeEnd)
+
+  const filteredEntries = mergeCalendarEntries(expandedEntries.filter((e) => {
     for (const [provider, prefix] of Object.entries(providerPrefixes)) {
       if (e.title.startsWith(prefix) && disabledCalendars.has(provider)) return false
     }

@@ -1,0 +1,21 @@
+{
+  "title": "Pomodoro Timer",
+  "phases": {
+    "focus": "Focus (25 min)",
+    "short": "Short break (5 min)",
+    "long": "Long break (15 min)"
+  },
+  "start": "Start",
+  "pause": "Pause",
+  "reset": "Reset",
+  "enableNotifications": "Enable notifications",
+  "notificationsOn": "Notifications active",
+  "focusDone": "Focus session done! 🍅",
+  "takeBreak": "Time for a break.",
+  "breakDone": "Break's over!",
+  "backToWork": "Back to work.",
+  "sessionsToday": "pomodoros today",
+  "minutesFocused": "focus minutes",
+  "tasks": "Tasks",
+  "noTasks": "No open tasks"
+}

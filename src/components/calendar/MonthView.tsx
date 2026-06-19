@@ -11,10 +11,12 @@ import {
 } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
 import { useTranslation } from 'react-i18next'
+import { useState } from 'react'
 import type { CalendarEntry, CalendarEvent, Task } from '../../types'
 import { toISODate } from '../../utils/date'
 import { eachEntryDate, eachEventDate } from '../../utils/events'
 import { entryTypeIcon } from '../../utils/calendarEntry'
+import { useCalendarEntriesStore } from '../../store/calendarEntriesStore'
 
 interface MonthViewProps {
   currentDate: Date
@@ -30,6 +32,11 @@ interface MonthViewProps {
 export default function MonthView({ currentDate, tasks, events, entries = [], onDayClick, onTaskClick, onEventClick, onEntryClick }: MonthViewProps) {
   const { t, i18n } = useTranslation('calendar')
   const dateLocale = i18n.language === 'en' ? enUS : de
+  const updateEntry = useCalendarEntriesStore((s) => s.updateEntry)
+
+  const [draggingEntry, setDraggingEntry] = useState<CalendarEntry | null>(null)
+  const [dragOverDate, setDragOverDate] = useState<string | null>(null)
+
   const weekStartForLabels = startOfWeek(new Date(), { weekStartsOn: 1 })
   const weekdays = Array.from({ length: 7 }, (_, i) =>
     format(addDays(weekStartForLabels, i), 'EEEEEE', { locale: dateLocale })
@@ -63,6 +70,28 @@ export default function MonthView({ currentDate, tasks, events, entries = [], on
     }
   }
 
+  function handleDrop(targetDate: string) {
+    if (!draggingEntry || draggingEntry.date === targetDate) {
+      setDraggingEntry(null)
+      setDragOverDate(null)
+      return
+    }
+    updateEntry(draggingEntry.id, {
+      type: draggingEntry.type,
+      title: draggingEntry.title,
+      description: draggingEntry.description,
+      date: targetDate,
+      endDate: undefined,
+      startTime: draggingEntry.startTime,
+      endTime: draggingEntry.endTime,
+      color: draggingEntry.color,
+      invitedUserIds: draggingEntry.invitees.map((i) => i.id),
+      recurrence: draggingEntry.recurrence,
+    })
+    setDraggingEntry(null)
+    setDragOverDate(null)
+  }
+
   return (
     <div className="rounded-xl border border-gray-100 dark:border-racing-800">
       <div className="grid grid-cols-7 border-b border-gray-100 dark:border-racing-800">
@@ -80,14 +109,18 @@ export default function MonthView({ currentDate, tasks, events, entries = [], on
           const dayEntries = entriesByDate.get(iso) ?? []
           const inMonth = isSameMonth(day, currentDate)
           const today = isSameDay(day, new Date())
+          const isDragTarget = dragOverDate === iso
 
           return (
             <div
               key={iso}
               onClick={() => onDayClick(day)}
-              className={`min-h-[100px] cursor-pointer border-b border-r border-gray-100 p-1.5 last:border-r-0 dark:border-racing-800 ${
+              onDragOver={(e) => { e.preventDefault(); setDragOverDate(iso) }}
+              onDragLeave={() => setDragOverDate(null)}
+              onDrop={(e) => { e.preventDefault(); handleDrop(iso) }}
+              className={`min-h-[100px] cursor-pointer border-b border-r border-gray-100 p-1.5 last:border-r-0 dark:border-racing-800 transition-colors ${
                 inMonth ? '' : 'bg-gray-50/50 dark:bg-racing-900/30'
-              }`}
+              } ${isDragTarget ? 'bg-accent/10 ring-2 ring-inset ring-accent/30' : ''}`}
             >
               <div
                 className={`mb-1 inline-flex h-6 w-6 items-center justify-center rounded-full text-xs ${
@@ -113,11 +146,19 @@ export default function MonthView({ currentDate, tasks, events, entries = [], on
                 {dayEntries.map((entry) => (
                   <div
                     key={entry.id}
+                    draggable
+                    onDragStart={(e) => {
+                      e.stopPropagation()
+                      setDraggingEntry(entry)
+                    }}
+                    onDragEnd={() => { setDraggingEntry(null); setDragOverDate(null) }}
                     onClick={(e) => {
                       e.stopPropagation()
                       onEntryClick?.(entry)
                     }}
-                    className="flex items-center gap-1 truncate rounded px-1.5 py-0.5 text-xs font-medium text-white"
+                    className={`flex cursor-grab items-center gap-1 truncate rounded px-1.5 py-0.5 text-xs font-medium text-white active:cursor-grabbing ${
+                      draggingEntry?.id === entry.id ? 'opacity-40' : ''
+                    }`}
                     style={{ backgroundColor: entry.color }}
                   >
                     <span className="truncate">{entryTypeIcon[entry.type]} {entry.title}</span>

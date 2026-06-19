@@ -9,6 +9,7 @@ import {
   CalendarClock,
   Trello,
   Clock,
+  Timer,
   Sun,
   Moon,
   Sparkles,
@@ -200,6 +201,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             {t('sidebar.nav.eisenhower')}
           </NavLink>
         )}
+        <NavLink to="/pomodoro" className={navItemClass}>
+          <Timer size={18} />
+          Pomodoro
+        </NavLink>
         {featureVisibility.worktime && (
           <NavLink to="/arbeitszeit" className={navItemClass}>
             <Clock size={18} />
