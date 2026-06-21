@@ -9,6 +9,7 @@ import { useBoardsStore } from '../../store/boardsStore'
 import { useFriendsStore } from '../../store/friendsStore'
 import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
+import type { Task } from '../../types'
 
 interface Action {
   type: string
@@ -34,13 +35,16 @@ interface Message {
 
 const TODAY = format(new Date(), 'EEEE, d. MMMM yyyy', { locale: de })
 
-function buildSystemPrompt(friendsList: { id: string; name: string }[]) {
+function buildSystemPrompt(friendsList: { id: string; name: string }[], tasksList?: Task[]) {
   const yr = new Date().getFullYear()
   const friendsBlock = friendsList.length > 0
     ? `\nBekannte Personen (für Termin-Einladungen):\n${friendsList.map((f) => `- "${f.name}" → id: "${f.id}"`).join('\n')}\nWenn der Nutzer eine Person einlädt, füge ihre ID in invitedUserIds ein.`
     : ''
+  const tasksBlock = tasksList && tasksList.length > 0
+    ? `\nVorhandene Aufgaben:\n${tasksList.map((t) => `- "${t.title}"${t.completed ? ' (erledigt)' : ' (offen)'}`).join('\n')}\nVerwende diese Liste, um den genauen Titel bei complete_task, delete_task oder update_task zu ermitteln.`
+    : ''
   return `Du bist ein KI-Assistent für die App Mooncrew – ein Arbeits-Organizer mit Kalender, Aufgaben und Projekten.
-Heute ist ${TODAY} (${format(new Date(), 'yyyy-MM-dd')}).${friendsBlock}
+Heute ist ${TODAY} (${format(new Date(), 'yyyy-MM-dd')}).${friendsBlock}${tasksBlock}
 
 Antworte AUSSCHLIESSLICH mit gültigem JSON in exakt diesem Format – nichts davor oder danach:
 
@@ -52,7 +56,16 @@ Antworte AUSSCHLIESSLICH mit gültigem JSON in exakt diesem Format – nichts da
 Mögliche Action-Typen:
 
 Aufgabe erstellen:
-{ "type": "create_task", "label": "Aufgabe: TITEL", "payload": { "title": "string", "dueDate": "yyyy-MM-dd oder null", "priority": "low|medium|high", "description": "string oder null" }}
+{ "type": "create_task", "label": "Aufgabe erstellen: TITEL", "payload": { "title": "string", "dueDate": "yyyy-MM-dd oder null", "priority": "low|medium|high", "description": "string oder null" }}
+
+Aufgabe als erledigt markieren:
+{ "type": "complete_task", "label": "Aufgabe erledigen: GENAUER_TITEL", "payload": { "title": "string" }}
+
+Aufgabe löschen:
+{ "type": "delete_task", "label": "Aufgabe löschen: GENAUER_TITEL", "payload": { "title": "string" }}
+
+Aufgabe aktualisieren (Felder optional, nur geänderte angeben):
+{ "type": "update_task", "label": "Aufgabe aktualisieren: GENAUER_TITEL", "payload": { "title": "string", "newTitle": "string oder null", "dueDate": "yyyy-MM-dd oder null", "priority": "low|medium|high oder null", "evening": "boolean oder null", "someday": "boolean oder null", "description": "string oder null", "recurrence": "daily|weekly|monthly oder null" }}
 
 Termin erstellen:
 { "type": "create_event", "label": "Termin: TITEL", "payload": { "title": "string", "date": "yyyy-MM-dd", "endDate": "yyyy-MM-dd oder null", "startTime": "HH:MM oder null", "endTime": "HH:MM oder null", "description": "string oder null", "invitedUserIds": ["user-id-1", ...] }}
@@ -169,6 +182,50 @@ export default function AiChatPanel() {
           tags: [],
           evening: false,
         })
+        return { status: 'done' }
+      }
+      if (action.type === 'complete_task') {
+        if (!title) return { status: 'error', error: 'Kein Titel angegeben' }
+        const tList = useTasksStore.getState().tasks
+        let task = tList.find((t) => t.title.toLowerCase() === title.toLowerCase())
+        if (!task) {
+          task = tList.find((t) => t.title.toLowerCase().includes(title.toLowerCase()))
+        }
+        if (!task) return { status: 'error', error: 'Aufgabe nicht gefunden' }
+        if (task.completed) return { status: 'done' }
+        useTasksStore.getState().toggleTaskCompleted(task.id)
+        return { status: 'done' }
+      }
+      if (action.type === 'delete_task') {
+        if (!title) return { status: 'error', error: 'Kein Titel angegeben' }
+        const tList = useTasksStore.getState().tasks
+        let task = tList.find((t) => t.title.toLowerCase() === title.toLowerCase())
+        if (!task) {
+          task = tList.find((t) => t.title.toLowerCase().includes(title.toLowerCase()))
+        }
+        if (!task) return { status: 'error', error: 'Aufgabe nicht gefunden' }
+        useTasksStore.getState().deleteTask(task.id)
+        return { status: 'done' }
+      }
+      if (action.type === 'update_task') {
+        if (!title) return { status: 'error', error: 'Kein Titel angegeben' }
+        const tList = useTasksStore.getState().tasks
+        let task = tList.find((t) => t.title.toLowerCase() === title.toLowerCase())
+        if (!task) {
+          task = tList.find((t) => t.title.toLowerCase().includes(title.toLowerCase()))
+        }
+        if (!task) return { status: 'error', error: 'Aufgabe nicht gefunden' }
+
+        const updates: Partial<Task> = {}
+        if (p.newTitle) updates.title = p.newTitle as string
+        if (p.dueDate !== undefined) updates.dueDate = (p.dueDate as string) || undefined
+        if (p.priority !== undefined) updates.priority = p.priority as any
+        if (p.description !== undefined) updates.description = (p.description as string) || undefined
+        if (p.evening !== undefined) updates.evening = p.evening as boolean
+        if (p.someday !== undefined) updates.someday = p.someday as boolean
+        if (p.recurrence !== undefined) updates.recurrence = (p.recurrence as any) || undefined
+
+        useTasksStore.getState().updateTask(task.id, updates)
         return { status: 'done' }
       }
       if (action.type === 'create_event') {
@@ -290,7 +347,7 @@ export default function AiChatPanel() {
       const { data, error } = await supabase.functions.invoke('ai-chat', {
         body: {
           messages: history.map((m) => ({ role: m.role, content: m.content })),
-          systemPrompt: buildSystemPrompt(friendsList),
+          systemPrompt: buildSystemPrompt(friendsList, useTasksStore.getState().tasks),
           imageBase64: imgToSend?.base64 ?? null,
           imageMimeType: imgToSend?.mimeType ?? null,
         },
@@ -339,6 +396,9 @@ export default function AiChatPanel() {
 
   const iconFor: Record<string, React.ReactNode> = {
     create_task: <CheckSquare size={11} />,
+    complete_task: <CheckSquare size={11} className="text-emerald-500" />,
+    delete_task: <X size={11} className="text-red-500" />,
+    update_task: <ArrowRight size={11} className="text-blue-500" />,
     create_event: <Calendar size={11} />,
     create_board: <ArrowRight size={11} />,
     navigate: <ArrowRight size={11} />,
@@ -401,7 +461,7 @@ export default function AiChatPanel() {
                             <div className="flex items-center gap-1.5">
                               <span className="text-amber-600 dark:text-amber-400">{iconFor[a.type] ?? <CheckSquare size={11} />}</span>
                               <span className="text-[10px] font-medium uppercase tracking-wide text-gray-400">
-                                {a.type === 'create_task' ? 'Aufgabe' : a.type === 'create_event' ? 'Termin' : a.type === 'create_board' ? 'Projekt' : 'Navigation'}
+                                {a.type === 'create_task' ? 'Aufgabe' : a.type === 'complete_task' ? 'Erledigen' : a.type === 'delete_task' ? 'Löschen' : a.type === 'update_task' ? 'Aktualisieren' : a.type === 'create_event' ? 'Termin' : a.type === 'create_board' ? 'Projekt' : 'Navigation'}
                               </span>
                             </div>
                             {/* Title */}
@@ -412,7 +472,7 @@ export default function AiChatPanel() {
                               placeholder="Titel"
                             />
                             {/* Date row */}
-                            {(a.type === 'create_task' || a.type === 'create_event') && (
+                            {(a.type === 'create_task' || a.type === 'create_event' || a.type === 'update_task') && (
                               <div className="flex gap-1.5 flex-wrap">
                                 <input
                                   className="flex-1 min-w-[100px] rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs dark:border-racing-600 dark:bg-racing-700 dark:text-racing-100"
@@ -420,7 +480,7 @@ export default function AiChatPanel() {
                                   value={a.editDate ?? ''}
                                   onChange={(e) => updateActionEdit(i, j, 'editDate', e.target.value)}
                                 />
-                                {a.type === 'create_task' && (
+                                {(a.type === 'create_task' || a.type === 'update_task') && (
                                   <select
                                     className="rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs dark:border-racing-600 dark:bg-racing-700 dark:text-racing-100"
                                     value={a.editPriority ?? 'medium'}
@@ -453,7 +513,7 @@ export default function AiChatPanel() {
                               </div>
                             )}
                             {/* Description */}
-                            {(a.type === 'create_task' || a.type === 'create_event') && (
+                            {(a.type === 'create_task' || a.type === 'create_event' || a.type === 'update_task') && (
                               <input
                                 className="w-full rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs dark:border-racing-600 dark:bg-racing-700 dark:text-racing-100"
                                 value={a.editDescription ?? ''}
