@@ -50,6 +50,7 @@ export default function BoardDetailPage() {
   const [newTaskColumnId, setNewTaskColumnId] = useState<string | null>(null)
   const [todoInput, setTodoInput] = useState('')
   const [todosOpen, setTodosOpen] = useState(true)
+  const [showDoneTodos, setShowDoneTodos] = useState(true)
   const [showMembers, setShowMembers] = useState(false)
   const [memberError, setMemberError] = useState<string | null>(null)
   const [invitedIds, setInvitedIds] = useState<string[]>([])
@@ -431,8 +432,14 @@ export default function BoardDetailPage() {
                 {/* Done todos */}
                 {doneTodos.length > 0 && (
                   <div className="mt-2 border-t border-gray-100 pt-2 dark:border-racing-800">
-                    <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Erledigt ({doneTodos.length})</p>
-                    {doneTodos.map((todo) => (
+                    <button
+                      onClick={() => setShowDoneTodos((v) => !v)}
+                      className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 hover:text-gray-600 dark:hover:text-racing-100"
+                    >
+                      {showDoneTodos ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                      Erledigt ({doneTodos.length})
+                    </button>
+                    {showDoneTodos && doneTodos.map((todo) => (
                       <div key={todo.id} className="group flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-gray-50 dark:hover:bg-racing-800">
                         <button
                           onClick={() => toggleTaskCompleted(todo.id)}
