@@ -86,7 +86,7 @@ export default function TasksPage() {
 
   const allTasks = [...tasks, ...myProjectTasks]
 
-  let filtered = tasks
+  let filtered = allTasks
   let groupByDate = false
   let title = t('page.titles.all')
   let defaultDueDate: string | undefined
