@@ -35,6 +35,8 @@ interface WorkTimeSettingsRow {
   running_date: string | null
   profiles_json: string | null
   active_profile_id: string | null
+  manual_comp_days: number | null
+  taken_comp_days: number | null
 }
 
 interface WorkTimeEntryRow {
@@ -76,6 +78,7 @@ interface WorkTimeState {
   takeCompDay: () => void
   incrementCompensationDays: () => void
   decrementCompensationDays: () => void
+  subscribeToWorkTime: () => () => void
 }
 
 function ensureEntry(
@@ -107,7 +110,9 @@ async function syncSettings(
   settings: WorkTimeSettings,
   settledWeekendDays: number,
   workProfiles?: import('../types').WorkProfile[],
-  activeProfileId?: string
+  activeProfileId?: string,
+  manualCompDays?: number,
+  takenCompDays?: number
 ) {
   if (!isSupabaseConfigured) return
   const { data: userData } = await supabase.auth.getUser()
@@ -123,6 +128,8 @@ async function syncSettings(
     settled_weekend_days: settledWeekendDays,
     profiles_json: workProfiles ? JSON.stringify(workProfiles) : undefined,
     active_profile_id: activeProfileId ?? null,
+    manual_comp_days: manualCompDays,
+    taken_comp_days: takenCompDays,
     updated_at: new Date().toISOString(),
   })
 }
@@ -211,6 +218,9 @@ export const useWorkTimeStore = create<WorkTimeState>()(
           activeProfileId = settingsRow.active_profile_id
         }
 
+        const manualCompDays = settingsRow?.manual_comp_days ?? get().manualCompDays
+        const takenCompDays = settingsRow?.taken_comp_days ?? get().takenCompDays
+
         set({
           entries,
           settings,
@@ -220,10 +230,12 @@ export const useWorkTimeStore = create<WorkTimeState>()(
           runningDate,
           workProfiles,
           activeProfileId,
+          manualCompDays,
+          takenCompDays,
         })
 
         if (!settingsRow) {
-          await syncSettings(settings, settledWeekendDays, get().workProfiles, get().activeProfileId)
+          await syncSettings(settings, settledWeekendDays, get().workProfiles, get().activeProfileId, manualCompDays, takenCompDays)
         }
       },
 
@@ -359,10 +371,33 @@ export const useWorkTimeStore = create<WorkTimeState>()(
         set({ entries: { ...state.entries, [date]: updated } })
         void syncEntry(updated)
       },
-      incrementManualCompDays: () => set((s) => ({ manualCompDays: s.manualCompDays + 1 })),
-      takeCompDay: () => set((s) => ({ takenCompDays: s.takenCompDays + 1 })),
+      incrementManualCompDays: () => {
+        const manualCompDays = get().manualCompDays + 1
+        set({ manualCompDays })
+        const s = get()
+        void syncSettings(s.settings, s.settledWeekendDays, s.workProfiles, s.activeProfileId, manualCompDays, s.takenCompDays)
+      },
+      takeCompDay: () => {
+        const takenCompDays = get().takenCompDays + 1
+        set({ takenCompDays })
+        const s = get()
+        void syncSettings(s.settings, s.settledWeekendDays, s.workProfiles, s.activeProfileId, s.manualCompDays, takenCompDays)
+      },
       incrementCompensationDays: () => set((s) => ({ compensationDaysCount: s.compensationDaysCount + 1 })),
       decrementCompensationDays: () => set((s) => ({ compensationDaysCount: Math.max(0, s.compensationDaysCount - 1) })),
+
+      subscribeToWorkTime: () => {
+        if (!isSupabaseConfigured) return () => {}
+        const channel = supabase
+          .channel('worktime-realtime')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'work_time_settings' }, () => get().fetchAll())
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'work_time_entries' }, () => get().fetchAll())
+          .subscribe()
+
+        return () => {
+          supabase.removeChannel(channel)
+        }
+      },
     }),
     { name: 'flowdo-worktime' }
   )

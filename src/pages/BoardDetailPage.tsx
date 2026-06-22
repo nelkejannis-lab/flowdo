@@ -55,6 +55,7 @@ export default function BoardDetailPage() {
   const [memberError, setMemberError] = useState<string | null>(null)
   const [invitedIds, setInvitedIds] = useState<string[]>([])
   const [progressFilter, setProgressFilter] = useState<ProgressFilter>('all')
+  const [hideCompletedInBoard, setHideCompletedInBoard] = useState(false)
   const [showDiscussion, setShowDiscussion] = useState(false)
   const boardCommentCount = useCommentsStore((s) => boardId ? (s.comments[boardId] ?? []).length : 0)
 
@@ -108,6 +109,7 @@ export default function BoardDetailPage() {
   const total = visibleTasks.length
   const done = visibleTasks.filter((t) => t.completed).length
   const progress = total === 0 ? 0 : Math.round((done / total) * 100)
+  const kanbanTasks = hideCompletedInBoard ? visibleTasks.filter((t) => !t.completed) : visibleTasks
   const overdue = isOverdue(board.deadline)
 
   const availableFriends = friends.filter(
@@ -321,6 +323,14 @@ export default function BoardDetailPage() {
         >
           {t('detail.filterMine')}
         </button>
+        <button
+          onClick={() => setHideCompletedInBoard((v) => !v)}
+          className={`rounded-md px-3 py-1 text-xs font-medium ${
+            hideCompletedInBoard ? 'bg-accent text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
+          }`}
+        >
+          {t('detail.hideCompleted')}
+        </button>
       </div>
 
       <div className="flex gap-4">
@@ -331,7 +341,7 @@ export default function BoardDetailPage() {
                 <KanbanColumn
                   key={column.id}
                   column={column}
-                  tasks={visibleTasks.filter((t) => t.columnId === column.id)}
+                  tasks={kanbanTasks.filter((t) => t.columnId === column.id)}
                   onTaskClick={(task) => setEditingTask(task)}
                   onAddTask={() => setNewTaskColumnId(column.id)}
                   onRenameColumn={(title) => updateColumn(board.id, column.id, title)}

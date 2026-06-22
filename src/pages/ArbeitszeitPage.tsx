@@ -63,10 +63,16 @@ export default function ArbeitszeitPage() {
   const [showSettings, setShowSettings] = useState(false)
   const [view, setView] = useState<'week' | 'month'>('week')
   const fetchAll = useWorkTimeStore((s) => s.fetchAll)
+  const subscribeToWorkTime = useWorkTimeStore((s) => s.subscribeToWorkTime)
 
   useEffect(() => {
     if (isSupabaseConfigured) fetchAll()
   }, [fetchAll])
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return
+    return subscribeToWorkTime()
+  }, [subscribeToWorkTime])
 
   return (
     <div>

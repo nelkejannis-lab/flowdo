@@ -61,7 +61,7 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
             else toggleTaskCompleted(task.id)
           }}
           className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 ${
-            task.completed ? 'border-accent bg-accent text-white' : 'border-gray-300 dark:border-racing-600'
+            task.completed ? 'border-accent bg-accent text-white' : 'border-gray-400 hover:border-accent dark:border-racing-500'
           }`}
         >
           {task.completed && <Check size={12} />}
@@ -118,7 +118,7 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
         {isSupabaseConfigured && (
           <button
             onClick={() => setShowComments((v) => !v)}
-            className={`flex flex-shrink-0 items-center gap-1 rounded p-1 text-xs hover:bg-gray-100 dark:hover:bg-racing-800 ${showComments ? 'text-accent' : 'text-gray-400 hover:text-gray-600'}`}
+            className={`flex flex-shrink-0 items-center gap-1 rounded p-1 text-xs hover:bg-gray-100 dark:hover:bg-racing-800 ${showComments ? 'text-accent' : 'text-gray-500 hover:text-gray-700 dark:text-racing-300 dark:hover:text-white'}`}
             title={t('item.comments')}
           >
             <MessageSquare size={14} />
@@ -131,7 +131,7 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
           <div className="relative" ref={askRef}>
             <button
               onClick={() => { setShowAsk((v) => !v); setAskDone(false) }}
-              className={`flex flex-shrink-0 items-center gap-1 rounded p-1 text-xs hover:bg-violet-50 dark:hover:bg-racing-800 ${showAsk ? 'text-violet-500' : 'text-gray-400 hover:text-violet-500'}`}
+              className={`flex flex-shrink-0 items-center gap-1 rounded p-1 text-xs hover:bg-violet-50 dark:hover:bg-racing-800 ${showAsk ? 'text-violet-500' : 'text-gray-500 hover:text-violet-500 dark:text-racing-300'}`}
               title={t('item.askColleague')}
             >
               <HelpCircle size={14} />
@@ -189,7 +189,7 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
         {hasSubtasks && (
           <button
             onClick={() => setExpanded((v) => !v)}
-            className="flex flex-shrink-0 items-center gap-1 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-racing-800"
+            className="flex flex-shrink-0 items-center gap-1 rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-racing-300 dark:hover:bg-racing-800 dark:hover:text-white"
             title={expanded ? t('item.collapse') : t('item.showSubtasks')}
           >
             <ChevronDown size={16} className={`transition-transform duration-150 ${expanded ? '' : '-rotate-90'}`} />

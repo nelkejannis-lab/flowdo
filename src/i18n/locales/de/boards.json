@@ -50,6 +50,7 @@
     "deadline": "Deadline: {{date}}",
     "filterAll": "Alle Beteiligten",
     "filterMine": "Nur ich",
+    "hideCompleted": "Erledigte ausblenden",
     "addColumn": "Spalte hinzufügen",
     "newColumnTitle": "Neue Spalte",
     "discussion": "Diskussion"

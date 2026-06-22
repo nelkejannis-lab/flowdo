@@ -50,6 +50,7 @@
     "deadline": "Deadline: {{date}}",
     "filterAll": "All participants",
     "filterMine": "Only me",
+    "hideCompleted": "Hide completed",
     "addColumn": "Add column",
     "newColumnTitle": "New column",
     "discussion": "Discussion"
