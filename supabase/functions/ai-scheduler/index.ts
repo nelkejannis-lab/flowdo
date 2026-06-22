@@ -1,7 +1,7 @@
 // Supabase Edge Function: proxies appointment-parsing and best-slot-finding to the Anthropic API.
 
 const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages'
-const CLAUDE_MODEL = 'claude-haiku-4-5-20251001'
+const CLAUDE_MODEL = 'claude-3-5-haiku-20241022'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

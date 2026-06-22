@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
     ]
 
     const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 4096,
       system: systemPrompt,
       messages: apiMessages,
