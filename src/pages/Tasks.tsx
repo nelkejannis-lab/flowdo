@@ -34,6 +34,7 @@ export default function TasksPage() {
   const myProjectTasks = useProjectTasksStore((s) => s.myTasks)
   const fetchMyProjectTasks = useProjectTasksStore((s) => s.fetchMyTasks)
   const fetchBoards = useBoardsStore((s) => s.fetchBoards)
+  const boards = useBoardsStore((s) => s.boards)
   const [showForm, setShowForm] = useState(false)
   const incoming = useTaskSharesStore((s) => s.incoming)
   const fetchIncoming = useTaskSharesStore((s) => s.fetchIncoming)
@@ -57,10 +58,12 @@ export default function TasksPage() {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
+  const [selectedProject, setSelectedProject] = useState<string | null>(null)
 
   useEffect(() => {
     setSearchQuery('')
     setSelectedTag(null)
+    setSelectedProject(null)
   }, [smartList])
 
   useEffect(() => {
@@ -109,6 +112,8 @@ export default function TasksPage() {
   }
 
   const allUniqueTags = Array.from(new Set(filtered.flatMap((t) => t.tags || []))).filter(Boolean)
+  const uniqueBoardIds = Array.from(new Set(filtered.map((t) => t.boardId).filter(Boolean))) as string[]
+  const relevantBoards = boards.filter((b) => uniqueBoardIds.includes(b.id))
 
   let displayTasks = filtered
   if (searchQuery.trim()) {
@@ -118,6 +123,9 @@ export default function TasksPage() {
         t.title.toLowerCase().includes(q) ||
         (t.description && t.description.toLowerCase().includes(q))
     )
+  }
+  if (selectedProject) {
+    displayTasks = displayTasks.filter((t) => t.boardId === selectedProject)
   }
   if (selectedTag) {
     displayTasks = displayTasks.filter((t) => t.tags && t.tags.includes(selectedTag))
@@ -222,9 +230,46 @@ export default function TasksPage() {
             )}
           </div>
 
+          {/* Project Pills */}
+          {relevantBoards.length > 0 && (
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mr-1.5 flex-shrink-0">Projekte:</span>
+              <button
+                type="button"
+                onClick={() => setSelectedProject(null)}
+                className={`rounded-full px-3 py-1 text-xs font-semibold transition-all ${
+                  selectedProject === null
+                    ? 'bg-accent text-white shadow-sm hover:brightness-105'
+                    : 'bg-black/[0.04] text-gray-600 hover:bg-black/[0.08] dark:bg-white/[0.06] dark:text-racing-200 dark:hover:bg-white/[0.1]'
+                }`}
+              >
+                Alle Projekte
+              </button>
+              {relevantBoards.map((board) => (
+                <button
+                  key={board.id}
+                  type="button"
+                  onClick={() => setSelectedProject(selectedProject === board.id ? null : board.id)}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                    selectedProject === board.id
+                      ? 'text-white shadow-sm hover:brightness-105'
+                      : 'bg-black/[0.04] text-gray-600 hover:bg-black/[0.08] dark:bg-white/[0.06] dark:text-racing-200 dark:hover:bg-white/[0.1]'
+                  }`}
+                  style={{
+                    backgroundColor: selectedProject === board.id ? board.color : undefined,
+                  }}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: selectedProject === board.id ? 'white' : board.color }} />
+                  {board.title}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Tag Pills */}
           {allUniqueTags.length > 0 && (
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mr-1.5 flex-shrink-0">Tags:</span>
               <button
                 type="button"
                 onClick={() => setSelectedTag(null)}

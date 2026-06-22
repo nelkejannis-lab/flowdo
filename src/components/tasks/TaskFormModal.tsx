@@ -302,6 +302,11 @@ export default function TaskFormModal({
     onClose()
   }
 
+  // Get all unique tags currently used in tasks
+  const allExistingTasks = [...useTasksStore.getState().tasks, ...useProjectTasksStore.getState().tasks]
+  const existingTags = Array.from(new Set(allExistingTasks.flatMap((t) => t.tags || []))).filter(Boolean)
+  const availableExistingTags = existingTags.filter((tag) => !tags.includes(tag))
+
   return (
     <Modal
       title={task ? t('form.titleEdit') : t('form.titleNew')}
@@ -497,6 +502,21 @@ export default function TaskFormModal({
               className="min-w-[120px] flex-1 bg-transparent py-0.5 text-sm focus:outline-none"
             />
           </div>
+          {availableExistingTags.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-1">
+              <span className="text-[10px] font-semibold text-gray-400 select-none uppercase tracking-wide mr-1">Häufig verwendet:</span>
+              {availableExistingTags.slice(0, 10).map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => setTags([...tags, tag])}
+                  className="rounded-full bg-black/[0.03] hover:bg-black/[0.07] dark:bg-white/[0.05] dark:hover:bg-white/[0.1] px-2 py-0.5 text-[10px] font-semibold text-gray-600 dark:text-racing-200 transition-colors"
+                >
+                  +{tag}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div>
