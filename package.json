@@ -2,6 +2,8 @@
   "name": "workorganizer",
   "private": true,
   "version": "0.1.0",
+  "description": "Mooncrew Work Organizer",
+  "author": "Mooncrew",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -14,6 +16,7 @@
   "build": {
     "appId": "app.mooncrew.desktop",
     "productName": "Mooncrew",
+    "electronDist": "node_modules/electron/dist",
     "directories": {
       "output": "release"
     },
