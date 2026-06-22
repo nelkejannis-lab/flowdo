@@ -7,6 +7,7 @@ create table if not exists profiles (
   username text unique not null,
   display_name text not null,
   avatar_color text not null default '#4772FA',
+  settings jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
 

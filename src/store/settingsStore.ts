@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import i18n from '../i18n'
 import { NAMED_COLORS } from './eventsStore'
+import { supabase } from '../lib/supabase'
+import { useAuthStore } from './authStore'
 
 export type Mode = 'light' | 'dark'
 export type Language = 'de' | 'en'
@@ -98,6 +100,9 @@ interface SettingsState {
   setWeatherCity: (city: string) => void
   setWeatherCoords: (coords: WeatherCoords) => void
   toggleHideCompletedTasks: () => void
+  importSettings: (settings: any) => void
+  resetSettings: () => void
+  syncNow: () => void
 }
 
 interface LegacyState {
@@ -151,6 +156,65 @@ export const useSettingsStore = create<SettingsState>()(
       setWeatherCity: (city) => set({ weatherCity: city }),
       setWeatherCoords: (coords) => set({ weatherCoords: coords }),
       toggleHideCompletedTasks: () => set((s) => ({ hideCompletedTasks: !s.hideCompletedTasks })),
+      importSettings: (settings) => {
+        if (!settings) return
+        set((state) => ({
+          ...state,
+          mode: settings.mode ?? state.mode,
+          pinkAccent: settings.pinkAccent ?? state.pinkAccent,
+          language: settings.language ?? state.language,
+          featureVisibility: { ...state.featureVisibility, ...settings.featureVisibility },
+          dashboardVisibility: { ...state.dashboardVisibility, ...settings.dashboardVisibility },
+          colorLabels: { ...state.colorLabels, ...settings.colorLabels },
+          navOrder: settings.navOrder ?? state.navOrder,
+          navVisibility: { ...state.navVisibility, ...settings.navVisibility },
+          notifyAppointments: settings.notifyAppointments ?? state.notifyAppointments,
+          notifyChat: settings.notifyChat ?? state.notifyChat,
+          notifyTasks: settings.notifyTasks ?? state.notifyTasks,
+          appointmentReminderMinutes: settings.appointmentReminderMinutes ?? state.appointmentReminderMinutes,
+          onboardingPermissionsDone: settings.onboardingPermissionsDone ?? state.onboardingPermissionsDone,
+          weatherCity: settings.weatherCity ?? state.weatherCity,
+          weatherCoords: settings.weatherCoords ?? state.weatherCoords,
+          hideCompletedTasks: settings.hideCompletedTasks ?? state.hideCompletedTasks,
+        }))
+      },
+      resetSettings: () => {
+        set({
+          mode: 'dark',
+          pinkAccent: false,
+          language: 'de',
+          featureVisibility: { ...DEFAULT_FEATURE_VISIBILITY },
+          dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY },
+          navOrder: [...DEFAULT_NAV_ORDER],
+          navVisibility: { ...DEFAULT_NAV_VISIBILITY },
+          colorLabels: { ...DEFAULT_COLOR_LABELS },
+          notifyAppointments: true,
+          notifyChat: true,
+          notifyTasks: true,
+          appointmentReminderMinutes: 15,
+          onboardingPermissionsDone: false,
+          weatherCity: DEFAULT_WEATHER_CITY,
+          weatherCoords: { ...DEFAULT_WEATHER_COORDS },
+          hideCompletedTasks: true,
+        })
+      },
+      syncNow: () => {
+        const state = useSettingsStore.getState()
+        const auth = useAuthStore.getState()
+        const userId = auth.user?.id
+        if (!userId) return
+        const payload = getSettingsPayload(state)
+        supabase.from('profiles').update({ settings: payload }).eq('id', userId).then(({ error }) => {
+          if (!error && auth.profile) {
+            useAuthStore.setState({
+              profile: {
+                ...auth.profile,
+                settings: payload,
+              },
+            })
+          }
+        })
+      },
     }),
     {
       name: 'flowdo-settings',
@@ -190,3 +254,58 @@ export const useSettingsStore = create<SettingsState>()(
     }
   )
 )
+
+export function getSettingsPayload(state: any) {
+  return {
+    mode: state.mode,
+    pinkAccent: state.pinkAccent,
+    language: state.language,
+    featureVisibility: state.featureVisibility,
+    dashboardVisibility: state.dashboardVisibility,
+    colorLabels: state.colorLabels,
+    navOrder: state.navOrder,
+    navVisibility: state.navVisibility,
+    notifyAppointments: state.notifyAppointments,
+    notifyChat: state.notifyChat,
+    notifyTasks: state.notifyTasks,
+    appointmentReminderMinutes: state.appointmentReminderMinutes,
+    onboardingPermissionsDone: state.onboardingPermissionsDone,
+    weatherCity: state.weatherCity,
+    weatherCoords: state.weatherCoords,
+    hideCompletedTasks: state.hideCompletedTasks,
+  }
+}
+
+// Sync listener
+let syncTimeout: any = null
+useSettingsStore.subscribe((state) => {
+  const auth = useAuthStore.getState()
+  const userId = auth.user?.id
+  if (!userId) return
+
+  const payload = getSettingsPayload(state)
+  const profileSettings = auth.profile?.settings
+
+  // Skip syncing if settings haven't changed from the database version
+  if (profileSettings && JSON.stringify(profileSettings) === JSON.stringify(payload)) {
+    return
+  }
+
+  if (syncTimeout) clearTimeout(syncTimeout)
+  syncTimeout = setTimeout(() => {
+    supabase
+      .from('profiles')
+      .update({ settings: payload })
+      .eq('id', userId)
+      .then(({ error }) => {
+        if (!error && auth.profile) {
+          useAuthStore.setState({
+            profile: {
+              ...auth.profile,
+              settings: payload,
+            },
+          })
+        }
+      })
+  }, 1000)
+})

@@ -13,6 +13,7 @@ export interface Profile {
   job_title?: string | null
   work_location?: string | null
   badge?: string | null
+  settings?: Record<string, any> | null
   created_at: string
 }
 
@@ -73,7 +74,17 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     const userId = get().user?.id
     if (!userId) return
     const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
-    if (data) set({ profile: data as Profile })
+    if (data) {
+      set({ profile: data as Profile })
+      // Dynamically load settings store to avoid circular dependency
+      const settingsStore = (await import('./settingsStore')).useSettingsStore
+      if (data.settings && Object.keys(data.settings).length > 0) {
+        settingsStore.getState().importSettings(data.settings)
+      } else {
+        // Sync local settings to DB if empty
+        settingsStore.getState().syncNow()
+      }
+    }
   },
 
   signUp: async (email, password, username, displayName, birthday) => {
@@ -98,6 +109,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   signOut: async () => {
     await supabase.auth.signOut()
     set({ session: null, user: null, profile: null })
+    const settingsStore = (await import('./settingsStore')).useSettingsStore
+    settingsStore.getState().resetSettings()
   },
 
   updateProfile: async (updates) => {
