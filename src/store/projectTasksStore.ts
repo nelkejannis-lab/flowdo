@@ -42,7 +42,7 @@ function single<T>(value: T | T[]): T {
   return Array.isArray(value) ? value[0] : value
 }
 
-function toTask(row: ProjectTaskRow): Task {
+function toTask(row: ProjectTaskRow, dependsOn?: string[]): Task {
   return {
     id: row.id,
     title: row.title,
@@ -62,10 +62,21 @@ function toTask(row: ProjectTaskRow): Task {
     subtasks: row.subtasks ?? [],
     attachments: row.attachments ?? [],
     createdAt: row.created_at,
+    dependsOn,
   }
 }
 
 const SELECT = '*, assignee:profiles!tasks_assigned_to_fkey(id, username, display_name, avatar_color)'
+
+async function fetchDependencyMap(taskIds: string[]): Promise<Record<string, string[]>> {
+  if (taskIds.length === 0) return {}
+  const { data } = await supabase.from('task_dependencies').select('task_id, depends_on_id').in('task_id', taskIds)
+  const map: Record<string, string[]> = {}
+  for (const row of (data ?? []) as { task_id: string; depends_on_id: string }[]) {
+    map[row.task_id] = [...(map[row.task_id] ?? []), row.depends_on_id]
+  }
+  return map
+}
 
 interface ProjectTasksState {
   tasks: Task[]
@@ -84,6 +95,10 @@ interface ProjectTasksState {
   addAttachment: (taskId: string, file: File) => Promise<{ attachment?: Attachment; error?: string }>
   removeAttachment: (taskId: string, attachmentId: string) => Promise<void>
   moveTaskToColumn: (taskId: string, boardId: string, columnId: string) => Promise<void>
+  addDependency: (taskId: string, dependsOnId: string) => Promise<void>
+  removeDependency: (taskId: string, dependsOnId: string) => Promise<void>
+  isBlocked: (taskId: string) => boolean
+  subscribeToBoard: (boardId: string) => () => void
 }
 
 export const useProjectTasksStore = create<ProjectTasksState>()((set, get) => ({
@@ -105,7 +120,9 @@ export const useProjectTasksStore = create<ProjectTasksState>()((set, get) => ({
       return
     }
 
-    const tasks = ((data ?? []) as unknown as ProjectTaskRow[]).map(toTask)
+    const rows = (data ?? []) as unknown as ProjectTaskRow[]
+    const depMap = await fetchDependencyMap(rows.map((r) => r.id))
+    const tasks = rows.map((row) => toTask(row, depMap[row.id]))
     set({ tasks, loading: false })
   },
 
@@ -126,7 +143,7 @@ export const useProjectTasksStore = create<ProjectTasksState>()((set, get) => ({
       return
     }
 
-    const myTasks = ((data ?? []) as unknown as ProjectTaskRow[]).map(toTask)
+    const myTasks = ((data ?? []) as unknown as ProjectTaskRow[]).map((row) => toTask(row))
     set({ myTasks })
   },
 
@@ -262,5 +279,49 @@ export const useProjectTasksStore = create<ProjectTasksState>()((set, get) => ({
 
   moveTaskToColumn: async (taskId, _boardId, columnId) => {
     await get().updateTask(taskId, { columnId })
+  },
+
+  addDependency: async (taskId, dependsOnId) => {
+    const { error } = await supabase.from('task_dependencies').insert({ task_id: taskId, depends_on_id: dependsOnId })
+    if (error) return
+    set((state) => ({
+      tasks: state.tasks.map((t) =>
+        t.id === taskId ? { ...t, dependsOn: [...(t.dependsOn ?? []), dependsOnId] } : t
+      ),
+    }))
+  },
+
+  removeDependency: async (taskId, dependsOnId) => {
+    await supabase.from('task_dependencies').delete().eq('task_id', taskId).eq('depends_on_id', dependsOnId)
+    set((state) => ({
+      tasks: state.tasks.map((t) =>
+        t.id === taskId ? { ...t, dependsOn: (t.dependsOn ?? []).filter((id) => id !== dependsOnId) } : t
+      ),
+    }))
+  },
+
+  isBlocked: (taskId) => {
+    const task = get().tasks.find((t) => t.id === taskId)
+    if (!task || !task.dependsOn || task.dependsOn.length === 0) return false
+    return task.dependsOn.some((depId) => {
+      const dep = get().tasks.find((t) => t.id === depId)
+      return dep ? !dep.completed : false
+    })
+  },
+
+  subscribeToBoard: (boardId) => {
+    const channel = supabase
+      .channel(`board-tasks-${boardId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `board_id=eq.${boardId}` }, () => {
+        get().fetchTasks(boardId)
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_dependencies' }, () => {
+        get().fetchTasks(boardId)
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   },
 }))

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, Trash2, Check, X } from 'lucide-react'
+import { Plus, Trash2, Check, X, Lock } from 'lucide-react'
 import Modal from '../layout/Modal'
 import AttachmentsField from '../shared/AttachmentsField'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
@@ -30,6 +30,9 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, onC
   const deleteSubtask = useProjectTasksStore((s) => s.deleteSubtask)
   const addAttachment = useProjectTasksStore((s) => s.addAttachment)
   const removeAttachment = useProjectTasksStore((s) => s.removeAttachment)
+  const addDependency = useProjectTasksStore((s) => s.addDependency)
+  const removeDependency = useProjectTasksStore((s) => s.removeDependency)
+  const allBoardTasks = useProjectTasksStore((s) => s.tasks)
 
   const [title, setTitle] = useState(task?.title ?? '')
   const [description, setDescription] = useState(task?.description ?? '')
@@ -268,6 +271,49 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, onC
             </button>
           </div>
         </div>
+
+        {task && (
+          <div>
+            <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-gray-500">
+              <Lock size={12} />
+              {t('taskForm.dependsOn')}
+            </label>
+            <div className="flex flex-col gap-1">
+              {(task.dependsOn ?? []).map((depId) => {
+                const dep = allBoardTasks.find((bt) => bt.id === depId)
+                if (!dep) return null
+                return (
+                  <div key={depId} className="flex items-center gap-2 rounded-lg border border-gray-200 px-2 py-1.5 text-sm dark:border-racing-700">
+                    <span className={`flex-1 ${dep.completed ? 'text-gray-400 line-through' : ''}`}>{dep.title}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeDependency(task.id, depId)}
+                      className="text-gray-300 hover:text-red-500"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+            <select
+              value=""
+              onChange={(e) => {
+                if (e.target.value) addDependency(task.id, e.target.value)
+              }}
+              className="mt-2 w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+            >
+              <option value="">{t('taskForm.addDependency')}</option>
+              {allBoardTasks
+                .filter((bt) => bt.id !== task.id && !(task.dependsOn ?? []).includes(bt.id))
+                .map((bt) => (
+                  <option key={bt.id} value={bt.id}>
+                    {bt.title}
+                  </option>
+                ))}
+            </select>
+          </div>
+        )}
 
         {task && (
           <AttachmentsField

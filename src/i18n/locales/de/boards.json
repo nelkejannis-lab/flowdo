@@ -101,6 +101,8 @@
     "noone": "Niemand",
     "subtasks": "Unteraufgaben",
     "addSubtaskPlaceholder": "Unteraufgabe hinzufügen",
+    "dependsOn": "Blockiert durch",
+    "addDependency": "Abhängigkeit hinzufügen…",
     "delete": "Löschen",
     "save": "Speichern",
     "add": "Hinzufügen"

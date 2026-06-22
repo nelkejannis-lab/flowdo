@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
-import { Check, ChevronDown, ListChecks } from 'lucide-react'
+import { Check, ChevronDown, ListChecks, Lock } from 'lucide-react'
 import type { Task } from '../../types'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
 import { formatFriendlyDate, isOverdue } from '../../utils/date'
@@ -15,6 +15,7 @@ interface KanbanCardProps {
 export default function KanbanCard({ task, onClick }: KanbanCardProps) {
   const toggleTaskCompleted = useProjectTasksStore((s) => s.toggleTaskCompleted)
   const toggleSubtask = useProjectTasksStore((s) => s.toggleSubtask)
+  const blocked = useProjectTasksStore((s) => !task.completed && s.isBlocked(task.id))
   const [expanded, setExpanded] = useState(false)
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
@@ -54,6 +55,12 @@ export default function KanbanCard({ task, onClick }: KanbanCardProps) {
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <PriorityBadge priority={task.priority} />
+        {blocked && (
+          <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
+            <Lock size={10} />
+            Blockiert
+          </span>
+        )}
         {task.dueDate && (
           <span className={`text-xs ${overdue ? 'font-medium text-red-500' : 'text-gray-400'}`}>
             {formatFriendlyDate(task.dueDate)}

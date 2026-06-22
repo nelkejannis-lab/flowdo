@@ -101,6 +101,8 @@
     "noone": "No one",
     "subtasks": "Subtasks",
     "addSubtaskPlaceholder": "Add subtask",
+    "dependsOn": "Blocked by",
+    "addDependency": "Add dependency…",
     "delete": "Delete",
     "save": "Save",
     "add": "Add"

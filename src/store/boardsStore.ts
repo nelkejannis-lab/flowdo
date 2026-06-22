@@ -113,6 +113,7 @@ interface BoardsState {
   renameFolder: (id: string, title: string) => Promise<void>
   deleteFolder: (id: string) => Promise<void>
   moveBoardToFolder: (boardId: string, folderId: string | null) => Promise<void>
+  subscribeToBoards: () => () => void
 }
 
 export const useBoardsStore = create<BoardsState>()((set, get) => ({
@@ -308,6 +309,19 @@ export const useBoardsStore = create<BoardsState>()((set, get) => ({
     set((state) => ({
       boards: state.boards.map((b) => (b.id === boardId ? { ...b, folderId: folderId ?? undefined } : b)),
     }))
+  },
+
+  subscribeToBoards: () => {
+    const channel = supabase
+      .channel('boards-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'boards' }, () => get().fetchBoards())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'board_columns' }, () => get().fetchBoards())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'board_members' }, () => get().fetchBoards())
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   },
 }))
 

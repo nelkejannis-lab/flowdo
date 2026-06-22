@@ -42,6 +42,7 @@ export interface Task {
   evening?: boolean
   someday?: boolean
   recurrence?: 'daily' | 'weekly' | 'monthly'
+  dependsOn?: string[]
 }
 
 export type EisenhowerQuadrant = 'do' | 'decide' | 'delegate' | 'delete'

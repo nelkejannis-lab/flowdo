@@ -62,9 +62,17 @@ export default function BoardDetailPage() {
     if (boards.length === 0) fetchBoards()
   }, [boards.length, fetchBoards])
 
+  const subscribeToBoard = useProjectTasksStore((s) => s.subscribeToBoard)
+  const isBlocked = useProjectTasksStore((s) => s.isBlocked)
+
   useEffect(() => {
     if (boardId) fetchTasks(boardId)
   }, [boardId, fetchTasks])
+
+  useEffect(() => {
+    if (!boardId || !isSupabaseConfigured) return
+    return subscribeToBoard(boardId)
+  }, [boardId, subscribeToBoard])
 
   useEffect(() => {
     fetchFriends()

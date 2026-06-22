@@ -76,6 +76,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const folders = useBoardsStore((s) => s.folders)
   const fetchBoards = useBoardsStore((s) => s.fetchBoards)
   const fetchFolders = useBoardsStore((s) => s.fetchFolders)
+  const subscribeToBoards = useBoardsStore((s) => s.subscribeToBoards)
   const [openFolders, setOpenFolders] = useState<Set<string>>(new Set())
   const taskIncoming = useTaskSharesStore((s) => s.incoming)
   const fetchTaskIncoming = useTaskSharesStore((s) => s.fetchIncoming)
@@ -114,6 +115,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       fetchBoards()
     }
   }, [fetchBoards, fetchFolders, fetchTaskIncoming, fetchBoardIncoming, fetchTeamIncoming, fetchConversations, fetchNotifications, checkBirthdays])
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return
+    return subscribeToBoards()
+  }, [subscribeToBoards])
 
   // Self-heal stale persisted navOrder that predates newer nav items (e.g. worktime, pomodoro)
   useEffect(() => {
