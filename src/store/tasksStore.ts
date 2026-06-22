@@ -126,6 +126,7 @@ interface TasksState {
   addAttachment: (taskId: string, file: File) => Promise<{ attachment?: Attachment; error?: string }>
   removeAttachment: (taskId: string, attachmentId: string) => Promise<void>
   moveTaskToColumn: (taskId: string, boardId: string, columnId: string) => void
+  subscribeToTasks: () => () => void
 }
 
 export const useTasksStore = create<TasksState>()(
@@ -303,6 +304,29 @@ export const useTasksStore = create<TasksState>()(
 
       moveTaskToColumn: (taskId, boardId, columnId) => {
         get().updateTask(taskId, { boardId, columnId })
+      },
+
+      subscribeToTasks: () => {
+        if (!isSupabaseConfigured) return () => {}
+        let channel: ReturnType<typeof supabase.channel> | null = null
+        let cancelled = false
+
+        getUserId().then((userId) => {
+          if (cancelled || !userId) return
+          channel = supabase
+            .channel('personal-tasks-realtime')
+            .on(
+              'postgres_changes',
+              { event: '*', schema: 'public', table: 'tasks', filter: `owner_id=eq.${userId}` },
+              () => get().fetchAll()
+            )
+            .subscribe()
+        })
+
+        return () => {
+          cancelled = true
+          if (channel) supabase.removeChannel(channel)
+        }
       },
     }),
     {

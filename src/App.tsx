@@ -23,6 +23,8 @@ import ImpressumPage from './pages/legal/ImpressumPage'
 import InstagramCallbackPage from './pages/InstagramCallbackPage'
 import { useSettingsStore } from './store/settingsStore'
 import { useAuthStore } from './store/authStore'
+import { useTasksStore } from './store/tasksStore'
+import { useCalendarEntriesStore } from './store/calendarEntriesStore'
 import { useNotifications } from './hooks/useNotifications'
 import { useCalendarReminders } from './hooks/useCalendarReminders'
 import { isSupabaseConfigured } from './lib/supabase'
@@ -38,8 +40,20 @@ export default function App() {
   const init = useAuthStore((s) => s.init)
   const loading = useAuthStore((s) => s.loading)
   const session = useAuthStore((s) => s.session)
+  const subscribeToTasks = useTasksStore((s) => s.subscribeToTasks)
+  const subscribeToEntries = useCalendarEntriesStore((s) => s.subscribeToEntries)
   useNotifications()
   useCalendarReminders()
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || !session) return
+    const unsubTasks = subscribeToTasks()
+    const unsubEntries = subscribeToEntries()
+    return () => {
+      unsubTasks()
+      unsubEntries()
+    }
+  }, [session, subscribeToTasks, subscribeToEntries])
 
   const [showNewTask, setShowNewTask] = useState(false)
   useKeyboardShortcuts({ onNewTask: () => setShowNewTask(true) })

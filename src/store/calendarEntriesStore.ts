@@ -40,6 +40,7 @@ interface CalendarEntriesState {
   updateEntry: (id: string, input: NewCalendarEntryInput) => Promise<string | null>
   deleteEntry: (id: string) => Promise<void>
   undoDelete: (id: string) => void
+  subscribeToEntries: () => () => void
 }
 
 function single<T>(value: T | T[]): T {
@@ -169,4 +170,16 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()((set, get)
   },
 
   undoDelete: (_id) => { /* no-op: immediate delete */ },
+
+  subscribeToEntries: () => {
+    const channel = supabase
+      .channel('calendar-entries-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'calendar_entries' }, () => get().fetchEntries())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'calendar_entry_invites' }, () => get().fetchEntries())
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  },
 }))
