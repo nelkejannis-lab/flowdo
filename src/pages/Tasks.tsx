@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Archive, AtSign, Bell, Check, HelpCircle, Plus, Trello, X, Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -114,6 +114,44 @@ export default function TasksPage() {
   const allUniqueTags = Array.from(new Set(filtered.flatMap((t) => t.tags || []))).filter(Boolean)
   const uniqueBoardIds = Array.from(new Set(filtered.map((t) => t.boardId).filter(Boolean))) as string[]
   const relevantBoards = boards.filter((b) => uniqueBoardIds.includes(b.id))
+
+  // Project counts (filtered by current view + selected tag)
+  const projectCounts = useMemo(() => {
+    const listTasks = selectedTag 
+      ? filtered.filter((t) => t.tags && t.tags.includes(selectedTag))
+      : filtered
+    
+    const counts: Record<string, number> = {}
+    for (const t of listTasks) {
+      if (t.boardId) {
+        counts[t.boardId] = (counts[t.boardId] ?? 0) + 1
+      }
+    }
+    return {
+      all: listTasks.length,
+      byProject: counts
+    }
+  }, [filtered, selectedTag])
+
+  // Tag counts (filtered by current view + selected project)
+  const tagCounts = useMemo(() => {
+    const listTasks = selectedProject
+      ? filtered.filter((t) => t.boardId === selectedProject)
+      : filtered
+    
+    const counts: Record<string, number> = {}
+    for (const t of listTasks) {
+      if (t.tags) {
+        for (const tag of t.tags) {
+          counts[tag] = (counts[tag] ?? 0) + 1
+        }
+      }
+    }
+    return {
+      all: listTasks.length,
+      byTag: counts
+    }
+  }, [filtered, selectedProject])
 
   let displayTasks = filtered
   if (searchQuery.trim()) {
@@ -237,32 +275,35 @@ export default function TasksPage() {
               <button
                 type="button"
                 onClick={() => setSelectedProject(null)}
-                className={`rounded-full px-3 py-1 text-xs font-semibold transition-all ${
+                className={`rounded-full px-3 py-1 text-xs font-semibold transition-all duration-150 hover:scale-105 active:scale-95 ${
                   selectedProject === null
                     ? 'bg-accent text-white shadow-sm hover:brightness-105'
                     : 'bg-black/[0.04] text-gray-600 hover:bg-black/[0.08] dark:bg-white/[0.06] dark:text-racing-200 dark:hover:bg-white/[0.1]'
                 }`}
               >
-                Alle Projekte
+                Alle Projekte ({projectCounts.all})
               </button>
-              {relevantBoards.map((board) => (
-                <button
-                  key={board.id}
-                  type="button"
-                  onClick={() => setSelectedProject(selectedProject === board.id ? null : board.id)}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                    selectedProject === board.id
-                      ? 'text-white shadow-sm hover:brightness-105'
-                      : 'bg-black/[0.04] text-gray-600 hover:bg-black/[0.08] dark:bg-white/[0.06] dark:text-racing-200 dark:hover:bg-white/[0.1]'
-                  }`}
-                  style={{
-                    backgroundColor: selectedProject === board.id ? board.color : undefined,
-                  }}
-                >
-                  <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: selectedProject === board.id ? 'white' : board.color }} />
-                  {board.title}
-                </button>
-              ))}
+              {relevantBoards.map((board) => {
+                const count = projectCounts.byProject[board.id] ?? 0
+                return (
+                  <button
+                    key={board.id}
+                    type="button"
+                    onClick={() => setSelectedProject(selectedProject === board.id ? null : board.id)}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold transition-all duration-150 hover:scale-105 active:scale-95 flex items-center gap-1.5 ${
+                      selectedProject === board.id
+                        ? 'text-white shadow-sm hover:brightness-105'
+                        : 'bg-black/[0.04] text-gray-600 hover:bg-black/[0.08] dark:bg-white/[0.06] dark:text-racing-200 dark:hover:bg-white/[0.1]'
+                    }`}
+                    style={{
+                      backgroundColor: selectedProject === board.id ? board.color : undefined,
+                    }}
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: selectedProject === board.id ? 'white' : board.color }} />
+                    {board.title} ({count})
+                  </button>
+                )
+              })}
             </div>
           )}
 
@@ -273,28 +314,31 @@ export default function TasksPage() {
               <button
                 type="button"
                 onClick={() => setSelectedTag(null)}
-                className={`rounded-full px-3 py-1 text-xs font-semibold transition-all ${
+                className={`rounded-full px-3 py-1 text-xs font-semibold transition-all duration-150 hover:scale-105 active:scale-95 ${
                   selectedTag === null
                     ? 'bg-accent text-white shadow-sm hover:brightness-105'
                     : 'bg-black/[0.04] text-gray-600 hover:bg-black/[0.08] dark:bg-white/[0.06] dark:text-racing-200 dark:hover:bg-white/[0.1]'
                 }`}
               >
-                Alle Tags
+                Alle Tags ({tagCounts.all})
               </button>
-              {allUniqueTags.map((tag) => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold transition-all ${
-                    selectedTag === tag
-                      ? 'bg-accent text-white shadow-sm hover:brightness-105'
-                      : 'bg-black/[0.04] text-gray-600 hover:bg-black/[0.08] dark:bg-white/[0.06] dark:text-racing-200 dark:hover:bg-white/[0.1]'
-                  }`}
-                >
-                  #{tag}
-                </button>
-              ))}
+              {allUniqueTags.map((tag) => {
+                const count = tagCounts.byTag[tag] ?? 0
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold transition-all duration-150 hover:scale-105 active:scale-95 ${
+                      selectedTag === tag
+                        ? 'bg-accent text-white shadow-sm hover:brightness-105'
+                        : 'bg-black/[0.04] text-gray-600 hover:bg-black/[0.08] dark:bg-white/[0.06] dark:text-racing-200 dark:hover:bg-white/[0.1]'
+                    }`}
+                  >
+                    #{tag} ({count})
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>
