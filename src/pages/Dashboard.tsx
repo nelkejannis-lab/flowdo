@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import { useSocialStore } from '../store/socialStore'
 import { differenceInCalendarDays, format, parseISO } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
-import { Plus, CalendarClock, Instagram, TrendingUp, Heart, Bookmark, Users } from 'lucide-react'
+import { Plus, CalendarClock, Instagram, TrendingUp, Heart, Bookmark, Users, Loader2 } from 'lucide-react'
+import { useAiSchedulerStore } from '../store/aiSchedulerStore'
 import { useTranslation } from 'react-i18next'
 import { useTasksStore } from '../store/tasksStore'
 import { useBoardsStore } from '../store/boardsStore'
@@ -56,6 +57,7 @@ export default function Dashboard() {
   const openQuickTaskModal = useQuickTaskModalStore((s) => s.open)
   const [showForm, setShowForm] = useState(false)
   const [quickInput, setQuickInput] = useState('')
+  const [parsingTask, setParsingTask] = useState(false)
   const [showEntries, setShowEntries] = useState(true)
   const [showWeekEntries, setShowWeekEntries] = useState(true)
   const [showMorningReport, setShowMorningReport] = useState(() => {
@@ -180,39 +182,48 @@ export default function Dashboard() {
           <h1 className="text-2xl font-semibold">{t('title')}</h1>
         </div>
         <form
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault()
             const input = quickInput.trim()
-            if (!input) return
-            console.log('[Dashboard.tsx] Submit clicked, input:', input)
-            const parsed = parseTaskInput(input, boards)
-            console.log('[Dashboard.tsx] Parsed input:', parsed)
-            openQuickTaskModal({
-              defaultTitle: parsed.title,
-              defaultDueDate: parsed.dueDate,
-              defaultProjectId: parsed.projectId,
-              defaultPriority: parsed.priority,
-              defaultUrgent: parsed.urgent,
-              defaultImportant: parsed.important,
-            })
-            console.log('[Dashboard.tsx] openQuickTaskModal called')
-            setQuickInput('')
+            if (!input || parsingTask) return
+            setParsingTask(true)
+            try {
+              let parsed
+              try {
+                parsed = await useAiSchedulerStore.getState().parseTaskWithAi(input, boards)
+              } catch (err) {
+                console.error('AI parsing failed, falling back to regex:', err)
+                parsed = parseTaskInput(input, boards)
+              }
+              openQuickTaskModal({
+                defaultTitle: parsed.title,
+                defaultDueDate: parsed.dueDate,
+                defaultProjectId: parsed.projectId,
+                defaultPriority: parsed.priority,
+                defaultUrgent: parsed.urgent,
+                defaultImportant: parsed.important,
+              })
+              setQuickInput('')
+            } finally {
+              setParsingTask(false)
+            }
           }}
           className="flex gap-2"
         >
           <input
             value={quickInput}
             onChange={(e) => setQuickInput(e.target.value)}
-            placeholder={t('quickAddPlaceholder')}
-            className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-accent dark:border-racing-700 dark:bg-racing-900"
+            disabled={parsingTask}
+            placeholder={parsingTask ? "Analysiere mit KI..." : t('quickAddPlaceholder')}
+            className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-accent dark:border-racing-700 dark:bg-racing-900 disabled:opacity-75"
           />
           <button
             type="submit"
-            disabled={!quickInput.trim()}
+            disabled={!quickInput.trim() || parsingTask}
             className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-40"
           >
-            <Plus size={16} />
-            {t('addTask')}
+            {parsingTask ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+            {parsingTask ? "Analysiere..." : t('addTask')}
           </button>
         </form>
       </div>

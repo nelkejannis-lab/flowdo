@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { Hash, ListTodo, Search, Trello, Plus } from 'lucide-react'
+import { Hash, ListTodo, Search, Trello, Plus, Loader2 } from 'lucide-react'
 import { useSearchStore } from '../../store/searchStore'
 import { useTasksStore } from '../../store/tasksStore'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
 import { useBoardsStore } from '../../store/boardsStore'
 import { parseNaturalDate, parseTaskInput } from '../../utils/date'
+import { useAiSchedulerStore } from '../../store/aiSchedulerStore'
 import { useQuickTaskModalStore } from '../../store/quickTaskModalStore'
 import type { Task } from '../../types'
 
@@ -22,6 +23,7 @@ export default function GlobalSearch() {
   const tasks = useTasksStore((s) => s.tasks)
   const projectTasks = useProjectTasksStore((s) => s.myTasks)
   const boards = useBoardsStore((s) => s.boards)
+  const [parsing, setParsing] = useState(false)
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -62,17 +64,29 @@ export default function GlobalSearch() {
 
   if (!isOpen) return null
 
-  function handleCreateTaskFromSearch(input: string) {
-    const parsed = parseTaskInput(input, boards)
-    useQuickTaskModalStore.getState().open({
-      defaultTitle: parsed.title,
-      defaultDueDate: parsed.dueDate,
-      defaultProjectId: parsed.projectId,
-      defaultPriority: parsed.priority,
-      defaultUrgent: parsed.urgent,
-      defaultImportant: parsed.important,
-    })
-    close()
+  async function handleCreateTaskFromSearch(input: string) {
+    if (!input.trim() || parsing) return
+    setParsing(true)
+    try {
+      let parsed
+      try {
+        parsed = await useAiSchedulerStore.getState().parseTaskWithAi(input, boards)
+      } catch (err) {
+        console.error('AI parsing failed, falling back to regex:', err)
+        parsed = parseTaskInput(input, boards)
+      }
+      useQuickTaskModalStore.getState().open({
+        defaultTitle: parsed.title,
+        defaultDueDate: parsed.dueDate,
+        defaultProjectId: parsed.projectId,
+        defaultPriority: parsed.priority,
+        defaultUrgent: parsed.urgent,
+        defaultImportant: parsed.important,
+      })
+      close()
+    } finally {
+      setParsing(false)
+    }
   }
 
   function goToTask(task: Task) {
@@ -100,7 +114,7 @@ export default function GlobalSearch() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && query.trim()) {
+              if (e.key === 'Enter' && query.trim() && !parsing) {
                 e.preventDefault()
                 handleCreateTaskFromSearch(query)
               }
@@ -116,11 +130,16 @@ export default function GlobalSearch() {
             <div className="mb-2 border-b border-gray-100 pb-2 dark:border-racing-800">
               <button
                 onClick={() => handleCreateTaskFromSearch(query)}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm font-medium text-accent hover:bg-gray-100 dark:hover:bg-racing-800"
+                disabled={parsing}
+                className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm font-medium text-accent hover:bg-gray-100 dark:hover:bg-racing-800 disabled:opacity-50"
               >
-                <Plus size={14} className="flex-shrink-0 text-accent" />
+                {parsing ? (
+                  <Loader2 size={14} className="flex-shrink-0 text-accent animate-spin" />
+                ) : (
+                  <Plus size={14} className="flex-shrink-0 text-accent" />
+                )}
                 <span>
-                  {t('search.createTask')}: "<strong>{query}</strong>"
+                  {parsing ? "Analysiere mit KI..." : `${t('search.createTask')}: "${query}"`}
                 </span>
               </button>
             </div>

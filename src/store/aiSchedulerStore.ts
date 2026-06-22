@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
 import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
+import type { ParsedTaskInput } from '../utils/date'
 
 export interface ParsedAppointment {
   title: string
@@ -71,6 +72,10 @@ interface AiSchedulerState {
     preferredStartTime: string | null,
     preferredEndTime: string | null
   ) => Promise<BestSlotResult>
+  parseTaskWithAi: (
+    text: string,
+    boards: { id: string; title: string }[]
+  ) => Promise<ParsedTaskInput>
 }
 
 export const useAiSchedulerStore = create<AiSchedulerState>()(() => ({
@@ -217,5 +222,60 @@ Regeln:
     if (!parsed.date || !parsed.startTime || !parsed.endTime) throw new Error('KI konnte keinen passenden Termin finden.')
 
     return parsed as BestSlotResult
+  },
+
+  parseTaskWithAi: async (text, boards) => {
+    const today = new Date()
+    const todayIso = format(today, 'yyyy-MM-dd')
+    const weekday = format(today, 'EEEE', { locale: de })
+
+    const boardsList = boards.length > 0
+      ? boards.map((b) => `- "${b.title}" (id: ${b.id})`).join('\n')
+      : '(keine Projekte vorhanden)'
+
+    const systemPrompt = `Du wandelst eine deutsche Aufgabenbeschreibung (To-Do/Task) in JSON um.
+Heutiges Datum: ${todayIso} (${weekday}).
+Verfügbare Projekte (Boards):
+${boardsList}
+
+Antworte AUSSCHLIESSLICH mit kompaktem JSON ohne weiteren Text oder Erklärungen, in genau diesem Format:
+{
+  "title": "bereinigter Titel der Aufgabe",
+  "dueDate": "yyyy-MM-dd" oder null,
+  "projectId": "id-des-am-besten-passenden-projekts" oder null,
+  "priority": "low" | "medium" | "high",
+  "urgent": boolean,
+  "important": boolean
+}
+
+Regeln:
+- Der Titel soll kurz und prägnant sein und keine Füllwörter wie "erstelle eine aufgabe", "ich muss", "in 2 wochen", "in Projekt X" enthalten (z. B. "ideen Tom kalender").
+- Löse relative Datumsangaben ("heute", "morgen", "in 2 wochen", "nächsten Dienstag") anhand des heutigen Datums auf. "in 2 wochen" ist genau 14 Tage nach heute.
+- Finde ein passendes Projekt aus der obigen Liste (z.B. wenn im Text "bei Febi" steht und ein Projekt "Febi" existiert, ordne dieses zu).
+- Setze die Priorität, dringend und wichtig basierend auf Ausdrücken wie "dringend", "wichtig", "sehr wichtig", "prio hoch".`
+
+    const { data, error } = await supabase.functions.invoke('ai-scheduler', {
+      body: { text, systemPrompt },
+    })
+
+    if (error || data?.error) {
+      throw new Error(error?.message || data?.error || 'KI-Verbindung fehlgeschlagen')
+    }
+
+    const raw: string = data?.content?.[0]?.text ?? ''
+    const jsonMatch = raw.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      throw new Error('Konnte die Antwort der KI nicht als JSON lesen.')
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]) as Partial<ParsedTaskInput>
+    return {
+      title: parsed.title || text,
+      dueDate: parsed.dueDate || undefined,
+      projectId: parsed.projectId || undefined,
+      priority: parsed.priority || 'medium',
+      urgent: parsed.urgent || false,
+      important: parsed.important || false,
+    }
   },
 }))
