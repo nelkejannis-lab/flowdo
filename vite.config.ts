@@ -7,6 +7,11 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
+  server: {
+    watch: {
+      ignored: ['**/dist-electron-app/**', '**/release/**'],
+    },
+  },
   plugins: [
     react(),
     VitePWA({
