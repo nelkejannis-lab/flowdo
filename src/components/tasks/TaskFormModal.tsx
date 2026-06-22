@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo } from 'react'
-import { Plus, Trash2, Check, X, Moon, Repeat, Archive } from 'lucide-react'
+import { useEffect, useState, useMemo, useRef } from 'react'
+import { Plus, Trash2, Check, X, Moon, Repeat, Archive, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import Modal from '../layout/Modal'
 import AttachmentsField from '../shared/AttachmentsField'
@@ -16,6 +16,7 @@ import { todayISO, parseNaturalDate } from '../../utils/date'
 import type { Attachment, Priority, Task } from '../../types'
 import { createId } from '../../utils/id'
 import { useTaskTrayStore } from '../../store/taskTrayStore'
+import { useAiSchedulerStore } from '../../store/aiSchedulerStore'
 
 const quadrants: { urgent: boolean; important: boolean; labelKey: string; activeClass: string }[] = [
   { urgent: true, important: true, labelKey: 'form.quadrants.urgentImportant', activeClass: 'border-red-400 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
@@ -90,6 +91,8 @@ export default function TaskFormModal({
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
   const [attachments, setAttachments] = useState<Attachment[]>(task?.attachments ?? [])
+  const [parsingTitle, setParsingTitle] = useState(false)
+  const lastParsedTitleRef = useRef('')
 
   useEffect(() => {
     if (isSupabaseConfigured) {
@@ -134,12 +137,35 @@ export default function TaskFormModal({
     setTags(tags.filter((t) => t !== tag))
   }
 
-  function handleTitleBlur() {
-    if (dueDate || someday) return
-    const parsed = parseNaturalDate(title)
-    if (parsed && parsed.cleanedText) {
-      setTitle(parsed.cleanedText)
-      setDueDate(parsed.date)
+  async function handleTitleBlur() {
+    if (task) return
+    const input = title.trim()
+    if (!input || input === lastParsedTitleRef.current || parsingTitle) return
+
+    setParsingTitle(true)
+    lastParsedTitleRef.current = input
+    try {
+      let parsed
+      try {
+        parsed = await useAiSchedulerStore.getState().parseTaskWithAi(input, boards)
+      } catch (err) {
+        console.error('AI parsing failed, falling back to local regex:', err)
+        const parsedDate = parseNaturalDate(input)
+        if (parsedDate && parsedDate.cleanedText && !dueDate && !someday) {
+          setTitle(parsedDate.cleanedText)
+          setDueDate(parsedDate.date)
+        }
+        return
+      }
+
+      setTitle(parsed.title)
+      if (parsed.dueDate && !dueDate && !someday) setDueDate(parsed.dueDate)
+      if (parsed.projectId && !projectId) setProjectId(parsed.projectId)
+      if (parsed.priority && priority === 'medium') setPriority(parsed.priority)
+      if (parsed.urgent && !urgent) setUrgent(true)
+      if (parsed.important && !important) setImportant(true)
+    } finally {
+      setParsingTitle(false)
     }
   }
 
@@ -330,14 +356,22 @@ export default function TaskFormModal({
       onMinimize={handleMinimize}
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <input
-          autoFocus
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          onBlur={handleTitleBlur}
-          placeholder={t('form.titlePlaceholder')}
-          className="rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm font-medium focus:border-accent focus:outline-none dark:border-racing-700"
-        />
+        <div className="relative">
+          <input
+            autoFocus
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onBlur={handleTitleBlur}
+            disabled={parsingTitle}
+            placeholder={parsingTitle ? "Analysiere mit KI..." : t('form.titlePlaceholder')}
+            className="w-full rounded-lg border border-gray-200 bg-transparent pl-3 pr-9 py-2 text-sm font-medium focus:border-accent focus:outline-none dark:border-racing-700 disabled:opacity-75"
+          />
+          {parsingTitle && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <Loader2 size={16} className="animate-spin text-accent" />
+            </div>
+          )}
+        </div>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}

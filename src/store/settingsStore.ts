@@ -281,13 +281,18 @@ let syncTimeout: any = null
 useSettingsStore.subscribe((state) => {
   const auth = useAuthStore.getState()
   const userId = auth.user?.id
-  if (!userId) return
+  const profile = auth.profile
+  if (!userId || !profile) return
 
   const payload = getSettingsPayload(state)
-  const profileSettings = auth.profile?.settings
+  const profileSettings = profile.settings
 
   // Skip syncing if settings haven't changed from the database version
   if (profileSettings && JSON.stringify(profileSettings) === JSON.stringify(payload)) {
+    if (syncTimeout) {
+      clearTimeout(syncTimeout)
+      syncTimeout = null
+    }
     return
   }
 
