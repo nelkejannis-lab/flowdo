@@ -5,6 +5,7 @@ import type { Task } from '../../types'
 import { dateGroupLabel, dateGroupOrder } from '../../utils/date'
 import { useBoardsStore } from '../../store/boardsStore'
 import { useTasksStore } from '../../store/tasksStore'
+import { useSettingsStore } from '../../store/settingsStore'
 import TaskItem from './TaskItem'
 import TaskFormModal from './TaskFormModal'
 import ProjectTaskFormModal from '../boards/ProjectTaskFormModal'
@@ -69,7 +70,9 @@ export default function TaskList({ tasks, groupByDate = false, emptyMessage, fla
   const { t } = useTranslation('tasks')
   const resolvedEmptyMessage = emptyMessage ?? t('list.noTasks')
   const [editingTask, setEditingTask] = useState<Task | null>(null)
-  const [showCompleted, setShowCompleted] = useState(false)
+  const hideCompletedTasks = useSettingsStore((s) => s.hideCompletedTasks)
+  const toggleHideCompletedTasks = useSettingsStore((s) => s.toggleHideCompletedTasks)
+  const showCompleted = !hideCompletedTasks
   const [visibleCount, setVisibleCount] = useState(20)
   const boards = useBoardsStore((s) => s.boards)
   const reorderTasks = useTasksStore((s) => s.reorderTasks)
@@ -178,7 +181,7 @@ export default function TaskList({ tasks, groupByDate = false, emptyMessage, fla
       {completedTasks.length > 0 && (
         <div>
           <button
-            onClick={() => setShowCompleted((v) => !v)}
+            onClick={toggleHideCompletedTasks}
             className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-racing-200"
           >
             <ChevronDown

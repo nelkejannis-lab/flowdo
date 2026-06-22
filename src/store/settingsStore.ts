@@ -81,6 +81,7 @@ interface SettingsState {
   onboardingPermissionsDone: boolean
   weatherCity: string
   weatherCoords: WeatherCoords
+  hideCompletedTasks: boolean
   setMode: (mode: Mode) => void
   togglePinkAccent: () => void
   setLanguage: (language: Language) => void
@@ -96,6 +97,7 @@ interface SettingsState {
   toggleNavItem: (key: NavItemKey) => void
   setWeatherCity: (city: string) => void
   setWeatherCoords: (coords: WeatherCoords) => void
+  toggleHideCompletedTasks: () => void
 }
 
 interface LegacyState {
@@ -120,6 +122,7 @@ export const useSettingsStore = create<SettingsState>()(
       onboardingPermissionsDone: false,
       weatherCity: DEFAULT_WEATHER_CITY,
       weatherCoords: { ...DEFAULT_WEATHER_COORDS },
+      hideCompletedTasks: true,
       setMode: (mode) => set({ mode }),
       togglePinkAccent: () => set((s) => ({ pinkAccent: !s.pinkAccent })),
       setLanguage: (language) => {
@@ -147,6 +150,7 @@ export const useSettingsStore = create<SettingsState>()(
         })),
       setWeatherCity: (city) => set({ weatherCity: city }),
       setWeatherCoords: (coords) => set({ weatherCoords: coords }),
+      toggleHideCompletedTasks: () => set((s) => ({ hideCompletedTasks: !s.hideCompletedTasks })),
     }),
     {
       name: 'flowdo-settings',

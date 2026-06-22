@@ -16,6 +16,7 @@ import CommentSection from '../components/shared/CommentSection'
 import type { Task } from '../types'
 import { formatFriendlyDate, isOverdue } from '../utils/date'
 import { isSupabaseConfigured } from '../lib/supabase'
+import { useSettingsStore } from '../store/settingsStore'
 
 type ProgressFilter = 'all' | 'mine'
 
@@ -50,12 +51,12 @@ export default function BoardDetailPage() {
   const [newTaskColumnId, setNewTaskColumnId] = useState<string | null>(null)
   const [todoInput, setTodoInput] = useState('')
   const [todosOpen, setTodosOpen] = useState(true)
-  const [showDoneTodos, setShowDoneTodos] = useState(true)
   const [showMembers, setShowMembers] = useState(false)
   const [memberError, setMemberError] = useState<string | null>(null)
   const [invitedIds, setInvitedIds] = useState<string[]>([])
   const [progressFilter, setProgressFilter] = useState<ProgressFilter>('all')
-  const [hideCompletedInBoard, setHideCompletedInBoard] = useState(false)
+  const hideCompletedInBoard = useSettingsStore((s) => s.hideCompletedTasks)
+  const toggleHideCompletedTasks = useSettingsStore((s) => s.toggleHideCompletedTasks)
   const [showDiscussion, setShowDiscussion] = useState(false)
   const boardCommentCount = useCommentsStore((s) => boardId ? (s.comments[boardId] ?? []).length : 0)
 
@@ -324,7 +325,7 @@ export default function BoardDetailPage() {
           {t('detail.filterMine')}
         </button>
         <button
-          onClick={() => setHideCompletedInBoard((v) => !v)}
+          onClick={toggleHideCompletedTasks}
           className={`rounded-md px-3 py-1 text-xs font-medium ${
             hideCompletedInBoard ? 'bg-accent text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
           }`}
@@ -451,13 +452,13 @@ export default function BoardDetailPage() {
                 {doneTodos.length > 0 && (
                   <div className="mt-2 border-t border-gray-100 pt-2 dark:border-racing-800">
                     <button
-                      onClick={() => setShowDoneTodos((v) => !v)}
+                      onClick={toggleHideCompletedTasks}
                       className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 hover:text-gray-600 dark:hover:text-racing-100"
                     >
-                      {showDoneTodos ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                      {!hideCompletedInBoard ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                       Erledigt ({doneTodos.length})
                     </button>
-                    {showDoneTodos && doneTodos.map((todo) => (
+                    {!hideCompletedInBoard && doneTodos.map((todo) => (
                       <div key={todo.id} className="group flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-gray-50 dark:hover:bg-racing-800">
                         <button
                           onClick={() => toggleTaskCompleted(todo.id)}
