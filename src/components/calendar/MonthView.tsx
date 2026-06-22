@@ -20,6 +20,7 @@ import { useCalendarEntriesStore } from '../../store/calendarEntriesStore'
 
 interface MonthViewProps {
   currentDate: Date
+  selectedDate?: string
   tasks: Task[]
   events: CalendarEvent[]
   entries?: CalendarEntry[]
@@ -29,7 +30,7 @@ interface MonthViewProps {
   onEntryClick?: (entry: CalendarEntry) => void
 }
 
-export default function MonthView({ currentDate, tasks, events, entries = [], onDayClick, onTaskClick, onEventClick, onEntryClick }: MonthViewProps) {
+export default function MonthView({ currentDate, selectedDate, tasks, events, entries = [], onDayClick, onTaskClick, onEventClick, onEntryClick }: MonthViewProps) {
   const { t, i18n } = useTranslation('calendar')
   const dateLocale = i18n.language === 'en' ? enUS : de
   const updateEntry = useCalendarEntriesStore((s) => s.updateEntry)
@@ -111,6 +112,8 @@ export default function MonthView({ currentDate, tasks, events, entries = [], on
           const today = isSameDay(day, new Date())
           const isDragTarget = dragOverDate === iso
 
+          const isSelected = selectedDate === iso
+
           return (
             <div
               key={iso}
@@ -118,85 +121,125 @@ export default function MonthView({ currentDate, tasks, events, entries = [], on
               onDragOver={(e) => { e.preventDefault(); setDragOverDate(iso) }}
               onDragLeave={() => setDragOverDate(null)}
               onDrop={(e) => { e.preventDefault(); handleDrop(iso) }}
-              className={`min-h-[100px] cursor-pointer border-b border-r border-gray-100 p-1.5 last:border-r-0 dark:border-racing-800 transition-colors ${
-                inMonth ? '' : 'bg-gray-50/50 dark:bg-racing-900/30'
-              } ${isDragTarget ? 'bg-accent/10 ring-2 ring-inset ring-accent/30' : ''}`}
+              className={`min-h-[85px] sm:min-h-[110px] cursor-pointer border-b border-r border-gray-100 p-1.5 last:border-r-0 dark:border-racing-800 transition-all ${
+                inMonth ? 'bg-white dark:bg-racing-900' : 'bg-gray-50/50 dark:bg-racing-900/20 text-gray-400'
+              } ${isSelected ? 'ring-2 ring-inset ring-accent bg-accent/[0.02] z-10' : ''} ${
+                isDragTarget ? 'bg-accent/10 ring-2 ring-inset ring-accent/30' : ''
+              } hover:bg-gray-50 dark:hover:bg-racing-850`}
             >
               <div
-                className={`mb-1 inline-flex h-6 w-6 items-center justify-center rounded-full text-xs ${
-                  today ? 'bg-accent text-white' : inMonth ? 'text-gray-700 dark:text-racing-100' : 'text-gray-300 dark:text-racing-400'
+                className={`mb-1 inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
+                  today
+                    ? 'bg-accent text-white font-bold shadow-sm'
+                    : isSelected
+                    ? 'text-accent bg-accent/10'
+                    : inMonth
+                    ? 'text-gray-700 dark:text-racing-100'
+                    : 'text-gray-300 dark:text-racing-400'
                 }`}
               >
                 {format(day, 'd')}
               </div>
               <div className="flex flex-col gap-1">
-                {dayEvents.map((event) => (
-                  <div
-                    key={event.id}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onEventClick(event)
-                    }}
-                    className="truncate rounded px-1.5 py-0.5 text-xs font-medium text-white"
-                    style={{ backgroundColor: event.color }}
-                  >
-                    {event.title}
-                  </div>
-                ))}
-                {dayEntries.map((entry) => (
-                  <div
-                    key={entry.id}
-                    draggable
-                    onDragStart={(e) => {
-                      e.stopPropagation()
-                      setDraggingEntry(entry)
-                    }}
-                    onDragEnd={() => { setDraggingEntry(null); setDragOverDate(null) }}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onEntryClick?.(entry)
-                    }}
-                    className={`flex cursor-grab items-center gap-1 truncate rounded px-1.5 py-0.5 text-xs font-medium text-white active:cursor-grabbing ${
-                      draggingEntry?.id === entry.id ? 'opacity-40' : ''
-                    }`}
-                    style={{ backgroundColor: entry.color }}
-                  >
-                    <span className="truncate">{entryTypeIcon[entry.type]} {entry.title}</span>
-                    {entry.invitees.length > 0 && (
-                      <span className="flex flex-shrink-0 -space-x-1">
-                        {entry.invitees.slice(0, 3).map((inv) => (
-                          <span
-                            key={inv.id}
-                            title={inv.display_name}
-                            className="flex h-3.5 w-3.5 items-center justify-center rounded-full text-[7px] font-bold text-white ring-1 ring-white/40"
-                            style={{ backgroundColor: inv.avatar_color }}
-                          >
-                            {inv.display_name[0].toUpperCase()}
-                          </span>
-                        ))}
-                      </span>
-                    )}
-                  </div>
-                ))}
-                {dayTasks.slice(0, 3).map((task) => (
-                  <div
-                    key={task.id}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onTaskClick(task)
-                    }}
-                    className={`truncate rounded px-1.5 py-0.5 text-xs ${
-                      task.completed
-                        ? 'bg-gray-100 text-gray-400 line-through dark:bg-racing-800'
-                        : 'bg-accent/10 text-accent'
-                    }`}
-                  >
-                    {task.title}
-                  </div>
-                ))}
-                {dayTasks.length > 3 && (
-                  <span className="text-xs text-gray-400">{t('moreCount', { count: dayTasks.length - 3 })}</span>
-                )}
+                {/* Desktop View: Full details */}
+                <div className="hidden sm:flex flex-col gap-1">
+                  {dayEvents.map((event) => (
+                    <div
+                      key={event.id}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onEventClick(event)
+                      }}
+                      className="truncate rounded px-1.5 py-0.5 text-xs font-medium text-white"
+                      style={{ backgroundColor: event.color }}
+                    >
+                      {event.title}
+                    </div>
+                  ))}
+                  {dayEntries.map((entry) => (
+                    <div
+                      key={entry.id}
+                      draggable
+                      onDragStart={(e) => {
+                        e.stopPropagation()
+                        setDraggingEntry(entry)
+                      }}
+                      onDragEnd={() => { setDraggingEntry(null); setDragOverDate(null) }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onEntryClick?.(entry)
+                      }}
+                      className={`flex cursor-grab items-center gap-1 truncate rounded px-1.5 py-0.5 text-xs font-medium text-white active:cursor-grabbing ${
+                        draggingEntry?.id === entry.id ? 'opacity-40' : ''
+                      }`}
+                      style={{ backgroundColor: entry.color }}
+                    >
+                      <span className="truncate">{entryTypeIcon[entry.type]} {entry.title}</span>
+                      {entry.invitees.length > 0 && (
+                        <span className="flex flex-shrink-0 -space-x-1">
+                          {entry.invitees.slice(0, 3).map((inv) => (
+                            <span
+                              key={inv.id}
+                              title={inv.display_name}
+                              className="flex h-3.5 w-3.5 items-center justify-center rounded-full text-[7px] font-bold text-white ring-1 ring-white/40"
+                              style={{ backgroundColor: inv.avatar_color }}
+                            >
+                              {inv.display_name[0].toUpperCase()}
+                            </span>
+                          ))}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                  {dayTasks.slice(0, 3).map((task) => (
+                    <div
+                      key={task.id}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onTaskClick(task)
+                      }}
+                      className={`truncate rounded px-1.5 py-0.5 text-xs ${
+                        task.completed
+                          ? 'bg-gray-100 text-gray-400 line-through dark:bg-racing-800'
+                          : 'bg-accent/10 text-accent font-medium'
+                      }`}
+                    >
+                      {task.title}
+                    </div>
+                  ))}
+                  {dayTasks.length > 3 && (
+                    <span className="text-xs text-gray-400">{t('moreCount', { count: dayTasks.length - 3 })}</span>
+                  )}
+                </div>
+
+                {/* Mobile View: Clean Dot Indicators */}
+                <div className="flex sm:hidden flex-wrap gap-1 justify-center mt-1">
+                  {dayEvents.map((event) => (
+                    <span
+                      key={event.id}
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{ backgroundColor: event.color }}
+                      title={event.title}
+                    />
+                  ))}
+                  {dayEntries.map((entry) => (
+                    <span
+                      key={entry.id}
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{ backgroundColor: entry.color }}
+                      title={entry.title}
+                    />
+                  ))}
+                  {dayTasks.map((task) => (
+                    <span
+                      key={task.id}
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        task.completed ? 'bg-gray-300 dark:bg-racing-600' : 'bg-accent'
+                      }`}
+                      title={task.title}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           )

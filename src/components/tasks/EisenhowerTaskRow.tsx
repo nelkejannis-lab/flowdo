@@ -17,8 +17,13 @@ export default function EisenhowerTaskRow({ task, onClick }: EisenhowerTaskRowPr
 
   return (
     <div
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData('text/plain', `${task.id}:${task.boardId ? 'project' : 'personal'}`)
+        e.dataTransfer.effectAllowed = 'move'
+      }}
       onClick={onClick}
-      className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-racing-800/60"
+      className="flex cursor-grab active:cursor-grabbing items-center gap-2.5 rounded-md px-2 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-racing-800/60"
     >
       <button
         onClick={(e) => {

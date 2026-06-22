@@ -5,6 +5,8 @@ import Modal from '../layout/Modal'
 import AttachmentsField from '../shared/AttachmentsField'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
 import type { Attachment, Board, Priority, Task } from '../../types'
+import { createId } from '../../utils/id'
+import { useTaskTrayStore } from '../../store/taskTrayStore'
 
 const quadrants: { urgent: boolean; important: boolean; labelKey: string; activeClass: string }[] = [
   { urgent: true, important: true, labelKey: 'taskForm.quadrantUrgentImportant', activeClass: 'border-red-400 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
@@ -17,10 +19,11 @@ interface ProjectTaskFormModalProps {
   board: Board
   task?: Task
   defaultColumnId?: string
+  defaultDueDate?: string
   onClose: () => void
 }
 
-export default function ProjectTaskFormModal({ board, task, defaultColumnId, onClose }: ProjectTaskFormModalProps) {
+export default function ProjectTaskFormModal({ board, task, defaultColumnId, defaultDueDate, onClose }: ProjectTaskFormModalProps) {
   const { t } = useTranslation('boards')
   const addTask = useProjectTasksStore((s) => s.addTask)
   const updateTask = useProjectTasksStore((s) => s.updateTask)
@@ -36,7 +39,7 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, onC
 
   const [title, setTitle] = useState(task?.title ?? '')
   const [description, setDescription] = useState(task?.description ?? '')
-  const [dueDate, setDueDate] = useState(task?.dueDate ?? '')
+  const [dueDate, setDueDate] = useState(task?.dueDate ?? defaultDueDate ?? '')
   const [priority, setPriority] = useState<Priority>(task?.priority ?? 'medium')
   const [assignedTo, setAssignedTo] = useState(task?.assignedTo ?? '')
   const [urgent, setUrgent] = useState(task?.urgent ?? false)
@@ -99,18 +102,53 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, onC
         }
       }
     }
+    useTaskTrayStore.getState().remove(task?.id || '')
     onClose()
   }
 
   function handleDelete() {
     if (task) {
       deleteTask(task.id)
+      useTaskTrayStore.getState().remove(task.id)
       onClose()
     }
   }
 
+  function handleMinimize() {
+    const currentTaskId = task?.id ?? createId()
+    const currentTaskObj: Task = {
+      id: currentTaskId,
+      title: title.trim() || 'Unbenannte Aufgabe',
+      description: description.trim() || undefined,
+      dueDate: dueDate || undefined,
+      priority,
+      urgent,
+      important,
+      completed: task?.completed ?? false,
+      tags: task?.tags ?? [],
+      subtasks: task ? task.subtasks : localSubtasks.map((s) => ({ id: createId(), title: s, completed: false })),
+      attachments: task?.attachments ?? [],
+      boardId: board.id,
+      columnId: task?.columnId ?? defaultColumnId ?? board.columns[0]?.id,
+      assignedTo: assignedTo || undefined,
+      createdAt: task?.createdAt ?? new Date().toISOString(),
+    }
+    useTaskTrayStore.getState().minimize({
+      id: currentTaskId,
+      title: currentTaskObj.title,
+      type: 'project',
+      boardId: board.id,
+      task: currentTaskObj,
+    })
+    onClose()
+  }
+
   return (
-    <Modal title={task ? t('taskForm.editTask') : t('taskForm.newTask')} onClose={onClose}>
+    <Modal
+      title={task ? t('taskForm.editTask') : t('taskForm.newTask')}
+      onClose={onClose}
+      onMinimize={handleMinimize}
+    >
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <input
           autoFocus

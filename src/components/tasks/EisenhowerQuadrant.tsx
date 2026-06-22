@@ -4,6 +4,9 @@ import { ChevronDown, ChevronRight, Plus } from 'lucide-react'
 import type { Task } from '../../types'
 import { dateGroupLabel, dateGroupOrder } from '../../utils/date'
 import EisenhowerTaskRow from './EisenhowerTaskRow'
+import { useTasksStore } from '../../store/tasksStore'
+import { useProjectTasksStore } from '../../store/projectTasksStore'
+import { isSupabaseConfigured } from '../../lib/supabase'
 
 // Maps the German labels returned by dateGroupLabel()/dateGroupOrder to translation keys.
 const dateGroupLabelKeys: Record<string, string> = {
@@ -20,6 +23,8 @@ interface EisenhowerQuadrantProps {
   title: string
   colorClass: string
   icon: React.ReactNode
+  urgent: boolean
+  important: boolean
   tasks: Task[]
   onTaskClick: (task: Task) => void
   onAddTask: () => void
@@ -29,12 +34,15 @@ export default function EisenhowerQuadrant({
   title,
   colorClass,
   icon,
+  urgent,
+  important,
   tasks,
   onTaskClick,
   onAddTask,
 }: EisenhowerQuadrantProps) {
   const { t } = useTranslation(['eisenhower', 'tasks'])
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const [isDragOver, setIsDragOver] = useState(false)
 
   const groups = useMemo(() => {
     const map = new Map<string, Task[]>()
@@ -63,7 +71,35 @@ export default function EisenhowerQuadrant({
   }
 
   return (
-    <div className="flex min-h-[200px] flex-col rounded-xl border border-gray-100 bg-white p-3 dark:border-racing-800 dark:bg-racing-900">
+    <div
+      onDragOver={(e) => {
+        e.preventDefault()
+        setIsDragOver(true)
+      }}
+      onDragLeave={() => setIsDragOver(false)}
+      onDrop={async (e) => {
+        e.preventDefault()
+        setIsDragOver(false)
+        const dragData = e.dataTransfer.getData('text/plain')
+        if (!dragData) return
+        const [taskId, isProjectStr] = dragData.split(':')
+        const isProject = isProjectStr === 'project'
+
+        if (isProject) {
+          await useProjectTasksStore.getState().updateTask(taskId, { urgent, important })
+          if (isSupabaseConfigured) {
+            useProjectTasksStore.getState().fetchMyTasks()
+          }
+        } else {
+          useTasksStore.getState().updateTask(taskId, { urgent, important })
+        }
+      }}
+      className={`flex min-h-[200px] flex-col rounded-xl border p-3 transition-colors ${
+        isDragOver
+          ? 'border-accent bg-accent/5 dark:border-accent dark:bg-accent/5 shadow-md'
+          : 'border-gray-100 bg-white dark:border-racing-800 dark:bg-racing-900'
+      }`}
+    >
       <div className="mb-2 flex items-center justify-between">
         <div className={`flex items-center gap-2 text-sm font-semibold ${colorClass}`}>
           {icon}

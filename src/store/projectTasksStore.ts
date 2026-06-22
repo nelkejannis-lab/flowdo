@@ -1,7 +1,9 @@
 import { create } from 'zustand'
-import { supabase } from '../lib/supabase'
+import { persist } from 'zustand/middleware'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { deleteAttachment, uploadAttachment } from '../lib/attachments'
 import { useBoardsStore } from './boardsStore'
+import { createId } from '../utils/id'
 import type { Attachment, Priority, Subtask, Task } from '../types'
 
 interface NewProjectTaskInput {
@@ -101,227 +103,301 @@ interface ProjectTasksState {
   subscribeToBoard: (boardId: string) => () => void
 }
 
-export const useProjectTasksStore = create<ProjectTasksState>()((set, get) => ({
-  tasks: [],
-  myTasks: [],
-  loading: false,
-  error: null,
+export const useProjectTasksStore = create<ProjectTasksState>()(
+  persist(
+    (set, get) => ({
+      tasks: [],
+      myTasks: [],
+      loading: false,
+      error: null,
 
-  fetchTasks: async (boardId) => {
-    set({ loading: true, error: null })
-    const { data, error } = await supabase
-      .from('tasks')
-      .select(SELECT)
-      .eq('board_id', boardId)
-      .order('created_at', { ascending: false })
+      fetchTasks: async (boardId) => {
+        if (!isSupabaseConfigured) return
+        set({ loading: true, error: null })
+        const { data, error } = await supabase
+          .from('tasks')
+          .select(SELECT)
+          .eq('board_id', boardId)
+          .order('created_at', { ascending: false })
 
-    if (error) {
-      set({ loading: false, error: error.message })
-      return
-    }
+        if (error) {
+          set({ loading: false, error: error.message })
+          return
+        }
 
-    const rows = (data ?? []) as unknown as ProjectTaskRow[]
-    const depMap = await fetchDependencyMap(rows.map((r) => r.id))
-    const tasks = rows.map((row) => toTask(row, depMap[row.id]))
-    set({ tasks, loading: false })
-  },
+        const rows = (data ?? []) as unknown as ProjectTaskRow[]
+        const depMap = await fetchDependencyMap(rows.map((r) => r.id))
+        const tasks = rows.map((row) => toTask(row, depMap[row.id]))
+        set({ tasks, loading: false })
+      },
 
-  fetchMyTasks: async () => {
-    const { data: userData } = await supabase.auth.getUser()
-    const userId = userData.user?.id
-    if (!userId) return
+      fetchMyTasks: async () => {
+        if (!isSupabaseConfigured) return
+        const { data: userData } = await supabase.auth.getUser()
+        const userId = userData.user?.id
+        if (!userId) return
 
-    const { data, error } = await supabase
-      .from('tasks')
-      .select(SELECT)
-      .not('board_id', 'is', null)
-      .or(`owner_id.eq.${userId},assigned_to.eq.${userId}`)
-      .order('due_date', { ascending: true })
+        const { data, error } = await supabase
+          .from('tasks')
+          .select(SELECT)
+          .not('board_id', 'is', null)
+          .or(`owner_id.eq.${userId},assigned_to.eq.${userId}`)
+          .order('due_date', { ascending: true })
 
-    if (error) {
-      set({ error: error.message })
-      return
-    }
+        if (error) {
+          set({ error: error.message })
+          return
+        }
 
-    const myTasks = ((data ?? []) as unknown as ProjectTaskRow[]).map((row) => toTask(row))
-    set({ myTasks })
-  },
+        const myTasks = ((data ?? []) as unknown as ProjectTaskRow[]).map((row) => toTask(row))
+        set({ myTasks })
+      },
 
-  addTask: async (input) => {
-    const { data: userData } = await supabase.auth.getUser()
-    const userId = userData.user?.id
-    if (!userId) return { error: 'Nicht angemeldet' }
+      addTask: async (input) => {
+        if (!isSupabaseConfigured) {
+          const taskId = createId()
+          const newTask: Task = {
+            id: taskId,
+            ownerId: 'local',
+            title: input.title,
+            description: input.description ?? undefined,
+            dueDate: input.dueDate ?? undefined,
+            priority: input.priority ?? 'medium',
+            tags: input.tags ?? [],
+            urgent: input.urgent ?? false,
+            important: input.important ?? false,
+            completed: false,
+            boardId: input.boardId,
+            columnId: input.columnId ?? undefined,
+            subtasks: [],
+            attachments: [],
+            createdAt: new Date().toISOString(),
+          }
+          set((state) => ({
+            tasks: [newTask, ...state.tasks],
+            myTasks: [newTask, ...state.myTasks],
+          }))
+          return { id: taskId }
+        }
 
-    const { data, error } = await supabase
-      .from('tasks')
-      .insert({
-        owner_id: userId,
-        assigned_to: input.assignedTo ?? null,
-        title: input.title,
-        description: input.description ?? null,
-        due_date: input.dueDate ?? null,
-        priority: input.priority ?? 'medium',
-        tags: input.tags ?? [],
-        urgent: input.urgent ?? false,
-        important: input.important ?? false,
-        board_id: input.boardId,
-        column_id: input.columnId ?? null,
-      })
-      .select('id')
-      .single()
+        const { data: userData } = await supabase.auth.getUser()
+        const userId = userData.user?.id
+        if (!userId) return { error: 'Nicht angemeldet' }
 
-    if (error || !data) return { error: error?.message ?? 'Fehler beim Erstellen' }
-    await Promise.all([get().fetchTasks(input.boardId), get().fetchMyTasks()])
-    return { id: data.id }
-  },
+        const { data, error } = await supabase
+          .from('tasks')
+          .insert({
+            owner_id: userId,
+            assigned_to: input.assignedTo ?? null,
+            title: input.title,
+            description: input.description ?? null,
+            due_date: input.dueDate ?? null,
+            priority: input.priority ?? 'medium',
+            tags: input.tags ?? [],
+            urgent: input.urgent ?? false,
+            important: input.important ?? false,
+            board_id: input.boardId,
+            column_id: input.columnId ?? null,
+          })
+          .select('id')
+          .single()
 
-  updateTask: async (id, updates) => {
-    const payload: Record<string, unknown> = {}
-    if (updates.title !== undefined) payload.title = updates.title
-    if (updates.description !== undefined) payload.description = updates.description ?? null
-    if (updates.dueDate !== undefined) payload.due_date = updates.dueDate ?? null
-    if (updates.priority !== undefined) payload.priority = updates.priority
-    if (updates.tags !== undefined) payload.tags = updates.tags
-    if (updates.urgent !== undefined) payload.urgent = updates.urgent
-    if (updates.important !== undefined) payload.important = updates.important
-    if (updates.completed !== undefined) payload.completed = updates.completed
-    if (updates.completedAt !== undefined) payload.completed_at = updates.completedAt ?? null
-    if (updates.columnId !== undefined) payload.column_id = updates.columnId ?? null
-    if (updates.assignedTo !== undefined) payload.assigned_to = updates.assignedTo ?? null
-    if (updates.subtasks !== undefined) payload.subtasks = updates.subtasks
-    if (updates.attachments !== undefined) payload.attachments = updates.attachments
+        if (error || !data) return { error: error?.message ?? 'Fehler beim Erstellen' }
+        await Promise.all([get().fetchTasks(input.boardId), get().fetchMyTasks()])
+        return { id: data.id }
+      },
 
-    await supabase.from('tasks').update(payload).eq('id', id)
+      updateTask: async (id, updates) => {
+        if (!isSupabaseConfigured) {
+          set((state) => ({
+            tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+            myTasks: state.myTasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+          }))
+          return
+        }
 
-    if (updates.assignedTo !== undefined) {
-      const { data } = await supabase.from('tasks').select(SELECT).eq('id', id).single()
-      if (data) {
-        const refreshed = toTask(data as unknown as ProjectTaskRow)
+        const payload: Record<string, unknown> = {}
+        if (updates.title !== undefined) payload.title = updates.title
+        if (updates.description !== undefined) payload.description = updates.description ?? null
+        if (updates.dueDate !== undefined) payload.due_date = updates.dueDate ?? null
+        if (updates.priority !== undefined) payload.priority = updates.priority
+        if (updates.tags !== undefined) payload.tags = updates.tags
+        if (updates.urgent !== undefined) payload.urgent = updates.urgent
+        if (updates.important !== undefined) payload.important = updates.important
+        if (updates.completed !== undefined) payload.completed = updates.completed
+        if (updates.completedAt !== undefined) payload.completed_at = updates.completedAt ?? null
+        if (updates.columnId !== undefined) payload.column_id = updates.columnId ?? null
+        if (updates.assignedTo !== undefined) payload.assigned_to = updates.assignedTo ?? null
+        if (updates.subtasks !== undefined) payload.subtasks = updates.subtasks
+        if (updates.attachments !== undefined) payload.attachments = updates.attachments
+
+        await supabase.from('tasks').update(payload).eq('id', id)
+
+        if (updates.assignedTo !== undefined) {
+          const { data } = await supabase.from('tasks').select(SELECT).eq('id', id).single()
+          if (data) {
+            const refreshed = toTask(data as unknown as ProjectTaskRow)
+            set((state) => ({
+              tasks: state.tasks.map((t) => (t.id === id ? refreshed : t)),
+              myTasks: state.myTasks.map((t) => (t.id === id ? refreshed : t)),
+            }))
+            return
+          }
+        }
+
         set((state) => ({
-          tasks: state.tasks.map((t) => (t.id === id ? refreshed : t)),
-          myTasks: state.myTasks.map((t) => (t.id === id ? refreshed : t)),
+          tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+          myTasks: state.myTasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
         }))
-        return
-      }
-    }
+      },
 
-    set((state) => ({
-      tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
-      myTasks: state.myTasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
-    }))
-  },
+      deleteTask: async (id) => {
+        if (!isSupabaseConfigured) {
+          set((state) => ({
+            tasks: state.tasks.filter((t) => t.id !== id),
+            myTasks: state.myTasks.filter((t) => t.id !== id),
+          }))
+          return
+        }
 
-  deleteTask: async (id) => {
-    await supabase.from('tasks').delete().eq('id', id)
-    set((state) => ({
-      tasks: state.tasks.filter((t) => t.id !== id),
-      myTasks: state.myTasks.filter((t) => t.id !== id),
-    }))
-  },
+        await supabase.from('tasks').delete().eq('id', id)
+        set((state) => ({
+          tasks: state.tasks.filter((t) => t.id !== id),
+          myTasks: state.myTasks.filter((t) => t.id !== id),
+        }))
+      },
 
-  toggleTaskCompleted: async (id) => {
-    const task = get().tasks.find((t) => t.id === id) ?? get().myTasks.find((t) => t.id === id)
-    if (!task) return
-    const completed = !task.completed
-    const completedAt = completed ? new Date().toISOString() : undefined
-    const updates: Partial<Task> = { completed, completedAt }
+      toggleTaskCompleted: async (id) => {
+        const task = get().tasks.find((t) => t.id === id) ?? get().myTasks.find((t) => t.id === id)
+        if (!task) return
+        const completed = !task.completed
+        const completedAt = completed ? new Date().toISOString() : undefined
+        const updates: Partial<Task> = { completed, completedAt }
 
-    if (completed && task.boardId) {
-      const board = useBoardsStore.getState().boards.find((b) => b.id === task.boardId)
-      const doneColumn = board?.columns.find((c) => c.title === 'Erledigt')
-      if (doneColumn && doneColumn.id !== task.columnId) updates.columnId = doneColumn.id
-    }
+        if (completed && task.boardId) {
+          const board = useBoardsStore.getState().boards.find((b) => b.id === task.boardId)
+          const doneColumn = board?.columns.find((c) => c.title === 'Erledigt')
+          if (doneColumn && doneColumn.id !== task.columnId) updates.columnId = doneColumn.id
+        }
 
-    await get().updateTask(id, updates)
-  },
+        await get().updateTask(id, updates)
+      },
 
-  addSubtask: async (taskId, title) => {
-    const task = get().tasks.find((t) => t.id === taskId) ?? get().myTasks.find((t) => t.id === taskId)
-    if (!task) return
-    const subtask: Subtask = { id: crypto.randomUUID(), title, completed: false }
-    await get().updateTask(taskId, { subtasks: [...task.subtasks, subtask] })
-  },
+      addSubtask: async (taskId, title) => {
+        const task = get().tasks.find((t) => t.id === taskId) ?? get().myTasks.find((t) => t.id === taskId)
+        if (!task) return
+        const subtask: Subtask = { id: createId(), title, completed: false }
+        await get().updateTask(taskId, { subtasks: [...task.subtasks, subtask] })
+      },
 
-  toggleSubtask: async (taskId, subtaskId) => {
-    const task = get().tasks.find((t) => t.id === taskId) ?? get().myTasks.find((t) => t.id === taskId)
-    if (!task) return
-    const subtasks = task.subtasks.map((s) => (s.id === subtaskId ? { ...s, completed: !s.completed } : s))
-    const allDone = subtasks.length > 0 && subtasks.every((s) => s.completed)
-    await get().updateTask(taskId, {
-      subtasks,
-      ...(allDone && !task.completed ? { completed: true, completedAt: new Date().toISOString() } : {}),
-    })
-  },
+      toggleSubtask: async (taskId, subtaskId) => {
+        const task = get().tasks.find((t) => t.id === taskId) ?? get().myTasks.find((t) => t.id === taskId)
+        if (!task) return
+        const subtasks = task.subtasks.map((s) => (s.id === subtaskId ? { ...s, completed: !s.completed } : s))
+        const allDone = subtasks.length > 0 && subtasks.every((s) => s.completed)
+        await get().updateTask(taskId, {
+          subtasks,
+          ...(allDone && !task.completed ? { completed: true, completedAt: new Date().toISOString() } : {}),
+        })
+      },
 
-  deleteSubtask: async (taskId, subtaskId) => {
-    const task = get().tasks.find((t) => t.id === taskId) ?? get().myTasks.find((t) => t.id === taskId)
-    if (!task) return
-    const subtasks = task.subtasks.filter((s) => s.id !== subtaskId)
-    await get().updateTask(taskId, { subtasks })
-  },
+      deleteSubtask: async (taskId, subtaskId) => {
+        const task = get().tasks.find((t) => t.id === taskId) ?? get().myTasks.find((t) => t.id === taskId)
+        if (!task) return
+        const subtasks = task.subtasks.filter((s) => s.id !== subtaskId)
+        await get().updateTask(taskId, { subtasks })
+      },
 
-  addAttachment: async (taskId, file) => {
-    const task = get().tasks.find((t) => t.id === taskId) ?? get().myTasks.find((t) => t.id === taskId)
-    if (!task) return { error: 'Aufgabe nicht gefunden' }
-    const { attachment, error } = await uploadAttachment(`tasks/${taskId}`, file)
-    if (error || !attachment) return { error: error ?? 'Fehler beim Hochladen' }
-    await get().updateTask(taskId, { attachments: [...task.attachments, attachment] })
-    return { attachment }
-  },
+      addAttachment: async (taskId, file) => {
+        if (!isSupabaseConfigured) {
+          return { error: 'Attachments werden im Offline-Modus nicht unterstützt' }
+        }
 
-  removeAttachment: async (taskId, attachmentId) => {
-    const task = get().tasks.find((t) => t.id === taskId) ?? get().myTasks.find((t) => t.id === taskId)
-    if (!task) return
-    const attachment = task.attachments.find((a) => a.id === attachmentId)
-    if (attachment) await deleteAttachment(attachment.path)
-    await get().updateTask(taskId, { attachments: task.attachments.filter((a) => a.id !== attachmentId) })
-  },
+        const task = get().tasks.find((t) => t.id === taskId) ?? get().myTasks.find((t) => t.id === taskId)
+        if (!task) return { error: 'Aufgabe nicht gefunden' }
+        const { attachment, error } = await uploadAttachment(`tasks/${taskId}`, file)
+        if (error || !attachment) return { error: error ?? 'Fehler beim Hochladen' }
+        await get().updateTask(taskId, { attachments: [...task.attachments, attachment] })
+        return { attachment }
+      },
 
-  moveTaskToColumn: async (taskId, _boardId, columnId) => {
-    await get().updateTask(taskId, { columnId })
-  },
+      removeAttachment: async (taskId, attachmentId) => {
+        if (!isSupabaseConfigured) return
 
-  addDependency: async (taskId, dependsOnId) => {
-    const { error } = await supabase.from('task_dependencies').insert({ task_id: taskId, depends_on_id: dependsOnId })
-    if (error) return
-    set((state) => ({
-      tasks: state.tasks.map((t) =>
-        t.id === taskId ? { ...t, dependsOn: [...(t.dependsOn ?? []), dependsOnId] } : t
-      ),
-    }))
-  },
+        const task = get().tasks.find((t) => t.id === taskId) ?? get().myTasks.find((t) => t.id === taskId)
+        if (!task) return
+        const attachment = task.attachments.find((a) => a.id === attachmentId)
+        if (attachment) await deleteAttachment(attachment.path)
+        await get().updateTask(taskId, { attachments: task.attachments.filter((a) => a.id !== attachmentId) })
+      },
 
-  removeDependency: async (taskId, dependsOnId) => {
-    await supabase.from('task_dependencies').delete().eq('task_id', taskId).eq('depends_on_id', dependsOnId)
-    set((state) => ({
-      tasks: state.tasks.map((t) =>
-        t.id === taskId ? { ...t, dependsOn: (t.dependsOn ?? []).filter((id) => id !== dependsOnId) } : t
-      ),
-    }))
-  },
+      moveTaskToColumn: async (taskId, _boardId, columnId) => {
+        await get().updateTask(taskId, { columnId })
+      },
 
-  isBlocked: (taskId) => {
-    const task = get().tasks.find((t) => t.id === taskId)
-    if (!task || !task.dependsOn || task.dependsOn.length === 0) return false
-    return task.dependsOn.some((depId) => {
-      const dep = get().tasks.find((t) => t.id === depId)
-      return dep ? !dep.completed : false
-    })
-  },
+      addDependency: async (taskId, dependsOnId) => {
+        if (!isSupabaseConfigured) {
+          set((state) => ({
+            tasks: state.tasks.map((t) =>
+              t.id === taskId ? { ...t, dependsOn: [...(t.dependsOn ?? []), dependsOnId] } : t
+            ),
+          }))
+          return
+        }
 
-  subscribeToBoard: (boardId) => {
-    const channel = supabase
-      .channel(`board-tasks-${boardId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `board_id=eq.${boardId}` }, () => {
-        get().fetchTasks(boardId)
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_dependencies' }, () => {
-        get().fetchTasks(boardId)
-      })
-      .subscribe()
+        const { error } = await supabase.from('task_dependencies').insert({ task_id: taskId, depends_on_id: dependsOnId })
+        if (error) return
+        set((state) => ({
+          tasks: state.tasks.map((t) =>
+            t.id === taskId ? { ...t, dependsOn: [...(t.dependsOn ?? []), dependsOnId] } : t
+          ),
+        }))
+      },
 
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  },
-}))
+      removeDependency: async (taskId, dependsOnId) => {
+        if (!isSupabaseConfigured) {
+          set((state) => ({
+            tasks: state.tasks.map((t) =>
+              t.id === taskId ? { ...t, dependsOn: (t.dependsOn ?? []).filter((id) => id !== dependsOnId) } : t
+            ),
+          }))
+          return
+        }
+
+        await supabase.from('task_dependencies').delete().eq('task_id', taskId).eq('depends_on_id', dependsOnId)
+        set((state) => ({
+          tasks: state.tasks.map((t) =>
+            t.id === taskId ? { ...t, dependsOn: (t.dependsOn ?? []).filter((id) => id !== dependsOnId) } : t
+          ),
+        }))
+      },
+
+      isBlocked: (taskId) => {
+        const task = get().tasks.find((t) => t.id === taskId)
+        if (!task || !task.dependsOn || task.dependsOn.length === 0) return false
+        return task.dependsOn.some((depId) => {
+          const dep = get().tasks.find((t) => t.id === depId)
+          return dep ? !dep.completed : false
+        })
+      },
+
+      subscribeToBoard: (boardId) => {
+        if (!isSupabaseConfigured) return () => {}
+        const channel = supabase
+          .channel(`board-tasks-${boardId}`)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `board_id=eq.${boardId}` }, () => {
+            get().fetchTasks(boardId)
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'task_dependencies' }, () => {
+            get().fetchTasks(boardId)
+          })
+          .subscribe()
+
+        return () => {
+          supabase.removeChannel(channel)
+        }
+      },
+    }),
+    { name: 'flowdo-project-tasks' }
+  )
+)

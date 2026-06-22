@@ -1,14 +1,15 @@
 import { ReactNode } from 'react'
-import { X } from 'lucide-react'
+import { X, Minimize2 } from 'lucide-react'
 
 interface ModalProps {
   title: string
   onClose: () => void
+  onMinimize?: () => void
   children: ReactNode
   widthClass?: string
 }
 
-export default function Modal({ title, onClose, children, widthClass = 'max-w-lg' }: ModalProps) {
+export default function Modal({ title, onClose, onMinimize, children, widthClass = 'max-w-lg' }: ModalProps) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
@@ -20,12 +21,26 @@ export default function Modal({ title, onClose, children, widthClass = 'max-w-lg
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">{title}</h2>
-          <button
-            onClick={onClose}
-            className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-1.5">
+            {onMinimize && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onMinimize()
+                }}
+                className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
+                title="Minimieren"
+              >
+                <Minimize2 size={18} />
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
         {children}
       </div>

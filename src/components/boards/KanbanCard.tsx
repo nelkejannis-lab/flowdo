@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
-import { Check, ChevronDown, ListChecks, Lock } from 'lucide-react'
+import { Check, ChevronDown, ListChecks, Lock, Play, Pause } from 'lucide-react'
 import type { Task } from '../../types'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
 import { formatFriendlyDate, isOverdue } from '../../utils/date'
 import PriorityBadge from '../tasks/PriorityBadge'
+import { usePomodoroStore } from '../../store/pomodoroStore'
 
 interface KanbanCardProps {
   task: Task
@@ -16,6 +17,9 @@ export default function KanbanCard({ task, onClick }: KanbanCardProps) {
   const toggleTaskCompleted = useProjectTasksStore((s) => s.toggleTaskCompleted)
   const toggleSubtask = useProjectTasksStore((s) => s.toggleSubtask)
   const blocked = useProjectTasksStore((s) => !task.completed && s.isBlocked(task.id))
+  const pomodoro = usePomodoroStore()
+  const isPomodoroActive = pomodoro.activeTaskId === task.id
+  const isTimerRunning = pomodoro.running
   const [expanded, setExpanded] = useState(false)
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
@@ -49,6 +53,31 @@ export default function KanbanCard({ task, onClick }: KanbanCardProps) {
         >
           {task.completed && <Check size={10} />}
         </button>
+        {!task.completed && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              if (isPomodoroActive && isTimerRunning) {
+                pomodoro.setRunning(false)
+              } else {
+                pomodoro.setActiveTask(task.id, 'project')
+                pomodoro.setRunning(true)
+              }
+            }}
+            className={`mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full transition-colors ${
+              isPomodoroActive && isTimerRunning
+                ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                : 'bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600 dark:bg-racing-800 dark:text-racing-300 dark:hover:bg-racing-700'
+            }`}
+            title={isPomodoroActive && isTimerRunning ? 'Timer pausieren' : 'Fokus-Timer starten'}
+          >
+            {isPomodoroActive && isTimerRunning ? (
+              <Pause size={8} className="animate-pulse" />
+            ) : (
+              <Play size={8} className="ml-0.5" />
+            )}
+          </button>
+        )}
         <span className={`flex-1 font-medium ${task.completed ? 'text-gray-400 line-through' : ''}`}>
           {task.title}
         </span>

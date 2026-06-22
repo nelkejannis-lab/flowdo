@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, NavLink } from 'react-router-dom'
 import Logo from './Logo'
+import Modal from './Modal'
+import { SHORTCUTS } from '../../hooks/useKeyboardShortcuts'
 import {
   LayoutDashboard,
   ListTodo,
@@ -28,6 +30,9 @@ import {
   MessageCircle,
   Search,
   GripVertical,
+  Cloud,
+  CloudOff,
+  Keyboard,
 } from 'lucide-react'
 import {
   DndContext,
@@ -72,6 +77,7 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { t } = useTranslation('layout')
+  const [showShortcuts, setShowShortcuts] = useState(false)
   const boards = useBoardsStore((s) => s.boards)
   const folders = useBoardsStore((s) => s.folders)
   const fetchBoards = useBoardsStore((s) => s.fetchBoards)
@@ -176,6 +182,25 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     })
   }
 
+  const syncStatus = (() => {
+    if (!isSupabaseConfigured) {
+      return {
+        icon: <CloudOff size={16} className="text-gray-400" />,
+        tooltip: 'Offline-Modus / Local-Only',
+      }
+    }
+    if (profile) {
+      return {
+        icon: <Cloud size={16} className="text-emerald-500 animate-pulse" style={{ animationDuration: '3s' }} />,
+        tooltip: 'Synchronisiert mit der Cloud',
+      }
+    }
+    return {
+      icon: <Cloud size={16} className="text-amber-500" />,
+      tooltip: 'Nicht angemeldet – Lokaler Modus',
+    }
+  })()
+
   return (
     <>
       {isOpen && (
@@ -197,6 +222,21 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <span className="truncate text-base font-semibold sm:text-lg">{t('appName')}</span>
         </div>
         <div className="flex flex-shrink-0 items-center gap-0">
+          <div
+            className="flex items-center justify-center p-1 text-gray-400"
+            title={syncStatus.tooltip}
+            aria-label={syncStatus.tooltip}
+          >
+            {syncStatus.icon}
+          </div>
+          <button
+            onClick={() => setShowShortcuts(true)}
+            className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
+            title="Tastaturkurzbefehle / Keyboard Shortcuts"
+            aria-label="Tastaturkurzbefehle / Keyboard Shortcuts"
+          >
+            <Keyboard size={16} />
+          </button>
           <button
             onClick={openSearch}
             className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
@@ -422,6 +462,25 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
       </div>
       </aside>
+      {showShortcuts && (
+        <Modal title="Tastaturkurzbefehle" onClose={() => setShowShortcuts(false)} widthClass="max-w-md">
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-gray-500 dark:text-racing-200">
+              Drücke diese Tasten, wenn kein Eingabefeld fokussiert ist.
+            </p>
+            <div className="divide-y divide-gray-100 dark:divide-racing-800">
+              {SHORTCUTS.map((s) => (
+                <div key={s.key} className="flex items-center justify-between py-2 text-sm text-gray-700 dark:text-racing-100">
+                  <span>{s.description}</span>
+                  <kbd className="rounded border border-gray-200 bg-gray-50 px-2 py-0.5 font-mono text-xs font-semibold text-gray-800 shadow-sm dark:border-racing-700 dark:bg-racing-850 dark:text-racing-100">
+                    {s.key}
+                  </kbd>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Modal>
+      )}
     </>
   )
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Check, ChevronDown, HelpCircle, ListChecks, MessageSquare, Moon, Repeat, Send } from 'lucide-react'
+import { Check, ChevronDown, HelpCircle, ListChecks, MessageSquare, Moon, Repeat, Send, Play, Pause } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { Task } from '../../types'
 import { useTasksStore } from '../../store/tasksStore'
@@ -12,6 +12,7 @@ import BoardBadge from '../boards/BoardBadge'
 import PriorityBadge from './PriorityBadge'
 import CommentSection from '../shared/CommentSection'
 import { isSupabaseConfigured } from '../../lib/supabase'
+import { usePomodoroStore } from '../../store/pomodoroStore'
 
 interface TaskItemProps {
   task: Task
@@ -34,6 +35,9 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
   const friends = useFriendsStore((s) => s.friends)
   const fetchFriends = useFriendsStore((s) => s.fetchAll)
   const askQuestion = useNotificationsStore((s) => s.askQuestion)
+  const pomodoro = usePomodoroStore()
+  const isPomodoroActive = pomodoro.activeTaskId === task.id
+  const isTimerRunning = pomodoro.running
 
   useEffect(() => {
     if (isSupabaseConfigured && friends.length === 0) fetchFriends()
@@ -66,6 +70,33 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
         >
           {task.completed && <Check size={12} />}
         </button>
+
+        {/* Play/Pause Focus Timer toggle */}
+        {!task.completed && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              if (isPomodoroActive && isTimerRunning) {
+                pomodoro.setRunning(false)
+              } else {
+                pomodoro.setActiveTask(task.id, task.boardId ? 'project' : 'personal')
+                pomodoro.setRunning(true)
+              }
+            }}
+            className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full transition-colors ${
+              isPomodoroActive && isTimerRunning
+                ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                : 'bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600 dark:bg-racing-800 dark:text-racing-300 dark:hover:bg-racing-700'
+            }`}
+            title={isPomodoroActive && isTimerRunning ? 'Timer pausieren' : 'Fokus-Timer starten'}
+          >
+            {isPomodoroActive && isTimerRunning ? (
+              <Pause size={10} className="animate-pulse" />
+            ) : (
+              <Play size={10} className="ml-0.5" />
+            )}
+          </button>
+        )}
 
         {/* Title — clickable to open modal */}
         <div className="min-w-0 flex-1 cursor-pointer" onClick={onClick}>

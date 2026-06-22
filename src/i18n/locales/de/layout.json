@@ -48,7 +48,8 @@
     "noResults": "Keine Ergebnisse",
     "tasks": "Aufgaben",
     "projects": "Projekte",
-    "tags": "Tags"
+    "tags": "Tags",
+    "createTask": "Aufgabe erstellen"
   },
   "loading": "Lädt…"
 }

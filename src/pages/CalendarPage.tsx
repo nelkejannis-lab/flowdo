@@ -22,6 +22,7 @@ import { supabase } from '../lib/supabase'
 import MonthView from '../components/calendar/MonthView'
 import WeekView from '../components/calendar/WeekView'
 import DayView from '../components/calendar/DayView'
+import DailyAgendaPanel from '../components/calendar/DailyAgendaPanel'
 import TaskFormModal from '../components/tasks/TaskFormModal'
 import CalendarEntryFormModal from '../components/calendar/CalendarEntryFormModal'
 import TeamAvailabilitySidebar from '../components/calendar/TeamAvailabilitySidebar'
@@ -49,6 +50,7 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [newTaskDate, setNewTaskDate] = useState<string | null>(null)
+  const [selectedDate, setSelectedDate] = useState<string>(toISODate(currentDate))
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null)
   const [editingEntry, setEditingEntry] = useState<CalendarEntry | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
@@ -77,6 +79,10 @@ export default function CalendarPage() {
   useEffect(() => {
     if (isSupabaseConfigured) { fetchEntries(); fetchFriends(); fetchTeams(); fetchConnections(); fetchEvents() }
   }, [fetchEntries, fetchFriends, fetchTeams, fetchConnections, fetchEvents])
+
+  useEffect(() => {
+    setSelectedDate(toISODate(currentDate))
+  }, [currentDate])
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -371,19 +377,33 @@ export default function CalendarPage() {
       <div className="flex flex-col gap-4 lg:flex-row">
         <div className="flex-1">
           {view === 'month' && (
-            <MonthView
-              currentDate={currentDate}
-              tasks={tasks}
-              events={events}
-              entries={filteredEntries}
-              onDayClick={(date) => {
-                setCurrentDate(date)
-                setView('day')
-              }}
-              onTaskClick={(task) => setEditingTask(task)}
-              onEventClick={(event) => setEditingEvent(event)}
-              onEntryClick={(entry) => setEditingEntry(entry)}
-            />
+            <div className="space-y-6">
+              <MonthView
+                currentDate={currentDate}
+                selectedDate={selectedDate}
+                tasks={tasks}
+                events={events}
+                entries={filteredEntries}
+                onDayClick={(date) => {
+                  setSelectedDate(toISODate(date))
+                  setCurrentDate(date)
+                }}
+                onTaskClick={(task) => setEditingTask(task)}
+                onEventClick={(event) => setEditingEvent(event)}
+                onEntryClick={(entry) => setEditingEntry(entry)}
+              />
+              <DailyAgendaPanel
+                selectedDate={selectedDate}
+                tasks={tasks}
+                events={events}
+                entries={filteredEntries}
+                onTaskClick={(task) => setEditingTask(task)}
+                onEventClick={(event) => setEditingEvent(event)}
+                onEntryClick={(entry) => setEditingEntry(entry)}
+                onAddTask={() => setNewTaskDate(selectedDate)}
+                onAddEntry={() => setShowAddForm(true)}
+              />
+            </div>
           )}
           {view === 'week' && (
             <WeekView
@@ -460,7 +480,7 @@ export default function CalendarPage() {
         <TaskFormModal defaultDueDate={newTaskDate} onClose={() => setNewTaskDate(null)} />
       )}
       {showAddForm && (
-        <CalendarEntryFormModal defaultDate={toISODate(currentDate)} onClose={() => setShowAddForm(false)} />
+        <CalendarEntryFormModal defaultDate={selectedDate} onClose={() => setShowAddForm(false)} />
       )}
       {editingEvent && <CalendarEntryFormModal event={editingEvent} onClose={() => setEditingEvent(null)} />}
       {editingEntry && <CalendarEntryFormModal entry={editingEntry} onClose={() => setEditingEntry(null)} />}

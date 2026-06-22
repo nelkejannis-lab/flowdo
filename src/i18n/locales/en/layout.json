@@ -48,7 +48,8 @@
     "noResults": "No results",
     "tasks": "Tasks",
     "projects": "Projects",
-    "tags": "Tags"
+    "tags": "Tags",
+    "createTask": "Create task"
   },
   "loading": "Loading…"
 }

@@ -14,6 +14,8 @@ import { isSupabaseConfigured } from '../../lib/supabase'
 import { eachEntryDate } from '../../utils/events'
 import { todayISO, parseNaturalDate } from '../../utils/date'
 import type { Attachment, Priority, Task } from '../../types'
+import { createId } from '../../utils/id'
+import { useTaskTrayStore } from '../../store/taskTrayStore'
 
 const quadrants: { urgent: boolean; important: boolean; labelKey: string; activeClass: string }[] = [
   { urgent: true, important: true, labelKey: 'form.quadrants.urgentImportant', activeClass: 'border-red-400 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
@@ -24,7 +26,11 @@ const quadrants: { urgent: boolean; important: boolean; labelKey: string; active
 
 interface TaskFormModalProps {
   task?: Task
+  defaultTitle?: string
   defaultDueDate?: string
+  defaultPriority?: Priority
+  defaultProjectId?: string
+  defaultTags?: string[]
   defaultUrgent?: boolean
   defaultImportant?: boolean
   onClose: () => void
@@ -32,7 +38,11 @@ interface TaskFormModalProps {
 
 export default function TaskFormModal({
   task,
+  defaultTitle,
   defaultDueDate,
+  defaultPriority,
+  defaultProjectId,
+  defaultTags,
   defaultUrgent,
   defaultImportant,
   onClose,
@@ -59,12 +69,12 @@ export default function TaskFormModal({
   const addProjectAttachment = useProjectTasksStore((s) => s.addAttachment)
   const removeProjectAttachment = useProjectTasksStore((s) => s.removeAttachment)
 
-  const [title, setTitle] = useState(task?.title ?? '')
+  const [title, setTitle] = useState(task?.title ?? defaultTitle ?? '')
   const [description, setDescription] = useState(task?.description ?? '')
   const [dueDate, setDueDate] = useState(task?.dueDate ?? defaultDueDate ?? '')
-  const [priority, setPriority] = useState<Priority>(task?.priority ?? 'medium')
+  const [priority, setPriority] = useState<Priority>(task?.priority ?? defaultPriority ?? 'medium')
   const [newSubtask, setNewSubtask] = useState('')
-  const [tags, setTags] = useState<string[]>(task?.tags ?? [])
+  const [tags, setTags] = useState<string[]>(task?.tags ?? defaultTags ?? [])
   const [tagInput, setTagInput] = useState('')
   const [urgent, setUrgent] = useState(task?.urgent ?? defaultUrgent ?? false)
   const [important, setImportant] = useState(task?.important ?? defaultImportant ?? false)
@@ -73,7 +83,7 @@ export default function TaskFormModal({
   const [recurrence, setRecurrence] = useState<Task['recurrence']>(task?.recurrence)
   const [localSubtasks, setLocalSubtasks] = useState<string[]>([])
   const [assigneeId, setAssigneeId] = useState('')
-  const [projectId, setProjectId] = useState('')
+  const [projectId, setProjectId] = useState(task?.boardId ?? defaultProjectId ?? '')
   const [shareMessage, setShareMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
@@ -246,6 +256,7 @@ export default function TaskFormModal({
       })
       localSubtasks.forEach((s) => addSubtask(created.id, s))
     }
+    useTaskTrayStore.getState().remove(task?.id || '')
     onClose()
   }
 
@@ -253,6 +264,7 @@ export default function TaskFormModal({
     if (task) {
       const taskId = task.id
       deleteTask(taskId)
+      useTaskTrayStore.getState().remove(taskId)
       useToastStore.getState().show({
         message: 'Aufgabe gelöscht',
         action: { label: 'Rückgängig', onClick: () => useTasksStore.getState().undoDelete(taskId) },
@@ -262,8 +274,40 @@ export default function TaskFormModal({
     }
   }
 
+  function handleMinimize() {
+    const currentTaskId = task?.id ?? createId()
+    const currentTaskObj: Task = {
+      id: currentTaskId,
+      title: title.trim() || 'Unbenannte Aufgabe',
+      description: description.trim() || undefined,
+      dueDate: dueDate || undefined,
+      priority,
+      tags,
+      urgent,
+      important,
+      evening,
+      someday,
+      recurrence,
+      completed: task?.completed ?? false,
+      subtasks: task ? task.subtasks : localSubtasks.map((s) => ({ id: createId(), title: s, completed: false })),
+      attachments: task?.attachments ?? [],
+      createdAt: task?.createdAt ?? new Date().toISOString(),
+    }
+    useTaskTrayStore.getState().minimize({
+      id: currentTaskId,
+      title: currentTaskObj.title,
+      type: 'personal',
+      task: currentTaskObj,
+    })
+    onClose()
+  }
+
   return (
-    <Modal title={task ? t('form.titleEdit') : t('form.titleNew')} onClose={onClose}>
+    <Modal
+      title={task ? t('form.titleEdit') : t('form.titleNew')}
+      onClose={onClose}
+      onMinimize={handleMinimize}
+    >
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <input
           autoFocus

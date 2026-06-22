@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { Hash, ListTodo, Search, Trello } from 'lucide-react'
+import { Hash, ListTodo, Search, Trello, Plus } from 'lucide-react'
 import { useSearchStore } from '../../store/searchStore'
 import { useTasksStore } from '../../store/tasksStore'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
 import { useBoardsStore } from '../../store/boardsStore'
+import { parseNaturalDate, parseTaskInput } from '../../utils/date'
+import { useQuickTaskModalStore } from '../../store/quickTaskModalStore'
 import type { Task } from '../../types'
 
 export default function GlobalSearch() {
@@ -60,6 +62,19 @@ export default function GlobalSearch() {
 
   if (!isOpen) return null
 
+  function handleCreateTaskFromSearch(input: string) {
+    const parsed = parseTaskInput(input, boards)
+    useQuickTaskModalStore.getState().open({
+      defaultTitle: parsed.title,
+      defaultDueDate: parsed.dueDate,
+      defaultProjectId: parsed.projectId,
+      defaultPriority: parsed.priority,
+      defaultUrgent: parsed.urgent,
+      defaultImportant: parsed.important,
+    })
+    close()
+  }
+
   function goToTask(task: Task) {
     close()
     navigate(task.boardId ? `/projekte/${task.boardId}` : '/tasks')
@@ -84,6 +99,12 @@ export default function GlobalSearch() {
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && query.trim()) {
+                e.preventDefault()
+                handleCreateTaskFromSearch(query)
+              }
+            }}
             placeholder={t('search.placeholder')}
             className="flex-1 bg-transparent text-sm focus:outline-none"
           />
@@ -92,6 +113,18 @@ export default function GlobalSearch() {
 
         {query.trim() && (
           <div className="overflow-y-auto p-2">
+            <div className="mb-2 border-b border-gray-100 pb-2 dark:border-racing-800">
+              <button
+                onClick={() => handleCreateTaskFromSearch(query)}
+                className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm font-medium text-accent hover:bg-gray-100 dark:hover:bg-racing-800"
+              >
+                <Plus size={14} className="flex-shrink-0 text-accent" />
+                <span>
+                  {t('search.createTask')}: "<strong>{query}</strong>"
+                </span>
+              </button>
+            </div>
+
             {!hasResults && (
               <p className="py-8 text-center text-sm text-gray-400">{t('search.noResults')}</p>
             )}

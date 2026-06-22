@@ -1,7 +1,7 @@
 {
   "name": "workorganizer",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Mooncrew Work Organizer",
   "author": "Mooncrew",
   "type": "module",
@@ -25,13 +25,16 @@
       "dist-electron-app/**/*"
     ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "public/icons/icon-512.png"
     },
     "mac": {
-      "target": "dmg"
+      "target": "dmg",
+      "icon": "public/icons/icon-512.png"
     },
     "linux": {
-      "target": "AppImage"
+      "target": "AppImage",
+      "icon": "public/icons/icon-512.png"
     }
   },
   "dependencies": {

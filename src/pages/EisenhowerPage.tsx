@@ -75,6 +75,8 @@ export default function EisenhowerPage() {
             title={q.title}
             colorClass={q.colorClass}
             icon={q.icon}
+            urgent={q.urgent}
+            important={q.important}
             tasks={tasks.filter((t) => t.urgent === q.urgent && t.important === q.important)}
             onTaskClick={(task) => setEditingTask(task)}
             onAddTask={() => setNewTaskQuadrant({ urgent: q.urgent, important: q.important })}

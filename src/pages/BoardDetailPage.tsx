@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { DndContext, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
-import { ArrowLeft, Building2, Check, ChevronDown, ChevronRight, Globe, MessageSquare, Pencil, Plus, UserPlus, Users, X } from 'lucide-react'
+import { ArrowLeft, Building2, Check, ChevronDown, ChevronRight, ChevronLeft, Globe, MessageSquare, Pencil, Plus, UserPlus, Users, X, Trello, List, Calendar } from 'lucide-react'
 import { useBoardsStore } from '../store/boardsStore'
 import { useBoardInvitesStore } from '../store/boardInvitesStore'
 import { useProjectTasksStore } from '../store/projectTasksStore'
@@ -14,14 +14,19 @@ import BoardFormModal from '../components/boards/BoardFormModal'
 import ProjectTaskFormModal from '../components/boards/ProjectTaskFormModal'
 import CommentSection from '../components/shared/CommentSection'
 import type { Task } from '../types'
-import { formatFriendlyDate, isOverdue } from '../utils/date'
+import { formatFriendlyDate, isOverdue, toISODate } from '../utils/date'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { useSettingsStore } from '../store/settingsStore'
+import { format, addMonths, subMonths } from 'date-fns'
+import { de, enUS } from 'date-fns/locale'
+import MonthView from '../components/calendar/MonthView'
+import TaskItem from '../components/tasks/TaskItem'
 
 type ProgressFilter = 'all' | 'mine'
 
 export default function BoardDetailPage() {
-  const { t } = useTranslation('boards')
+  const { t, i18n } = useTranslation('boards')
+  const dateLocale = i18n.language === 'en' ? enUS : de
   const { boardId } = useParams()
   const navigate = useNavigate()
   const board = useBoardsStore((s) => s.boards.find((b) => b.id === boardId))
@@ -45,6 +50,10 @@ export default function BoardDetailPage() {
   const updateTask = useProjectTasksStore((s) => s.updateTask)
   const deleteTask = useProjectTasksStore((s) => s.deleteTask)
   const toggleTaskCompleted = useProjectTasksStore((s) => s.toggleTaskCompleted)
+
+  const [activeView, setActiveView] = useState<'board' | 'list' | 'calendar'>('board')
+  const [calendarDate, setCalendarDate] = useState(new Date())
+  const [newTaskDate, setNewTaskDate] = useState<string | null>(null)
 
   const [editingBoard, setEditingBoard] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
@@ -307,57 +316,175 @@ export default function BoardDetailPage() {
         )}
       </div>
 
-      <div className="mb-6 flex items-center gap-1 rounded-lg border border-gray-200 p-1 dark:border-racing-700 w-fit">
-        <button
-          onClick={() => setProgressFilter('all')}
-          className={`rounded-md px-3 py-1 text-xs font-medium ${
-            progressFilter === 'all' ? 'bg-accent text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
-          }`}
-        >
-          {t('detail.filterAll')}
-        </button>
-        <button
-          onClick={() => setProgressFilter('mine')}
-          className={`rounded-md px-3 py-1 text-xs font-medium ${
-            progressFilter === 'mine' ? 'bg-accent text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
-          }`}
-        >
-          {t('detail.filterMine')}
-        </button>
-        <button
-          onClick={toggleHideCompletedTasks}
-          className={`rounded-md px-3 py-1 text-xs font-medium ${
-            hideCompletedInBoard ? 'bg-accent text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
-          }`}
-        >
-          {t('detail.hideCompleted')}
-        </button>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        {/* Left: View Switcher */}
+        <div className="flex items-center gap-1 rounded-lg border border-gray-200 p-1 dark:border-racing-700 bg-white dark:bg-racing-900">
+          <button
+            onClick={() => setActiveView('board')}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              activeView === 'board' ? 'bg-accent text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
+            }`}
+          >
+            <Trello size={13} />
+            Board
+          </button>
+          <button
+            onClick={() => setActiveView('list')}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              activeView === 'list' ? 'bg-accent text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
+            }`}
+          >
+            <List size={13} />
+            Liste
+          </button>
+          <button
+            onClick={() => setActiveView('calendar')}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              activeView === 'calendar' ? 'bg-accent text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
+            }`}
+          >
+            <Calendar size={13} />
+            Kalender
+          </button>
+        </div>
+
+        {/* Right: Filters */}
+        <div className="flex items-center gap-1 rounded-lg border border-gray-200 p-1 dark:border-racing-700 bg-white dark:bg-racing-900">
+          <button
+            onClick={() => setProgressFilter('all')}
+            className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+              progressFilter === 'all' ? 'bg-accent text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
+            }`}
+          >
+            {t('detail.filterAll')}
+          </button>
+          <button
+            onClick={() => setProgressFilter('mine')}
+            className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+              progressFilter === 'mine' ? 'bg-accent text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
+            }`}
+          >
+            {t('detail.filterMine')}
+          </button>
+          <button
+            onClick={toggleHideCompletedTasks}
+            className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+              hideCompletedInBoard ? 'bg-accent text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
+            }`}
+          >
+            {t('detail.hideCompleted')}
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-4">
         <div className="min-w-0 flex-1">
-          <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-            <div className="flex gap-4 overflow-x-auto pb-4">
-              {board.columns.map((column) => (
-                <KanbanColumn
-                  key={column.id}
-                  column={column}
-                  tasks={kanbanTasks.filter((t) => t.columnId === column.id)}
-                  onTaskClick={(task) => setEditingTask(task)}
-                  onAddTask={() => setNewTaskColumnId(column.id)}
-                  onRenameColumn={(title) => updateColumn(board.id, column.id, title)}
-                  onDeleteColumn={() => deleteColumn(board.id, column.id)}
-                />
-              ))}
-              <button
-                onClick={() => addColumn(board.id, t('detail.newColumnTitle'))}
-                className="flex h-fit w-72 flex-shrink-0 items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-gray-200 py-3 text-sm text-gray-400 hover:border-gray-300 hover:text-gray-600 dark:border-racing-800 dark:hover:border-racing-700"
-              >
-                <Plus size={14} />
-                {t('detail.addColumn')}
-              </button>
+          {activeView === 'board' && (
+            <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+              <div className="flex gap-4 overflow-x-auto pb-4">
+                {board.columns.map((column) => (
+                  <KanbanColumn
+                    key={column.id}
+                    column={column}
+                    tasks={kanbanTasks.filter((t) => t.columnId === column.id)}
+                    onTaskClick={(task) => setEditingTask(task)}
+                    onAddTask={() => setNewTaskColumnId(column.id)}
+                    onRenameColumn={(title) => updateColumn(board.id, column.id, title)}
+                    onDeleteColumn={() => deleteColumn(board.id, column.id)}
+                  />
+                ))}
+                <button
+                  onClick={() => addColumn(board.id, t('detail.newColumnTitle'))}
+                  className="flex h-fit w-72 flex-shrink-0 items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-gray-200 py-3 text-sm text-gray-400 hover:border-gray-300 hover:text-gray-600 dark:border-racing-800 dark:hover:border-racing-700"
+                >
+                  <Plus size={14} />
+                  {t('detail.addColumn')}
+                </button>
+              </div>
+            </DndContext>
+          )}
+
+          {activeView === 'list' && (
+            <div className="space-y-6">
+              {board.columns.map((column) => {
+                const colTasks = kanbanTasks.filter((t) => t.columnId === column.id)
+                return (
+                  <div key={column.id} className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-gray-700 dark:text-racing-100">
+                        {column.title} <span className="text-xs text-gray-400">({colTasks.length})</span>
+                      </h3>
+                      <button
+                        onClick={() => setNewTaskColumnId(column.id)}
+                        className="flex items-center gap-1 rounded bg-gray-50 px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 dark:bg-racing-800 dark:text-racing-200"
+                      >
+                        <Plus size={12} />
+                        Aufgabe hinzufügen
+                      </button>
+                    </div>
+                    {colTasks.length === 0 ? (
+                      <p className="text-center text-xs text-gray-400 py-3">Keine Aufgaben in dieser Spalte</p>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {colTasks.map((task) => (
+                          <TaskItem
+                            key={task.id}
+                            task={task}
+                            showBoard={false}
+                            onClick={() => setEditingTask(task)}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
-          </DndContext>
+          )}
+
+          {activeView === 'calendar' && (
+            <div className="space-y-4 rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCalendarDate((d) => subMonths(d, 1))}
+                    className="rounded-lg border border-gray-200 p-1.5 hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <h2 className="min-w-[150px] text-lg font-semibold capitalize text-center">
+                    {format(calendarDate, 'MMMM yyyy', { locale: dateLocale })}
+                  </h2>
+                  <button
+                    onClick={() => setCalendarDate((d) => addMonths(d, 1))}
+                    className="rounded-lg border border-gray-200 p-1.5 hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                  <button
+                    onClick={() => setCalendarDate(new Date())}
+                    className="ml-2 rounded-lg border border-gray-200 px-3 py-1.5 text-xs hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800"
+                  >
+                    Heute
+                  </button>
+                </div>
+                <p className="text-xs text-gray-400">Klicke auf einen Tag, um eine neue Aufgabe für diesen Tag hinzuzufügen.</p>
+              </div>
+              <MonthView
+                currentDate={calendarDate}
+                tasks={kanbanTasks.filter((t) => t.dueDate)}
+                events={[]}
+                entries={[]}
+                onDayClick={(date) => {
+                  setNewTaskDate(toISODate(date))
+                  setNewTaskColumnId(board.columns[0]?.id || '')
+                }}
+                onTaskClick={(task) => setEditingTask(task)}
+                onEventClick={() => {}}
+                onEntryClick={() => {}}
+              />
+            </div>
+          )}
         </div>
 
         {isSupabaseConfigured && showDiscussion && (
@@ -486,7 +613,15 @@ export default function BoardDetailPage() {
       {editingBoard && <BoardFormModal board={board} onClose={() => setEditingBoard(false)} />}
       {editingTask && <ProjectTaskFormModal board={board} task={editingTask} onClose={() => setEditingTask(null)} />}
       {newTaskColumnId && (
-        <ProjectTaskFormModal board={board} defaultColumnId={newTaskColumnId} onClose={() => setNewTaskColumnId(null)} />
+        <ProjectTaskFormModal
+          board={board}
+          defaultColumnId={newTaskColumnId}
+          defaultDueDate={newTaskDate ?? undefined}
+          onClose={() => {
+            setNewTaskColumnId(null)
+            setNewTaskDate(null)
+          }}
+        />
       )}
     </div>
   )

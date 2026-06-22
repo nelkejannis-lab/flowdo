@@ -1,6 +1,8 @@
 import { create } from 'zustand'
-import { supabase } from '../lib/supabase'
+import { persist } from 'zustand/middleware'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { deleteAttachment, uploadAttachment } from '../lib/attachments'
+import { createId } from '../utils/id'
 import type { Attachment, Board, BoardColumn, BoardFolder, ProjectMember } from '../types'
 
 interface NewBoardInput {
@@ -116,214 +118,339 @@ interface BoardsState {
   subscribeToBoards: () => () => void
 }
 
-export const useBoardsStore = create<BoardsState>()((set, get) => ({
-  boards: [],
-  folders: [],
-  taskStats: {},
-  loading: false,
-  error: null,
+export const useBoardsStore = create<BoardsState>()(
+  persist(
+    (set, get) => ({
+      boards: [],
+      folders: [],
+      taskStats: {},
+      loading: false,
+      error: null,
 
-  fetchBoards: async () => {
-    set({ loading: true, error: null })
-    const { data, error } = await supabase
-      .from('boards')
-      .select(
-        '*, board_columns(id, title, position), board_members(user_id, role, profile:profiles!board_members_user_id_fkey(id, username, display_name, avatar_color)), responsible:profiles!boards_responsible_user_id_fkey(id, username, display_name, avatar_color)'
-      )
-      .order('created_at', { ascending: false })
+      fetchBoards: async () => {
+        if (!isSupabaseConfigured) return
+        set({ loading: true, error: null })
+        const { data, error } = await supabase
+          .from('boards')
+          .select(
+            '*, board_columns(id, title, position), board_members(user_id, role, profile:profiles!board_members_user_id_fkey(id, username, display_name, avatar_color)), responsible:profiles!boards_responsible_user_id_fkey(id, username, display_name, avatar_color)'
+          )
+          .order('created_at', { ascending: false })
 
-    if (error) {
-      set({ loading: false, error: error.message })
-      return
-    }
+        if (error) {
+          set({ loading: false, error: error.message })
+          return
+        }
 
-    const boards = ((data ?? []) as unknown as BoardRow[]).map(toBoard)
+        const boards = ((data ?? []) as unknown as BoardRow[]).map(toBoard)
 
-    const boardIds = boards.map((b) => b.id)
-    const taskStats: Record<string, TaskStats> = {}
-    if (boardIds.length > 0) {
-      const { data: taskRows } = await supabase
-        .from('tasks')
-        .select('board_id, completed')
-        .in('board_id', boardIds)
+        const boardIds = boards.map((b) => b.id)
+        const taskStats: Record<string, TaskStats> = {}
+        if (boardIds.length > 0) {
+          const { data: taskRows } = await supabase
+            .from('tasks')
+            .select('board_id, completed')
+            .in('board_id', boardIds)
 
-      for (const row of taskRows ?? []) {
-        const boardId = (row as { board_id: string; completed: boolean }).board_id
-        const completed = (row as { board_id: string; completed: boolean }).completed
-        if (!taskStats[boardId]) taskStats[boardId] = { total: 0, done: 0 }
-        taskStats[boardId].total += 1
-        if (completed) taskStats[boardId].done += 1
-      }
-    }
+          for (const row of taskRows ?? []) {
+            const boardId = (row as { board_id: string; completed: boolean }).board_id
+            const completed = (row as { board_id: string; completed: boolean }).completed
+            if (!taskStats[boardId]) taskStats[boardId] = { total: 0, done: 0 }
+            taskStats[boardId].total += 1
+            if (completed) taskStats[boardId].done += 1
+          }
+        }
 
-    set({ boards, taskStats, loading: false })
-  },
+        set({ boards, taskStats, loading: false })
+      },
 
-  fetchFolders: async () => {
-    const { data, error } = await supabase
-      .from('board_folders')
-      .select('*')
-      .order('position', { ascending: true })
+      fetchFolders: async () => {
+        if (!isSupabaseConfigured) return
+        const { data, error } = await supabase
+          .from('board_folders')
+          .select('*')
+          .order('position', { ascending: true })
 
-    if (error) return
-    set({ folders: ((data ?? []) as unknown as BoardFolderRow[]).map(toFolder) })
-  },
+        if (error) return
+        set({ folders: ((data ?? []) as unknown as BoardFolderRow[]).map(toFolder) })
+      },
 
-  addBoard: async (input) => {
-    const { data: userData } = await supabase.auth.getUser()
-    const userId = userData.user?.id
-    if (!userId) return null
+      addBoard: async (input) => {
+        if (!isSupabaseConfigured) {
+          const boardId = createId()
+          const newBoard: Board = {
+            id: boardId,
+            ownerId: 'local',
+            title: input.title,
+            description: input.description ?? undefined,
+            color: input.color,
+            deadline: input.deadline ?? undefined,
+            internalLaunch: input.internalLaunch ?? undefined,
+            externalLaunch: input.externalLaunch ?? undefined,
+            folderId: input.folderId ?? undefined,
+            responsibleUserId: input.responsibleUserId ?? undefined,
+            columns: defaultColumnTitles.map((title) => ({ id: createId(), title })),
+            members: [],
+            attachments: [],
+            createdAt: new Date().toISOString(),
+          }
+          set((state) => ({ boards: [newBoard, ...state.boards] }))
+          return newBoard
+        }
 
-    const { data, error } = await supabase
-      .from('boards')
-      .insert({
-        owner_id: userId,
-        title: input.title,
-        description: input.description ?? null,
-        color: input.color,
-        deadline: input.deadline ?? null,
-        internal_launch: input.internalLaunch ?? null,
-        external_launch: input.externalLaunch ?? null,
-        folder_id: input.folderId ?? null,
-        responsible_user_id: input.responsibleUserId ?? null,
-      })
-      .select('id')
-      .single()
+        const { data: userData } = await supabase.auth.getUser()
+        const userId = userData.user?.id
+        if (!userId) return null
 
-    if (error || !data) return null
+        const { data, error } = await supabase
+          .from('boards')
+          .insert({
+            owner_id: userId,
+            title: input.title,
+            description: input.description ?? null,
+            color: input.color,
+            deadline: input.deadline ?? null,
+            internal_launch: input.internalLaunch ?? null,
+            external_launch: input.externalLaunch ?? null,
+            folder_id: input.folderId ?? null,
+            responsible_user_id: input.responsibleUserId ?? null,
+          })
+          .select('id')
+          .single()
 
-    await supabase
-      .from('board_columns')
-      .insert(defaultColumnTitles.map((title, position) => ({ board_id: data.id, title, position })))
+        if (error || !data) return null
 
-    await get().fetchBoards()
-    return get().boards.find((b) => b.id === data.id) ?? null
-  },
+        await supabase
+          .from('board_columns')
+          .insert(defaultColumnTitles.map((title, position) => ({ board_id: data.id, title, position })))
 
-  updateBoard: async (id, updates) => {
-    await supabase
-      .from('boards')
-      .update({
-        ...(updates.title !== undefined ? { title: updates.title } : {}),
-        ...(updates.description !== undefined ? { description: updates.description ?? null } : {}),
-        ...(updates.color !== undefined ? { color: updates.color } : {}),
-        ...(updates.deadline !== undefined ? { deadline: updates.deadline ?? null } : {}),
-        ...(updates.internalLaunch !== undefined ? { internal_launch: updates.internalLaunch ?? null } : {}),
-        ...(updates.externalLaunch !== undefined ? { external_launch: updates.externalLaunch ?? null } : {}),
-        ...(updates.folderId !== undefined ? { folder_id: updates.folderId || null } : {}),
-        ...(updates.responsibleUserId !== undefined ? { responsible_user_id: updates.responsibleUserId || null } : {}),
-      })
-      .eq('id', id)
+        await get().fetchBoards()
+        return get().boards.find((b) => b.id === data.id) ?? null
+      },
 
-    await get().fetchBoards()
-  },
+      updateBoard: async (id, updates) => {
+        if (!isSupabaseConfigured) {
+          set((state) => ({
+            boards: state.boards.map((b) =>
+              b.id === id
+                ? {
+                    ...b,
+                    title: updates.title !== undefined ? updates.title : b.title,
+                    description: updates.description !== undefined ? updates.description : b.description,
+                    color: updates.color !== undefined ? updates.color : b.color,
+                    deadline: updates.deadline !== undefined ? updates.deadline : b.deadline,
+                    internalLaunch: updates.internalLaunch !== undefined ? updates.internalLaunch : b.internalLaunch,
+                    externalLaunch: updates.externalLaunch !== undefined ? updates.externalLaunch : b.externalLaunch,
+                    folderId: updates.folderId !== undefined ? (updates.folderId || undefined) : b.folderId,
+                    responsibleUserId: updates.responsibleUserId !== undefined ? (updates.responsibleUserId || undefined) : b.responsibleUserId,
+                  }
+                : b
+            ),
+          }))
+          return
+        }
 
-  deleteBoard: async (id) => {
-    const { error } = await supabase.from('boards').delete().eq('id', id)
-    if (error) return error.message
-    set((state) => ({ boards: state.boards.filter((b) => b.id !== id) }))
-    return null
-  },
+        await supabase
+          .from('boards')
+          .update({
+            ...(updates.title !== undefined ? { title: updates.title } : {}),
+            ...(updates.description !== undefined ? { description: updates.description ?? null } : {}),
+            ...(updates.color !== undefined ? { color: updates.color } : {}),
+            ...(updates.deadline !== undefined ? { deadline: updates.deadline ?? null } : {}),
+            ...(updates.internalLaunch !== undefined ? { internal_launch: updates.internalLaunch ?? null } : {}),
+            ...(updates.externalLaunch !== undefined ? { external_launch: updates.externalLaunch ?? null } : {}),
+            ...(updates.folderId !== undefined ? { folder_id: updates.folderId || null } : {}),
+            ...(updates.responsibleUserId !== undefined ? { responsible_user_id: updates.responsibleUserId || null } : {}),
+          })
+          .eq('id', id)
 
-  addColumn: async (boardId, title) => {
-    const board = get().boards.find((b) => b.id === boardId)
-    const position = board ? board.columns.length : 0
-    await supabase.from('board_columns').insert({ board_id: boardId, title, position })
-    await get().fetchBoards()
-  },
+        await get().fetchBoards()
+      },
 
-  updateColumn: async (boardId, columnId, title) => {
-    await supabase.from('board_columns').update({ title }).eq('id', columnId)
-    set((state) => ({
-      boards: state.boards.map((b) =>
-        b.id === boardId ? { ...b, columns: b.columns.map((c) => (c.id === columnId ? { ...c, title } : c)) } : b
-      ),
-    }))
-  },
+      deleteBoard: async (id) => {
+        if (!isSupabaseConfigured) {
+          set((state) => ({ boards: state.boards.filter((b) => b.id !== id) }))
+          return null
+        }
 
-  deleteColumn: async (boardId, columnId) => {
-    await supabase.from('board_columns').delete().eq('id', columnId)
-    set((state) => ({
-      boards: state.boards.map((b) =>
-        b.id === boardId ? { ...b, columns: b.columns.filter((c) => c.id !== columnId) } : b
-      ),
-    }))
-  },
+        const { error } = await supabase.from('boards').delete().eq('id', id)
+        if (error) return error.message
+        set((state) => ({ boards: state.boards.filter((b) => b.id !== id) }))
+        return null
+      },
 
-  removeMember: async (boardId, userId) => {
-    await supabase.from('board_members').delete().eq('board_id', boardId).eq('user_id', userId)
-    await get().fetchBoards()
-  },
+      addColumn: async (boardId, title) => {
+        if (!isSupabaseConfigured) {
+          const colId = createId()
+          set((state) => ({
+            boards: state.boards.map((b) =>
+              b.id === boardId ? { ...b, columns: [...b.columns, { id: colId, title }] } : b
+            ),
+          }))
+          return
+        }
 
-  addAttachment: async (boardId, file) => {
-    const board = get().boards.find((b) => b.id === boardId)
-    if (!board) return { error: 'Projekt nicht gefunden' }
-    const { attachment, error } = await uploadAttachment(`boards/${boardId}`, file)
-    if (error || !attachment) return { error: error ?? 'Fehler beim Hochladen' }
-    const attachments = [...board.attachments, attachment]
-    await supabase.from('boards').update({ attachments }).eq('id', boardId)
-    set((state) => ({ boards: state.boards.map((b) => (b.id === boardId ? { ...b, attachments } : b)) }))
-    return { attachment }
-  },
+        const board = get().boards.find((b) => b.id === boardId)
+        const position = board ? board.columns.length : 0
+        await supabase.from('board_columns').insert({ board_id: boardId, title, position })
+        await get().fetchBoards()
+      },
 
-  removeAttachment: async (boardId, attachmentId) => {
-    const board = get().boards.find((b) => b.id === boardId)
-    if (!board) return
-    const attachment = board.attachments.find((a) => a.id === attachmentId)
-    if (attachment) await deleteAttachment(attachment.path)
-    const attachments = board.attachments.filter((a) => a.id !== attachmentId)
-    await supabase.from('boards').update({ attachments }).eq('id', boardId)
-    set((state) => ({ boards: state.boards.map((b) => (b.id === boardId ? { ...b, attachments } : b)) }))
-  },
+      updateColumn: async (boardId, columnId, title) => {
+        if (!isSupabaseConfigured) {
+          set((state) => ({
+            boards: state.boards.map((b) =>
+              b.id === boardId
+                ? { ...b, columns: b.columns.map((c) => (c.id === columnId ? { ...c, title } : c)) }
+                : b
+            ),
+          }))
+          return
+        }
 
-  addFolder: async (title) => {
-    const { data: userData } = await supabase.auth.getUser()
-    const userId = userData.user?.id
-    if (!userId) return
-    const position = get().folders.length
-    const { data, error } = await supabase
-      .from('board_folders')
-      .insert({ owner_id: userId, title, position })
-      .select('*')
-      .single()
-    if (error || !data) return
-    set((state) => ({ folders: [...state.folders, toFolder(data as unknown as BoardFolderRow)] }))
-  },
+        await supabase.from('board_columns').update({ title }).eq('id', columnId)
+        set((state) => ({
+          boards: state.boards.map((b) =>
+            b.id === boardId ? { ...b, columns: b.columns.map((c) => (c.id === columnId ? { ...c, title } : c)) } : b
+          ),
+        }))
+      },
 
-  renameFolder: async (id, title) => {
-    await supabase.from('board_folders').update({ title }).eq('id', id)
-    set((state) => ({ folders: state.folders.map((f) => (f.id === id ? { ...f, title } : f)) }))
-  },
+      deleteColumn: async (boardId, columnId) => {
+        if (!isSupabaseConfigured) {
+          set((state) => ({
+            boards: state.boards.map((b) =>
+              b.id === boardId ? { ...b, columns: b.columns.filter((c) => c.id !== columnId) } : b
+            ),
+          }))
+          return
+        }
 
-  deleteFolder: async (id) => {
-    await supabase.from('boards').update({ folder_id: null }).eq('folder_id', id)
-    await supabase.from('board_folders').delete().eq('id', id)
-    set((state) => ({
-      folders: state.folders.filter((f) => f.id !== id),
-      boards: state.boards.map((b) => (b.folderId === id ? { ...b, folderId: undefined } : b)),
-    }))
-  },
+        await supabase.from('board_columns').delete().eq('id', columnId)
+        set((state) => ({
+          boards: state.boards.map((b) =>
+            b.id === boardId ? { ...b, columns: b.columns.filter((c) => c.id !== columnId) } : b
+          ),
+        }))
+      },
 
-  moveBoardToFolder: async (boardId, folderId) => {
-    await supabase.from('boards').update({ folder_id: folderId }).eq('id', boardId)
-    set((state) => ({
-      boards: state.boards.map((b) => (b.id === boardId ? { ...b, folderId: folderId ?? undefined } : b)),
-    }))
-  },
+      removeMember: async (boardId, userId) => {
+        if (!isSupabaseConfigured) return
+        await supabase.from('board_members').delete().eq('board_id', boardId).eq('user_id', userId)
+        await get().fetchBoards()
+      },
 
-  subscribeToBoards: () => {
-    const channel = supabase
-      .channel('boards-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'boards' }, () => get().fetchBoards())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'board_columns' }, () => get().fetchBoards())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'board_members' }, () => get().fetchBoards())
-      .subscribe()
+      addAttachment: async (boardId, file) => {
+        if (!isSupabaseConfigured) {
+          return { error: 'Attachments werden im Offline-Modus nicht unterstützt' }
+        }
 
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  },
-}))
+        const board = get().boards.find((b) => b.id === boardId)
+        if (!board) return { error: 'Projekt nicht gefunden' }
+        const { attachment, error } = await uploadAttachment(`boards/${boardId}`, file)
+        if (error || !attachment) return { error: error ?? 'Fehler beim Hochladen' }
+        const attachments = [...board.attachments, attachment]
+        await supabase.from('boards').update({ attachments }).eq('id', boardId)
+        set((state) => ({ boards: state.boards.map((b) => (b.id === boardId ? { ...b, attachments } : b)) }))
+        return { attachment }
+      },
+
+      removeAttachment: async (boardId, attachmentId) => {
+        if (!isSupabaseConfigured) return
+
+        const board = get().boards.find((b) => b.id === boardId)
+        if (!board) return
+        const attachment = board.attachments.find((a) => a.id === attachmentId)
+        if (attachment) await deleteAttachment(attachment.path)
+        const attachments = board.attachments.filter((a) => a.id !== attachmentId)
+        await supabase.from('boards').update({ attachments }).eq('id', boardId)
+        set((state) => ({ boards: state.boards.map((b) => (b.id === boardId ? { ...b, attachments } : b)) }))
+      },
+
+      addFolder: async (title) => {
+        if (!isSupabaseConfigured) {
+          const newFolder: BoardFolder = {
+            id: createId(),
+            ownerId: 'local',
+            title,
+            position: get().folders.length,
+            createdAt: new Date().toISOString(),
+          }
+          set((state) => ({ folders: [...state.folders, newFolder] }))
+          return
+        }
+
+        const { data: userData } = await supabase.auth.getUser()
+        const userId = userData.user?.id
+        if (!userId) return
+        const position = get().folders.length
+        const { data, error } = await supabase
+          .from('board_folders')
+          .insert({ owner_id: userId, title, position })
+          .select('*')
+          .single()
+        if (error || !data) return
+        set((state) => ({ folders: [...state.folders, toFolder(data as unknown as BoardFolderRow)] }))
+      },
+
+      renameFolder: async (id, title) => {
+        if (!isSupabaseConfigured) {
+          set((state) => ({ folders: state.folders.map((f) => (f.id === id ? { ...f, title } : f)) }))
+          return
+        }
+
+        await supabase.from('board_folders').update({ title }).eq('id', id)
+        set((state) => ({ folders: state.folders.map((f) => (f.id === id ? { ...f, title } : f)) }))
+      },
+
+      deleteFolder: async (id) => {
+        if (!isSupabaseConfigured) {
+          set((state) => ({
+            folders: state.folders.filter((f) => f.id !== id),
+            boards: state.boards.map((b) => (b.folderId === id ? { ...b, folderId: undefined } : b)),
+          }))
+          return
+        }
+
+        await supabase.from('boards').update({ folder_id: null }).eq('folder_id', id)
+        await supabase.from('board_folders').delete().eq('id', id)
+        set((state) => ({
+          folders: state.folders.filter((f) => f.id !== id),
+          boards: state.boards.map((b) => (b.folderId === id ? { ...b, folderId: undefined } : b)),
+        }))
+      },
+
+      moveBoardToFolder: async (boardId, folderId) => {
+        if (!isSupabaseConfigured) {
+          set((state) => ({
+            boards: state.boards.map((b) => (b.id === boardId ? { ...b, folderId: folderId ?? undefined } : b)),
+          }))
+          return
+        }
+
+        await supabase.from('boards').update({ folder_id: folderId }).eq('id', boardId)
+        set((state) => ({
+          boards: state.boards.map((b) => (b.id === boardId ? { ...b, folderId: folderId ?? undefined } : b)),
+        }))
+      },
+
+      subscribeToBoards: () => {
+        if (!isSupabaseConfigured) return () => {}
+        const channel = supabase
+          .channel('boards-realtime')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'boards' }, () => get().fetchBoards())
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'board_columns' }, () => get().fetchBoards())
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'board_members' }, () => get().fetchBoards())
+          .subscribe()
+
+        return () => {
+          supabase.removeChannel(channel)
+        }
+      },
+    }),
+    { name: 'flowdo-boards' }
+  )
+)
 
 export const BOARD_COLORS = [
   '#4772FA', '#F59E0B', '#10B981', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16',

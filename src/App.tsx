@@ -31,6 +31,8 @@ import { isSupabaseConfigured } from './lib/supabase'
 import ErrorBoundary from './components/layout/ErrorBoundary'
 import TaskFormModal from './components/tasks/TaskFormModal'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
+import { useQuickTaskModalStore } from './store/quickTaskModalStore'
+import TaskTray from './components/layout/TaskTray'
 
 export default function App() {
   const { t } = useTranslation('layout')
@@ -56,6 +58,10 @@ export default function App() {
   }, [session, subscribeToTasks, subscribeToEntries])
 
   const [showNewTask, setShowNewTask] = useState(false)
+  const quickTaskModal = useQuickTaskModalStore()
+  useEffect(() => {
+    console.log('[App.tsx] quickTaskModal state changed:', { isOpen: quickTaskModal.isOpen, props: quickTaskModal.props })
+  }, [quickTaskModal.isOpen, quickTaskModal.props])
   useKeyboardShortcuts({ onNewTask: () => setShowNewTask(true) })
 
   useEffect(() => {
@@ -87,6 +93,18 @@ export default function App() {
   return (
     <>
     {showNewTask && <TaskFormModal onClose={() => setShowNewTask(false)} />}
+    {quickTaskModal.isOpen && (
+      <TaskFormModal
+        defaultTitle={quickTaskModal.props?.defaultTitle}
+        defaultDueDate={quickTaskModal.props?.defaultDueDate}
+        defaultProjectId={quickTaskModal.props?.defaultProjectId}
+        defaultPriority={quickTaskModal.props?.defaultPriority}
+        defaultUrgent={quickTaskModal.props?.defaultUrgent}
+        defaultImportant={quickTaskModal.props?.defaultImportant}
+        onClose={() => quickTaskModal.close()}
+      />
+    )}
+    <TaskTray />
     <ErrorBoundary>
     <Routes>
       <Route path="/datenschutz" element={<DatenschutzPage />} />

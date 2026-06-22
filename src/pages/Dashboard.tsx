@@ -27,7 +27,8 @@ import { GripHorizontal } from 'lucide-react'
 import OnboardingPermissions from '../components/dashboard/OnboardingPermissions'
 import MorningReportModal from '../components/dashboard/MorningReportModal'
 import { useSettingsStore } from '../store/settingsStore'
-import { isDueThisWeek, isDueToday, isOverdue, todayISO } from '../utils/date'
+import { isDueThisWeek, isDueToday, isOverdue, todayISO, parseNaturalDate, parseTaskInput } from '../utils/date'
+import { useQuickTaskModalStore } from '../store/quickTaskModalStore'
 
 export default function Dashboard() {
   const { t, i18n } = useTranslation('dashboard')
@@ -52,7 +53,7 @@ export default function Dashboard() {
   const featureVisibility = useSettingsStore((s) => s.featureVisibility)
   const dashboardVisibility = useSettingsStore((s) => s.dashboardVisibility)
   const onboardingPermissionsDone = useSettingsStore((s) => s.onboardingPermissionsDone)
-  const addTask = useTasksStore((s) => s.addTask)
+  const openQuickTaskModal = useQuickTaskModalStore((s) => s.open)
   const [showForm, setShowForm] = useState(false)
   const [quickInput, setQuickInput] = useState('')
   const [showEntries, setShowEntries] = useState(true)
@@ -181,9 +182,20 @@ export default function Dashboard() {
         <form
           onSubmit={(e) => {
             e.preventDefault()
-            const title = quickInput.trim()
-            if (!title) return
-            addTask({ title, priority: 'medium', tags: [], evening: false })
+            const input = quickInput.trim()
+            if (!input) return
+            console.log('[Dashboard.tsx] Submit clicked, input:', input)
+            const parsed = parseTaskInput(input, boards)
+            console.log('[Dashboard.tsx] Parsed input:', parsed)
+            openQuickTaskModal({
+              defaultTitle: parsed.title,
+              defaultDueDate: parsed.dueDate,
+              defaultProjectId: parsed.projectId,
+              defaultPriority: parsed.priority,
+              defaultUrgent: parsed.urgent,
+              defaultImportant: parsed.important,
+            })
+            console.log('[Dashboard.tsx] openQuickTaskModal called')
             setQuickInput('')
           }}
           className="flex gap-2"
