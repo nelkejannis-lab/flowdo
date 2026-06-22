@@ -17,6 +17,7 @@ import TaskList from '../components/tasks/TaskList'
 import TaskFormModal from '../components/tasks/TaskFormModal'
 import BoardCard from '../components/boards/BoardCard'
 import WeatherWidget from '../components/dashboard/WeatherWidget'
+import ProductivityStatsWidget from '../components/dashboard/ProductivityStatsWidget'
 import WorkOfficeWidget from '../components/office/WorkOfficeWidget'
 import OfficePromptModal from '../components/office/OfficePromptModal'
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core'
@@ -62,7 +63,7 @@ export default function Dashboard() {
     const dismissed = localStorage.getItem('morningReportDismissed')
     return hour >= 5 && hour < 12 && dismissed !== today
   })
-  const DEFAULT_WIDGET_ORDER = ['weather', 'workoffice', 'stats_week', 'stats_projects']
+  const DEFAULT_WIDGET_ORDER = ['weather', 'productivity', 'workoffice', 'stats_week', 'stats_projects']
   const [widgetOrder, setWidgetOrder] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem('dashWidgetOrder') ?? 'null') ?? DEFAULT_WIDGET_ORDER } catch { return DEFAULT_WIDGET_ORDER }
   })
@@ -333,6 +334,9 @@ export default function Dashboard() {
             {widgetOrder.map((id) => {
               if (id === 'weather' && (dashboardVisibility.weather ?? true)) return (
                 <SortableWidget key="weather" id="weather"><WeatherWidget /></SortableWidget>
+              )
+              if (id === 'productivity') return (
+                <SortableWidget key="productivity" id="productivity"><ProductivityStatsWidget /></SortableWidget>
               )
               if (id === 'workoffice') return (
                 <SortableWidget key="workoffice" id="workoffice"><WorkOfficeWidget /></SortableWidget>

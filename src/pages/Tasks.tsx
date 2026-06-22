@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Archive, AtSign, Bell, Check, HelpCircle, Plus, Trello, X } from 'lucide-react'
+import { Archive, AtSign, Bell, Check, HelpCircle, Plus, Trello, X, Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTasksStore } from '../store/tasksStore'
 import { useTaskSharesStore } from '../store/taskSharesStore'
@@ -55,6 +55,13 @@ export default function TasksPage() {
   const fetchCalendarEntries = useCalendarEntriesStore((s) => s.fetchEntries)
   const [showEntries, setShowEntries] = useState(true)
   const navigate = useNavigate()
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedTag, setSelectedTag] = useState<string | null>(null)
+
+  useEffect(() => {
+    setSearchQuery('')
+    setSelectedTag(null)
+  }, [smartList])
 
   useEffect(() => {
     if (isSupabaseConfigured && smartList === 'inbox') {
@@ -99,9 +106,21 @@ export default function TasksPage() {
   } else if (smartList === 'someday') {
     filtered = allTasks.filter((t) => !t.completed && t.someday)
     title = t(titleKeys.someday)
-  } else {
-    filtered = allTasks.filter((t) => !t.completed && !t.someday)
-    groupByDate = true
+  }
+
+  const allUniqueTags = Array.from(new Set(filtered.flatMap((t) => t.tags || []))).filter(Boolean)
+
+  let displayTasks = filtered
+  if (searchQuery.trim()) {
+    const q = searchQuery.toLowerCase().trim()
+    displayTasks = displayTasks.filter(
+      (t) =>
+        t.title.toLowerCase().includes(q) ||
+        (t.description && t.description.toLowerCase().includes(q))
+    )
+  }
+  if (selectedTag) {
+    displayTasks = displayTasks.filter((t) => t.tags && t.tags.includes(selectedTag))
   }
 
   const today = todayISO()
@@ -177,6 +196,62 @@ export default function TasksPage() {
             <Check size={14} />
             {t('page.tabs.completed')}
           </Link>
+        </div>
+      )}
+
+      {smartList !== 'inbox' && (
+        <div className="mb-5 flex flex-col gap-3">
+          {/* Search bar */}
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Aufgaben durchsuchen..."
+              className="w-full rounded-xl border border-gray-100 bg-white pl-9 pr-9 py-2 text-sm outline-none focus:border-accent dark:border-racing-800 dark:bg-racing-900/60 transition-all shadow-sm"
+            />
+            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* Tag Pills */}
+          {allUniqueTags.length > 0 && (
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <button
+                type="button"
+                onClick={() => setSelectedTag(null)}
+                className={`rounded-full px-3 py-1 text-xs font-semibold transition-all ${
+                  selectedTag === null
+                    ? 'bg-accent text-white shadow-sm hover:brightness-105'
+                    : 'bg-black/[0.04] text-gray-600 hover:bg-black/[0.08] dark:bg-white/[0.06] dark:text-racing-200 dark:hover:bg-white/[0.1]'
+                }`}
+              >
+                Alle Tags
+              </button>
+              {allUniqueTags.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold transition-all ${
+                    selectedTag === tag
+                      ? 'bg-accent text-white shadow-sm hover:brightness-105'
+                      : 'bg-black/[0.04] text-gray-600 hover:bg-black/[0.08] dark:bg-white/[0.06] dark:text-racing-200 dark:hover:bg-white/[0.1]'
+                  }`}
+                >
+                  #{tag}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -389,7 +464,7 @@ export default function TasksPage() {
             <CalendarEntriesBlock entries={relevantEntries} label="" today={today} />
           )}
           <TaskList
-            tasks={filtered}
+            tasks={displayTasks}
             groupByDate={groupByDate}
             flat={smartList === 'completed'}
             emptyMessage={smartList === 'completed' ? t('page.noCompletedTasks') : t('list.noTasks')}

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Bell, BellOff, CheckSquare, Pause, Play, RotateCcw, Timer } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTasksStore } from '../store/tasksStore'
+import { todayISO } from '../utils/date'
 
 type Phase = 'focus' | 'short' | 'long'
 
@@ -25,7 +26,14 @@ export default function PomodoroPage() {
   const [phase, setPhase] = useState<Phase>('focus')
   const [timeLeft, setTimeLeft] = useState(DURATIONS.focus)
   const [running, setRunning] = useState(false)
-  const [sessions, setSessions] = useState(0)
+  const today = todayISO()
+  const [sessions, setSessions] = useState(() => {
+    try {
+      return parseInt(localStorage.getItem(`pomodoro_sessions_${today}`) ?? '0', 10)
+    } catch {
+      return 0
+    }
+  })
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
   const [notifPerm, setNotifPerm] = useState(() =>
     typeof Notification !== 'undefined' ? Notification.permission : 'denied'
@@ -67,7 +75,11 @@ export default function PomodoroPage() {
           clearInterval(intervalRef.current!)
           setRunning(false)
           if (phase === 'focus') {
-            setSessions((s) => s + 1)
+            setSessions((s) => {
+              const next = s + 1
+              localStorage.setItem(`pomodoro_sessions_${today}`, String(next))
+              return next
+            })
             notify(t('focusDone'), t('takeBreak'))
           } else {
             notify(t('breakDone'), t('backToWork'))
@@ -78,7 +90,7 @@ export default function PomodoroPage() {
       })
     }, 1000)
     return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
-  }, [running, phase])
+  }, [running, phase, today])
 
   const mins = Math.floor(timeLeft / 60).toString().padStart(2, '0')
   const secs = (timeLeft % 60).toString().padStart(2, '0')

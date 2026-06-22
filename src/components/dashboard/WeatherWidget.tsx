@@ -201,45 +201,56 @@ async function fetchWeather(lat: number, lon: number): Promise<WeatherData | nul
     const ctrl = new AbortController()
     setTimeout(() => ctrl.abort(), 6000)
     const res = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&hourly=temperature_2m,weathercode&forecast_days=7&timezone=auto`,
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code&hourly=temperature_2m,weather_code&forecast_days=7&timezone=auto`,
       { signal: ctrl.signal }
     )
     const json = await res.json()
-    const cw = json?.current_weather
-    if (!cw) return null
+    const current = json?.current
+    if (!current) return null
 
     // Build next 6 hourly points from current time
-    const nowHour = new Date().getHours()
+    // Treat all ISO local time strings from Open-Meteo as UTC to handle them timezone-independently
+    const currentT = new Date(current.time + 'Z')
     const times: string[] = json?.hourly?.time ?? []
     const temps: number[] = json?.hourly?.temperature_2m ?? []
-    const codes: number[] = json?.hourly?.weathercode ?? []
+    const codes: number[] = json?.hourly?.weather_code ?? []
     const hourly: HourlyPoint[] = []
+
     for (let i = 0; i < times.length && hourly.length < 6; i++) {
-      const t = new Date(times[i])
-      const h = t.getHours()
-      const dayOffset = t.getDate() - new Date().getDate()
-      if (dayOffset === 0 && h <= nowHour) continue
-      if (dayOffset < 0) continue
-      hourly.push({ time: `${String(h).padStart(2, '0')}:00`, temp: Math.round(temps[i]), code: codes[i] })
+      const hourlyT = new Date(times[i] + 'Z')
+      const hourlyDiffHours = (hourlyT.getTime() - currentT.getTime()) / (1000 * 60 * 60)
+      
+      // Skip past hours (i.e. if the hourly slot is before or equal to current time)
+      if (hourlyDiffHours <= 0) continue
+      
+      const h = hourlyT.getUTCHours()
+      hourly.push({ 
+        time: `${String(h).padStart(2, '0')}:00`, 
+        temp: Math.round(temps[i]), 
+        code: codes[i] 
+      })
     }
 
     // Build 7-day daily forecast (skip today = index 0)
     const dailyDates: string[] = json?.daily?.time ?? []
     const dailyMax: number[] = json?.daily?.temperature_2m_max ?? []
     const dailyMin: number[] = json?.daily?.temperature_2m_min ?? []
-    const dailyCodes: number[] = json?.daily?.weathercode ?? []
-    const daily: DailyPoint[] = dailyDates.slice(1, 7).map((dateStr, i) => ({
-      label: DAY_LABELS[new Date(dateStr).getDay()],
-      tempMax: Math.round(dailyMax[i + 1] ?? 0),
-      tempMin: Math.round(dailyMin[i + 1] ?? 0),
-      code: dailyCodes[i + 1] ?? 0,
-    }))
+    const dailyCodes: number[] = json?.daily?.weather_code ?? []
+    const daily: DailyPoint[] = dailyDates.slice(1, 7).map((dateStr, i) => {
+      const dailyDate = new Date(dateStr + 'T00:00:00Z')
+      return {
+        label: DAY_LABELS[dailyDate.getUTCDay()],
+        tempMax: Math.round(dailyMax[i + 1] ?? 0),
+        tempMin: Math.round(dailyMin[i + 1] ?? 0),
+        code: dailyCodes[i + 1] ?? 0,
+      }
+    })
 
     return {
-      temp: Math.round(cw.temperature),
-      tempMax: Math.round(json?.daily?.temperature_2m_max?.[0] ?? cw.temperature),
-      tempMin: Math.round(json?.daily?.temperature_2m_min?.[0] ?? cw.temperature),
-      code: cw.weathercode,
+      temp: Math.round(current.temperature_2m),
+      tempMax: Math.round(json?.daily?.temperature_2m_max?.[0] ?? current.temperature_2m),
+      tempMin: Math.round(json?.daily?.temperature_2m_min?.[0] ?? current.temperature_2m),
+      code: current.weather_code,
       hourly,
       daily,
     }
