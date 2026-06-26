@@ -1,10 +1,9 @@
-import { transcribeAudioChunk } from './aiService'
+import { transcribePCM } from './aiService'
 
 export class AudioRecorder {
-  private mediaRecorder: MediaRecorder | null = null
   private audioContext: AudioContext | null = null
   private mixedStream: MediaStream | null = null
-  private chunkInterval: number = 10000 // 10 seconds
+  private processor: ScriptProcessorNode | null = null
   private isRecording: boolean = false
   
   public onTranscriptChunk?: (text: string) => void
@@ -45,8 +44,8 @@ export class AudioRecorder {
         }
       }
 
-      // 3. Mix the streams using Web Audio API
-      this.audioContext = new AudioContext()
+      // 3. Mix the streams using Web Audio API (force 16000Hz for Whisper)
+      this.audioContext = new AudioContext({ sampleRate: 16000 })
       const dest = this.audioContext.createMediaStreamDestination()
       
       const micSource = this.audioContext.createMediaStreamSource(micStream)
@@ -59,24 +58,45 @@ export class AudioRecorder {
 
       this.mixedStream = dest.stream
 
-      // 4. Start Recording in chunks
-      this.mediaRecorder = new MediaRecorder(this.mixedStream, { mimeType: 'audio/webm' })
+      // 4. Capture raw PCM data via ScriptProcessor
+      this.processor = this.audioContext.createScriptProcessor(4096, 1, 1)
+      const mixedSource = this.audioContext.createMediaStreamSource(this.mixedStream)
+      mixedSource.connect(this.processor)
+      this.processor.connect(this.audioContext.destination)
+
+      let audioDataBuffer: Float32Array[] = []
+      let samplesCount = 0
       
-      this.mediaRecorder.ondataavailable = async (e) => {
-        if (e.data.size > 0 && this.isRecording) {
-          try {
-            const text = await transcribeAudioChunk(e.data)
-            if (text.trim() && this.onTranscriptChunk) {
+      // Send to Whisper every 10 seconds
+      const SAMPLES_PER_CHUNK = 16000 * 10
+      
+      this.processor.onaudioprocess = (e) => {
+        if (!this.isRecording) return
+        
+        const channelData = e.inputBuffer.getChannelData(0)
+        audioDataBuffer.push(new Float32Array(channelData))
+        samplesCount += channelData.length
+        
+        if (samplesCount >= SAMPLES_PER_CHUNK) {
+          const merged = new Float32Array(samplesCount)
+          let offset = 0
+          for (const buf of audioDataBuffer) {
+            merged.set(buf, offset)
+            offset += buf.length
+          }
+          
+          audioDataBuffer = []
+          samplesCount = 0
+          
+          transcribePCM(merged).then(text => {
+            if (text.trim() && this.onTranscriptChunk && this.isRecording) {
               this.onTranscriptChunk(text.trim())
             }
-          } catch (error: any) {
-            if (this.onError) this.onError(error.message)
-          }
+          }).catch(err => {
+            if (this.onError && this.isRecording) this.onError(err.message)
+          })
         }
       }
-
-      // Request data every chunkInterval ms
-      this.mediaRecorder.start(this.chunkInterval)
 
     } catch (error: any) {
       if (this.onError) this.onError('Fehler beim Starten der Aufnahme: ' + error.message)
@@ -86,8 +106,9 @@ export class AudioRecorder {
 
   stop() {
     this.isRecording = false
-    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
-      this.mediaRecorder.stop()
+    if (this.processor) {
+      this.processor.disconnect()
+      this.processor = null
     }
     if (this.mixedStream) {
       this.mixedStream.getTracks().forEach(track => track.stop())

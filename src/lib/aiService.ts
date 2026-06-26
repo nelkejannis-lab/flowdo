@@ -29,6 +29,12 @@ export async function transcribeAudioChunk(audioBlob: Blob): Promise<string> {
   return result.text || ''
 }
 
+export async function transcribePCM(audioData: Float32Array): Promise<string> {
+  await loadWhisperModel()
+  const result = await transcriber(audioData)
+  return result.text || ''
+}
+
 export async function generateMeetingSummary(transcript: string): Promise<{ summary: string; actionItems: { task: string; assignee?: string }[] }> {
   const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
   if (!apiKey) throw new Error('Anthropic API Key (VITE_ANTHROPIC_API_KEY) ist nicht gesetzt.')
