@@ -34,7 +34,7 @@ Bitte antworte AUSSCHLIESSLICH im folgenden JSON-Format:
 `
 
   const response = await anthropic.messages.create({
-    model: 'claude-2.1',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 1024,
     messages: [
       { role: 'user', content: prompt }
