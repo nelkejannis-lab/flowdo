@@ -10,4 +10,7 @@ interface Window {
     downloadUpdate: () => void
     installUpdate: () => void
   }
+  electronCapturer?: {
+    getDesktopSources: () => Promise<Array<{ id: string, name: string }>>
+  }
 }

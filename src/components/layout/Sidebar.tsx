@@ -34,6 +34,7 @@ import {
   CloudOff,
   Keyboard,
   Brain,
+  Mic,
 } from 'lucide-react'
 import {
   DndContext,
@@ -168,6 +169,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     { key: 'chat', to: '/chat', icon: <MessageCircle size={18} />, label: t('sidebar.nav.chat'), visible: isSupabaseConfigured && !!featureVisibility.chat },
     { key: 'friends', to: '/friends', icon: <Users size={18} />, label: t('sidebar.nav.friends'), visible: isSupabaseConfigured && !!featureVisibility.friends },
     { key: 'social', to: '/social', icon: <Instagram size={18} />, label: t('sidebar.nav.social'), visible: isSupabaseConfigured && !!featureVisibility.social },
+    { key: 'meetings', to: '/meetings', icon: <Mic size={18} />, label: 'Meetings', visible: true },
     { key: 'projekte', to: '/projekte', icon: <Trello size={18} />, label: t('sidebar.projects.all'), visible: true, exact: true },
   ]
   const navItemMap = Object.fromEntries(allNavItems.map((n) => [n.key, n])) as Record<NavItemKey, NavDef>

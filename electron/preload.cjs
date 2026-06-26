@@ -7,3 +7,7 @@ contextBridge.exposeInMainWorld('electronUpdater', {
   downloadUpdate: () => ipcRenderer.send('download-update'),
   installUpdate: () => ipcRenderer.send('install-update'),
 })
+
+contextBridge.exposeInMainWorld('electronCapturer', {
+  getDesktopSources: () => ipcRenderer.invoke('get-desktop-sources'),
+})

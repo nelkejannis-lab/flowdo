@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { BarChart2, Bell, Brain, CalendarClock, CalendarDays, CheckSquare, Clock, Cloud, Download, Eye, EyeOff, FolderKanban, Grid2x2, GripVertical, Instagram, Loader2, MapPin, MessageCircle, Plus, RefreshCw, Sparkles, Timer, Trash2, Trello, TrendingUp, Upload, Users, X } from 'lucide-react'
+import { BarChart2, Bell, Brain, CalendarClock, CalendarDays, CheckSquare, Clock, Cloud, Download, Eye, EyeOff, FolderKanban, Grid2x2, GripVertical, Instagram, Loader2, MapPin, MessageCircle, Plus, RefreshCw, Sparkles, Timer, Trash2, Trello, TrendingUp, Upload, Users, X, LayoutDashboard, CheckCircle2, Inbox, ListTodo, Mic } from 'lucide-react'
 import {
   DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent,
 } from '@dnd-kit/core'
@@ -968,14 +968,11 @@ const NAV_META: Record<NavItemKey, { icon: React.ReactNode; label: string; featu
   chat:        { icon: <MessageCircle size={16} />, label: 'Chat', featureKey: 'chat', supabaseOnly: true },
   friends:     { icon: <Users size={16} />, label: 'Kollegen', featureKey: 'friends', supabaseOnly: true },
   social:      { icon: <Instagram size={16} />, label: 'Social Media', featureKey: 'social', supabaseOnly: true },
+  meetings:    { icon: <Mic size={16} />, label: 'Meetings' },
   projekte:    { icon: <Trello size={16} />, label: 'Projekte' },
 }
 
 // Reuse icons from outer scope
-import {
-  LayoutDashboard, CheckCircle2, Inbox, ListTodo,
-} from 'lucide-react'
-
 interface SidebarOrderSectionProps {
   navOrder: NavItemKey[]
   setNavOrder: (o: NavItemKey[]) => void

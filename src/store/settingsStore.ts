@@ -24,6 +24,7 @@ export type NavItemKey =
   | 'chat'
   | 'friends'
   | 'social'
+  | 'meetings'
   | 'projekte'
 
 export const DEFAULT_NAV_ORDER: NavItemKey[] = [
@@ -62,6 +63,7 @@ export const DEFAULT_NAV_VISIBILITY: Record<NavItemKey, boolean> = {
   chat: true,
   friends: true,
   social: true,
+  meetings: true,
   projekte: true,
 }
 

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, ipcMain } = require('electron')
+const { app, BrowserWindow, shell, ipcMain, desktopCapturer } = require('electron')
 const { autoUpdater } = require('electron-updater')
 const path = require('path')
 const http = require('http')
@@ -115,6 +115,14 @@ ipcMain.on('install-update', () => {
 
 ipcMain.on('download-update', () => {
   autoUpdater.downloadUpdate()
+})
+
+ipcMain.handle('get-desktop-sources', async () => {
+  const sources = await desktopCapturer.getSources({ types: ['window', 'screen'] })
+  return sources.map(s => ({
+    id: s.id,
+    name: s.name
+  }))
 })
 
 app.whenReady().then(() => {
