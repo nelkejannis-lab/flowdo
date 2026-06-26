@@ -107,7 +107,13 @@ export class AudioRecorder {
           samplesCount = 0
           
           if (this.worker) {
-            this.worker.postMessage({ type: 'transcribe', audioData: merged })
+            let maxAmp = 0;
+            for (let i = 0; i < merged.length; i++) {
+              if (Math.abs(merged[i]) > maxAmp) maxAmp = Math.abs(merged[i]);
+            }
+            if (maxAmp > 0.01) { // Only send if someone is actually speaking (filters out silent noise/hallucinations)
+              this.worker.postMessage({ type: 'transcribe', audioData: merged })
+            }
           }
         }
       }

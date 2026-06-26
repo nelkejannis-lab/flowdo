@@ -154,19 +154,8 @@ export default function LiveMeetingPanel({ onSaveComplete }: { onSaveComplete: (
         </div>
       </div>
 
-      <div className="grid flex-1 grid-cols-2 gap-4 min-h-0">
-        {/* Transcript Column */}
-        <div className="flex flex-col rounded-xl bg-white p-4 shadow-sm dark:bg-racing-900 border border-gray-100 dark:border-racing-800">
-          <div className="mb-4 flex items-center gap-2 border-b border-gray-100 pb-3 dark:border-racing-800">
-            <Mic size={18} className="text-accent" />
-            <h3 className="font-semibold">Live Transkript</h3>
-          </div>
-          <div className="flex-1 overflow-y-auto pr-2 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-            {transcript || <span className="text-gray-400 italic">Noch kein Text erkannt... (sprich oder spiele PC-Sound ab)</span>}
-          </div>
-        </div>
-
-        {/* AI Analysis Column (Split Vertically) */}
+      <div className="flex-1 flex flex-col gap-4 min-h-0">
+        {/* AI Analysis Column (Full Width) */}
         <div className="flex flex-col gap-4 min-h-0">
           
           {/* Summary Top Half */}
