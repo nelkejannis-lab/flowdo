@@ -4,11 +4,15 @@ import LiveMeetingPanel from '../components/meetings/LiveMeetingPanel'
 import { Mic, Plus, Trash2, Calendar, FileText, CheckSquare } from 'lucide-react'
 import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
+import { translateMeeting } from '../lib/aiService'
+import { useTasksStore } from '../store/tasksStore'
 
 export default function MeetingsPage() {
-  const { meetings, fetchMeetings, deleteMeeting, loading } = useMeetingsStore()
+  const { meetings, fetchMeetings, deleteMeeting, updateMeeting, loading } = useMeetingsStore()
+  const addTask = useTasksStore(s => s.addTask)
   const [isLiveMode, setIsLiveMode] = useState(false)
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null)
+  const [isTranslating, setIsTranslating] = useState(false)
 
   useEffect(() => {
     fetchMeetings()
@@ -123,6 +127,19 @@ export default function MeetingsPage() {
                             </span>
                           )}
                         </div>
+                        <button
+                          onClick={() => {
+                            addTask({ title: item.task, dueDate: item.dueDate })
+                            const updatedItems = selectedMeeting.action_items.map(ai => 
+                              ai.id === item.id ? { ...ai, done: true } : ai
+                            )
+                            updateMeeting(selectedMeeting.id, { action_items: updatedItems })
+                          }}
+                          disabled={item.done}
+                          className="ml-auto text-xs font-semibold text-accent hover:text-accent-hover disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {item.done ? 'Im Dashboard' : '+ In Dashboard übertragen'}
+                        </button>
                       </li>
                     ))}
                   </ul>
@@ -130,9 +147,28 @@ export default function MeetingsPage() {
               )}
 
               <div className="mt-8">
-                <h3 className="flex items-center gap-2 font-semibold border-b border-gray-100 pb-2 mb-4 dark:border-racing-800">
-                  <FileText size={18} className="text-gray-400" /> Zusammenfassung
-                </h3>
+                <div className="flex items-center justify-between border-b border-gray-100 pb-2 mb-4 dark:border-racing-800">
+                  <h3 className="flex items-center gap-2 font-semibold text-gray-500">
+                    <FileText size={18} className="text-gray-400" /> Zusammenfassung
+                  </h3>
+                  <button
+                    onClick={async () => {
+                      try {
+                        setIsTranslating(true)
+                        const result = await translateMeeting(selectedMeeting.summary, selectedMeeting.transcript)
+                        updateMeeting(selectedMeeting.id, { summary: result.summary, transcript: result.transcript })
+                      } catch (err) {
+                        console.error('Translation failed', err)
+                      } finally {
+                        setIsTranslating(false)
+                      }
+                    }}
+                    disabled={isTranslating}
+                    className="text-xs font-semibold text-accent hover:text-accent-hover disabled:opacity-50 transition-colors"
+                  >
+                    {isTranslating ? 'Übersetze...' : 'Translate to English'}
+                  </button>
+                </div>
                 <div className="prose prose-sm dark:prose-invert">
                   <div dangerouslySetInnerHTML={{ __html: selectedMeeting.summary.replace(/\n/g, '<br/>') }} />
                 </div>

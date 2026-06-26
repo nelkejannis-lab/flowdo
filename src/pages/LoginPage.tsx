@@ -4,6 +4,7 @@ import { Trans, useTranslation } from 'react-i18next'
 import { Eye, EyeOff, CalendarDays, CheckSquare, Clock, MessageCircle, ArrowRight, ChevronLeft } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { isSupabaseConfigured } from '../lib/supabase'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const FEATURES = [
   { icon: CheckSquare,  label: 'Tasks & Projects',  sub: 'Lists · Boards · Eisenhower' },
@@ -13,7 +14,7 @@ const FEATURES = [
 ]
 
 /* ─── shared input style ─── */
-const inp = 'w-full rounded-xl border border-white/[.1] bg-white/[.05] px-3.5 py-2.5 text-[13.5px] text-white placeholder:text-white/25 transition-all duration-150 focus:border-white/30 focus:bg-white/[.09] focus:outline-none'
+const inp = 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-[14px] text-white placeholder:text-white/30 backdrop-blur-md transition-all duration-300 focus:border-white/30 focus:bg-white/10 focus:outline-none focus:ring-4 focus:ring-white/5'
 
 export default function LoginPage() {
   const { t } = useTranslation('auth')
@@ -61,358 +62,379 @@ export default function LoginPage() {
     } finally { setBusy(false) }
   }
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1, delayChildren: 0.1 }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20, filter: 'blur(10px)' },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      filter: 'blur(0px)',
+      transition: { type: 'spring' as const, stiffness: 100, damping: 20 }
+    }
+  }
+
   /* ─── auth form (shared desktop + mobile) ─── */
   const AuthForm = (
     <div className="flex w-full flex-col">
       {/* mode tabs */}
-      <div className="mb-6 flex rounded-xl bg-white/[.07] p-1">
+      <div className="mb-8 flex rounded-2xl bg-white/5 p-1.5 backdrop-blur-md border border-white/5">
         {(['login', 'signup'] as const).map((m) => (
           <button key={m} type="button" onClick={() => switchMode(m)}
-            className={`flex-1 rounded-lg py-2 text-xs font-semibold transition-all duration-200 ${
-              mode === m ? 'bg-white/[.13] text-white shadow-sm' : 'text-white/40 hover:text-white/70'
+            className={`flex-1 rounded-xl py-2.5 text-[13px] font-semibold transition-all duration-300 ${
+              mode === m ? 'bg-white text-black shadow-lg scale-[1.02]' : 'text-white/50 hover:text-white hover:bg-white/5'
             }`}>
             {m === 'login' ? 'Sign in' : 'Create account'}
           </button>
         ))}
       </div>
 
-      {mode === 'forgot' && (
-        <p className="mb-4 text-[13px] text-white/50 leading-relaxed">{t('forgotDescription')}</p>
-      )}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={mode}
+          initial={{ opacity: 0, x: 20, filter: 'blur(8px)' }}
+          animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+          exit={{ opacity: 0, x: -20, filter: 'blur(8px)' }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+        >
+          {mode === 'forgot' && (
+            <p className="mb-6 text-[14px] text-white/50 leading-relaxed">{t('forgotDescription')}</p>
+          )}
 
-      {!isSupabaseConfigured && (
-        <p className="mb-4 rounded-xl bg-amber-500/10 border border-amber-500/20 px-3 py-2.5 text-xs text-amber-300">
-          <Trans t={t} i18nKey="supabaseNotConfigured" components={{ code: <code className="font-mono" /> }} />
-        </p>
-      )}
+          {!isSupabaseConfigured && (
+            <p className="mb-6 rounded-2xl bg-amber-500/10 border border-amber-500/20 px-4 py-3 text-[13px] text-amber-300 backdrop-blur-md">
+              <Trans t={t} i18nKey="supabaseNotConfigured" components={{ code: <code className="font-mono bg-amber-500/20 px-1 rounded" /> }} />
+            </p>
+          )}
 
-      <form onSubmit={submit} className="flex flex-col gap-2.5">
-        {mode === 'signup' && (<>
-          <input required value={uname} onChange={(e) => setUname(e.target.value.toLowerCase().replace(/\s+/g,''))}
-            placeholder={t('fields.usernamePlaceholder')} className={inp} />
-          <input value={dname} onChange={(e) => setDname(e.target.value)}
-            placeholder={t('fields.displayNamePlaceholder')} className={inp} />
-          {/* Birthday — custom selects to avoid ugly native date picker */}
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { label: 'Day', name: 'day', options: Array.from({length:31},(_,i)=>String(i+1).padStart(2,'0')) },
-              { label: 'Month', name: 'month', options: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m,i)=>({ v: String(i+1).padStart(2,'0'), l: m })) },
-              { label: 'Year', name: 'year', options: Array.from({length:80},(_,i)=>String(new Date().getFullYear()-i)) },
-            ].map((sel) => (
-              <select key={sel.name}
-                required
-                value={bday ? (sel.name==='day'?bday.split('-')[2] : sel.name==='month'?bday.split('-')[1] : bday.split('-')[0]) : ''}
-                onChange={(e) => {
-                  const parts = (bday || '--').split('-')
-                  const [y,m,d] = [parts[0]||'',parts[1]||'',parts[2]||'']
-                  const next = sel.name==='year' ? `${e.target.value}-${m}-${d}` : sel.name==='month' ? `${y}-${e.target.value}-${d}` : `${y}-${m}-${e.target.value}`
-                  setBday(next)
-                }}
-                className="w-full rounded-xl border border-white/[.1] bg-white/[.05] px-2.5 py-2.5 text-[13px] text-white appearance-none focus:border-white/25 focus:bg-white/[.09] focus:outline-none [color-scheme:dark]"
-              >
-                <option value="" disabled className="bg-[#1a1730] text-white/40">{sel.label}</option>
-                {sel.options.map((o) => typeof o === 'string'
-                  ? <option key={o} value={o} className="bg-[#1a1730]">{o}</option>
-                  : <option key={o.v} value={o.v} className="bg-[#1a1730]">{o.l}</option>
-                )}
-              </select>
-            ))}
-          </div>
-        </>)}
+          <form onSubmit={submit} className="flex flex-col gap-3.5">
+            {mode === 'signup' && (<>
+              <input required value={uname} onChange={(e) => setUname(e.target.value.toLowerCase().replace(/\s+/g,''))}
+                placeholder={t('fields.usernamePlaceholder')} className={inp} />
+              <input value={dname} onChange={(e) => setDname(e.target.value)}
+                placeholder={t('fields.displayNamePlaceholder')} className={inp} />
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: 'Day', name: 'day', options: Array.from({length:31},(_,i)=>String(i+1).padStart(2,'0')) },
+                  { label: 'Month', name: 'month', options: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m,i)=>({ v: String(i+1).padStart(2,'0'), l: m })) },
+                  { label: 'Year', name: 'year', options: Array.from({length:80},(_,i)=>String(new Date().getFullYear()-i)) },
+                ].map((sel) => (
+                  <select key={sel.name}
+                    required
+                    value={bday ? (sel.name==='day'?bday.split('-')[2] : sel.name==='month'?bday.split('-')[1] : bday.split('-')[0]) : ''}
+                    onChange={(e) => {
+                      const parts = (bday || '--').split('-')
+                      const [y,m,d] = [parts[0]||'',parts[1]||'',parts[2]||'']
+                      const next = sel.name==='year' ? `${e.target.value}-${m}-${d}` : sel.name==='month' ? `${y}-${e.target.value}-${d}` : `${y}-${m}-${e.target.value}`
+                      setBday(next)
+                    }}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-3.5 text-[14px] text-white appearance-none focus:border-white/30 focus:bg-white/10 focus:outline-none focus:ring-4 focus:ring-white/5 [color-scheme:dark] backdrop-blur-md"
+                  >
+                    <option value="" disabled className="bg-[#0a0a0a] text-white/40">{sel.label}</option>
+                    {sel.options.map((o) => typeof o === 'string'
+                      ? <option key={o} value={o} className="bg-[#0a0a0a]">{o}</option>
+                      : <option key={o.v} value={o.v} className="bg-[#0a0a0a]">{o.l}</option>
+                    )}
+                  </select>
+                ))}
+              </div>
+            </>)}
 
-        <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-          placeholder={t('fields.emailPlaceholder')} className={inp} />
+            <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+              placeholder={t('fields.emailPlaceholder')} className={inp} />
 
-        {mode !== 'forgot' && (
-          <div className="relative">
-            <input required type={showPw ? 'text' : 'password'} minLength={mode === 'signup' ? 8 : 1}
-              value={pw} onChange={(e) => setPw(e.target.value)}
-              placeholder="••••••••" className={inp + ' pr-10'} />
-            <button type="button" onClick={() => setShowPw(s => !s)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors">
-              {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
+            {mode !== 'forgot' && (
+              <div className="relative">
+                <input required type={showPw ? 'text' : 'password'} minLength={mode === 'signup' ? 8 : 1}
+                  value={pw} onChange={(e) => setPw(e.target.value)}
+                  placeholder="••••••••" className={inp + ' pr-12'} />
+                <button type="button" onClick={() => setShowPw(s => !s)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/80 transition-colors">
+                  {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            )}
+
+            {mode === 'signup' && (
+              <input required type={showPw ? 'text' : 'password'} minLength={8}
+                value={pw2} onChange={(e) => setPw2(e.target.value)}
+                placeholder={`${t('fields.confirmPassword')} ••••••••`} className={inp} />
+            )}
+
+            {mode === 'login' && (
+              <button type="button" onClick={() => switchMode('forgot')}
+                className="self-end text-[13px] font-medium text-white/40 hover:text-white transition-colors mt-1">
+                {t('forgotPasswordLink')}
+              </button>
+            )}
+
+            <AnimatePresence>
+              {error && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                  <div className="flex items-start gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3.5 backdrop-blur-md mt-2">
+                    <span className="text-red-400 text-[13px] leading-relaxed">{error}</span>
+                  </div>
+                </motion.div>
+              )}
+              {info && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                  <div className="flex items-start gap-2 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3.5 backdrop-blur-md mt-2">
+                    <span className="text-emerald-400 text-[13px] leading-relaxed">{info}</span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <motion.button 
+              type="submit" 
+              disabled={busy}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-3.5 text-[14.5px] font-bold text-black shadow-[0_0_40px_rgba(255,255,255,0.2)] transition-all duration-300 hover:shadow-[0_0_60px_rgba(255,255,255,0.4)] disabled:opacity-50 disabled:pointer-events-none"
+            >
+              {busy
+                ? <span className="flex items-center gap-2"><span className="h-4 w-4 animate-spin rounded-full border-2 border-black/30 border-t-black" />{t('buttons.pleaseWait')}</span>
+                : <>{mode === 'login' ? 'Sign in' : mode === 'signup' ? 'Create account' : t('buttons.sendLink')}<ArrowRight size={16} /></>
+              }
+            </motion.button>
+          </form>
+
+          {mode === 'forgot' ? (
+            <button onClick={() => switchMode('login')}
+              className="mt-6 flex w-full justify-center items-center gap-1.5 text-[13px] text-white/40 hover:text-white transition-colors">
+              <ChevronLeft size={14} />{t('buttons.backToLogin')}
             </button>
-          </div>
-        )}
-
-        {mode === 'signup' && (
-          <input required type={showPw ? 'text' : 'password'} minLength={8}
-            value={pw2} onChange={(e) => setPw2(e.target.value)}
-            placeholder={`${t('fields.confirmPassword')} ••••••••`} className={inp} />
-        )}
-
-        {mode === 'login' && (
-          <button type="button" onClick={() => switchMode('forgot')}
-            className="self-end text-[12px] font-medium text-white/60 hover:text-white transition-colors">
-            {t('forgotPasswordLink')}
-          </button>
-        )}
-
-        {error && (
-          <div className="flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2.5">
-            <span className="mt-px text-red-400 text-[13px] leading-relaxed">{error}</span>
-          </div>
-        )}
-        {info && (
-          <div className="flex items-start gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2.5">
-            <span className="mt-px text-emerald-400 text-[13px] leading-relaxed">{info}</span>
-          </div>
-        )}
-
-        <button type="submit" disabled={busy}
-          className="btn-glow mt-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-[13.5px] font-semibold text-white transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none"
-          style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)' }}>
-          {busy
-            ? <span className="flex items-center gap-2"><span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />{t('buttons.pleaseWait')}</span>
-            : <>{mode === 'login' ? 'Sign in' : mode === 'signup' ? 'Create account' : t('buttons.sendLink')}<ArrowRight size={14} /></>
-          }
-        </button>
-      </form>
-
-      {mode === 'forgot' ? (
-        <button onClick={() => switchMode('login')}
-          className="mt-5 flex items-center justify-center gap-1.5 text-[12px] text-white/40 hover:text-white/70 transition-colors">
-          <ChevronLeft size={13} />{t('buttons.backToLogin')}
-        </button>
-      ) : (
-        <p className="mt-5 text-center text-[12px] text-white/30">
-          {mode === 'login' ? t('buttons.noAccount') : t('buttons.hasAccount')}{' '}
-          <button onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')}
-            className="font-semibold text-white/60 hover:text-white transition-colors">
-            {mode === 'login' ? t('buttons.register') : t('buttons.login')}
-          </button>
-        </p>
-      )}
+          ) : (
+            <p className="mt-6 text-center text-[13px] text-white/40">
+              {mode === 'login' ? t('buttons.noAccount') : t('buttons.hasAccount')}{' '}
+              <button onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')}
+                className="font-bold text-white hover:text-white transition-colors underline decoration-white/30 underline-offset-4">
+                {mode === 'login' ? t('buttons.register') : t('buttons.login')}
+              </button>
+            </p>
+          )}
+        </motion.div>
+      </AnimatePresence>
     </div>
   )
 
   return (
     <>
-      <style>{`
-        @keyframes mcUp   { from { opacity:0; transform:translateY(28px) } to { opacity:1; transform:translateY(0) } }
-        @keyframes mcGlow { 0%,100% { opacity:.3; transform:scale(1) } 50% { opacity:.5; transform:scale(1.1) } }
-        @keyframes mcFloat{ 0%,100% { transform:translateY(0) rotate(-1.5deg) } 50% { transform:translateY(-14px) rotate(1.5deg) } }
-        @keyframes sheetUp{ from { transform:translateY(100%); opacity:0 } to { transform:translateY(0); opacity:1 } }
-        @keyframes cardIn { from { opacity:0; transform:translateY(16px) scale(.97) } to { opacity:1; transform:translateY(0) scale(1) } }
-        .mc-up    { animation: mcUp   .65s cubic-bezier(.22,1,.36,1) both }
-        .mc-glow  { animation: mcGlow 5s ease-in-out infinite }
-        .mc-float { animation: mcFloat 6s ease-in-out infinite }
-        .sheet-up { animation: sheetUp .46s cubic-bezier(.32,.72,0,1) both }
-        .card-in  { animation: cardIn  .5s cubic-bezier(.22,1,.36,1) both }
-        .d1{animation-delay:.06s}.d2{animation-delay:.14s}.d3{animation-delay:.22s}
-        .d4{animation-delay:.30s}.d5{animation-delay:.38s}.d6{animation-delay:.46s}
-
-        /* noise grain overlay */
-        .mc-grain::after {
-          content:''; position:absolute; inset:0; pointer-events:none; z-index:1;
-          background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
-          background-size:180px; opacity:.35;
-        }
-
-        /* glass card */
-        .glass {
-          background: linear-gradient(145deg, rgba(255,255,255,.09) 0%, rgba(255,255,255,.04) 100%);
-          backdrop-filter: blur(28px) saturate(160%);
-          -webkit-backdrop-filter: blur(28px) saturate(160%);
-          border: 1px solid rgba(255,255,255,.11);
-          box-shadow: 0 32px 64px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.04) inset;
-        }
-        /* feature card hover */
-        .feat-card {
-          transition: transform .22s cubic-bezier(.22,1,.36,1), background .22s, border-color .22s, box-shadow .22s;
-        }
-        .feat-card:hover {
-          transform: translateY(-3px) scale(1.02);
-          background: rgba(255,255,255,.07);
-          border-color: rgba(255,255,255,.16);
-          box-shadow: 0 8px 32px rgba(0,0,0,.4);
-        }
-        /* submit btn */
-        .btn-glow { transition: transform .18s ease, box-shadow .18s ease; }
-        .btn-glow:hover {
-          box-shadow: 0 0 0 1px rgba(255,255,255,.15), 0 8px 24px rgba(0,0,0,.4);
-          transform: translateY(-1px);
-        }
-        .btn-glow:active { transform: translateY(0) scale(.98); }
-        /* mobile bottom sheet */
-        .glass-sheet {
-          background: linear-gradient(180deg, rgba(16,16,16,.98) 0%, rgba(10,10,10,1) 100%);
-          backdrop-filter: blur(40px) saturate(180%);
-          -webkit-backdrop-filter: blur(40px) saturate(180%);
-          border-top: 1px solid rgba(255,255,255,.1);
-          box-shadow: 0 -24px 64px rgba(0,0,0,.6);
-        }
-      `}</style>
-
       {/* ══════════════════════════════════════════════════════════
-          ROOT — dark starfield bg
+          ROOT — dark elegant background
       ══════════════════════════════════════════════════════════ */}
-      <div className="mc-grain relative min-h-screen overflow-hidden bg-[#0a0a0a]" style={{ backgroundColor: '#0a0a0a' }}>
-
-        {/* Ambient — subtle white radials only, no color */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="mc-glow absolute -left-48 -top-48 h-[640px] w-[640px] rounded-full bg-white/[.025] blur-[120px]" />
-          <div className="mc-glow absolute -right-32 top-[25%] h-[480px] w-[480px] rounded-full bg-white/[.018] blur-[100px]" style={{animationDelay:'2.5s'}} />
-          <div className="mc-glow absolute bottom-[-8%] left-[30%] h-[400px] w-[400px] rounded-full bg-white/[.015] blur-[90px]" style={{animationDelay:'1.2s'}} />
+      <div className="relative min-h-screen overflow-hidden bg-[#000000]">
+        
+        {/* Animated Background Mesh */}
+        <div className="absolute inset-0 z-0">
+          <motion.div 
+            animate={{ 
+              scale: [1, 1.2, 1],
+              rotate: [0, 90, 0],
+              opacity: [0.1, 0.2, 0.1] 
+            }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            className="absolute -top-[30%] -left-[10%] w-[70vw] h-[70vw] rounded-full bg-gradient-to-br from-violet-600/30 to-fuchsia-600/10 blur-[120px]" 
+          />
+          <motion.div 
+            animate={{ 
+              scale: [1, 1.5, 1],
+              rotate: [0, -90, 0],
+              opacity: [0.1, 0.15, 0.1] 
+            }}
+            transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+            className="absolute -bottom-[20%] -right-[10%] w-[60vw] h-[60vw] rounded-full bg-gradient-to-bl from-blue-600/20 to-cyan-600/10 blur-[100px]" 
+          />
         </div>
+
+        {/* Noise overlay */}
+        <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none mix-blend-overlay" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
 
         {/* ── DESKTOP layout (md+) ── */}
         <div className="relative z-10 hidden min-h-screen md:flex items-center justify-center px-8 lg:px-16">
-          <div className="flex w-full max-w-5xl items-center gap-12 lg:gap-20">
+          <div className="flex w-full max-w-[1100px] items-center gap-16 lg:gap-24">
 
           {/* Left — hero */}
-          <div className="flex flex-1 flex-col items-start">
-
+          <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="flex flex-1 flex-col items-start"
+          >
             {/* Logo */}
-            <div className="mc-up mb-8 flex flex-col gap-4">
-              <div className="mc-float">
+            <motion.div variants={itemVariants} className="mb-10 flex flex-col gap-6">
+              <motion.div 
+                animate={{ y: [-5, 5, -5] }}
+                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+              >
                 <img src="/logo-full.svg" alt="MoonCrew"
-                  className="h-14 w-auto drop-shadow-[0_0_32px_rgba(139,92,246,.6)]" />
-              </div>
+                  className="h-16 w-auto drop-shadow-[0_0_40px_rgba(255,255,255,0.3)]" />
+              </motion.div>
               <div>
-                <h1 className="text-4xl font-bold tracking-[-0.03em] text-white lg:text-5xl">
-                  Moon<span className="text-white/55">Crew</span>
+                <h1 className="text-5xl font-extrabold tracking-tight text-white lg:text-6xl drop-shadow-xl">
+                  Moon<span className="text-white/40">Crew</span>
                 </h1>
-                <p className="mt-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-white/25">
+                <p className="mt-3 text-[13px] font-bold uppercase tracking-[0.25em] text-white/30">
                   Work Organizer
                 </p>
               </div>
-            </div>
+            </motion.div>
 
             {/* Tagline */}
-            <p className="mc-up d1 mb-8 max-w-xs text-[14.5px] leading-relaxed text-white/45">
-              Everything your team needs — tasks, calendar, time tracking and chat in one app.
-            </p>
+            <motion.p variants={itemVariants} className="mb-10 max-w-sm text-[16px] leading-relaxed text-white/50 font-medium">
+              Everything your team needs — tasks, calendar, time tracking and chat in one beautifully designed app.
+            </motion.p>
 
             {/* Features */}
-            <div className="mc-up d2 grid grid-cols-2 gap-2.5 w-full max-w-[360px]">
+            <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4 w-full max-w-[440px]">
               {FEATURES.map((f, i) => (
-                <div key={f.label}
-                  className={`feat-card mc-up d${i+3} flex items-center gap-3 rounded-2xl border border-white/[.07] bg-white/[.03] px-3.5 py-3 backdrop-blur-sm cursor-default`}>
-                  <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-white/[.07]">
-                    <f.icon size={14} className="text-white/60" />
+                <motion.div 
+                  key={f.label}
+                  whileHover={{ scale: 1.03, backgroundColor: 'rgba(255,255,255,0.08)' }}
+                  className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-xl cursor-default transition-colors duration-300 shadow-2xl"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 shadow-inner">
+                    <f.icon size={18} className="text-white" />
                   </div>
                   <div>
-                    <p className="text-[11.5px] font-semibold text-white/80 leading-tight">{f.label}</p>
-                    <p className="text-[10px] text-white/30 leading-tight mt-0.5">{f.sub}</p>
+                    <p className="text-[14px] font-bold text-white tracking-wide">{f.label}</p>
+                    <p className="text-[12px] text-white/40 font-medium mt-1">{f.sub}</p>
                   </div>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
 
             {/* Footer */}
-            <div className="mc-up d6 mt-10 flex gap-5 text-[11px] text-white/20">
-              <Link to="/datenschutz" className="hover:text-white/50 transition-colors">{t('footer.privacy')}</Link>
-              <Link to="/impressum"   className="hover:text-white/50 transition-colors">{t('footer.imprint')}</Link>
-            </div>
-          </div>
+            <motion.div variants={itemVariants} className="mt-14 flex gap-6 text-[12px] font-medium text-white/30">
+              <Link to="/datenschutz" className="hover:text-white transition-colors">{t('footer.privacy')}</Link>
+              <Link to="/impressum"   className="hover:text-white transition-colors">{t('footer.imprint')}</Link>
+            </motion.div>
+          </motion.div>
 
           {/* Right — auth glass card */}
-          <div className="w-[380px] flex-shrink-0 lg:w-[400px]">
-            <div className="card-in glass w-full rounded-3xl p-7" style={{ background: 'rgba(18,18,18,0.85)', backdropFilter: 'blur(28px) saturate(160%)', WebkitBackdropFilter: 'blur(28px) saturate(160%)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 32px 64px rgba(0,0,0,0.6)' }}>
-              <div className="mb-6 flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/[.08]">
+          <motion.div 
+            initial={{ opacity: 0, x: 40, filter: 'blur(10px)' }}
+            animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+            transition={{ duration: 0.8, delay: 0.2, type: 'spring' as const, damping: 25 }}
+            className="w-[420px] flex-shrink-0 lg:w-[460px]"
+          >
+            <div className="w-full rounded-[2.5rem] p-10 bg-white/[0.02] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-3xl relative overflow-hidden">
+              {/* Highlight edge */}
+              <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+              
+              <div className="mb-8 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 shadow-inner">
                   <img src="/logo-full.svg" alt="" className="h-5 w-auto" />
                 </div>
-                <span className="text-[13px] font-semibold text-white/60">MoonCrew</span>
+                <span className="text-[15px] font-bold tracking-wide text-white/80">MoonCrew</span>
               </div>
               {AuthForm}
             </div>
-          </div>
-          </div>{/* /max-w-5xl */}
+          </motion.div>
+          </div>{/* /max-w-[1100px] */}
         </div>
 
         {/* ── MOBILE layout (< md) ── */}
         <div className="relative z-10 flex min-h-screen flex-col md:hidden">
 
           {/* Hero phase */}
-          {phase === 'hero' && (
-            <div className="flex flex-1 flex-col items-center justify-between px-6 py-14">
+          <AnimatePresence mode="wait">
+            {phase === 'hero' && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
+                className="flex flex-1 flex-col items-center justify-between px-6 py-16"
+              >
+                {/* top: logo + tagline */}
+                <motion.div variants={containerVariants} initial="hidden" animate="visible" className="flex flex-col items-center text-center">
+                  <motion.div variants={itemVariants} className="mb-6">
+                    <img src="/logo-full.svg" alt="MoonCrew"
+                      className="h-24 w-auto drop-shadow-[0_0_40px_rgba(255,255,255,0.3)]" />
+                  </motion.div>
+                  <motion.h1 variants={itemVariants} className="text-4xl font-extrabold tracking-tight text-white drop-shadow-lg">
+                    Moon<span className="text-white/40">Crew</span>
+                  </motion.h1>
+                  <motion.p variants={itemVariants} className="mt-2 text-[12px] font-bold uppercase tracking-[0.2em] text-white/30">
+                    Work Organizer
+                  </motion.p>
+                  <motion.p variants={itemVariants} className="mt-6 max-w-[280px] text-[15px] leading-relaxed text-white/50 font-medium">
+                    Everything your team needs in one elegant app.
+                  </motion.p>
+                </motion.div>
 
-              {/* top: logo + tagline */}
-              <div className="flex flex-col items-center text-center">
-                <div className="mc-up mc-float mb-5">
-                  <img src="/logo-full.svg" alt="MoonCrew"
-                    className="h-20 w-auto drop-shadow-[0_0_28px_rgba(139,92,246,.55)]" />
-                </div>
-                <h1 className="mc-up d1 text-[28px] font-bold tracking-[-0.02em] text-white">
-                  Moon<span className="text-white/55">Crew</span>
-                </h1>
-                <p className="mc-up d2 mt-1 text-[11px] font-medium uppercase tracking-[0.18em] text-white/30">
-                  Work Organizer
-                </p>
-                <p className="mc-up d3 mt-4 max-w-[260px] text-[13.5px] leading-relaxed text-white/45">
-                  Everything your team needs in one app.
-                </p>
-              </div>
+                {/* middle: feature pills */}
+                <motion.div 
+                  variants={containerVariants} 
+                  initial="hidden" 
+                  animate="visible" 
+                  className="my-10 grid w-full grid-cols-2 gap-3"
+                >
+                  {FEATURES.map((f) => (
+                    <motion.div key={f.label} variants={itemVariants}
+                      className="flex flex-col items-center text-center gap-2 rounded-3xl border border-white/10 bg-white/[0.03] px-4 py-5 backdrop-blur-xl shadow-xl">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10">
+                        <f.icon size={18} className="text-white" />
+                      </div>
+                      <div>
+                        <p className="text-[13px] font-bold text-white">{f.label}</p>
+                        <p className="text-[11px] text-white/40 font-medium mt-1">{f.sub}</p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </motion.div>
 
-              {/* middle: feature pills */}
-              <div className="mc-up d4 my-8 grid w-full grid-cols-2 gap-2.5">
-                {FEATURES.map((f) => (
-                  <div key={f.label}
-                    className="feat-card flex items-center gap-2.5 rounded-2xl border border-white/[.07] bg-white/[.04] px-3.5 py-3 backdrop-blur-sm cursor-default">
-                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-white/[.07]">
-                      <f.icon size={13} className="text-white/60" />
-                    </div>
-                    <div>
-                      <p className="text-[11.5px] font-semibold text-white/80">{f.label}</p>
-                      <p className="text-[10px] text-white/30">{f.sub}</p>
-                    </div>
+                {/* CTAs */}
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="w-full space-y-3"
+                >
+                  <button onClick={() => open('login')}
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-4 text-[15px] font-bold text-black shadow-[0_0_40px_rgba(255,255,255,0.2)] transition-all active:scale-[.98]">
+                    Sign in
+                    <ArrowRight size={16} />
+                  </button>
+                  <button onClick={() => open('signup')}
+                    className="w-full rounded-2xl border border-white/10 py-4 text-[15px] font-bold text-white/70 backdrop-blur-md transition-all active:scale-[.98]">
+                    Create account
+                  </button>
+                  <div className="flex justify-center gap-6 pt-4 text-[12px] font-medium text-white/30">
+                    <Link to="/datenschutz" className="hover:text-white transition-colors">{t('footer.privacy')}</Link>
+                    <Link to="/impressum"   className="hover:text-white transition-colors">{t('footer.imprint')}</Link>
                   </div>
-                ))}
-              </div>
+                </motion.div>
+              </motion.div>
+            )}
 
-              {/* CTAs */}
-              <div className="mc-up d5 w-full space-y-2.5">
-                <button onClick={() => open('login')}
-                  className="group flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-[13.5px] font-semibold text-white transition-all duration-200 hover:opacity-90 active:scale-[.98]"
-                  style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)' }}>
-                  Sign in
-                  <ArrowRight size={15} className="transition-transform duration-200 group-hover:translate-x-0.5" />
-                </button>
-                <button onClick={() => open('signup')}
-                  className="w-full rounded-2xl border border-white/[.13] py-3 text-[13.5px] font-semibold text-white/70 backdrop-blur-sm transition-all duration-200 hover:border-white/25 hover:text-white active:scale-[.98]">
-                  Create account
-                </button>
-                <div className="flex justify-center gap-4 pt-2 text-[11px] text-white/20">
-                  <Link to="/datenschutz" className="hover:text-white/40 transition-colors">{t('footer.privacy')}</Link>
-                  <Link to="/impressum"   className="hover:text-white/40 transition-colors">{t('footer.imprint')}</Link>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Auth phase — bottom sheet */}
-          {phase === 'auth' && (
-            <>
-              {/* background: logo + branding visible above sheet */}
-              <div className="flex flex-1 flex-col items-center justify-center">
-                <div className="mc-float">
-                  <img src="/logo-full.svg" alt="MoonCrew" className="h-14 w-auto opacity-50" />
-                </div>
-                <p className="mt-3 text-[12px] font-medium uppercase tracking-widest text-white/20">MoonCrew</p>
-              </div>
-
-              {/* the sheet */}
-              <div className="sheet-up glass-sheet relative rounded-t-[2rem] px-6 pb-10 pt-5" style={{ background: 'rgba(13,13,13,0.97)', borderTop: '1px solid rgba(255,255,255,0.09)' }}>
-                {/* drag handle */}
-                <div className="mx-auto mb-5 h-[3px] w-9 rounded-full bg-white/[.12]" />
-
-                {/* back button */}
-                <button onClick={() => setPhase('hero')}
-                  className="absolute left-5 top-5 flex items-center gap-1 text-[12px] text-white/35 hover:text-white/65 transition-colors">
-                  <ChevronLeft size={14} />Back
-                </button>
-
-                {AuthForm}
-
-                <div className="mt-5 flex justify-center gap-5 text-[11px] text-white/15">
-                  <Link to="/datenschutz" className="hover:text-white/40 transition-colors">{t('footer.privacy')}</Link>
-                  <Link to="/impressum"   className="hover:text-white/40 transition-colors">{t('footer.imprint')}</Link>
-                </div>
-              </div>
-            </>
-          )}
+            {/* Auth phase — bottom sheet */}
+            {phase === 'auth' && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="absolute inset-0 z-20 flex flex-col justify-end bg-black/40 backdrop-blur-sm"
+              >
+                <div className="flex-1" onClick={() => setPhase('hero')} />
+                <motion.div 
+                  initial={{ y: '100%' }}
+                  animate={{ y: 0 }}
+                  exit={{ y: '100%' }}
+                  transition={{ type: 'spring' as const, damping: 25, stiffness: 200 }}
+                  className="relative rounded-t-[2.5rem] bg-[#0a0a0a] border-t border-white/10 px-6 pb-12 pt-6 shadow-[0_-20px_60px_rgba(0,0,0,0.5)]"
+                >
+                  <div className="mx-auto mb-6 h-1 w-12 rounded-full bg-white/20" />
+                  {AuthForm}
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </>

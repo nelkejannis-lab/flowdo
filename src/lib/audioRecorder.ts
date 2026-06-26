@@ -107,11 +107,12 @@ export class AudioRecorder {
           samplesCount = 0
           
           if (this.worker) {
-            let maxAmp = 0;
+            let sumSquares = 0;
             for (let i = 0; i < merged.length; i++) {
-              if (Math.abs(merged[i]) > maxAmp) maxAmp = Math.abs(merged[i]);
+              sumSquares += merged[i] * merged[i];
             }
-            if (maxAmp > 0.01) { // Only send if someone is actually speaking (filters out silent noise/hallucinations)
+            let rms = Math.sqrt(sumSquares / merged.length);
+            if (rms > 0.03) { // Stricter RMS threshold filters out loud laptop fans and static
               this.worker.postMessage({ type: 'transcribe', audioData: merged })
             }
           }

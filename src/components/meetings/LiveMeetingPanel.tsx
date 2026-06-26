@@ -1,103 +1,22 @@
-import { useEffect, useRef, useState } from 'react'
-import { AudioRecorder } from '../../lib/audioRecorder'
-import { generateMeetingSummary } from '../../lib/aiService'
+import { useEffect, useState } from 'react'
 import { Check, Mic, Square, Loader2, Save, RefreshCw, Calendar } from 'lucide-react'
-import { useMeetingsStore, type ActionItem } from '../../store/meetingsStore'
+import { useMeetingsStore } from '../../store/meetingsStore'
+import { useLiveMeetingStore } from '../../store/liveMeetingStore'
 
 export default function LiveMeetingPanel({ onSaveComplete }: { onSaveComplete: () => void }) {
-  const [isRecording, setIsRecording] = useState(false)
-  const [transcript, setTranscript] = useState('')
-  const [summary, setSummary] = useState('')
-  const [actionItems, setActionItems] = useState<ActionItem[]>([])
-  const [isSummarizing, setIsSummarizing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [customTitle, setCustomTitle] = useState('')
-  
-  const recorderRef = useRef<AudioRecorder | null>(null)
-  const transcriptRef = useRef(transcript)
-  const lastAnalyzedTextRef = useRef('')
-  const analysisIntervalRef = useRef<any>(null)
-
   const addMeeting = useMeetingsStore(s => s.addMeeting)
-
-  useEffect(() => {
-    transcriptRef.current = transcript
-  }, [transcript])
-
-  useEffect(() => {
-    return () => {
-      if (recorderRef.current) recorderRef.current.stop()
-      if (analysisIntervalRef.current) clearInterval(analysisIntervalRef.current)
-    }
-  }, [])
-
-  async function handleStart() {
-    setError(null)
-    setTranscript('')
-    setSummary('')
-    setActionItems([])
-    lastAnalyzedTextRef.current = ''
-
-    try {
-      const recorder = new AudioRecorder()
-      recorder.onTranscriptChunk = (chunk) => {
-        setTranscript(prev => prev + (prev ? ' ' : '') + chunk)
-      }
-      recorder.onError = (err) => {
-        setError(err)
-        handleStop()
-      }
-
-      await recorder.start()
-      recorderRef.current = recorder
-      setIsRecording(true)
-
-      // Trigger intelligent analysis every 30 seconds if enough new text exists
-      analysisIntervalRef.current = setInterval(() => {
-        const currentText = transcriptRef.current
-        const diffLength = currentText.length - lastAnalyzedTextRef.current.length
-        if (diffLength > 100) { // Only analyze if there are new characters
-          triggerAnalysis()
-        }
-      }, 30000)
-    } catch (err: any) {
-      setError(err.message)
-    }
-  }
-
-  function handleStop() {
-    if (recorderRef.current) {
-      recorderRef.current.stop()
-    }
-    if (analysisIntervalRef.current) {
-      clearInterval(analysisIntervalRef.current)
-    }
-    setIsRecording(false)
-    triggerAnalysis() // Final analysis
-  }
-
-  async function triggerAnalysis() {
-    const currentText = transcriptRef.current
-    if (currentText.length < 50) return // Not enough data yet
-
-    setIsSummarizing(true)
-    try {
-      const result = await generateMeetingSummary(currentText)
-      setSummary(result.summary)
-      setActionItems(result.actionItems.map(ai => ({
-        id: crypto.randomUUID(),
-        task: ai.task,
-        assignee: ai.assignee,
-        dueDate: ai.dueDate,
-        done: false
-      })))
-      lastAnalyzedTextRef.current = currentText
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setIsSummarizing(false)
-    }
-  }
+  
+  const {
+    isRecording,
+    transcript,
+    summary,
+    actionItems,
+    isSummarizing,
+    error,
+    startRecording,
+    stopRecording
+  } = useLiveMeetingStore()
 
   async function saveMeeting() {
     if (!summary && !transcript) return
@@ -112,13 +31,14 @@ export default function LiveMeetingPanel({ onSaveComplete }: { onSaveComplete: (
       action_items: actionItems
     })
     
+    useLiveMeetingStore.getState().reset()
     onSaveComplete()
   }
 
   return (
-    <div className="flex h-full flex-col gap-4">
-      <div className="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm dark:bg-racing-900 border border-gray-100 dark:border-racing-800">
-        <div>
+    <div className="flex flex-col gap-4 min-h-full">
+      <div className="flex flex-col md:flex-row md:items-center justify-between rounded-xl bg-white p-4 shadow-sm dark:bg-racing-900 border border-gray-100 dark:border-racing-800 gap-4">
+        <div className="flex-1">
           <h2 className="text-lg font-bold flex items-center gap-2">
             <Mic className={isRecording ? "text-red-500 animate-pulse" : "text-gray-400"} />
             Live Meeting
@@ -131,21 +51,21 @@ export default function LiveMeetingPanel({ onSaveComplete }: { onSaveComplete: (
             value={customTitle}
             onChange={e => setCustomTitle(e.target.value)}
             disabled={isRecording}
-            className="w-64 text-sm px-3 py-1.5 rounded-lg border border-gray-200 dark:border-racing-700 bg-transparent focus:border-accent focus:outline-none disabled:opacity-50"
+            className="w-full sm:w-64 text-sm px-3 py-1.5 rounded-lg border border-gray-200 dark:border-racing-700 bg-transparent focus:border-accent focus:outline-none disabled:opacity-50"
           />
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           {error && <p className="text-xs text-red-500">{error}</p>}
           {!isRecording ? (
             <button 
-              onClick={handleStart}
+              onClick={startRecording}
               className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-accent-hover transition-all"
             >
               <Mic size={16} /> Start Recording
             </button>
           ) : (
             <button 
-              onClick={handleStop}
+              onClick={stopRecording}
               className="flex items-center gap-2 rounded-xl bg-red-500 px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-red-600 animate-pulse"
             >
               <Square size={16} fill="currentColor" /> Stop Recording
@@ -154,12 +74,11 @@ export default function LiveMeetingPanel({ onSaveComplete }: { onSaveComplete: (
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col gap-4 min-h-0">
+      <div className="flex flex-col gap-4">
         {/* AI Analysis Column (Full Width) */}
-        <div className="flex flex-col gap-4 min-h-0">
-          
+        
           {/* Summary Top Half */}
-          <div className="flex flex-col flex-1 rounded-xl bg-white p-4 shadow-sm dark:bg-racing-900 border border-gray-100 dark:border-racing-800 min-h-0">
+          <div className="flex flex-col rounded-xl bg-white p-4 shadow-sm dark:bg-racing-900 border border-gray-100 dark:border-racing-800 min-h-[300px]">
             <div className="mb-4 flex items-center justify-between border-b border-gray-100 pb-3 dark:border-racing-800 shrink-0">
               <div className="flex items-center gap-2">
                 <Check size={18} className="text-accent" />
@@ -182,7 +101,7 @@ export default function LiveMeetingPanel({ onSaveComplete }: { onSaveComplete: (
           </div>
 
           {/* To-Dos Bottom Half */}
-          <div className="flex flex-col flex-1 rounded-xl bg-white p-4 shadow-sm dark:bg-racing-900 border border-gray-100 dark:border-racing-800 min-h-0">
+          <div className="flex flex-col rounded-xl bg-white p-4 shadow-sm dark:bg-racing-900 border border-gray-100 dark:border-racing-800 min-h-[300px]">
             <div className="mb-4 flex items-center justify-between border-b border-gray-100 pb-3 dark:border-racing-800 shrink-0">
               <div className="flex items-center gap-2">
                 <Check size={18} className="text-orange-500" />
@@ -226,7 +145,6 @@ export default function LiveMeetingPanel({ onSaveComplete }: { onSaveComplete: (
               </button>
             )}
           </div>
-        </div>
       </div>
     </div>
   )

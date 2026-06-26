@@ -62,11 +62,10 @@ export const useMeetingsStore = create<MeetingsState>((set, get) => ({
 
   addMeeting: async (meetingData) => {
     const user = useAuthStore.getState().user
-    if (!user) return null
-
+    
     const newMeeting = {
       ...meetingData,
-      user_id: user.id,
+      user_id: user ? user.id : 'local-prototype-user',
     }
 
     // Try to insert into Supabase
@@ -77,18 +76,14 @@ export const useMeetingsStore = create<MeetingsState>((set, get) => ({
       .single()
 
     if (error) {
-      if (error.code === '42P01') {
-        // Table doesn't exist, just save locally for now (prototype mode)
-        const fakeMeeting: Meeting = {
-          ...newMeeting,
-          id: crypto.randomUUID(),
-          created_at: new Date().toISOString()
-        }
-        set((state) => ({ meetings: [fakeMeeting, ...state.meetings] }))
-        return fakeMeeting
+      console.warn("Supabase insert failed, falling back to local prototype mode:", error.message)
+      const fakeMeeting: Meeting = {
+        ...newMeeting,
+        id: crypto.randomUUID(),
+        created_at: new Date().toISOString()
       }
-      set({ error: error.message })
-      return null
+      set((state) => ({ meetings: [fakeMeeting, ...state.meetings] }))
+      return fakeMeeting
     }
 
     set((state) => ({ meetings: [data as Meeting, ...state.meetings] }))
