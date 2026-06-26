@@ -68,10 +68,8 @@ export default function Dashboard() {
     const dismissed = localStorage.getItem('morningReportDismissed')
     return hour >= 5 && hour < 12 && dismissed !== today
   })
-  const DEFAULT_WIDGET_ORDER = ['weather', 'productivity', 'workoffice', 'stats_week', 'stats_projects']
-  const [widgetOrder, setWidgetOrder] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem('dashWidgetOrder') ?? 'null') ?? DEFAULT_WIDGET_ORDER } catch { return DEFAULT_WIDGET_ORDER }
-  })
+  const widgetOrder = useSettingsStore((s) => s.dashboardWidgetOrder)
+  const setWidgetOrder = useSettingsStore((s) => s.setDashboardWidgetOrder)
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -79,11 +77,11 @@ export default function Dashboard() {
   function handleWidgetDragEnd(e: DragEndEvent) {
     const { active, over } = e
     if (over && active.id !== over.id) {
-      setWidgetOrder((prev) => {
-        const next = arrayMove(prev, prev.indexOf(String(active.id)), prev.indexOf(String(over.id)))
-        localStorage.setItem('dashWidgetOrder', JSON.stringify(next))
-        return next
-      })
+      const oldIndex = widgetOrder.indexOf(String(active.id))
+      const newIndex = widgetOrder.indexOf(String(over.id))
+      if (oldIndex !== -1 && newIndex !== -1) {
+        setWidgetOrder(arrayMove(widgetOrder, oldIndex, newIndex))
+      }
     }
   }
 

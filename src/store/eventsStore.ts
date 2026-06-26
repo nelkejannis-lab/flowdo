@@ -139,7 +139,14 @@ export const useEventsStore = create<EventsState>()(
           deletedEventIds: [...state.deletedEventIds, id],
         }))
         void getUserId().then(async (userId) => {
-          if (userId) await supabase.from('calendar_events').delete().eq('id', id)
+          if (userId) {
+            const { error } = await supabase.from('calendar_events').delete().eq('id', id).eq('owner_id', userId)
+            if (error) {
+              console.error('[deleteEvent] failed in Supabase:', error.message)
+              pendingDeletes.delete(id)
+              return
+            }
+          }
           pendingDeletes.delete(id)
           // Remove from persisted blacklist once Supabase confirmed
           set((state) => ({ deletedEventIds: state.deletedEventIds.filter((x) => x !== id) }))

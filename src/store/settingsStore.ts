@@ -89,6 +89,8 @@ export const DEFAULT_DASHBOARD_VISIBILITY: Record<DashboardWidget, boolean> = {
   workoffice: true,
 }
 
+export const DEFAULT_DASHBOARD_WIDGET_ORDER = ['weather', 'productivity', 'workoffice', 'stats_week', 'stats_projects']
+
 export const DEFAULT_COLOR_LABELS: Record<string, string> = Object.fromEntries(
   NAMED_COLORS.map((c) => [c.hex, c.label])
 )
@@ -116,6 +118,7 @@ interface SettingsState {
   weatherCity: string
   weatherCoords: WeatherCoords
   hideCompletedTasks: boolean
+  dashboardWidgetOrder: string[]
   setMode: (mode: Mode) => void
   togglePinkAccent: () => void
   setLanguage: (language: Language) => void
@@ -131,6 +134,7 @@ interface SettingsState {
   toggleNavItem: (key: NavItemKey) => void
   setWeatherCity: (city: string) => void
   setWeatherCoords: (coords: WeatherCoords) => void
+  setDashboardWidgetOrder: (order: string[]) => void
   toggleHideCompletedTasks: () => void
   importSettings: (settings: any) => void
   resetSettings: () => void
@@ -160,6 +164,7 @@ export const useSettingsStore = create<SettingsState>()(
       weatherCity: DEFAULT_WEATHER_CITY,
       weatherCoords: { ...DEFAULT_WEATHER_COORDS },
       hideCompletedTasks: true,
+      dashboardWidgetOrder: [...DEFAULT_DASHBOARD_WIDGET_ORDER],
       setMode: (mode) => set({ mode }),
       togglePinkAccent: () => set((s) => ({ pinkAccent: !s.pinkAccent })),
       setLanguage: (language) => {
@@ -187,6 +192,7 @@ export const useSettingsStore = create<SettingsState>()(
         })),
       setWeatherCity: (city) => set({ weatherCity: city }),
       setWeatherCoords: (coords) => set({ weatherCoords: coords }),
+      setDashboardWidgetOrder: (dashboardWidgetOrder) => set({ dashboardWidgetOrder }),
       toggleHideCompletedTasks: () => set((s) => ({ hideCompletedTasks: !s.hideCompletedTasks })),
       importSettings: (settings) => {
         if (!settings) return
@@ -208,6 +214,7 @@ export const useSettingsStore = create<SettingsState>()(
           weatherCity: settings.weatherCity ?? state.weatherCity,
           weatherCoords: settings.weatherCoords ?? state.weatherCoords,
           hideCompletedTasks: settings.hideCompletedTasks ?? state.hideCompletedTasks,
+          dashboardWidgetOrder: settings.dashboardWidgetOrder ?? state.dashboardWidgetOrder,
         }))
       },
       resetSettings: () => {
@@ -228,6 +235,7 @@ export const useSettingsStore = create<SettingsState>()(
           weatherCity: DEFAULT_WEATHER_CITY,
           weatherCoords: { ...DEFAULT_WEATHER_COORDS },
           hideCompletedTasks: true,
+          dashboardWidgetOrder: [...DEFAULT_DASHBOARD_WIDGET_ORDER],
         })
       },
       syncNow: () => {
@@ -250,7 +258,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'flowdo-settings',
-      version: 10,
+      version: 11,
       migrate: (persisted, version) => {
         const legacy = persisted as LegacyState & Partial<SettingsState>
         if (version < 1) {
@@ -260,6 +268,7 @@ export const useSettingsStore = create<SettingsState>()(
             language: 'de',
             featureVisibility: { ...DEFAULT_FEATURE_VISIBILITY },
             dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY },
+            dashboardWidgetOrder: [...DEFAULT_DASHBOARD_WIDGET_ORDER],
           }
         }
         const city = (legacy as any).weatherCity
@@ -271,13 +280,14 @@ export const useSettingsStore = create<SettingsState>()(
           ...legacy,
           language: legacy.language ?? 'de',
           featureVisibility: { ...DEFAULT_FEATURE_VISIBILITY, ...legacy.featureVisibility },
-          dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY },
+          dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY, ...legacy.dashboardVisibility },
           navOrder: mergedNavOrder,
           navVisibility: { ...DEFAULT_NAV_VISIBILITY, ...(legacy as any).navVisibility },
           colorLabels: { ...DEFAULT_COLOR_LABELS, ...(legacy as any).colorLabels },
           onboardingPermissionsDone: legacy.onboardingPermissionsDone ?? false,
           weatherCity: hasCustomCity ? city : DEFAULT_WEATHER_CITY,
           weatherCoords: (legacy as any).weatherCoords ?? { ...DEFAULT_WEATHER_COORDS },
+          dashboardWidgetOrder: (legacy as any).dashboardWidgetOrder ?? [...DEFAULT_DASHBOARD_WIDGET_ORDER],
         }
       },
       onRehydrateStorage: () => (state) => {
@@ -305,6 +315,7 @@ export function getSettingsPayload(state: any) {
     weatherCity: state.weatherCity,
     weatherCoords: state.weatherCoords,
     hideCompletedTasks: state.hideCompletedTasks,
+    dashboardWidgetOrder: state.dashboardWidgetOrder,
   }
 }
 

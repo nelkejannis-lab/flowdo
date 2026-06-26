@@ -15,6 +15,7 @@ import {
   FolderPlus,
   FileText,
   List,
+  Upload,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useBrainStore, NotePage, NoteColumn } from '../store/brainStore'
@@ -59,7 +60,7 @@ export default function SecondBrainPage() {
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [isRecordingAudio, setIsRecordingAudio] = useState(false)
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
+  const [audioBlob, setAudioBlob] = useState<any>(null)
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
 
@@ -176,11 +177,36 @@ export default function SecondBrainPage() {
     }
   }
 
+  const handleAudioFileUpload = (e: React.ChangeEvent<HTMLInputElement>, forEdit: boolean) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!noteTitle) {
+      const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name
+      setNoteTitle(nameWithoutExt)
+    }
+
+    const url = URL.createObjectURL(file)
+    setAudioUrl(url)
+    setAudioBlob(file)
+
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onloadend = () => {
+      const base64data = reader.result as string
+      if (forEdit && activePage) {
+        updatePage(activePage.id, { audioBase64: base64data })
+        setActivePage((prev) => (prev ? { ...prev, audioBase64: base64data } : null))
+      }
+    }
+  }
+
   // Generate AI Summary calling ai-chat Supabase Edge Function
   const generateAiSummary = async () => {
+    const isAudioOnly = audioBlob && !noteContent.trim()
     const textToSummarize = noteContent.trim()
-    if (!textToSummarize) {
-      alert('Der Inhalt der Notiz ist leer. Bitte schreibe zuerst etwas.')
+    if (!textToSummarize && !audioBlob) {
+      alert('Der Inhalt der Notiz ist leer und keine Audiodatei hochgeladen. Bitte schreibe etwas oder lade eine Audiodatei hoch.')
       return
     }
 
@@ -194,7 +220,7 @@ export default function SecondBrainPage() {
           const mockSummary = `### 📝 KI-Zusammenfassung (Offline-Modus)
 - **Hauptthema**: ${noteTitle || 'Unbenannte Notiz'}
 - **Zusammenfassung**: Dies ist ein lokaler Platzhalter für die Zusammenfassung. Verbinde dich mit Supabase, um automatische KI-Zusammenfassungen mit Claude zu generieren.
-- **Erstellungsdatum**: ${new Date().toLocaleDateString('de-DE')}`
+${audioBlob ? `- **Audiodatei**: ${audioBlob.name}\n` : ''}- **Erstellungsdatum**: ${new Date().toLocaleDateString('de-DE')}`
           if (activePage) {
             updatePage(activePage.id, { summary: mockSummary })
             setActivePage((prev) => (prev ? { ...prev, summary: mockSummary } : null))
@@ -207,17 +233,27 @@ export default function SecondBrainPage() {
         return
       }
 
+      let userPrompt = ''
+      if (isAudioOnly) {
+        userPrompt = `Ich habe eine Audiodatei hochgeladen.
+Dateiname: ${audioBlob!.name}
+Bitte erstelle ein strukturiertes Protokoll und eine detaillierte Zusammenfassungsvorlage für diese Aufnahme basierend auf dem Dateinamen und dem Thema. Bring Ordnung und Struktur in dieses Meeting/Gespräch.
+Formatiere das Ergebnis in schönem Markdown mit Überschriften, Bulletpoints und einem Bereich für 'Action Items'.`
+      } else {
+        userPrompt = `Bitte fasse die folgende Notiz (und eventuelle Audiodatei ${audioBlob ? `"${audioBlob.name}"` : ''}) strukturiert, übersichtlich und prägnant auf Deutsch zusammen.
+Verwende Überschriften und Stichpunkte. Bring Ordnung in unstrukturierte Mitschriften oder Protokolle.
+
+Titel: ${noteTitle || 'Ohne Titel'}
+Inhalt:
+${textToSummarize}`
+      }
+
       const { data, error } = await supabase.functions.invoke('ai-chat', {
         body: {
           messages: [
             {
               role: 'user',
-              content: `Bitte fasse die folgende Notiz strukturiert, übersichtlich und prägnant auf Deutsch zusammen.
-Verwende Überschriften und Stichpunkte. Bring Ordnung in unstrukturierte Mitschriften oder Protokolle.
-
-Titel: ${noteTitle || 'Ohne Titel'}
-Inhalt:
-${textToSummarize}`,
+              content: userPrompt,
             },
           ],
           systemPrompt:
@@ -576,6 +612,23 @@ ${textToSummarize}`,
                 {isRecordingAudio ? 'Aufnahme stoppen' : 'Audio aufnehmen'}
               </button>
 
+              <input
+                type="file"
+                accept="audio/*"
+                className="hidden"
+                id="audio-file-upload-edit"
+                onChange={(e) => handleAudioFileUpload(e, true)}
+              />
+              <button
+                type="button"
+                onClick={() => document.getElementById('audio-file-upload-edit')?.click()}
+                className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white"
+                title="Audiodatei hochladen"
+              >
+                <Upload size={13} />
+                Audio hochladen
+              </button>
+
               <button
                 type="button"
                 disabled={aiLoading}
@@ -743,6 +796,23 @@ ${textToSummarize}`,
               >
                 <Volume2 size={13} />
                 {isRecordingAudio ? 'Aufnahme stoppen' : 'Audio aufnehmen'}
+              </button>
+
+              <input
+                type="file"
+                accept="audio/*"
+                className="hidden"
+                id="audio-file-upload-create"
+                onChange={(e) => handleAudioFileUpload(e, false)}
+              />
+              <button
+                type="button"
+                onClick={() => document.getElementById('audio-file-upload-create')?.click()}
+                className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white"
+                title="Audiodatei hochladen"
+              >
+                <Upload size={13} />
+                Audio hochladen
               </button>
 
               <button
