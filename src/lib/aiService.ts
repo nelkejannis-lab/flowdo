@@ -1,8 +1,8 @@
 import { pipeline, env } from '@xenova/transformers'
 import Anthropic from '@anthropic-ai/sdk'
 
-// Prevent transformers.js from trying to download models from remote if offline, but we DO want it to download the first time.
-env.allowLocalModels = true
+// We MUST disable local models so it fetches from Hugging Face instead of our local dev server which returns index.html
+env.allowLocalModels = false
 env.useBrowserCache = true
 
 let transcriber: any = null

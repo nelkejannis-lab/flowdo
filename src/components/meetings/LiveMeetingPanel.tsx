@@ -13,6 +13,7 @@ export default function LiveMeetingPanel({ onSaveComplete }: { onSaveComplete: (
   const [actionItems, setActionItems] = useState<ActionItem[]>([])
   const [isSummarizing, setIsSummarizing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [customTitle, setCustomTitle] = useState('')
   
   const recorderRef = useRef<AudioRecorder | null>(null)
   const transcriptRef = useRef(transcript)
@@ -100,7 +101,7 @@ export default function LiveMeetingPanel({ onSaveComplete }: { onSaveComplete: (
   async function saveMeeting() {
     if (!summary && !transcript) return
     const titleMatch = summary.match(/^# (.*)/) || summary.match(/\*\*(.*?)\*\*/)
-    const title = titleMatch ? titleMatch[1] : 'Meeting am ' + new Date().toLocaleDateString()
+    const title = customTitle.trim() || (titleMatch ? titleMatch[1] : 'Meeting am ' + new Date().toLocaleDateString())
 
     await addMeeting({
       title,
@@ -127,7 +128,16 @@ export default function LiveMeetingPanel({ onSaveComplete }: { onSaveComplete: (
               </span>
             )}
           </h2>
-          <p className="text-xs text-gray-500">Nimmt PC-Sound und Mikrofon auf und transkribiert in Echtzeit.</p>
+          <p className="text-xs text-gray-500 mb-3">Nimmt PC-Sound und Mikrofon auf und transkribiert in Echtzeit.</p>
+          
+          <input 
+            type="text" 
+            placeholder="Meeting Name (optional)" 
+            value={customTitle}
+            onChange={e => setCustomTitle(e.target.value)}
+            disabled={isRecording}
+            className="w-64 text-sm px-3 py-1.5 rounded-lg border border-gray-200 dark:border-racing-700 bg-transparent focus:border-accent focus:outline-none disabled:opacity-50"
+          />
         </div>
         <div className="flex items-center gap-3">
           {error && <p className="text-xs text-red-500">{error}</p>}
