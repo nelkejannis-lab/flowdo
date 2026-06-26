@@ -16,7 +16,124 @@
   --accent-light: 55 55 55;
   --accent-dark: 0 0 0;
 
-  /* Neutral gray scale — used for dark mode surfaces */
+  /* Neutral/* Light override (premium clean light mode) */
+html.light {
+  --surface-0: 248 249 250; /* Super clean light grey / off-white */
+  --surface-1: 255 255 255; /* Pure white sidebar / card background */
+  --surface-2: 255 255 255; /* Pure white card */
+  --surface-3: 241 243 245; /* Light gray input / hover */
+  --surface-4: 222 226 230; /* Substantial light border */
+  --ink:           33 37 41;  /* Dark text */
+  --ink-secondary: 73 80 87;  /* Muted dark text */
+  --ink-tertiary:  134 142 150; /* Muted caption text */
+}
+
+/* Override tailwind background/border/text classes which have hardcoded white/dark colors */
+html.light .border-white\/5 {
+  border-color: rgba(0, 0, 0, 0.06) !important;
+}
+html.light .border-white\/10 {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+html.light .border-white\/15 {
+  border-color: rgba(0, 0, 0, 0.12) !important;
+}
+html.light .border-white\/20 {
+  border-color: rgba(0, 0, 0, 0.15) !important;
+}
+html.light .border-white\/25 {
+  border-color: rgba(0, 0, 0, 0.18) !important;
+}
+html.light .border-white\/30 {
+  border-color: rgba(0, 0, 0, 0.22) !important;
+}
+html.light .border-white\/50 {
+  border-color: rgba(0, 0, 0, 0.4) !important;
+}
+html.light .bg-white\/5 {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+html.light .bg-white\/8 {
+  background-color: rgba(0, 0, 0, 0.06) !important;
+}
+html.light .bg-white\/10 {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+}
+html.light .bg-white\/20 {
+  background-color: rgba(0, 0, 0, 0.12) !important;
+}
+html.light .bg-white\/30 {
+  background-color: rgba(0, 0, 0, 0.16) !important;
+}
+html.light .text-white {
+  color: rgb(var(--ink)) !important;
+}
+html.light .text-white\/70 {
+  color: rgb(var(--ink-secondary)) !important;
+}
+html.light .text-white\/60 {
+  color: rgb(var(--ink-secondary)) !important;
+}
+html.light .text-white\/50 {
+  color: rgb(var(--ink-tertiary)) !important;
+}
+html.light .text-white\/40 {
+  color: rgb(var(--ink-tertiary)) !important;
+}
+html.light .text-white\/30 {
+  color: rgb(var(--ink-tertiary)) !important;
+}
+html.light .text-white\/20 {
+  color: rgb(var(--ink-tertiary)) !important;
+}
+html.light .text-white\/10 {
+  color: rgb(var(--ink-tertiary)) !important;
+}
+html.light .text-white\/15 {
+  color: rgb(var(--ink-tertiary)) !important;
+}
+html.light .bg-black\/20 {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+html.light .bg-zinc-950 {
+  background-color: rgb(var(--surface-1)) !important;
+}
+html.light .bg-zinc-950\/80 {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}
+html.light .bg-zinc-900 {
+  background-color: rgb(var(--surface-3)) !important;
+}
+html.light .bg-zinc-900\/50 {
+  background-color: rgba(0, 0, 0, 0.02) !important;
+}
+html.light .bg-zinc-900\/30 {
+  background-color: rgba(0, 0, 0, 0.01) !important;
+}
+html.light .border-zinc-800 {
+  border-color: rgb(var(--surface-4)) !important;
+}
+html.light .border-zinc-800\/80 {
+  border-color: rgb(var(--surface-4)) !important;
+}
+html.light .border-zinc-800\/50 {
+  border-color: rgb(var(--surface-4)) !important;
+}
+html.light .border-zinc-800\/40 {
+  border-color: rgb(var(--surface-4)) !important;
+}
+html.light .shadow-\[5px_0_30px_rgba\(0\,0\,0\,0\.5\)\] {
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05) !important;
+}
+html.light .shadow-apple-lg {
+  box-shadow: 0 10px 30px rgba(0,0,0,0.06), 0 2px 10px rgba(0,0,0,0.03) !important;
+}
+html.light .shadow-apple-md {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05), 0 1px 4px rgba(0,0,0,0.02) !important;
+}
+html.light .shadow-apple {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02) !important;
+}
   --racing-50:  248 248 248;
   --racing-100: 236 236 236;
   --racing-200: 212 212 212;

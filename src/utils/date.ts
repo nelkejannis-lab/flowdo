@@ -23,6 +23,32 @@ export function toISODate(date: Date): string {
   return format(date, 'yyyy-MM-dd')
 }
 
+export function isCompletedToday(completedAt?: string): boolean {
+  if (!completedAt) return false
+  const today = todayISO()
+  if (/^\d{4}-\d{2}-\d{2}$/.test(completedAt)) {
+    return completedAt === today
+  }
+  try {
+    const date = parseISO(completedAt)
+    if (isNaN(date.getTime())) return false
+    return format(date, 'yyyy-MM-dd') === today
+  } catch {
+    return false
+  }
+}
+
+export function isCompletedThisWeek(completedAt?: string): boolean {
+  if (!completedAt) return false
+  try {
+    const date = parseISO(completedAt)
+    if (isNaN(date.getTime())) return false
+    return isThisWeek(date, { weekStartsOn: 1 })
+  } catch {
+    return false
+  }
+}
+
 export function formatFriendlyDate(iso?: string): string {
   if (!iso) return ''
   const date = parseISO(iso)

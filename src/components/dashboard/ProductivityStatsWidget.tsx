@@ -3,7 +3,7 @@ import { CheckSquare, Clock, Flame, TrendingUp } from 'lucide-react'
 import { useTasksStore } from '../../store/tasksStore'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
 import { useWorkTimeStore } from '../../store/workTimeStore'
-import { todayISO, isDueToday, isOverdue } from '../../utils/date'
+import { todayISO, isDueToday, isOverdue, isCompletedToday } from '../../utils/date'
 import { formatHM, netMinutes } from '../../utils/worktime'
 
 export default function ProductivityStatsWidget() {
@@ -22,7 +22,7 @@ export default function ProductivityStatsWidget() {
 
   const today = todayISO()
   const allTasks = [...tasks, ...myProjectTasks]
-  const completedToday = allTasks.filter((t) => t.completed && t.completedAt === today).length
+  const completedToday = allTasks.filter((t) => t.completed && isCompletedToday(t.completedAt)).length
   const pendingToday = allTasks.filter((t) => !t.completed && (isDueToday(t.dueDate) || isOverdue(t.dueDate))).length
   const totalToday = completedToday + pendingToday
   const taskProgress = totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0

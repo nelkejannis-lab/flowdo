@@ -1,0 +1,7 @@
+node_modules
+dist
+dist-electron-app
+release
+.git
+.claude
+.temp

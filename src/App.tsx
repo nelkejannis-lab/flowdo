@@ -18,6 +18,7 @@ import AiSchedulerPage from './pages/AiSchedulerPage'
 import ChatPage from './pages/ChatPage'
 import SettingsPage from './pages/SettingsPage'
 import PomodoroPage from './pages/PomodoroPage'
+import SecondBrainPage from './pages/SecondBrainPage'
 import DatenschutzPage from './pages/legal/DatenschutzPage'
 import ImpressumPage from './pages/legal/ImpressumPage'
 import InstagramCallbackPage from './pages/InstagramCallbackPage'
@@ -124,6 +125,7 @@ export default function App() {
         <Route path="/social/:accountId" element={isSupabaseConfigured ? <SocialAccountDetailPage /> : <Navigate to="/" replace />} />
         <Route path="/instagram-callback" element={<InstagramCallbackPage />} />
         <Route path="/pomodoro" element={<PomodoroPage />} />
+        <Route path="/gehirn" element={<SecondBrainPage />} />
         <Route path="/ki-termine" element={isSupabaseConfigured ? <AiSchedulerPage /> : <Navigate to="/" replace />} />
         <Route path="/chat" element={isSupabaseConfigured ? <ChatPage /> : <Navigate to="/" replace />} />
         <Route path="/einstellungen" element={<SettingsPage />} />

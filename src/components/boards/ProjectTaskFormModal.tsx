@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, Trash2, Check, X, Lock } from 'lucide-react'
+import { Plus, Trash2, Check, X, Lock, Pencil } from 'lucide-react'
+import CommentSection from '../shared/CommentSection'
+import { isSupabaseConfigured } from '../../lib/supabase'
 import Modal from '../layout/Modal'
 import AttachmentsField from '../shared/AttachmentsField'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
@@ -36,6 +38,12 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
   const addDependency = useProjectTasksStore((s) => s.addDependency)
   const removeDependency = useProjectTasksStore((s) => s.removeDependency)
   const allBoardTasks = useProjectTasksStore((s) => s.tasks)
+
+  const [isEditing, setIsEditing] = useState(!task)
+  const currentTask = useMemo(() => {
+    if (!task) return undefined
+    return allBoardTasks.find((t) => t.id === task.id) || task
+  }, [task, allBoardTasks])
 
   const [title, setTitle] = useState(task?.title ?? '')
   const [description, setDescription] = useState(task?.description ?? '')
@@ -141,6 +149,146 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
       task: currentTaskObj,
     })
     onClose()
+  }
+
+  if (!isEditing && currentTask) {
+    const priorityLabel = currentTask.priority === 'high' ? t('taskForm.priorityHigh') : currentTask.priority === 'low' ? t('taskForm.priorityLow') : t('taskForm.priorityMedium')
+    const quadrantLabel = quadrants.find((q) => q.urgent === currentTask.urgent && q.important === currentTask.important)?.labelKey
+    const assigneeMember = board.members.find((m) => m.userId === currentTask.assignedTo)
+
+    return (
+      <Modal
+        title={t('taskForm.editTask')}
+        onClose={onClose}
+        onMinimize={handleMinimize}
+      >
+        <div className="flex flex-col gap-4 text-gray-800 dark:text-racing-100">
+          <div className="flex items-start justify-between gap-4">
+            <h2 className="text-xl font-bold break-words flex-1 leading-snug">{currentTask.title}</h2>
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              className="flex-shrink-0 flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark shadow-sm transition-all"
+            >
+              <Pencil size={12} />
+              Bearbeiten
+            </button>
+          </div>
+
+          {currentTask.description ? (
+            <p className="text-sm text-gray-600 dark:text-racing-300 bg-gray-50 dark:bg-racing-950 p-3 rounded-xl whitespace-pre-wrap break-words border border-gray-100 dark:border-racing-850">
+              {currentTask.description}
+            </p>
+          ) : (
+            <p className="text-xs italic text-gray-400">Keine Beschreibung vorhanden</p>
+          )}
+
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            {currentTask.dueDate && (
+              <div className="flex flex-col gap-0.5 rounded-xl bg-gray-50 dark:bg-racing-950 border border-gray-100 dark:border-racing-850 p-2.5">
+                <span className="text-gray-400 font-medium">{t('taskForm.dueDate')}</span>
+                <span className="font-semibold">{currentTask.dueDate}</span>
+              </div>
+            )}
+            <div className="flex flex-col gap-0.5 rounded-xl bg-gray-50 dark:bg-racing-950 border border-gray-100 dark:border-racing-850 p-2.5">
+              <span className="text-gray-400 font-medium">{t('taskForm.priority')}</span>
+              <span className="font-semibold capitalize">{priorityLabel}</span>
+            </div>
+            {assigneeMember && (
+              <div className="flex flex-col gap-0.5 rounded-xl bg-gray-50 dark:bg-racing-950 border border-gray-100 dark:border-racing-850 p-2.5 col-span-2">
+                <span className="text-gray-400 font-medium">{t('taskForm.assignedTo')}</span>
+                <span className="font-semibold">
+                  {assigneeMember.profile.display_name} (@{assigneeMember.profile.username})
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            {quadrantLabel && (
+              <span className="rounded-full bg-gray-100 text-gray-700 dark:bg-racing-800 dark:text-racing-200 px-2.5 py-1 text-xs font-semibold">
+                {t(quadrantLabel)}
+              </span>
+            )}
+          </div>
+
+          {/* Subtasks */}
+          {currentTask.subtasks && currentTask.subtasks.length > 0 && (
+            <div className="border-t border-gray-100 dark:border-racing-850 pt-3">
+              <span className="text-xs font-medium text-gray-500 mb-2 block">{t('taskForm.subtasks')}</span>
+              <div className="flex flex-col gap-1.5">
+                {currentTask.subtasks.map((s) => (
+                  <div key={s.id} className="flex items-center gap-2 py-0.5">
+                    <button
+                      type="button"
+                      onClick={() => toggleSubtask(currentTask.id, s.id)}
+                      className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 ${
+                        s.completed ? 'border-accent bg-accent text-white' : 'border-gray-300 dark:border-racing-600'
+                      }`}
+                    >
+                      {s.completed && <Check size={10} />}
+                    </button>
+                    <span className={`text-sm ${s.completed ? 'text-gray-400 line-through' : ''}`}>
+                      {s.title}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Dependencies */}
+          {currentTask.dependsOn && currentTask.dependsOn.length > 0 && (
+            <div className="border-t border-gray-100 dark:border-racing-850 pt-3">
+              <span className="text-xs font-medium text-gray-500 mb-2 block">{t('taskForm.dependsOn')}</span>
+              <div className="flex flex-col gap-1.5">
+                {currentTask.dependsOn.map((depId) => {
+                  const dep = allBoardTasks.find((bt) => bt.id === depId)
+                  if (!dep) return null
+                  return (
+                    <div key={depId} className="flex items-center gap-2 text-sm">
+                      <span className={`h-2 w-2 rounded-full ${dep.completed ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
+                      <span className={`flex-1 ${dep.completed ? 'text-gray-400 line-through' : ''}`}>{dep.title}</span>
+                      <span className="text-[10px] text-gray-400">({dep.completed ? 'Erledigt' : 'Ausstehend'})</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Attachments */}
+          {attachments.length > 0 && (
+            <div className="border-t border-gray-100 dark:border-racing-850 pt-3">
+              <span className="text-xs font-medium text-gray-500 mb-2 block">Anhänge</span>
+              <div className="flex flex-wrap gap-2">
+                {attachments.map((a) => (
+                  <a
+                    key={a.id}
+                    href={a.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 dark:bg-racing-950 dark:border-racing-800 hover:border-accent p-2 text-xs font-medium text-gray-600 dark:text-racing-200 transition-colors"
+                  >
+                    <span className="truncate max-w-[150px]">{a.name}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Comments Section inside task view */}
+          {isSupabaseConfigured && (
+            <div className="border-t border-gray-100 dark:border-racing-850 pt-3">
+              <span className="text-xs font-medium text-gray-500 mb-2 block">Kommentare</span>
+              <div className="max-h-48 overflow-y-auto rounded-xl border border-gray-100 dark:border-racing-850 p-2 bg-gray-50/50 dark:bg-racing-950/20">
+                <CommentSection taskId={currentTask.id} />
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
+    )
   }
 
   return (

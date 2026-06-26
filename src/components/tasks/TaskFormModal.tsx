@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
-import { Plus, Trash2, Check, X, Moon, Repeat, Archive, Loader2 } from 'lucide-react'
+import { Plus, Trash2, Check, X, Moon, Repeat, Archive, Loader2, Pencil } from 'lucide-react'
+import CommentSection from '../shared/CommentSection'
 import { useTranslation } from 'react-i18next'
 import Modal from '../layout/Modal'
 import AttachmentsField from '../shared/AttachmentsField'
@@ -71,6 +72,12 @@ export default function TaskFormModal({
   const removeProjectAttachment = useProjectTasksStore((s) => s.removeAttachment)
   const tasks = useTasksStore((s) => s.tasks)
   const projectTasks = useProjectTasksStore((s) => s.myTasks)
+
+  const [isEditing, setIsEditing] = useState(!task)
+  const currentTask = useMemo(() => {
+    if (!task) return undefined
+    return tasks.find((t) => t.id === task.id) || projectTasks.find((t) => t.id === task.id) || task
+  }, [task, tasks, projectTasks])
 
   const [title, setTitle] = useState(task?.title ?? defaultTitle ?? '')
   const [description, setDescription] = useState(task?.description ?? '')
@@ -348,6 +355,158 @@ export default function TaskFormModal({
     const search = tagInput.toLowerCase().trim()
     return availableExistingTags.filter((tag) => tag.toLowerCase().includes(search)).slice(0, 10)
   }, [availableExistingTags, tagInput])
+
+  if (!isEditing && currentTask) {
+    const board = boards.find((b) => b.id === projectId)
+    const priorityLabel = currentTask.priority === 'high' ? t('priority.high') : currentTask.priority === 'low' ? t('priority.low') : t('priority.medium')
+    const quadrantLabel = quadrants.find((q) => q.urgent === currentTask.urgent && q.important === currentTask.important)?.labelKey
+
+    return (
+      <Modal
+        title={t('form.titleEdit')}
+        onClose={onClose}
+        onMinimize={handleMinimize}
+      >
+        <div className="flex flex-col gap-4 text-gray-800 dark:text-racing-100">
+          <div className="flex items-start justify-between gap-4">
+            <h2 className="text-xl font-bold break-words flex-1 leading-snug">{currentTask.title}</h2>
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              className="flex-shrink-0 flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark shadow-sm transition-all"
+            >
+              <Pencil size={12} />
+              {t('common:buttons.edit') || 'Bearbeiten'}
+            </button>
+          </div>
+
+          {currentTask.description ? (
+            <p className="text-sm text-gray-600 dark:text-racing-300 bg-gray-50 dark:bg-racing-950 p-3 rounded-xl whitespace-pre-wrap break-words border border-gray-100 dark:border-racing-850">
+              {currentTask.description}
+            </p>
+          ) : (
+            <p className="text-xs italic text-gray-400">Keine Beschreibung vorhanden</p>
+          )}
+
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            {currentTask.dueDate && (
+              <div className="flex flex-col gap-0.5 rounded-xl bg-gray-50 dark:bg-racing-950 border border-gray-100 dark:border-racing-850 p-2.5">
+                <span className="text-gray-400 font-medium">{t('form.dueDate')}</span>
+                <span className="font-semibold">{currentTask.dueDate}</span>
+              </div>
+            )}
+            <div className="flex flex-col gap-0.5 rounded-xl bg-gray-50 dark:bg-racing-950 border border-gray-100 dark:border-racing-850 p-2.5">
+              <span className="text-gray-400 font-medium">{t('form.priority')}</span>
+              <span className="font-semibold capitalize">{priorityLabel}</span>
+            </div>
+            {board && (
+              <div className="flex flex-col gap-0.5 rounded-xl bg-gray-50 dark:bg-racing-950 border border-gray-100 dark:border-racing-850 p-2.5 col-span-2">
+                <span className="text-gray-400 font-medium">{t('form.project')}</span>
+                <span className="font-semibold flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: board.color }} />
+                  {board.title}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            {currentTask.evening && (
+              <span className="rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 px-2.5 py-1 text-xs font-semibold flex items-center gap-1">
+                <Moon size={12} /> {t('form.tonight')}
+              </span>
+            )}
+            {currentTask.recurrence && (
+              <span className="rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 px-2.5 py-1 text-xs font-semibold flex items-center gap-1">
+                <Repeat size={12} /> {t(`form.repeat${currentTask.recurrence.charAt(0).toUpperCase() + currentTask.recurrence.slice(1)}` as any)}
+              </span>
+            )}
+            {currentTask.someday && (
+              <span className="rounded-full bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400 px-2.5 py-1 text-xs font-semibold flex items-center gap-1">
+                <Archive size={12} /> {t('form.someday')}
+              </span>
+            )}
+            {quadrantLabel && (
+              <span className="rounded-full bg-gray-100 text-gray-700 dark:bg-racing-800 dark:text-racing-200 px-2.5 py-1 text-xs font-semibold">
+                {t(quadrantLabel)}
+              </span>
+            )}
+          </div>
+
+          {currentTask.tags && currentTask.tags.length > 0 && (
+            <div>
+              <span className="text-xs font-medium text-gray-500 mb-1 block">{t('form.tags')}</span>
+              <div className="flex flex-wrap gap-1.5">
+                {currentTask.tags.map((tag) => (
+                  <span key={tag} className="rounded-full bg-black/[0.04] text-gray-600 dark:bg-white/[0.06] dark:text-racing-200 px-2.5 py-0.5 text-xs font-medium">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Subtasks */}
+          {currentTask.subtasks && currentTask.subtasks.length > 0 && (
+            <div className="border-t border-gray-100 dark:border-racing-850 pt-3">
+              <span className="text-xs font-medium text-gray-500 mb-2 block">{t('form.subtasks')}</span>
+              <div className="flex flex-col gap-1.5">
+                {currentTask.subtasks.map((s) => (
+                  <div key={s.id} className="flex items-center gap-2 py-0.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (currentTask.boardId) toggleProjectSubtask(currentTask.id, s.id)
+                        else toggleSubtask(currentTask.id, s.id)
+                      }}
+                      className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 ${
+                        s.completed ? 'border-accent bg-accent text-white' : 'border-gray-300 dark:border-racing-600'
+                      }`}
+                    >
+                      {s.completed && <Check size={10} />}
+                    </button>
+                    <span className={`text-sm ${s.completed ? 'text-gray-400 line-through' : ''}`}>
+                      {s.title}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Attachments */}
+          {attachments.length > 0 && (
+            <div className="border-t border-gray-100 dark:border-racing-850 pt-3">
+              <span className="text-xs font-medium text-gray-500 mb-2 block">Anhänge</span>
+              <div className="flex flex-wrap gap-2">
+                {attachments.map((a) => (
+                  <a
+                    key={a.id}
+                    href={a.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 dark:bg-racing-950 dark:border-racing-800 hover:border-accent p-2 text-xs font-medium text-gray-600 dark:text-racing-200 transition-colors"
+                  >
+                    <span className="truncate max-w-[150px]">{a.name}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Comments Section inside task view */}
+          {isSupabaseConfigured && (
+            <div className="border-t border-gray-100 dark:border-racing-850 pt-3">
+              <span className="text-xs font-medium text-gray-500 mb-2 block">Kommentare</span>
+              <div className="max-h-48 overflow-y-auto rounded-xl border border-gray-100 dark:border-racing-850 p-2 bg-gray-50/50 dark:bg-racing-950/20">
+                <CommentSection taskId={currentTask.id} />
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
+    )
+  }
 
   return (
     <Modal

@@ -33,6 +33,7 @@ import {
   Cloud,
   CloudOff,
   Keyboard,
+  Brain,
 } from 'lucide-react'
 import {
   DndContext,
@@ -159,6 +160,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     { key: 'calendar', to: '/calendar', icon: <CalendarDays size={18} />, label: t('sidebar.nav.calendar'), visible: !!featureVisibility.calendar },
     { key: 'termine', to: '/termine', icon: <CalendarClock size={18} />, label: 'Termine', visible: true },
     { key: 'pomodoro', to: '/pomodoro', icon: <Timer size={18} />, label: 'Pomodoro', visible: true },
+    { key: 'brain', to: '/gehirn', icon: <Brain size={18} />, label: 'Gehirn', visible: true },
     { key: 'eisenhower', to: '/eisenhower', icon: <Grid2x2 size={18} />, label: t('sidebar.nav.eisenhower'), visible: !!featureVisibility.eisenhower },
     { key: 'worktime', to: '/arbeitszeit', icon: <Clock size={18} />, label: t('sidebar.nav.worktime'), visible: !!featureVisibility.worktime },
     { key: 'aiScheduler', to: '/ki-termine', icon: <Sparkles size={18} />, label: t('sidebar.nav.aiScheduler'), visible: isSupabaseConfigured && !!featureVisibility.aiScheduler },

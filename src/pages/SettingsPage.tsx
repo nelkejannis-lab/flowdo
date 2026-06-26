@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { BarChart2, Bell, CalendarClock, CalendarDays, CheckSquare, Clock, Cloud, Download, Eye, EyeOff, FolderKanban, Grid2x2, GripVertical, Instagram, Loader2, MapPin, MessageCircle, Plus, RefreshCw, Sparkles, Timer, Trash2, Trello, Upload, Users, X } from 'lucide-react'
+import { BarChart2, Bell, Brain, CalendarClock, CalendarDays, CheckSquare, Clock, Cloud, Download, Eye, EyeOff, FolderKanban, Grid2x2, GripVertical, Instagram, Loader2, MapPin, MessageCircle, Plus, RefreshCw, Sparkles, Timer, Trash2, Trello, TrendingUp, Upload, Users, X } from 'lucide-react'
 import {
   DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent,
 } from '@dnd-kit/core'
@@ -961,6 +961,7 @@ const NAV_META: Record<NavItemKey, { icon: React.ReactNode; label: string; featu
   calendar:    { icon: <CalendarDays size={16} />, label: 'Kalender', featureKey: 'calendar' },
   termine:     { icon: <CalendarClock size={16} />, label: 'Termine' },
   pomodoro:    { icon: <Timer size={16} />, label: 'Pomodoro' },
+  brain:       { icon: <Brain size={16} />, label: 'Gehirn' },
   eisenhower:  { icon: <Grid2x2 size={16} />, label: 'Eisenhower', featureKey: 'eisenhower' },
   worktime:    { icon: <Clock size={16} />, label: 'Arbeitszeit', featureKey: 'worktime' },
   aiScheduler: { icon: <Sparkles size={16} />, label: 'KI-Assistent', featureKey: 'aiScheduler', supabaseOnly: true },
@@ -1036,6 +1037,8 @@ const DASH_WIDGETS: { key: DashboardWidget; icon: React.ReactNode; label: string
   { key: 'upcomingDeadlines',icon: <Clock size={16} />,       label: 'Deadlines',       desc: 'Anstehende Projekt-Deadlines' },
   { key: 'nextEvents',       icon: <CalendarClock size={16} />, label: 'Events',        desc: 'Nächste Ereignisse' },
   { key: 'projectsOverview', icon: <FolderKanban size={16} />,label: 'Projektübersicht',desc: 'Alle aktiven Projekte' },
+  { key: 'productivity',     icon: <TrendingUp size={16} />,  label: 'Produktivität',   desc: 'Fokus- & Flow-Statistiken' },
+  { key: 'workoffice',       icon: <Users size={16} />,       label: 'Büro & Kollegen', desc: 'Wer ist im Büro, wer arbeitet von wo?' },
 ]
 
 function DashboardWidgetSection({ dashboardVisibility, toggleDashboardWidget }: { dashboardVisibility: Record<DashboardWidget, boolean>; toggleDashboardWidget: (k: DashboardWidget) => void }) {

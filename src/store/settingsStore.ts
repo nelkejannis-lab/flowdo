@@ -9,10 +9,39 @@ export type Mode = 'light' | 'dark'
 export type Language = 'de' | 'en'
 export type FeatureKey = 'calendar' | 'eisenhower' | 'worktime' | 'aiScheduler' | 'chat' | 'friends' | 'social' | 'weather'
 
-export type NavItemKey = 'dashboard' | 'week' | 'inbox' | 'tasks' | 'calendar' | 'termine' | 'pomodoro' | 'eisenhower' | 'worktime' | 'aiScheduler' | 'chat' | 'friends' | 'social' | 'projekte'
+export type NavItemKey =
+  | 'dashboard'
+  | 'week'
+  | 'inbox'
+  | 'tasks'
+  | 'calendar'
+  | 'termine'
+  | 'pomodoro'
+  | 'brain'
+  | 'eisenhower'
+  | 'worktime'
+  | 'aiScheduler'
+  | 'chat'
+  | 'friends'
+  | 'social'
+  | 'projekte'
 
 export const DEFAULT_NAV_ORDER: NavItemKey[] = [
-  'dashboard', 'week', 'inbox', 'tasks', 'calendar', 'termine', 'pomodoro', 'eisenhower', 'worktime', 'aiScheduler', 'chat', 'friends', 'social', 'projekte',
+  'dashboard',
+  'week',
+  'inbox',
+  'tasks',
+  'calendar',
+  'termine',
+  'pomodoro',
+  'brain',
+  'eisenhower',
+  'worktime',
+  'aiScheduler',
+  'chat',
+  'friends',
+  'social',
+  'projekte',
 ]
 
 // Items that can never be hidden
@@ -26,6 +55,7 @@ export const DEFAULT_NAV_VISIBILITY: Record<NavItemKey, boolean> = {
   calendar: true,
   termine: true,
   pomodoro: true,
+  brain: true,
   eisenhower: true,
   worktime: true,
   aiScheduler: true,
@@ -46,7 +76,7 @@ export const DEFAULT_FEATURE_VISIBILITY: Record<FeatureKey, boolean> = {
   weather: true,
 }
 
-export type DashboardWidget = 'weather' | 'stats' | 'todayTasks' | 'upcomingDeadlines' | 'nextEvents' | 'projectsOverview'
+export type DashboardWidget = 'weather' | 'stats' | 'todayTasks' | 'upcomingDeadlines' | 'nextEvents' | 'projectsOverview' | 'productivity' | 'workoffice'
 
 export const DEFAULT_DASHBOARD_VISIBILITY: Record<DashboardWidget, boolean> = {
   weather: true,
@@ -55,6 +85,8 @@ export const DEFAULT_DASHBOARD_VISIBILITY: Record<DashboardWidget, boolean> = {
   upcomingDeadlines: true,
   nextEvents: true,
   projectsOverview: true,
+  productivity: true,
+  workoffice: true,
 }
 
 export const DEFAULT_COLOR_LABELS: Record<string, string> = Object.fromEntries(

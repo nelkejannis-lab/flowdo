@@ -100,7 +100,7 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
 
         {/* Title — clickable to open modal */}
         <div className="min-w-0 flex-1 cursor-pointer" onClick={onClick}>
-          <p className={`truncate text-sm font-medium ${task.completed ? 'text-gray-400 line-through' : ''}`}>
+          <p className={`break-words text-sm font-medium leading-snug ${task.completed ? 'text-gray-400 line-through' : ''}`}>
             {task.title}
           </p>
           {(task.dueDate || hasSubtasks || task.evening || task.recurrence) && (

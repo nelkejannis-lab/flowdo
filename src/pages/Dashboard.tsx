@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useSocialStore } from '../store/socialStore'
 import { differenceInCalendarDays, format, parseISO } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
-import { Plus, CalendarClock, Instagram, TrendingUp, Heart, Bookmark, Users, Loader2 } from 'lucide-react'
+import { Plus, CalendarClock, Instagram, TrendingUp, Heart, Bookmark, Users, Loader2, Sliders, Check, X } from 'lucide-react'
 import { useAiSchedulerStore } from '../store/aiSchedulerStore'
 import { useTranslation } from 'react-i18next'
 import { useTasksStore } from '../store/tasksStore'
@@ -28,7 +28,7 @@ import { GripHorizontal } from 'lucide-react'
 import OnboardingPermissions from '../components/dashboard/OnboardingPermissions'
 import MorningReportModal from '../components/dashboard/MorningReportModal'
 import { useSettingsStore } from '../store/settingsStore'
-import { isDueThisWeek, isDueToday, isOverdue, todayISO, parseNaturalDate, parseTaskInput } from '../utils/date'
+import { isDueThisWeek, isDueToday, isOverdue, todayISO, parseNaturalDate, parseTaskInput, isCompletedToday } from '../utils/date'
 import { useQuickTaskModalStore } from '../store/quickTaskModalStore'
 
 export default function Dashboard() {
@@ -53,11 +53,13 @@ export default function Dashboard() {
   const fetchSocialAccountData = useSocialStore((s) => s.fetchAccountData)
   const featureVisibility = useSettingsStore((s) => s.featureVisibility)
   const dashboardVisibility = useSettingsStore((s) => s.dashboardVisibility)
+  const toggleDashboardWidget = useSettingsStore((s) => s.toggleDashboardWidget)
   const onboardingPermissionsDone = useSettingsStore((s) => s.onboardingPermissionsDone)
   const openQuickTaskModal = useQuickTaskModalStore((s) => s.open)
   const [showForm, setShowForm] = useState(false)
   const [quickInput, setQuickInput] = useState('')
   const [parsingTask, setParsingTask] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
   const [showEntries, setShowEntries] = useState(true)
   const [showWeekEntries, setShowWeekEntries] = useState(true)
   const [showMorningReport, setShowMorningReport] = useState(() => {
@@ -180,6 +182,26 @@ export default function Dashboard() {
       <div className="mb-6">
         <div className="mb-3 flex items-center justify-between">
           <h1 className="text-2xl font-semibold">{t('title')}</h1>
+          <button
+            onClick={() => setIsEditing(!isEditing)}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold shadow-sm transition-all duration-150 active:scale-95 ${
+              isEditing
+                ? 'bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600'
+                : 'bg-black/[0.04] text-gray-600 hover:bg-black/[0.08] dark:bg-white/[0.06] dark:text-racing-200 dark:hover:bg-white/[0.1]'
+            }`}
+          >
+            {isEditing ? (
+              <>
+                <Check size={14} />
+                Fertig
+              </>
+            ) : (
+              <>
+                <Sliders size={14} />
+                Dashboard anpassen
+              </>
+            )}
+          </button>
         </div>
         <form
           onSubmit={async (e) => {
@@ -227,6 +249,43 @@ export default function Dashboard() {
           </button>
         </form>
       </div>
+
+      {isEditing && (
+        <div className="mb-6 rounded-xl border-2 border-dashed border-gray-200 dark:border-racing-800 p-4 bg-gray-50/50 dark:bg-racing-950/20 animate-in fade-in slide-in-from-top-2 duration-150">
+          <h3 className="mb-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">Ausgeblendete Elemente hinzufügen:</h3>
+          {(() => {
+            const allDashboardItems = [
+              { key: 'weather',          label: 'Wetter' },
+              { key: 'stats',            label: 'Statistiken (Aufgaben & Projekte)' },
+              { key: 'productivity',     label: 'Produktivität' },
+              { key: 'workoffice',       label: 'Büro & Kollegen' },
+              { key: 'todayTasks',       label: 'Heute & Termine' },
+              { key: 'upcomingDeadlines',label: 'Deadlines & Sektion Diese Woche' },
+              { key: 'nextEvents',       label: 'Nächste Ereignisse' },
+              { key: 'projectsOverview', label: 'Projektübersicht' },
+            ] as const
+            const hiddenItems = allDashboardItems.filter(item => !(dashboardVisibility[item.key] ?? true))
+            if (hiddenItems.length === 0) {
+              return <p className="text-xs text-gray-400">Alle Elemente sind derzeit auf dem Dashboard sichtbar.</p>
+            }
+            return (
+              <div className="flex flex-wrap gap-2">
+                {hiddenItems.map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => toggleDashboardWidget(item.key)}
+                    className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-racing-800 dark:bg-racing-900 dark:text-racing-200 dark:hover:bg-racing-800 shadow-sm transition-all duration-150 active:scale-95"
+                  >
+                    <Plus size={12} className="text-green-500" />
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            )
+          })()}
+        </div>
+      )}
 
       {/* Widget grid — rendered after task sections via CSS order */}
 
@@ -289,8 +348,24 @@ export default function Dashboard() {
         </div>
       )}
 
-      {dashboardVisibility.todayTasks && (todayEntries.length > 0 || allTasks.some((tk) => !tk.completed && (isDueToday(tk.dueDate) || isOverdue(tk.dueDate)))) && (
-        <div className="mb-6">
+      {dashboardVisibility.todayTasks && (
+        todayEntries.length > 0 ||
+        allTasks.some((tk) => 
+          (!tk.completed && (isDueToday(tk.dueDate) || isOverdue(tk.dueDate))) ||
+          (tk.completed && isCompletedToday(tk.completedAt))
+        )
+      ) && (
+        <div className={`mb-6 relative group rounded-xl p-3 transition-all ${isEditing ? 'border-2 border-dashed border-accent/40 bg-accent/5' : ''}`}>
+          {isEditing && (
+            <button
+              type="button"
+              onClick={() => toggleDashboardWidget('todayTasks')}
+              className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all"
+              title="Entfernen"
+            >
+              <X size={12} />
+            </button>
+          )}
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-lg font-semibold">{t('sections.todayCalendar')}</h2>
             <div className="flex items-center gap-3">
@@ -315,14 +390,29 @@ export default function Dashboard() {
           </div>
           {showEntries && <CalendarEntriesBlock entries={todayEntries} label="Termine heute" today={today} />}
           <TaskList
-            tasks={sortByEisenhower(allTasks.filter((tk) => !tk.completed && (isDueToday(tk.dueDate) || isOverdue(tk.dueDate))))}
+            tasks={sortByEisenhower(
+              allTasks.filter((tk) =>
+                (!tk.completed && (isDueToday(tk.dueDate) || isOverdue(tk.dueDate))) ||
+                (tk.completed && isCompletedToday(tk.completedAt))
+              )
+            )}
             emptyMessage=""
           />
         </div>
       )}
 
       {dashboardVisibility.upcomingDeadlines !== false && (weekTasks.length > 0 || weekEntries.length > 0) && (
-        <div className="mb-6">
+        <div className={`mb-6 relative group rounded-xl p-3 transition-all ${isEditing ? 'border-2 border-dashed border-accent/40 bg-accent/5' : ''}`}>
+          {isEditing && (
+            <button
+              type="button"
+              onClick={() => toggleDashboardWidget('upcomingDeadlines')}
+              className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all"
+              title="Entfernen"
+            >
+              <X size={12} />
+            </button>
+          )}
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-lg font-semibold">{t('sections.dueThisWeek')}</h2>
             <div className="flex items-center gap-3">
@@ -356,16 +446,16 @@ export default function Dashboard() {
           <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {widgetOrder.map((id) => {
               if (id === 'weather' && (dashboardVisibility.weather ?? true)) return (
-                <SortableWidget key="weather" id="weather"><WeatherWidget /></SortableWidget>
+                <SortableWidget key="weather" id="weather" isEditing={isEditing} onRemove={() => toggleDashboardWidget('weather')}><WeatherWidget /></SortableWidget>
               )
-              if (id === 'productivity') return (
-                <SortableWidget key="productivity" id="productivity"><ProductivityStatsWidget /></SortableWidget>
+              if (id === 'productivity' && (dashboardVisibility.productivity ?? true)) return (
+                <SortableWidget key="productivity" id="productivity" isEditing={isEditing} onRemove={() => toggleDashboardWidget('productivity')}><ProductivityStatsWidget /></SortableWidget>
               )
-              if (id === 'workoffice') return (
-                <SortableWidget key="workoffice" id="workoffice"><WorkOfficeWidget /></SortableWidget>
+              if (id === 'workoffice' && (dashboardVisibility.workoffice ?? true)) return (
+                <SortableWidget key="workoffice" id="workoffice" isEditing={isEditing} onRemove={() => toggleDashboardWidget('workoffice')}><WorkOfficeWidget /></SortableWidget>
               )
               if (id === 'stats_week' && (dashboardVisibility.stats ?? true)) return (
-                <SortableWidget key="stats_week" id="stats_week">
+                <SortableWidget key="stats_week" id="stats_week" isEditing={isEditing} onRemove={() => toggleDashboardWidget('stats')}>
                   <Link to="/tasks/week" className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-white p-4 h-full hover:border-accent/30 hover:shadow-sm transition-all dark:border-racing-800 dark:bg-racing-900">
                     <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">{t('stats.dueThisWeek')}</span>
                     <div className="flex items-end gap-2">
@@ -385,7 +475,7 @@ export default function Dashboard() {
                 </SortableWidget>
               )
               if (id === 'stats_projects' && (dashboardVisibility.stats ?? true)) return (
-                <SortableWidget key="stats_projects" id="stats_projects">
+                <SortableWidget key="stats_projects" id="stats_projects" isEditing={isEditing} onRemove={() => toggleDashboardWidget('stats')}>
                   <Link to="/projekte" className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-white p-4 h-full hover:border-accent/30 hover:shadow-sm transition-all dark:border-racing-800 dark:bg-racing-900">
                     <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">{t('stats.activeProjects')}</span>
                     <div className="flex items-end gap-2">
@@ -412,7 +502,18 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="flex flex-col gap-6">
-          {dashboardVisibility.upcomingDeadlines && <div>
+          {dashboardVisibility.upcomingDeadlines && (
+            <div className={`relative group rounded-xl p-3 transition-all ${isEditing ? 'border-2 border-dashed border-accent/40 bg-accent/5' : ''}`}>
+              {isEditing && (
+                <button
+                  type="button"
+                  onClick={() => toggleDashboardWidget('upcomingDeadlines')}
+                  className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all"
+                  title="Entfernen"
+                >
+                  <X size={12} />
+                </button>
+              )}
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-lg font-semibold">{t('sections.upcomingDeadlines')}</h2>
               <Link to="/projekte" className="text-sm font-medium text-accent hover:underline">
@@ -428,9 +529,21 @@ export default function Dashboard() {
                 ))}
               </div>
             )}
-          </div>}
+          </div>
+          )}
 
-          {dashboardVisibility.nextEvents && <div>
+          {dashboardVisibility.nextEvents && (
+            <div className={`relative group rounded-xl p-3 transition-all ${isEditing ? 'border-2 border-dashed border-accent/40 bg-accent/5' : ''}`}>
+              {isEditing && (
+                <button
+                  type="button"
+                  onClick={() => toggleDashboardWidget('nextEvents')}
+                  className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all"
+                  title="Entfernen"
+                >
+                  <X size={12} />
+                </button>
+              )}
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-lg font-semibold">{t('sections.upcomingEvents')}</h2>
               <Link to="/calendar" className="text-sm font-medium text-accent hover:underline">
@@ -471,11 +584,23 @@ export default function Dashboard() {
                 })}
               </div>
             )}
-          </div>}
+          </div>
+          )}
         </div>
       </div>
 
-      {dashboardVisibility.projectsOverview && <div className="mt-6">
+      {dashboardVisibility.projectsOverview && (
+        <div className={`mt-6 relative group rounded-xl p-3 transition-all ${isEditing ? 'border-2 border-dashed border-accent/40 bg-accent/5' : ''}`}>
+          {isEditing && (
+            <button
+              type="button"
+              onClick={() => toggleDashboardWidget('projectsOverview')}
+              className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all"
+              title="Entfernen"
+            >
+              <X size={12} />
+            </button>
+          )}
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold">{t('sections.projectsOverview')}</h2>
           <Link to="/projekte" className="text-sm font-medium text-accent hover:underline">
@@ -491,7 +616,8 @@ export default function Dashboard() {
             ))}
           </div>
         )}
-      </div>}
+      </div>
+      )}
 
       {showForm && (
         <TaskFormModal defaultDueDate={todayISO()} onClose={() => setShowForm(false)} />
@@ -500,23 +626,55 @@ export default function Dashboard() {
   )
 }
 
-function SortableWidget({ id, children }: { id: string; children: React.ReactNode }) {
+function SortableWidget({
+  id,
+  children,
+  isEditing,
+  onRemove,
+}: {
+  id: string
+  children: React.ReactNode
+  isEditing: boolean
+  onRemove: () => void
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
   return (
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
-      className="relative group flex flex-col"
+      className={`relative group flex flex-col rounded-xl transition-all ${
+        isEditing ? 'ring-2 ring-dashed ring-accent/40 bg-accent/5 p-1' : ''
+      }`}
     >
+      {/* Drag handle */}
       <button
         {...attributes}
         {...listeners}
-        className="absolute right-2 top-2 z-10 cursor-grab rounded p-0.5 opacity-0 group-hover:opacity-40 hover:!opacity-80 active:cursor-grabbing touch-none"
+        className={`absolute left-2 top-2 z-10 cursor-grab rounded p-1 bg-white dark:bg-racing-900 border border-gray-100 dark:border-racing-800 shadow-sm transition-all active:cursor-grabbing touch-none ${
+          isEditing ? 'opacity-100 scale-100' : 'opacity-0 group-hover:opacity-60 hover:!opacity-100'
+        }`}
         title="Verschieben"
         tabIndex={-1}
       >
-        <GripHorizontal size={13} className="text-gray-500" />
+        <GripHorizontal size={12} className="text-gray-500" />
       </button>
+
+      {/* Remove button */}
+      {isEditing && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onRemove()
+          }}
+          className="absolute -right-1.5 -top-1.5 z-20 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all"
+          title="Entfernen"
+        >
+          <X size={10} />
+        </button>
+      )}
+
       {children}
     </div>
   )

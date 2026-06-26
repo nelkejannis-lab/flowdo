@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { MapPin, X } from 'lucide-react'
+import { MapPin, X, Locate } from 'lucide-react'
 import { useSettingsStore } from '../../store/settingsStore'
 
 interface HourlyPoint {
@@ -188,10 +188,15 @@ function shortName(s: Suggestion) {
 
 async function searchPlaces(query: string, signal: AbortSignal): Promise<Suggestion[]> {
   const res = await fetch(
-    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=6&accept-language=de`,
+    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=6&language=de&format=json`,
     { signal }
   )
-  return res.json()
+  const data = await res.json()
+  return (data.results ?? []).map((item: any) => ({
+    display_name: `${item.name}${item.admin1 ? `, ${item.admin1}` : ''}, ${item.country}`,
+    lat: String(item.latitude),
+    lon: String(item.longitude),
+  }))
 }
 
 const DAY_LABELS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
@@ -283,6 +288,40 @@ export default function WeatherWidget() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [searching, setSearching] = useState(false)
   const [activeIdx, setActiveIdx] = useState(-1)
+  const [locating, setLocating] = useState(false)
+
+  async function detectLocation() {
+    if (!navigator.geolocation) {
+      alert('Geolokalisierung wird von diesem Browser nicht unterstützt.')
+      return
+    }
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude: lat, longitude: lon } = position.coords
+        setWeatherCoords({ lat, lon })
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=de`
+          )
+          const data = await res.json()
+          const city = data.address?.city || data.address?.town || data.address?.village || data.address?.suburb || 'Mein Standort'
+          setWeatherCity(city)
+        } catch {
+          setWeatherCity('Mein Standort')
+        } finally {
+          setLocating(false)
+          setEditing(false)
+        }
+      },
+      (error) => {
+        console.error(error)
+        alert('Standort konnte nicht bestimmt werden. Bitte manuell eingeben.')
+        setLocating(false)
+      },
+      { timeout: 8000 }
+    )
+  }
   const inputRef = useRef<HTMLInputElement>(null)
   const editContainerRef = useRef<HTMLDivElement>(null)
   const searchAbort = useRef<AbortController | null>(null)
@@ -369,9 +408,22 @@ export default function WeatherWidget() {
             placeholder="Stadt oder PLZ eingeben…"
             className="min-w-0 flex-1 bg-transparent text-sm font-medium focus:outline-none"
           />
+          <button
+            type="button"
+            onClick={detectLocation}
+            disabled={locating}
+            className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-accent dark:hover:bg-racing-800 transition-colors disabled:opacity-50 flex-shrink-0"
+            title="Aktuellen Standort verwenden"
+          >
+            {locating ? (
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-accent/30 border-t-accent block" />
+            ) : (
+              <Locate size={14} />
+            )}
+          </button>
           {searching
             ? <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-accent/30 border-t-accent flex-shrink-0" />
-            : <button onClick={() => setEditing(false)} className="text-gray-400 hover:text-gray-600"><X size={14} /></button>
+            : <button onClick={() => setEditing(false)} className="text-gray-400 hover:text-gray-600 flex-shrink-0"><X size={14} /></button>
           }
         </div>
 

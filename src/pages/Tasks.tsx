@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Archive, AtSign, Bell, Check, HelpCircle, Plus, Trello, X, Search } from 'lucide-react'
+import { Archive, AtSign, Bell, Check, HelpCircle, Plus, Trello, X, Search, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTasksStore } from '../store/tasksStore'
 import { useTaskSharesStore } from '../store/taskSharesStore'
@@ -16,7 +16,9 @@ import { isSupabaseConfigured } from '../lib/supabase'
 import TaskList from '../components/tasks/TaskList'
 import TaskFormModal from '../components/tasks/TaskFormModal'
 import PriorityBadge from '../components/tasks/PriorityBadge'
-import { formatFriendlyDate, isDueThisWeek, isDueToday, isOverdue, todayISO } from '../utils/date'
+import { formatFriendlyDate, isDueThisWeek, isDueToday, isOverdue, todayISO, parseTaskInput, isCompletedToday, isCompletedThisWeek } from '../utils/date'
+import { useAiSchedulerStore } from '../store/aiSchedulerStore'
+import { useQuickTaskModalStore } from '../store/quickTaskModalStore'
 
 const titleKeys: Record<string, string> = {
   today: 'page.titles.today',
@@ -59,6 +61,9 @@ export default function TasksPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
   const [selectedProject, setSelectedProject] = useState<string | null>(null)
+  const openQuickTaskModal = useQuickTaskModalStore((s) => s.open)
+  const [quickInput, setQuickInput] = useState('')
+  const [parsingTask, setParsingTask] = useState(false)
 
   useEffect(() => {
     setSearchQuery('')
@@ -92,12 +97,18 @@ export default function TasksPage() {
   let defaultDueDate: string | undefined
 
   if (smartList === 'today') {
-    filtered = allTasks.filter((t) => !t.completed && (isDueToday(t.dueDate) || isOverdue(t.dueDate)))
+    filtered = allTasks.filter(
+      (t) =>
+        (!t.completed && (isDueToday(t.dueDate) || isOverdue(t.dueDate))) ||
+        (t.completed && isCompletedToday(t.completedAt))
+    )
     title = t(titleKeys.today)
     defaultDueDate = todayISO()
   } else if (smartList === 'week') {
     filtered = allTasks.filter(
-      (t) => !t.completed && (isOverdue(t.dueDate) || isDueToday(t.dueDate) || isDueThisWeek(t.dueDate))
+      (t) =>
+        (!t.completed && (isOverdue(t.dueDate) || isDueToday(t.dueDate) || isDueThisWeek(t.dueDate))) ||
+        (t.completed && isCompletedThisWeek(t.completedAt))
     )
     title = t(titleKeys.week)
   } else if (smartList === 'inbox') {
@@ -207,6 +218,54 @@ export default function TasksPage() {
           {t('page.addTask')}
         </button>
       </div>
+
+      {smartList !== 'inbox' && smartList !== 'completed' && smartList !== 'someday' && (
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault()
+            const input = quickInput.trim()
+            if (!input || parsingTask) return
+            setParsingTask(true)
+            try {
+              let parsed
+              try {
+                parsed = await useAiSchedulerStore.getState().parseTaskWithAi(input, boards)
+              } catch (err) {
+                console.error('AI parsing failed, falling back to regex:', err)
+                parsed = parseTaskInput(input, boards)
+              }
+              openQuickTaskModal({
+                defaultTitle: parsed.title,
+                defaultDueDate: parsed.dueDate ?? defaultDueDate,
+                defaultProjectId: parsed.projectId,
+                defaultPriority: parsed.priority,
+                defaultUrgent: parsed.urgent,
+                defaultImportant: parsed.important,
+              })
+              setQuickInput('')
+            } finally {
+              setParsingTask(false)
+            }
+          }}
+          className="mb-6 flex gap-2"
+        >
+          <input
+            value={quickInput}
+            onChange={(e) => setQuickInput(e.target.value)}
+            disabled={parsingTask}
+            placeholder={parsingTask ? "Analysiere mit KI..." : "Schnelleingabe: 'Meeting morgen um 14 Uhr #work'"}
+            className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-accent dark:border-racing-700 dark:bg-racing-900 disabled:opacity-75 shadow-sm"
+          />
+          <button
+            type="submit"
+            disabled={!quickInput.trim() || parsingTask}
+            className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-40 shadow-sm"
+          >
+            {parsingTask ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+            {parsingTask ? "Analysiere..." : "Hinzufügen"}
+          </button>
+        </form>
+      )}
 
       {smartList !== 'inbox' && (
         <div className="mb-6 flex gap-1 border-b border-gray-100 dark:border-racing-800">
