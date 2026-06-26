@@ -1,41 +1,8 @@
-import { pipeline, env } from '@xenova/transformers'
+// Removed local Whisper transcriber. Whisper logic is now inside src/lib/whisper.worker.ts
+
 import Anthropic from '@anthropic-ai/sdk'
 
-// We MUST disable local models so it fetches from Hugging Face instead of our local dev server which returns index.html
-env.allowLocalModels = false
-env.useBrowserCache = true
-
-let transcriber: any = null
-
-export async function loadWhisperModel() {
-  if (!transcriber) {
-    // Loads the whisper-tiny model for automatic speech recognition
-    transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny')
-  }
-}
-
-export async function transcribeAudioChunk(audioBlob: Blob): Promise<string> {
-  await loadWhisperModel()
-
-  // Convert Blob to ArrayBuffer
-  const arrayBuffer = await audioBlob.arrayBuffer()
-  
-  // Use AudioContext to decode the webm/audio file to raw PCM (Float32Array at 16kHz)
-  const audioContext = new AudioContext({ sampleRate: 16000 })
-  const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
-  const audioData = audioBuffer.getChannelData(0) // Float32Array
-
-  const result = await transcriber(audioData)
-  return result.text || ''
-}
-
-export async function transcribePCM(audioData: Float32Array): Promise<string> {
-  await loadWhisperModel()
-  const result = await transcriber(audioData)
-  return result.text || ''
-}
-
-export async function generateMeetingSummary(transcript: string): Promise<{ summary: string; actionItems: { task: string; assignee?: string }[] }> {
+export async function generateMeetingSummary(transcript: string): Promise<{ summary: string; actionItems: { task: string; assignee?: string; dueDate?: string }[] }> {
   const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
   if (!apiKey) throw new Error('Anthropic API Key (VITE_ANTHROPIC_API_KEY) ist nicht gesetzt.')
 
@@ -54,20 +21,20 @@ ${transcript}
 
 Deine Aufgabe:
 1. Fasse die wichtigsten Punkte kurz zusammen.
-2. Extrahiere alle To-Dos und Aufgaben, die erwähnt wurden.
+2. Extrahiere alle To-Dos und Aufgaben, die erwähnt wurden. Wenn ein Datum oder eine Deadline genannt wird, füge es als "dueDate" hinzu (Format: "TT.MM.JJJJ" oder "Diesen Freitag" etc.).
 
 Bitte antworte AUSSCHLIESSLICH im folgenden JSON-Format:
 {
   "summary": "Deine Zusammenfassung hier...",
   "actionItems": [
-    { "task": "Aufgabe 1", "assignee": "Person A (oder leer)" },
+    { "task": "Aufgabe 1", "assignee": "Person A (oder leer)", "dueDate": "15.11.2026 (oder leer)" },
     { "task": "Aufgabe 2" }
   ]
 }
 `
 
   const response = await anthropic.messages.create({
-    model: 'claude-3-5-sonnet-20240620',
+    model: 'claude-3-5-sonnet-20241022',
     max_tokens: 1024,
     messages: [
       { role: 'user', content: prompt }

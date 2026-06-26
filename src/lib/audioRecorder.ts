@@ -1,13 +1,13 @@
-import { transcribePCM } from './aiService'
-
 export class AudioRecorder {
   private audioContext: AudioContext | null = null
   private mixedStream: MediaStream | null = null
   private processor: ScriptProcessorNode | null = null
   private isRecording: boolean = false
+  private worker: Worker | null = null
   
   public onTranscriptChunk?: (text: string) => void
   public onError?: (error: string) => void
+  public onWorkerLoaded?: () => void
 
   async start() {
     try {
@@ -58,6 +58,24 @@ export class AudioRecorder {
 
       this.mixedStream = dest.stream
 
+      // Initialize Web Worker
+      this.worker = new Worker(new URL('./whisper.worker.ts', import.meta.url), { type: 'module' })
+      this.worker.onmessage = (e) => {
+        const msg = e.data
+        if (msg.type === 'loaded') {
+          if (this.onWorkerLoaded) this.onWorkerLoaded()
+        } else if (msg.type === 'transcription') {
+          if (msg.text.trim() && this.onTranscriptChunk && this.isRecording) {
+            this.onTranscriptChunk(msg.text.trim())
+          }
+        } else if (msg.type === 'error') {
+          if (this.onError && this.isRecording) this.onError(msg.error)
+        }
+      }
+      
+      // Load model immediately
+      this.worker.postMessage({ type: 'load' })
+
       // 4. Capture raw PCM data via ScriptProcessor
       this.processor = this.audioContext.createScriptProcessor(4096, 1, 1)
       const mixedSource = this.audioContext.createMediaStreamSource(this.mixedStream)
@@ -88,13 +106,9 @@ export class AudioRecorder {
           audioDataBuffer = []
           samplesCount = 0
           
-          transcribePCM(merged).then(text => {
-            if (text.trim() && this.onTranscriptChunk && this.isRecording) {
-              this.onTranscriptChunk(text.trim())
-            }
-          }).catch(err => {
-            if (this.onError && this.isRecording) this.onError(err.message)
-          })
+          if (this.worker) {
+            this.worker.postMessage({ type: 'transcribe', audioData: merged })
+          }
         }
       }
 
@@ -106,6 +120,10 @@ export class AudioRecorder {
 
   stop() {
     this.isRecording = false
+    if (this.worker) {
+      this.worker.terminate()
+      this.worker = null
+    }
     if (this.processor) {
       this.processor.disconnect()
       this.processor = null

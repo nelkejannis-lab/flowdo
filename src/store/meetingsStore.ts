@@ -6,6 +6,7 @@ export interface ActionItem {
   id: string
   task: string
   assignee?: string
+  dueDate?: string
   done: boolean
 }
 
