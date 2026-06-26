@@ -42,6 +42,7 @@ export const DEFAULT_NAV_ORDER: NavItemKey[] = [
   'chat',
   'friends',
   'social',
+  'meetings',
   'projekte',
 ]
 
