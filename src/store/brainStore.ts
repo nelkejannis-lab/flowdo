@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { createId } from '../utils/id'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 export interface NotePage {
   id: string
@@ -23,6 +24,8 @@ export interface NoteColumn {
 interface BrainState {
   columns: NoteColumn[]
   pages: NotePage[]
+  loading: boolean
+  fetchAll: () => Promise<void>
   addColumn: (title: string) => void
   updateColumn: (id: string, title: string) => void
   deleteColumn: (id: string) => void
@@ -32,6 +35,7 @@ interface BrainState {
   movePage: (id: string, targetColumnId: string) => void
   reorderColumns: (columns: NoteColumn[]) => void
   reorderPages: (pages: NotePage[]) => void
+  subscribeToBrain: () => () => void
 }
 
 const DEFAULT_COLUMNS: NoteColumn[] = [
@@ -41,11 +45,111 @@ const DEFAULT_COLUMNS: NoteColumn[] = [
   { id: 'summaries', title: 'Zusammenfassungen', position: 3 },
 ]
 
+async function getUserId(): Promise<string | null> {
+  if (!isSupabaseConfigured) return null
+  const { data } = await supabase.auth.getUser()
+  return data.user?.id ?? null
+}
+
+async function syncColumn(col: NoteColumn, userId: string) {
+  if (!isSupabaseConfigured) return
+  await supabase.from('brain_columns').upsert({
+    id: col.id,
+    owner_id: userId,
+    title: col.title,
+    position: col.position
+  })
+}
+
+async function syncPage(page: NotePage, userId: string) {
+  if (!isSupabaseConfigured) return
+  await supabase.from('brain_pages').upsert({
+    id: page.id,
+    owner_id: userId,
+    column_id: page.columnId,
+    title: page.title,
+    content: page.content,
+    summary: page.summary ?? null,
+    audio_base64: page.audioBase64 ?? null,
+    audio_duration: page.audioDuration ?? null,
+    created_at: page.createdAt,
+    updated_at: page.updatedAt
+  })
+}
+
+async function deleteColumnFromDb(id: string) {
+  if (!isSupabaseConfigured) return
+  await supabase.from('brain_columns').delete().eq('id', id)
+}
+
+async function deletePageFromDb(id: string) {
+  if (!isSupabaseConfigured) return
+  await supabase.from('brain_pages').delete().eq('id', id)
+}
+
 export const useBrainStore = create<BrainState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       columns: DEFAULT_COLUMNS,
       pages: [],
+      loading: false,
+
+      fetchAll: async () => {
+        const userId = await getUserId()
+        if (!userId) return
+
+        set({ loading: true })
+
+        const [colsRes, pagesRes] = await Promise.all([
+          supabase.from('brain_columns').select('*').eq('owner_id', userId).order('position', { ascending: true }),
+          supabase.from('brain_pages').select('*').eq('owner_id', userId).order('updated_at', { ascending: false })
+        ])
+
+        if (colsRes.error || pagesRes.error) {
+          set({ loading: false })
+          return
+        }
+
+        let syncedCols: NoteColumn[] = (colsRes.data ?? []).map((c: any) => ({
+          id: c.id,
+          title: c.title,
+          position: c.position
+        }))
+
+        const syncedPages: NotePage[] = (pagesRes.data ?? []).map((p: any) => ({
+          id: p.id,
+          columnId: p.column_id,
+          title: p.title,
+          content: p.content,
+          summary: p.summary ?? undefined,
+          audioBase64: p.audio_base64 ?? undefined,
+          audioDuration: p.audio_duration ?? undefined,
+          createdAt: p.created_at,
+          updatedAt: p.updated_at
+        }))
+
+        // If user has no columns in DB yet, upload current local columns
+        if (syncedCols.length === 0) {
+          const localCols = get().columns.length > 0 ? get().columns : DEFAULT_COLUMNS
+          for (const col of localCols) {
+            await syncColumn(col, userId)
+          }
+          syncedCols = localCols
+        }
+
+        // Merge local pages that are not in DB (created before sync/login)
+        const dbPageIds = new Set(syncedPages.map(p => p.id))
+        const localOnlyPages = get().pages.filter(p => !dbPageIds.has(p.id))
+        for (const p of localOnlyPages) {
+          await syncPage(p, userId)
+        }
+
+        set({
+          columns: syncedCols,
+          pages: [...localOnlyPages, ...syncedPages],
+          loading: false
+        })
+      },
 
       addColumn: (title) =>
         set((state) => {
@@ -54,24 +158,47 @@ export const useBrainStore = create<BrainState>()(
             title,
             position: state.columns.length,
           }
+          void getUserId().then((userId) => {
+            if (userId) void syncColumn(newCol, userId)
+          })
           return { columns: [...state.columns, newCol] }
         }),
 
       updateColumn: (id, title) =>
-        set((state) => ({
-          columns: state.columns.map((c) => (c.id === id ? { ...c, title } : c)),
-        })),
+        set((state) => {
+          const updated = state.columns.map((c) => (c.id === id ? { ...c, title } : c))
+          const col = updated.find((c) => c.id === id)
+          if (col) {
+            void getUserId().then((userId) => {
+              if (userId) void syncColumn(col, userId)
+            })
+          }
+          return { columns: updated }
+        }),
 
       deleteColumn: (id) =>
         set((state) => {
-          // If deleted, move all pages in that column to the first column or delete them.
-          // We will delete the pages inside the column to keep it clean, or assign them to the first available column.
           const fallbackCol = state.columns.find((c) => c.id !== id)
+          const fallbackId = fallbackCol ? fallbackCol.id : 'notes'
+          const remainingCols = state.columns.filter((c) => c.id !== id)
+          const updatedPages = state.pages.map((p) =>
+            p.columnId === id ? { ...p, columnId: fallbackId, updatedAt: new Date().toISOString() } : p
+          )
+
+          void getUserId().then((userId) => {
+            if (userId) {
+              void deleteColumnFromDb(id)
+              for (const p of updatedPages) {
+                if (p.columnId === fallbackId) {
+                  void syncPage(p, userId)
+                }
+              }
+            }
+          })
+
           return {
-            columns: state.columns.filter((c) => c.id !== id),
-            pages: state.pages.map((p) =>
-              p.columnId === id ? { ...p, columnId: fallbackCol ? fallbackCol.id : 'notes' } : p
-            ),
+            columns: remainingCols,
+            pages: updatedPages,
           }
         }),
 
@@ -85,36 +212,98 @@ export const useBrainStore = create<BrainState>()(
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           }
+          void getUserId().then((userId) => {
+            if (userId) void syncPage(newPage, userId)
+          })
           return { pages: [newPage, ...state.pages] }
         }),
 
       updatePage: (id, updates) =>
-        set((state) => ({
-          pages: state.pages.map((p) =>
-            p.id === id
-              ? {
-                  ...p,
-                  ...updates,
-                  updatedAt: new Date().toISOString(),
-                }
-              : p
-          ),
-        })),
+        set((state) => {
+          const updatedPages = state.pages.map((p) => {
+            if (p.id !== id) return p
+            const newP = {
+              ...p,
+              ...updates,
+              updatedAt: new Date().toISOString(),
+            }
+            void getUserId().then((userId) => {
+              if (userId) void syncPage(newP, userId)
+            })
+            return newP
+          })
+          return { pages: updatedPages }
+        }),
 
-      deletePage: (id) =>
+      deletePage: (id) => {
+        void deletePageFromDb(id)
         set((state) => ({
           pages: state.pages.filter((p) => p.id !== id),
-        })),
+        }))
+      },
 
       movePage: (id, targetColumnId) =>
-        set((state) => ({
-          pages: state.pages.map((p) =>
-            p.id === id ? { ...p, columnId: targetColumnId, updatedAt: new Date().toISOString() } : p
-          ),
-        })),
+        set((state) => {
+          const updatedPages = state.pages.map((p) => {
+            if (p.id !== id) return p
+            const newP = { ...p, columnId: targetColumnId, updatedAt: new Date().toISOString() }
+            void getUserId().then((userId) => {
+              if (userId) void syncPage(newP, userId)
+            })
+            return newP
+          })
+          return { pages: updatedPages }
+        }),
 
-      reorderColumns: (columns) => set({ columns }),
-      reorderPages: (pages) => set({ pages }),
+      reorderColumns: (columns) => {
+        set({ columns })
+        void getUserId().then((userId) => {
+          if (userId) {
+            columns.forEach((col, idx) => {
+              void syncColumn({ ...col, position: idx }, userId)
+            })
+          }
+        })
+      },
+
+      reorderPages: (pages) => {
+        set({ pages })
+        void getUserId().then((userId) => {
+          if (userId) {
+            pages.forEach((p) => {
+              void syncPage(p, userId)
+            })
+          }
+        })
+      },
+
+      subscribeToBrain: () => {
+        if (!isSupabaseConfigured) return () => {}
+        let channel: ReturnType<typeof supabase.channel> | null = null
+        let cancelled = false
+
+        getUserId().then((userId) => {
+          if (cancelled || !userId) return
+          channel = supabase
+            .channel('brain-realtime')
+            .on(
+              'postgres_changes',
+              { event: '*', schema: 'public', table: 'brain_columns', filter: `owner_id=eq.${userId}` },
+              () => get().fetchAll()
+            )
+            .on(
+              'postgres_changes',
+              { event: '*', schema: 'public', table: 'brain_pages', filter: `owner_id=eq.${userId}` },
+              () => get().fetchAll()
+            )
+            .subscribe()
+        })
+
+        return () => {
+          cancelled = true
+          if (channel) supabase.removeChannel(channel)
+        }
+      },
     }),
     {
       name: 'flowdo-second-brain',

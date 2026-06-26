@@ -31,6 +31,16 @@ export default function SecondBrainPage() {
   const addPage = useBrainStore((s) => s.addPage)
   const updatePage = useBrainStore((s) => s.updatePage)
   const deletePage = useBrainStore((s) => s.deletePage)
+  const fetchAll = useBrainStore((s) => s.fetchAll)
+  const subscribeToBrain = useBrainStore((s) => s.subscribeToBrain)
+
+  useEffect(() => {
+    if (isSupabaseConfigured) {
+      void fetchAll()
+      const unsubscribe = subscribeToBrain()
+      return () => unsubscribe()
+    }
+  }, [fetchAll, subscribeToBrain])
 
   const [searchQuery, setSearchQuery] = useState('')
   const [activePage, setActivePage] = useState<NotePage | null>(null)
