@@ -160,7 +160,10 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()((set, get)
 
   deleteEntry: async (id) => {
     set((state) => ({ entries: state.entries.filter((e) => e.id !== id) }))
-    // CASCADE on FK deletes calendar_entry_invites automatically
+    
+    // Explicitly delete invites first in case CASCADE is not set up in DB
+    await supabase.from('calendar_entry_invites').delete().eq('entry_id', id)
+    
     const { error } = await supabase.from('calendar_entries').delete().eq('id', id)
     if (error) {
       console.error('[deleteEntry] failed:', error.message)

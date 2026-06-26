@@ -39,12 +39,17 @@ export default {
       },
       backdropBlur: {
         'apple': '20px',
+        'apple-heavy': '40px',
+        'vibrancy': '60px',
       },
       fontFamily: {
         sans: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', 'Arial', 'sans-serif'],
       },
       transitionTimingFunction: {
         'apple': 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+        'spring': 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+        'spring-gentle': 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+        'bounce-slight': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
       },
     },
   },

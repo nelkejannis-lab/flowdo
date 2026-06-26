@@ -56,15 +56,15 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
   const subtaskDone = task.subtasks.filter((s) => s.completed).length
 
   return (
-    <div className="rounded-2xl bg-white transition-all duration-200 hover:shadow-apple-sm dark:bg-racing-900" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.05)' }}>
-      <div className="flex items-center gap-3 px-3 py-2.5">
+    <div className="card-apple group relative transition-all duration-300 hover:shadow-apple-md hover:-translate-y-[1px] active:scale-[0.98]">
+      <div className="flex items-start gap-3 px-3 py-3">
         {/* Complete toggle */}
         <button
           onClick={() => {
             if (task.boardId) toggleProjectTaskCompleted(task.id)
             else toggleTaskCompleted(task.id)
           }}
-          className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 ${
+          className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 ${
             task.completed ? 'border-accent bg-accent text-white' : 'border-gray-400 hover:border-accent dark:border-racing-500'
           }`}
         >
@@ -83,7 +83,7 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
                 pomodoro.setRunning(true)
               }
             }}
-            className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full transition-colors ${
+            className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full transition-colors ${
               isPomodoroActive && isTimerRunning
                 ? 'bg-emerald-500 text-white hover:bg-emerald-600'
                 : 'bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600 dark:bg-racing-800 dark:text-racing-300 dark:hover:bg-racing-700'
@@ -98,58 +98,52 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
           </button>
         )}
 
-        {/* Title — clickable to open modal */}
-        <div className="min-w-0 flex-1 cursor-pointer" onClick={onClick}>
-          <p className={`break-words text-sm font-medium leading-snug ${task.completed ? 'text-gray-400 line-through' : ''}`}>
+        {/* Title & Metadata — clickable to open modal */}
+        <div className="min-w-0 flex-1 cursor-pointer py-0.5" onClick={onClick}>
+          <p className={`break-words text-base sm:text-sm font-medium leading-snug ${task.completed ? 'text-gray-400 line-through' : ''}`}>
             {task.title}
           </p>
-          {(task.dueDate || hasSubtasks || task.evening || task.recurrence) && (
-            <div className="mt-0.5 flex items-center gap-2 text-xs text-gray-400">
-              {task.dueDate && (
-                <span className={overdue ? 'font-medium text-red-500' : ''}>
-                  {(() => {
-                    const friendly = formatFriendlyDate(task.dueDate)
-                    return friendlyDateKeys[friendly] ? t(friendlyDateKeys[friendly]) : friendly
-                  })()}
-                </span>
-              )}
-              {task.evening && (
-                <span className="flex items-center gap-1" title={t('item.tonight')}>
-                  <Moon size={12} />
-                </span>
-              )}
-              {task.recurrence && (
-                <span className="flex items-center gap-1" title={t('item.recurring')}>
-                  <Repeat size={12} />
-                </span>
-              )}
-              {hasSubtasks && (
-                <span className="flex items-center gap-1">
-                  <ListChecks size={12} />
-                  {subtaskDone}/{task.subtasks.length}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-
-        {task.tags.length > 0 && (
-          <div className="hidden items-center gap-1 sm:flex">
+          
+          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+            {task.dueDate && (
+              <span className={overdue ? 'font-medium text-red-500' : ''}>
+                {(() => {
+                  const friendly = formatFriendlyDate(task.dueDate)
+                  return friendlyDateKeys[friendly] ? t(friendlyDateKeys[friendly]) : friendly
+                })()}
+              </span>
+            )}
+            {task.evening && (
+              <span className="flex items-center gap-1" title={t('item.tonight')}>
+                <Moon size={12} />
+              </span>
+            )}
+            {task.recurrence && (
+              <span className="flex items-center gap-1" title={t('item.recurring')}>
+                <Repeat size={12} />
+              </span>
+            )}
+            {hasSubtasks && (
+              <span className="flex items-center gap-1">
+                <ListChecks size={12} />
+                {subtaskDone}/{task.subtasks.length}
+              </span>
+            )}
+            <PriorityBadge priority={task.priority} />
+            {showBoard && task.boardId && <BoardBadge boardId={task.boardId} />}
             {task.tags.map((tag) => (
-              <span key={tag} className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-racing-800 dark:text-racing-200">
+              <span key={tag} className="hidden sm:inline-block rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:bg-racing-800 dark:text-racing-200">
                 #{tag}
               </span>
             ))}
           </div>
-        )}
-        <PriorityBadge priority={task.priority} />
-        {showBoard && task.boardId && <BoardBadge boardId={task.boardId} />}
+        </div>
 
         {/* Kommentare */}
         {isSupabaseConfigured && (
           <button
             onClick={() => setShowComments((v) => !v)}
-            className={`flex flex-shrink-0 items-center gap-1 rounded p-1 text-xs hover:bg-gray-100 dark:hover:bg-racing-800 ${showComments ? 'text-accent' : 'text-gray-500 hover:text-gray-700 dark:text-racing-300 dark:hover:text-white'}`}
+            className={`mt-0.5 flex flex-shrink-0 items-center gap-1 rounded p-1 text-xs hover:bg-gray-100 dark:hover:bg-racing-800 ${showComments ? 'text-accent' : 'text-gray-500 hover:text-gray-700 dark:text-racing-300 dark:hover:text-white'}`}
             title={t('item.comments')}
           >
             <MessageSquare size={14} />
@@ -159,7 +153,7 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
 
         {/* Frage stellen */}
         {isSupabaseConfigured && (
-          <div className="relative" ref={askRef}>
+          <div className="relative mt-0.5" ref={askRef}>
             <button
               onClick={() => { setShowAsk((v) => !v); setAskDone(false) }}
               className={`flex flex-shrink-0 items-center gap-1 rounded p-1 text-xs hover:bg-violet-50 dark:hover:bg-racing-800 ${showAsk ? 'text-violet-500' : 'text-gray-500 hover:text-violet-500 dark:text-racing-300'}`}
@@ -220,7 +214,7 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
         {hasSubtasks && (
           <button
             onClick={() => setExpanded((v) => !v)}
-            className="flex flex-shrink-0 items-center gap-1 rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-racing-300 dark:hover:bg-racing-800 dark:hover:text-white"
+            className="mt-0.5 flex flex-shrink-0 items-center gap-1 rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-racing-300 dark:hover:bg-racing-800 dark:hover:text-white"
             title={expanded ? t('item.collapse') : t('item.showSubtasks')}
           >
             <ChevronDown size={16} className={`transition-transform duration-150 ${expanded ? '' : '-rotate-90'}`} />

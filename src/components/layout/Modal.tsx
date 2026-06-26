@@ -12,11 +12,11 @@ interface ModalProps {
 export default function Modal({ title, onClose, onMinimize, children, widthClass = 'max-w-lg' }: ModalProps) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className={`w-full ${widthClass} max-h-[85vh] overflow-y-auto rounded-xl bg-white p-5 shadow-xl dark:bg-racing-900`}
+        className={`w-full ${widthClass} max-h-[85vh] overflow-y-auto rounded-3xl bg-white/95 p-6 shadow-apple-lg backdrop-blur-xl dark:bg-racing-900/95`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">

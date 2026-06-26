@@ -209,7 +209,30 @@ body {
 
 /* Smooth transitions globally */
 *, *::before, *::after {
-  transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1); /* spring-gentle */
+}
+
+/* Vibrancy Utility Classes */
+.vibrancy-sidebar {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-right: 0.5px solid rgba(0, 0, 0, 0.05);
+}
+.dark .vibrancy-sidebar {
+  background: rgba(28, 28, 30, 0.6);
+  border-right: 0.5px solid rgba(255, 255, 255, 0.05);
+}
+
+.vibrancy-header {
+  background: rgba(242, 242, 247, 0.7);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border-bottom: 0.5px solid rgba(0, 0, 0, 0.05);
+}
+.dark .vibrancy-header {
+  background: rgba(28, 28, 30, 0.7);
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.05);
 }
 
 /* Apple-style cards — replace border-based cards with shadow-based */

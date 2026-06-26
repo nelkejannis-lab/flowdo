@@ -81,6 +81,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [showShortcuts, setShowShortcuts] = useState(false)
   const boards = useBoardsStore((s) => s.boards)
   const folders = useBoardsStore((s) => s.folders)
+  const taskStats = useBoardsStore((s) => s.taskStats)
   const fetchBoards = useBoardsStore((s) => s.fetchBoards)
   const fetchFolders = useBoardsStore((s) => s.fetchFolders)
   const subscribeToBoards = useBoardsStore((s) => s.subscribeToBoards)
@@ -213,8 +214,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         />
       )}
       <aside
-        style={{ paddingTop: 'max(16px, calc(16px + env(safe-area-inset-top)))', paddingBottom: 'max(16px, calc(16px + env(safe-area-inset-bottom)))', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }}
-        className={`fixed inset-y-0 left-0 z-50 flex h-full w-64 flex-col overflow-y-auto border-r border-gray-100/80 bg-white/90 px-3 transition-transform duration-300 dark:border-white/5 dark:bg-racing-900/90 sm:static sm:translate-x-0 ${
+        style={{ paddingTop: 'max(16px, calc(16px + env(safe-area-inset-top)))', paddingBottom: 'max(16px, calc(16px + env(safe-area-inset-bottom)))' }}
+        className={`vibrancy-sidebar fixed inset-y-0 left-0 z-50 flex h-full w-64 flex-col overflow-y-auto px-3 transition-transform duration-300 sm:static sm:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -353,7 +354,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     ) : (
                       folderBoards.map((board) => (
                         <NavLink key={board.id} to={`/projekte/${board.id}`} className={navItemClass} onClick={onClose}>
-                          <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: board.color }} />
+                          <BoardProgressPie color={board.color} stats={taskStats[board.id]} />
                           <span className="truncate">{board.title}</span>
                         </NavLink>
                       ))
@@ -367,7 +368,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           {/* Boards without folder */}
           {boards.filter((b) => !b.folderId).map((board) => (
             <NavLink key={board.id} to={`/projekte/${board.id}`} className={navItemClass} onClick={onClose}>
-              <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: board.color }} />
+              <BoardProgressPie color={board.color} stats={taskStats[board.id]} />
               <span className="truncate">{board.title}</span>
             </NavLink>
           ))}
@@ -523,6 +524,21 @@ function SortableNavItem({ id, to, exact, onClose, children }: SortableNavItemPr
       <NavLink to={to} end={exact} className={navItemClass} onClick={onClose} style={{ paddingLeft: '12px', flex: 1 }}>
         {children}
       </NavLink>
+    </div>
+  )
+}
+
+function BoardProgressPie({ color, stats }: { color: string; stats?: { total: number; done: number } }) {
+  if (!stats || stats.total === 0) {
+    return <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: color }} />
+  }
+  const percent = Math.min(100, Math.max(0, Math.round((stats.done / stats.total) * 100)))
+  return (
+    <div className="relative flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center" title={`${percent}% abgeschlossen (${stats.done}/${stats.total})`}>
+      <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36">
+        <circle cx="18" cy="18" r="15.9155" fill="none" className="stroke-gray-200 dark:stroke-racing-700" strokeWidth="6" />
+        <circle cx="18" cy="18" r="15.9155" fill="none" stroke={color} strokeWidth="6" strokeDasharray={`${percent}, 100`} strokeLinecap="round" className="transition-all duration-500 ease-out" />
+      </svg>
     </div>
   )
 }

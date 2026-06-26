@@ -35,6 +35,7 @@ interface AuthState {
   loading: boolean
   init: () => () => void
   fetchProfile: () => Promise<void>
+  subscribeToProfile: () => () => void
   signUp: (email: string, password: string, username: string, displayName: string, birthday?: string) => Promise<string | null>
   signIn: (email: string, password: string) => Promise<string | null>
   signOut: () => Promise<void>
@@ -67,7 +68,12 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       }
     })
 
-    return () => listener.subscription.unsubscribe()
+    const unsubscribeProfile = get().subscribeToProfile()
+
+    return () => {
+      listener.subscription.unsubscribe()
+      unsubscribeProfile()
+    }
   },
 
   fetchProfile: async () => {
@@ -84,6 +90,27 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         // Sync local settings to DB if empty
         settingsStore.getState().syncNow()
       }
+    }
+  },
+
+  subscribeToProfile: () => {
+    const userId = get().user?.id
+    if (!userId) return () => {}
+
+    const channel = supabase
+      .channel('profile-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${userId}` },
+        () => {
+          // Re-fetch profile to sync settings and other profile data
+          get().fetchProfile()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
     }
   },
 
