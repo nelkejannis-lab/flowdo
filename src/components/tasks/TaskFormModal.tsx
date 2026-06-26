@@ -36,6 +36,7 @@ interface TaskFormModalProps {
   defaultUrgent?: boolean
   defaultImportant?: boolean
   onClose: () => void
+  onSave?: () => void
 }
 
 export default function TaskFormModal({
@@ -48,6 +49,7 @@ export default function TaskFormModal({
   defaultUrgent,
   defaultImportant,
   onClose,
+  onSave,
 }: TaskFormModalProps) {
   const { t } = useTranslation(['tasks', 'common'])
   const addTask = useTasksStore((s) => s.addTask)
@@ -220,6 +222,7 @@ export default function TaskFormModal({
         action: { label: 'Rückgängig', onClick: () => useTasksStore.getState().undoDelete(taskId) },
         duration: 5000,
       })
+      onSave?.()
     } else if (task) {
       updateTask(task.id, {
         title: title.trim(),
@@ -233,6 +236,7 @@ export default function TaskFormModal({
         someday,
         recurrence,
       })
+      onSave?.()
     } else if (projectId) {
       const board = boards.find((b) => b.id === projectId)
       setSending(true)
@@ -258,6 +262,7 @@ export default function TaskFormModal({
           await addProjectSubtask(result.id, s)
         }
       }
+      onSave?.()
     } else if (assigneeId) {
       setSending(true)
       setSendError(null)
@@ -276,6 +281,7 @@ export default function TaskFormModal({
         setSendError(err)
         return
       }
+      onSave?.()
     } else {
       const created = addTask({
         title: title.trim(),
@@ -290,6 +296,7 @@ export default function TaskFormModal({
         recurrence,
       })
       localSubtasks.forEach((s) => addSubtask(created.id, s))
+      onSave?.()
     }
     useTaskTrayStore.getState().remove(task?.id || '')
     onClose()

@@ -6,6 +6,7 @@ import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
 import { translateMeeting } from '../lib/aiService'
 import { useTasksStore } from '../store/tasksStore'
+import TaskFormModal from '../components/tasks/TaskFormModal'
 
 export default function MeetingsPage() {
   const { meetings, fetchMeetings, deleteMeeting, updateMeeting, loading } = useMeetingsStore()
@@ -13,6 +14,7 @@ export default function MeetingsPage() {
   const [isLiveMode, setIsLiveMode] = useState(false)
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null)
   const [isTranslating, setIsTranslating] = useState(false)
+  const [transferringItem, setTransferringItem] = useState<any>(null)
 
   useEffect(() => {
     fetchMeetings()
@@ -128,13 +130,7 @@ export default function MeetingsPage() {
                           )}
                         </div>
                         <button
-                          onClick={() => {
-                            addTask({ title: item.task, dueDate: item.dueDate })
-                            const updatedItems = selectedMeeting.action_items.map(ai => 
-                              ai.id === item.id ? { ...ai, done: true } : ai
-                            )
-                            updateMeeting(selectedMeeting.id, { action_items: updatedItems })
-                          }}
+                          onClick={() => setTransferringItem(item)}
                           disabled={item.done}
                           className="ml-auto text-xs font-semibold text-accent hover:text-accent-hover disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
                         >
@@ -190,6 +186,21 @@ export default function MeetingsPage() {
           )}
         </div>
       </div>
+      {transferringItem && (
+        <TaskFormModal 
+          defaultTitle={transferringItem.task}
+          defaultDueDate={transferringItem.dueDate}
+          onClose={() => setTransferringItem(null)}
+          onSave={() => {
+            if (selectedMeeting) {
+              const updatedItems = selectedMeeting.action_items.map((ai: any) => 
+                ai.id === transferringItem.id ? { ...ai, done: true } : ai
+              )
+              updateMeeting(selectedMeeting.id, { action_items: updatedItems })
+            }
+          }}
+        />
+      )}
     </div>
   )
 }
