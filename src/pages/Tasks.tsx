@@ -122,15 +122,27 @@ export default function TasksPage() {
     title = t(titleKeys.someday)
   }
 
-  const allUniqueTags = Array.from(new Set(filtered.flatMap((t) => t.tags || []))).filter(Boolean)
-  const uniqueBoardIds = Array.from(new Set(filtered.map((t) => t.boardId).filter(Boolean))) as string[]
-  const relevantBoards = boards.filter((b) => uniqueBoardIds.includes(b.id))
+  const filterForPills = useMemo(() => {
+    return smartList === 'completed' ? filtered : filtered.filter((t) => !t.completed)
+  }, [filtered, smartList])
+
+  const allUniqueTags = useMemo(() => {
+    return Array.from(new Set(filterForPills.flatMap((t) => t.tags || []))).filter(Boolean)
+  }, [filterForPills])
+
+  const uniqueBoardIds = useMemo(() => {
+    return Array.from(new Set(filterForPills.map((t) => t.boardId).filter(Boolean))) as string[]
+  }, [filterForPills])
+
+  const relevantBoards = useMemo(() => {
+    return boards.filter((b) => uniqueBoardIds.includes(b.id))
+  }, [boards, uniqueBoardIds])
 
   // Project counts (filtered by current view + selected tag)
   const projectCounts = useMemo(() => {
     const listTasks = selectedTag 
-      ? filtered.filter((t) => t.tags && t.tags.includes(selectedTag))
-      : filtered
+      ? filterForPills.filter((t) => t.tags && t.tags.includes(selectedTag))
+      : filterForPills
     
     const counts: Record<string, number> = {}
     for (const t of listTasks) {
@@ -142,13 +154,13 @@ export default function TasksPage() {
       all: listTasks.length,
       byProject: counts
     }
-  }, [filtered, selectedTag])
+  }, [filterForPills, selectedTag])
 
   // Tag counts (filtered by current view + selected project)
   const tagCounts = useMemo(() => {
     const listTasks = selectedProject
-      ? filtered.filter((t) => t.boardId === selectedProject)
-      : filtered
+      ? filterForPills.filter((t) => t.boardId === selectedProject)
+      : filterForPills
     
     const counts: Record<string, number> = {}
     for (const t of listTasks) {
@@ -162,7 +174,7 @@ export default function TasksPage() {
       all: listTasks.length,
       byTag: counts
     }
-  }, [filtered, selectedProject])
+  }, [filterForPills, selectedProject])
 
   let displayTasks = filtered
   if (searchQuery.trim()) {
