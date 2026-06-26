@@ -107,6 +107,12 @@ async function createWindow() {
   autoUpdater.on('download-progress', (progressObj) => {
     win.webContents.send('download-progress', progressObj)
   })
+  autoUpdater.on('update-not-available', (info) => {
+    win.webContents.send('update-not-available', info)
+  })
+  autoUpdater.on('error', (err) => {
+    win.webContents.send('update-error', err.message)
+  })
 }
 
 ipcMain.on('install-update', () => {
@@ -115,6 +121,15 @@ ipcMain.on('install-update', () => {
 
 ipcMain.on('download-update', () => {
   autoUpdater.downloadUpdate()
+})
+
+ipcMain.handle('check-for-updates', async () => {
+  try {
+    const result = await autoUpdater.checkForUpdates()
+    return result
+  } catch (error) {
+    return { error: error.message }
+  }
 })
 
 ipcMain.handle('get-desktop-sources', async () => {

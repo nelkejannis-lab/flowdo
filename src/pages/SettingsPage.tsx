@@ -117,6 +117,73 @@ function WeatherCitySettings() {
   )
 }
 
+function UpdateButton() {
+  const [status, setStatus] = useState<'idle' | 'checking' | 'available' | 'downloading' | 'ready'>('idle')
+  const [error, setError] = useState<string | null>(null)
+  const [progress, setProgress] = useState(0)
+
+  useEffect(() => {
+    if (!window.electronUpdater) return
+    
+    window.electronUpdater.onUpdateAvailable(() => setStatus('available'))
+    window.electronUpdater.onUpdateNotAvailable(() => {
+      setStatus('idle')
+      alert('Die App ist auf dem neuesten Stand!')
+    })
+    window.electronUpdater.onUpdateError((err) => {
+      setStatus('idle')
+      setError(err)
+    })
+    window.electronUpdater.onDownloadProgress((prog) => {
+      setStatus('downloading')
+      setProgress(Math.round(prog.percent))
+    })
+    window.electronUpdater.onUpdateDownloaded(() => setStatus('ready'))
+  }, [])
+
+  async function handleCheck() {
+    if (!window.electronUpdater) {
+      alert('Updates werden nur in der Desktop-App unterstützt.')
+      return
+    }
+    if (status === 'ready') {
+      window.electronUpdater.installUpdate()
+      return
+    }
+    if (status === 'available') {
+      window.electronUpdater.downloadUpdate()
+      return
+    }
+    setStatus('checking')
+    setError(null)
+    const result = await window.electronUpdater.checkForUpdates()
+    if (result && result.error) {
+      setStatus('idle')
+      alert('Fehler bei der Update-Suche: ' + result.error)
+    }
+  }
+
+  if (!window.electronUpdater) return null
+
+  return (
+    <div className="flex flex-col items-end">
+      <button 
+        onClick={handleCheck}
+        disabled={status === 'checking' || status === 'downloading'}
+        className="flex items-center gap-2 rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white shadow hover:bg-accent-dark disabled:opacity-50 transition-all"
+      >
+        <RefreshCw size={14} className={status === 'checking' ? 'animate-spin' : ''} />
+        {status === 'idle' && 'Nach Updates suchen'}
+        {status === 'checking' && 'Suche...'}
+        {status === 'available' && 'Update herunterladen'}
+        {status === 'downloading' && `Lädt... ${progress}%`}
+        {status === 'ready' && 'Jetzt neustarten & installieren'}
+      </button>
+      {error && <span className="text-xs text-red-500 mt-1">{error}</span>}
+    </div>
+  )
+}
+
 export default function SettingsPage() {
   const { t, i18n } = useTranslation(['settings', 'common'])
   const language = useSettingsStore((s) => s.language)
@@ -301,7 +368,10 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6">
-      <h1 className="text-2xl font-semibold">{t('title')}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">{t('title')}</h1>
+        <UpdateButton />
+      </div>
 
       {/* Tabs */}
       <div className="flex gap-1 overflow-x-auto rounded-lg border border-gray-200 p-1 dark:border-racing-700 sm:w-fit">
