@@ -8,13 +8,16 @@ import GlobalSearch from './GlobalSearch'
 import OfflineBanner from './OfflineBanner'
 import ToastContainer from './ToastContainer'
 import AiChatPanel from '../ai/AiChatPanel'
+import QuickTaskModal from './QuickTaskModal'
+import ErrorBoundary from './ErrorBoundary'
+import AppUpdater from './AppUpdater'
 
 export default function Layout() {
   const { t } = useTranslation('layout')
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <>
+    <ErrorBoundary>
       <OfflineBanner />
       <div className="flex h-screen w-full overflow-hidden">
         <GlobalSearch />
@@ -56,6 +59,8 @@ export default function Layout() {
           <line x1="5" y1="12" x2="19" y2="12"></line>
         </svg>
       </button>
-    </>
+      <QuickTaskModal />
+      <AppUpdater />
+    </ErrorBoundary>
   )
 }

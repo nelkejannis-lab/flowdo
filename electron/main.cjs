@@ -1,10 +1,15 @@
-const { app, BrowserWindow, shell } = require('electron')
+const { app, BrowserWindow, shell, ipcMain } = require('electron')
+const { autoUpdater } = require('electron-updater')
 const path = require('path')
 const http = require('http')
 const fs = require('fs')
 
 const isDev = !app.isPackaged
 const appIconPath = path.join(__dirname, '..', 'public', 'icons', 'icon-512.png')
+
+// Configure auto updater
+autoUpdater.autoDownload = false
+autoUpdater.autoInstallOnAppQuit = true
 
 const MIME_TYPES = {
   '.html': 'text/html',
@@ -91,9 +96,36 @@ async function createWindow() {
     const { port } = staticServer.address()
     win.loadURL(`http://127.0.0.1:${port}`)
   }
+
+  // Setup auto-updater IPC to frontend
+  autoUpdater.on('update-available', (info) => {
+    win.webContents.send('update-available', info)
+  })
+  autoUpdater.on('update-downloaded', (info) => {
+    win.webContents.send('update-downloaded', info)
+  })
+  autoUpdater.on('download-progress', (progressObj) => {
+    win.webContents.send('download-progress', progressObj)
+  })
 }
 
-app.whenReady().then(createWindow)
+ipcMain.on('install-update', () => {
+  autoUpdater.quitAndInstall()
+})
+
+ipcMain.on('download-update', () => {
+  autoUpdater.downloadUpdate()
+})
+
+app.whenReady().then(() => {
+  createWindow()
+  if (!isDev) {
+    // Check for updates shortly after startup
+    setTimeout(() => {
+      autoUpdater.checkForUpdatesAndNotify()
+    }, 3000)
+  }
+})
 
 app.on('window-all-closed', () => {
   if (staticServer) staticServer.close()

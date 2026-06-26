@@ -20,6 +20,11 @@
     "directories": {
       "output": "release"
     },
+    "publish": {
+      "provider": "github",
+      "owner": "nelkejannis-lab",
+      "repo": "flowdo"
+    },
     "files": [
       "electron/**/*",
       "dist-electron-app/**/*"
@@ -43,6 +48,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@supabase/supabase-js": "^2.108.1",
     "date-fns": "^3.6.0",
+    "electron-updater": "^6.8.9",
     "i18next": "^26.3.1",
     "i18next-browser-languagedetector": "^8.2.1",
     "lucide-react": "^0.453.0",
