@@ -94,7 +94,9 @@
       "someday": "Irgendwann"
     },
     "tabs": {
-      "tasks": "Aufgaben",
+      "tasks": "Alle Aktiven",
+      "today": "Heute",
+      "week": "Woche",
       "someday": "Irgendwann",
       "completed": "Erledigt"
     },

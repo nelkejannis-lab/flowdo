@@ -2,8 +2,6 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import {
   Mic,
   MicOff,
-  Play,
-  Pause,
   Plus,
   Trash2,
   Search,
@@ -19,7 +17,6 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useBrainStore, NotePage, NoteColumn } from '../store/brainStore'
-import Modal from '../components/layout/Modal'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 export default function SecondBrainPage() {
@@ -44,13 +41,15 @@ export default function SecondBrainPage() {
   }, [fetchAll, subscribeToBrain])
 
   const [searchQuery, setSearchQuery] = useState('')
+  const [activeTab, setActiveTab] = useState<'all' | string>('all')
   const [activePage, setActivePage] = useState<NotePage | null>(null)
   const [showAddColumn, setShowAddColumn] = useState(false)
   const [newColTitle, setNewColTitle] = useState('')
   const [editingColId, setEditingColId] = useState<string | null>(null)
   const [editingColTitle, setEditingColTitle] = useState('')
+  const [justSaved, setJustSaved] = useState(false)
 
-  // State inside note creation modal
+  // State inside note creation
   const [isCreating, setIsCreating] = useState(false)
   const [createColId, setCreateColId] = useState('')
   const [noteTitle, setNoteTitle] = useState('')
@@ -69,14 +68,18 @@ export default function SecondBrainPage() {
   const audioChunksRef = useRef<Blob[]>([])
   const recognitionRef = useRef<any>(null)
 
-  // Filter pages based on search query
+  // Filter pages based on search query + active tab
   const filteredPages = useMemo(() => {
     const q = searchQuery.toLowerCase().trim()
-    if (!q) return pages
-    return pages.filter(
-      (p) => p.title.toLowerCase().includes(q) || p.content.toLowerCase().includes(q) || (p.summary && p.summary.toLowerCase().includes(q))
-    )
-  }, [pages, searchQuery])
+    let list = pages
+    if (activeTab !== 'all') list = list.filter((p) => p.columnId === activeTab)
+    if (q) {
+      list = list.filter(
+        (p) => p.title.toLowerCase().includes(q) || p.content.toLowerCase().includes(q) || (p.summary && p.summary.toLowerCase().includes(q))
+      )
+    }
+    return [...list].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+  }, [pages, searchQuery, activeTab])
 
   // Initialize Speech Recognition
   useEffect(() => {
@@ -293,14 +296,16 @@ ${textToSummarize}`
     })
   }
 
-  // Open note details/edit modal
+  // Open note details/edit
   const handleOpenPage = (page: NotePage) => {
+    setIsCreating(false)
     setActivePage(page)
     setNoteTitle(page.title)
     setNoteContent(page.content)
     setAudioUrl(page.audioBase64 || null)
+    setAudioBlob(null)
     setAiError(null)
-    setIsCreating(false)
+    setJustSaved(false)
   }
 
   // Handle saving the page edits
@@ -310,11 +315,15 @@ ${textToSummarize}`
       title: noteTitle.trim() || 'Unbenannte Seite',
       content: noteContent,
     })
-    setActivePage(null)
+    setActivePage((prev) => (prev ? { ...prev, title: noteTitle.trim() || 'Unbenannte Seite', content: noteContent } : null))
+    setJustSaved(true)
+    setTimeout(() => setJustSaved(false), 1500)
   }
 
-  // Open creation modal
+  // Open creation form
   const handleOpenCreate = (columnId: string) => {
+    if (!columnId) return
+    setActivePage(null)
     setCreateColId(columnId)
     setIsCreating(true)
     setNoteTitle('')
@@ -330,16 +339,13 @@ ${textToSummarize}`
       setIsCreating(false)
       return
     }
-    // Add page
     addPage(createColId, noteTitle.trim() || 'Unbenannte Seite', noteContent)
 
-    // Save audio if any was recorded
     if (audioBlob) {
       const reader = new FileReader()
       reader.readAsDataURL(audioBlob)
       reader.onloadend = () => {
         const base64data = reader.result as string
-        // Find latest page created and update its audio
         const latest = useBrainStore.getState().pages[0]
         if (latest) {
           updatePage(latest.id, { audioBase64: base64data })
@@ -374,43 +380,353 @@ ${textToSummarize}`
     }
   }
 
-  return (
-    <div className="flex flex-col gap-6 h-full min-h-[75vh]">
-      {/* Top Search & Actions bar */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-white/70 dark:bg-racing-900/70 p-4 rounded-2xl border border-gray-100 dark:border-racing-850 backdrop-blur-apple shadow-sm">
-        <div className="relative flex-1">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Notizbuch durchsuchen (Inhalt, Titel, KI)..."
-            className="w-full rounded-xl border border-gray-200 bg-white dark:bg-racing-950/40 dark:border-racing-800 pl-10 pr-4 py-2.5 text-sm outline-none focus:border-accent transition-all shadow-inner"
-          />
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-racing-200"
-            >
-              <X size={14} />
-            </button>
-          )}
-        </div>
+  const columnTitle = (id: string) => columns.find((c) => c.id === id)?.title ?? ''
 
+  // Shared toolbar for the create/edit detail pane
+  function Toolbar() {
+    return (
+      <div className="flex flex-wrap items-center gap-1.5 border-b border-gray-100 dark:border-racing-800 pb-2">
         <button
-          onClick={() => setShowAddColumn(true)}
-          className="flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent-dark transition-all duration-200 shadow-sm hover:shadow-apple-sm active:scale-95"
+          type="button"
+          onClick={insertBulletPoint}
+          className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white"
+          title="Stichpunkt einfügen"
         >
-          <FolderPlus size={16} />
-          Spalte hinzufügen
+          <List size={13} />
+          Stichpunkt
+        </button>
+        <button
+          type="button"
+          onClick={toggleTranscription}
+          className={`flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
+            isTranscribing
+              ? 'bg-red-500 text-white animate-pulse'
+              : 'bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white'
+          }`}
+          title={isTranscribing ? 'Spracherkennung stoppen' : 'Spracherkennung starten (Diktieren)'}
+        >
+          {isTranscribing ? <MicOff size={13} /> : <Mic size={13} />}
+          {isTranscribing ? 'Hört zu...' : 'Diktieren'}
+        </button>
+        <button
+          type="button"
+          onClick={isRecordingAudio ? stopRecordingAudio : startRecordingAudio}
+          className={`flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
+            isRecordingAudio
+              ? 'bg-indigo-600 text-white animate-pulse'
+              : 'bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white'
+          }`}
+          title={isRecordingAudio ? 'Aufnahme stoppen' : 'Sprachnotiz aufnehmen'}
+        >
+          <Volume2 size={13} />
+          {isRecordingAudio ? 'Aufnahme stoppen' : 'Audio aufnehmen'}
+        </button>
+        <input
+          type="file"
+          accept="audio/*"
+          className="hidden"
+          id="audio-file-upload"
+          onChange={(e) => handleAudioFileUpload(e, !!activePage)}
+        />
+        <button
+          type="button"
+          onClick={() => document.getElementById('audio-file-upload')?.click()}
+          className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white"
+          title="Audiodatei hochladen"
+        >
+          <Upload size={13} />
+          Audio hochladen
+        </button>
+        <button
+          type="button"
+          disabled={aiLoading}
+          onClick={generateAiSummary}
+          className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-accent text-white hover:bg-accent-dark disabled:opacity-50 ml-auto transition-colors"
+          title="KI Zusammenfassung erstellen"
+        >
+          <Sparkles size={13} className={aiLoading ? 'animate-spin' : ''} />
+          {aiLoading ? 'Fasst zusammen...' : 'KI Zusammenfassen'}
         </button>
       </div>
+    )
+  }
 
-      {/* Spalte hinzufügen Popover/Inline Form */}
+  function AudioPlayback({ onDelete }: { onDelete?: () => void }) {
+    if (!audioUrl) return null
+    return (
+      <div className="rounded-xl bg-indigo-50/50 dark:bg-racing-950/40 p-3 border border-indigo-100/50 dark:border-racing-850 flex flex-col gap-2">
+        <span className="text-xs font-semibold text-indigo-500 flex items-center gap-1.5">
+          <Volume2 size={13} /> Sprachaufzeichnung abspielen
+        </span>
+        <audio src={audioUrl} controls className="w-full" />
+        {onDelete && (
+          <button onClick={onDelete} className="text-[10px] text-red-500 hover:underline font-semibold self-start">
+            Sprachaufnahme löschen
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-4 h-full min-h-[75vh]">
+      <h1 className="text-2xl font-semibold">Gehirn</h1>
+
+      <div className="flex flex-1 gap-4 min-h-0">
+        {/* Left pane: search, tabs, list */}
+        <div className="flex w-80 flex-shrink-0 flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Suchen..."
+                className="w-full rounded-xl border border-gray-200 bg-white dark:bg-racing-950/40 dark:border-racing-800 pl-9 pr-3 py-2 text-sm outline-none focus:border-accent transition-all"
+              />
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            </div>
+            <button
+              onClick={() => handleOpenCreate(activeTab !== 'all' ? activeTab : columns[0]?.id ?? '')}
+              disabled={columns.length === 0}
+              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-accent text-white hover:bg-accent-dark disabled:opacity-40"
+              title="Neue Notiz"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1 overflow-x-auto pb-1">
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`flex-shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-bold uppercase tracking-wide transition-colors ${
+                activeTab === 'all'
+                  ? 'bg-accent text-white'
+                  : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-racing-800'
+              }`}
+            >
+              Alle
+            </button>
+            {columns.map((col) => (
+              <button
+                key={col.id}
+                onClick={() => setActiveTab(col.id)}
+                className={`flex-shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-bold uppercase tracking-wide transition-colors ${
+                  activeTab === col.id
+                    ? 'bg-accent text-white'
+                    : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-racing-800'
+                }`}
+              >
+                {col.title}
+              </button>
+            ))}
+            <button
+              onClick={() => setShowAddColumn(true)}
+              title="Kategorie hinzufügen"
+              className="flex-shrink-0 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-accent dark:hover:bg-racing-800"
+            >
+              <FolderPlus size={14} />
+            </button>
+          </div>
+
+          <div className="flex flex-1 flex-col gap-2 overflow-y-auto pr-1">
+            {filteredPages.map((page) => (
+              <button
+                key={page.id}
+                onClick={() => handleOpenPage(page)}
+                className={`flex flex-col gap-1.5 rounded-xl border p-3 text-left transition-all duration-150 ${
+                  activePage?.id === page.id
+                    ? 'border-accent bg-accent/5'
+                    : 'border-gray-100 bg-white hover:border-accent/30 dark:border-racing-850 dark:bg-racing-900'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="font-semibold text-sm break-words truncate">{page.title}</h4>
+                  <span className="flex-shrink-0 text-[9px] font-bold uppercase tracking-wider text-gray-400 bg-black/[0.04] dark:bg-white/[0.05] rounded-full px-1.5 py-0.5">
+                    {columnTitle(page.columnId)}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400 dark:text-racing-300 line-clamp-2 leading-relaxed whitespace-pre-wrap">
+                  {page.content || '...'}
+                </p>
+                <div className="flex items-center gap-2">
+                  {page.audioBase64 && (
+                    <span className="flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-wider text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20 px-1.5 py-0.5 rounded-md">
+                      <Volume2 size={10} /> Audio
+                    </span>
+                  )}
+                  {page.summary && (
+                    <span className="flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 px-1.5 py-0.5 rounded-md">
+                      <Sparkles size={10} /> KI
+                    </span>
+                  )}
+                  <span className="text-[9px] text-gray-400 ml-auto">
+                    {new Date(page.updatedAt).toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })}
+                  </span>
+                </div>
+              </button>
+            ))}
+
+            {filteredPages.length === 0 && (
+              <div className="py-8 text-center text-xs text-gray-400 border border-dashed border-gray-200 dark:border-racing-800 rounded-xl select-none">
+                Keine Notizen
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right pane: detail editor */}
+        <div className="flex-1 overflow-y-auto rounded-2xl border border-gray-100 dark:border-racing-850 bg-white/70 dark:bg-racing-900/70 p-5 backdrop-blur-apple">
+          {isCreating ? (
+            <div className="flex flex-col gap-4">
+              <input
+                autoFocus
+                type="text"
+                value={noteTitle}
+                onChange={(e) => setNoteTitle(e.target.value)}
+                placeholder="Notiz Überschrift..."
+                className="w-full text-lg font-bold bg-transparent border-b border-gray-100 dark:border-racing-800 focus:border-accent focus:outline-none pb-1.5"
+              />
+              <Toolbar />
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 mb-1">In Kategorie ablegen</label>
+                <select
+                  value={createColId}
+                  onChange={(e) => setCreateColId(e.target.value)}
+                  className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-xs focus:border-accent focus:outline-none dark:border-racing-700 font-medium"
+                >
+                  {columns.map((c) => (
+                    <option key={c.id} value={c.id}>{c.title}</option>
+                  ))}
+                </select>
+              </div>
+              <textarea
+                value={noteContent}
+                onChange={(e) => setNoteContent(e.target.value)}
+                placeholder="Schreibe deine Gedanken auf oder füge Stichpunkte hinzu..."
+                rows={10}
+                className="w-full rounded-xl border border-gray-200 bg-transparent px-3.5 py-2.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700 leading-relaxed"
+              />
+              <AudioPlayback />
+              {aiError && <p className="text-xs text-red-500">{aiError}</p>}
+              <div className="flex justify-end gap-2 mt-1 pt-3 border-t border-gray-100 dark:border-racing-800">
+                <button
+                  type="button"
+                  onClick={() => setIsCreating(false)}
+                  className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold hover:bg-gray-50 dark:border-racing-800 dark:hover:bg-racing-800"
+                >
+                  Verwerfen
+                </button>
+                <button
+                  onClick={handleSaveNewPage}
+                  className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark transition-all shadow-sm"
+                >
+                  Speichern & Erstellen
+                </button>
+              </div>
+            </div>
+          ) : activePage ? (
+            <div className="flex flex-col gap-4">
+              <input
+                type="text"
+                value={noteTitle}
+                onChange={(e) => setNoteTitle(e.target.value)}
+                placeholder="Titel deiner Notiz..."
+                className="w-full text-lg font-bold bg-transparent border-b border-gray-100 dark:border-racing-800 focus:border-accent focus:outline-none pb-1.5"
+              />
+              <Toolbar />
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 mb-1">In Kategorie ablegen</label>
+                <select
+                  value={activePage.columnId}
+                  onChange={(e) => {
+                    const colId = e.target.value
+                    updatePage(activePage.id, { columnId: colId })
+                    setActivePage((prev) => (prev ? { ...prev, columnId: colId } : null))
+                  }}
+                  className="w-full max-w-xs rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-xs focus:border-accent focus:outline-none dark:border-racing-700 font-medium"
+                >
+                  {columns.map((c) => (
+                    <option key={c.id} value={c.id}>{c.title}</option>
+                  ))}
+                </select>
+              </div>
+              <textarea
+                value={noteContent}
+                onChange={(e) => setNoteContent(e.target.value)}
+                placeholder="Schreibe deine Gedanken auf oder füge Stichpunkte hinzu..."
+                rows={10}
+                className="w-full rounded-xl border border-gray-200 bg-transparent px-3.5 py-2.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700 leading-relaxed"
+              />
+              <AudioPlayback
+                onDelete={() => {
+                  if (confirm('Möchtest du diese Sprachaufnahme löschen?')) {
+                    setAudioUrl(null)
+                    updatePage(activePage.id, { audioBase64: undefined })
+                    setActivePage((prev) => (prev ? { ...prev, audioBase64: undefined } : null))
+                  }
+                }}
+              />
+              {activePage.summary && (
+                <div className="rounded-xl bg-emerald-50/50 dark:bg-racing-950/40 p-3.5 border border-emerald-100/50 dark:border-racing-850 flex flex-col gap-2">
+                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                    <Sparkles size={13} /> KI Zusammenfassung
+                  </span>
+                  <div className="text-xs leading-relaxed text-gray-700 dark:text-racing-200 whitespace-pre-wrap border-l-2 border-emerald-400 pl-3">
+                    {activePage.summary}
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (confirm('KI-Zusammenfassung löschen?')) {
+                        updatePage(activePage.id, { summary: undefined })
+                        setActivePage((prev) => (prev ? { ...prev, summary: undefined } : null))
+                      }
+                    }}
+                    className="text-[10px] text-red-500 hover:underline font-semibold self-start"
+                  >
+                    Zusammenfassung löschen
+                  </button>
+                </div>
+              )}
+              {aiError && <p className="text-xs text-red-500">{aiError}</p>}
+              <div className="flex justify-between items-center mt-1 pt-3 border-t border-gray-100 dark:border-racing-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm('Möchtest du diese Notiz wirklich löschen?')) {
+                      deletePage(activePage.id)
+                      setActivePage(null)
+                    }
+                  }}
+                  className="text-sm font-semibold text-red-500 hover:underline"
+                >
+                  Löschen
+                </button>
+                <button
+                  onClick={handleSavePage}
+                  className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark transition-all shadow-sm"
+                >
+                  {justSaved ? 'Gespeichert ✓' : 'Speichern'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex h-full min-h-[40vh] flex-col items-center justify-center text-center text-gray-400">
+              <FileText size={32} className="mb-3 opacity-40" />
+              <p className="text-sm">Wähle eine Notiz aus der Liste oder erstelle eine neue.</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Spalte hinzufügen Popover */}
       {showAddColumn && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-racing-900 border border-gray-100 dark:border-racing-850 rounded-2xl p-5 shadow-2xl max-w-sm w-full">
-            <h3 className="text-base font-bold mb-3">Neue Spalte erstellen</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-sm p-4" onClick={() => setShowAddColumn(false)}>
+          <div
+            className="bg-white dark:bg-racing-900 border border-gray-100 dark:border-racing-850 rounded-2xl p-5 shadow-2xl max-w-sm w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-bold mb-3">Neue Kategorie erstellen</h3>
             <form onSubmit={handleCreateColumn} className="flex flex-col gap-3">
               <input
                 autoFocus
@@ -420,13 +736,57 @@ ${textToSummarize}`
                 placeholder="z.B. Meetings, Ideen, Archiv..."
                 className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
               />
+              {columns.length > 0 && (
+                <div className="flex flex-col gap-1.5 max-h-32 overflow-y-auto">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Bestehende Kategorien</span>
+                  {columns.map((col) => (
+                    <div key={col.id} className="flex items-center gap-1.5">
+                      {editingColId === col.id ? (
+                        <>
+                          <input
+                            autoFocus
+                            value={editingColTitle}
+                            onChange={(e) => setEditingColTitle(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), saveRenameCol(col.id))}
+                            className="flex-1 bg-white dark:bg-racing-900 border border-gray-200 rounded px-1.5 py-0.5 text-sm outline-none focus:border-accent"
+                          />
+                          <button type="button" onClick={() => saveRenameCol(col.id)} className="text-emerald-500 hover:text-emerald-600 rounded p-0.5">
+                            <Check size={14} />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <span className="flex-1 truncate text-sm">{col.title}</span>
+                          <button type="button" onClick={() => startRenameCol(col)} className="text-gray-400 hover:text-gray-600 dark:hover:text-racing-100 rounded p-0.5">
+                            <Edit2 size={12} />
+                          </button>
+                          {columns.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (confirm(`Möchtest du die Kategorie "${col.title}" wirklich löschen?`)) {
+                                  deleteColumn(col.id)
+                                  if (activeTab === col.id) setActiveTab('all')
+                                }
+                              }}
+                              className="text-gray-400 hover:text-red-500 rounded p-0.5"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="flex justify-end gap-2 text-xs font-semibold">
                 <button
                   type="button"
                   onClick={() => setShowAddColumn(false)}
                   className="rounded-lg border border-gray-200 px-3 py-2 hover:bg-gray-50 dark:border-racing-800 dark:hover:bg-racing-800"
                 >
-                  Abbrechen
+                  Schließen
                 </button>
                 <button type="submit" className="rounded-lg bg-accent text-white px-3 py-2 hover:bg-accent-dark">
                   Erstellen
@@ -435,439 +795,6 @@ ${textToSummarize}`
             </form>
           </div>
         </div>
-      )}
-
-      {/* Main Column Kanban Layout */}
-      <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin select-none snap-x snap-mandatory">
-        {columns.map((col) => {
-          const colPages = filteredPages.filter((p) => p.columnId === col.id)
-          const isEditing = editingColId === col.id
-
-          return (
-            <div
-              key={col.id}
-              className="flex-shrink-0 w-80 bg-gray-50/55 dark:bg-racing-950/20 border border-gray-100 dark:border-racing-850 rounded-2xl p-4 flex flex-col max-h-[70vh] overflow-hidden snap-start"
-            >
-              {/* Column Header */}
-              <div className="flex items-center justify-between gap-2 mb-3">
-                {isEditing ? (
-                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                    <input
-                      autoFocus
-                      value={editingColTitle}
-                      onChange={(e) => setEditingColTitle(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && saveRenameCol(col.id)}
-                      className="w-full bg-white dark:bg-racing-900 border border-gray-200 rounded px-1.5 py-0.5 text-sm font-semibold outline-none focus:border-accent"
-                    />
-                    <button
-                      onClick={() => saveRenameCol(col.id)}
-                      className="text-emerald-500 hover:text-emerald-600 rounded p-0.5"
-                    >
-                      <Check size={14} />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <h3 className="font-bold text-sm text-gray-800 dark:text-racing-100 truncate">{col.title}</h3>
-                    <span className="text-[10px] font-bold bg-black/[0.04] text-gray-400 dark:bg-white/[0.05] dark:text-racing-300 rounded-full px-1.5 py-0.5">
-                      {colPages.length}
-                    </span>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-0.5">
-                  <button
-                    onClick={() => handleOpenCreate(col.id)}
-                    className="p-1.5 text-gray-400 hover:text-accent rounded-lg hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-colors"
-                    title="Notiz in dieser Spalte erstellen"
-                  >
-                    <Plus size={15} />
-                  </button>
-                  <button
-                    onClick={() => (isEditing ? setEditingColId(null) : startRenameCol(col))}
-                    className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-racing-100 rounded-lg hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-colors"
-                  >
-                    <Edit2 size={13} />
-                  </button>
-                  {columns.length > 1 && (
-                    <button
-                      onClick={() => {
-                        if (confirm(`Möchtest du die Spalte "${col.title}" wirklich löschen?`)) {
-                          deleteColumn(col.id)
-                        }
-                      }}
-                      className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-colors"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Column Pages Container */}
-              <div className="flex-1 flex flex-col gap-2.5 overflow-y-auto pr-1">
-                {colPages.map((page) => (
-                  <div
-                    key={page.id}
-                    onClick={() => handleOpenPage(page)}
-                    className="bg-white dark:bg-racing-900 border border-gray-100 dark:border-racing-850 p-3.5 rounded-xl shadow-sm hover:shadow-apple-sm hover:border-accent/40 dark:hover:border-accent/30 cursor-pointer transition-all duration-200 flex flex-col gap-2 relative group"
-                  >
-                    <h4 className="font-semibold text-sm break-words pr-4">{page.title}</h4>
-                    <p className="text-xs text-gray-400 dark:text-racing-300 line-clamp-3 leading-relaxed whitespace-pre-wrap">
-                      {page.content}
-                    </p>
-
-                    {/* Metadata / Indicators */}
-                    <div className="flex items-center gap-2 mt-1">
-                      {page.audioBase64 && (
-                        <span className="flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-wider text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20 px-1.5 py-0.5 rounded-md">
-                          <Volume2 size={10} /> Audio
-                        </span>
-                      )}
-                      {page.summary && (
-                        <span className="flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 px-1.5 py-0.5 rounded-md">
-                          <Sparkles size={10} /> KI-Summary
-                        </span>
-                      )}
-                      <span className="text-[9px] text-gray-400 ml-auto">
-                        {new Date(page.updatedAt).toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })}
-                      </span>
-                    </div>
-
-                    {/* Quick Delete */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        if (confirm(`Notiz "${page.title}" wirklich löschen?`)) {
-                          deletePage(page.id)
-                        }
-                      }}
-                      className="absolute top-2.5 right-2 text-gray-300 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                ))}
-
-                {colPages.length === 0 && (
-                  <div className="py-8 text-center text-xs text-gray-400 border border-dashed border-gray-200 dark:border-racing-800 rounded-xl select-none">
-                    Keine Notizen
-                  </div>
-                )}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Note Edit Modal */}
-      {activePage && (
-        <Modal title="Notiz anzeigen / bearbeiten" onClose={() => setActivePage(null)}>
-          <div className="flex flex-col gap-4">
-            <input
-              type="text"
-              value={noteTitle}
-              onChange={(e) => setNoteTitle(e.target.value)}
-              placeholder="Titel deiner Notiz..."
-              className="w-full text-lg font-bold bg-transparent border-b border-gray-100 dark:border-racing-800 focus:border-accent focus:outline-none pb-1.5"
-            />
-
-            {/* Formatting Helper & Voice tools */}
-            <div className="flex flex-wrap items-center gap-1.5 border-b border-gray-100 dark:border-racing-800 pb-2">
-              <button
-                type="button"
-                onClick={insertBulletPoint}
-                className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white"
-                title="Stichpunkt einfügen"
-              >
-                <List size={13} />
-                Stichpunkt
-              </button>
-
-              <button
-                type="button"
-                onClick={toggleTranscription}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
-                  isTranscribing
-                    ? 'bg-red-500 text-white animate-pulse'
-                    : 'bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white'
-                }`}
-                title={isTranscribing ? 'Spracherkennung stoppen' : 'Spracherkennung starten (Diktieren)'}
-              >
-                {isTranscribing ? <MicOff size={13} /> : <Mic size={13} />}
-                {isTranscribing ? 'Hört zu...' : 'Diktieren'}
-              </button>
-
-              <button
-                type="button"
-                onClick={isRecordingAudio ? stopRecordingAudio : startRecordingAudio}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
-                  isRecordingAudio
-                    ? 'bg-indigo-600 text-white animate-pulse'
-                    : 'bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white'
-                }`}
-                title={isRecordingAudio ? 'Aufnahme stoppen' : 'Sprachnotiz aufnehmen'}
-              >
-                <Volume2 size={13} />
-                {isRecordingAudio ? 'Aufnahme stoppen' : 'Audio aufnehmen'}
-              </button>
-
-              <input
-                type="file"
-                accept="audio/*"
-                className="hidden"
-                id="audio-file-upload-edit"
-                onChange={(e) => handleAudioFileUpload(e, true)}
-              />
-              <button
-                type="button"
-                onClick={() => document.getElementById('audio-file-upload-edit')?.click()}
-                className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white"
-                title="Audiodatei hochladen"
-              >
-                <Upload size={13} />
-                Audio hochladen
-              </button>
-
-              <button
-                type="button"
-                disabled={aiLoading}
-                onClick={generateAiSummary}
-                className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-accent text-white hover:bg-accent-dark disabled:opacity-50 ml-auto transition-colors"
-                title="KI Zusammenfassung erstellen"
-              >
-                <Sparkles size={13} className={aiLoading ? 'animate-spin' : ''} />
-                {aiLoading ? 'Fasst zusammen...' : 'KI Zusammenfassen'}
-              </button>
-            </div>
-
-            {/* Note Text area */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-400 mb-1">Inhalt</label>
-              <textarea
-                value={noteContent}
-                onChange={(e) => setNoteContent(e.target.value)}
-                placeholder="Schreibe deine Gedanken auf oder füge Stichpunkte hinzu..."
-                rows={8}
-                className="w-full rounded-xl border border-gray-200 bg-transparent px-3.5 py-2.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700 leading-relaxed"
-              />
-            </div>
-
-            {/* Category / Column move dropdown */}
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div>
-                <label className="block text-xs font-semibold text-gray-400 mb-1">In Spalte ablegen</label>
-                <select
-                  value={activePage.columnId}
-                  onChange={(e) => {
-                    const colId = e.target.value
-                    updatePage(activePage.id, { columnId: colId })
-                    setActivePage((prev) => (prev ? { ...prev, columnId: colId } : null))
-                  }}
-                  className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 focus:border-accent focus:outline-none dark:border-racing-700 font-medium"
-                >
-                  {columns.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Audio Memo Playback (if exists) */}
-            {audioUrl && (
-              <div className="rounded-xl bg-indigo-50/50 dark:bg-racing-950/40 p-3 border border-indigo-100/50 dark:border-racing-850 flex flex-col gap-2">
-                <span className="text-xs font-semibold text-indigo-500 flex items-center gap-1.5">
-                  <Volume2 size={13} /> Sprachaufzeichnung abspielen
-                </span>
-                <audio src={audioUrl} controls className="w-full" />
-                <button
-                  onClick={() => {
-                    if (confirm('Möchtest du diese Sprachaufnahme löschen?')) {
-                      setAudioUrl(null)
-                      updatePage(activePage.id, { audioBase64: undefined })
-                      setActivePage((prev) => (prev ? { ...prev, audioBase64: undefined } : null))
-                    }
-                  }}
-                  className="text-[10px] text-red-500 hover:underline font-semibold self-start"
-                >
-                  Sprachaufnahme löschen
-                </button>
-              </div>
-            )}
-
-            {/* AI Summary Display (if exists) */}
-            {activePage.summary && (
-              <div className="rounded-xl bg-emerald-50/50 dark:bg-racing-950/40 p-3.5 border border-emerald-100/50 dark:border-racing-850 flex flex-col gap-2">
-                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                  <Sparkles size={13} /> KI Zusammenfassung
-                </span>
-                <div className="text-xs leading-relaxed text-gray-700 dark:text-racing-200 whitespace-pre-wrap border-l-2 border-emerald-400 pl-3">
-                  {activePage.summary}
-                </div>
-                <button
-                  onClick={() => {
-                    if (confirm('KI-Zusammenfassung löschen?')) {
-                      updatePage(activePage.id, { summary: undefined })
-                      setActivePage((prev) => (prev ? { ...prev, summary: undefined } : null))
-                    }
-                  }}
-                  className="text-[10px] text-red-500 hover:underline font-semibold self-start"
-                >
-                  Zusammenfassung löschen
-                </button>
-              </div>
-            )}
-
-            {aiError && <p className="text-xs text-red-500">{aiError}</p>}
-
-            {/* Modal Actions */}
-            <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100 dark:border-racing-800">
-              <button
-                type="button"
-                onClick={() => {
-                  if (confirm('Möchtest du diese Notiz wirklich löschen?')) {
-                    deletePage(activePage.id)
-                    setActivePage(null)
-                  }
-                }}
-                className="text-sm font-semibold text-red-500 hover:underline"
-              >
-                Löschen
-              </button>
-              <button
-                onClick={handleSavePage}
-                className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark transition-all shadow-sm"
-              >
-                Speichern & Schließen
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
-
-      {/* Note Creation Modal */}
-      {isCreating && (
-        <Modal title="Neue Notiz erstellen" onClose={() => setIsCreating(false)}>
-          <div className="flex flex-col gap-4">
-            <input
-              autoFocus
-              type="text"
-              value={noteTitle}
-              onChange={(e) => setNoteTitle(e.target.value)}
-              placeholder="Notiz Überschrift..."
-              className="w-full text-lg font-bold bg-transparent border-b border-gray-100 dark:border-racing-800 focus:border-accent focus:outline-none pb-1.5"
-            />
-
-            {/* Formatting Helper & Voice tools */}
-            <div className="flex flex-wrap items-center gap-1.5 border-b border-gray-100 dark:border-racing-800 pb-2">
-              <button
-                type="button"
-                onClick={insertBulletPoint}
-                className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white"
-              >
-                <List size={13} />
-                Stichpunkt
-              </button>
-
-              <button
-                type="button"
-                onClick={toggleTranscription}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
-                  isTranscribing
-                    ? 'bg-red-500 text-white animate-pulse'
-                    : 'bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white'
-                }`}
-                title={isTranscribing ? 'Spracherkennung stoppen' : 'Spracherkennung starten'}
-              >
-                {isTranscribing ? <MicOff size={13} /> : <Mic size={13} />}
-                {isTranscribing ? 'Hört zu...' : 'Diktieren'}
-              </button>
-
-              <button
-                type="button"
-                onClick={isRecordingAudio ? stopRecordingAudio : startRecordingAudio}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
-                  isRecordingAudio
-                    ? 'bg-indigo-600 text-white animate-pulse'
-                    : 'bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white'
-                }`}
-              >
-                <Volume2 size={13} />
-                {isRecordingAudio ? 'Aufnahme stoppen' : 'Audio aufnehmen'}
-              </button>
-
-              <input
-                type="file"
-                accept="audio/*"
-                className="hidden"
-                id="audio-file-upload-create"
-                onChange={(e) => handleAudioFileUpload(e, false)}
-              />
-              <button
-                type="button"
-                onClick={() => document.getElementById('audio-file-upload-create')?.click()}
-                className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white"
-                title="Audiodatei hochladen"
-              >
-                <Upload size={13} />
-                Audio hochladen
-              </button>
-
-              <button
-                type="button"
-                disabled={aiLoading}
-                onClick={generateAiSummary}
-                className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-accent text-white hover:bg-accent-dark disabled:opacity-50 ml-auto transition-colors"
-              >
-                <Sparkles size={13} className={aiLoading ? 'animate-spin' : ''} />
-                KI Zusammenfassen
-              </button>
-            </div>
-
-            {/* Note Text area */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-400 mb-1">Inhalt</label>
-              <textarea
-                value={noteContent}
-                onChange={(e) => setNoteContent(e.target.value)}
-                placeholder="Schreibe deine Gedanken auf oder füge Stichpunkte hinzu..."
-                rows={8}
-                className="w-full rounded-xl border border-gray-200 bg-transparent px-3.5 py-2.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700 leading-relaxed"
-              />
-            </div>
-
-            {/* Audio Playback during creation (if exists) */}
-            {audioUrl && (
-              <div className="rounded-xl bg-indigo-50/50 dark:bg-racing-950/40 p-3 border border-indigo-100/50 dark:border-racing-850 flex flex-col gap-2">
-                <span className="text-xs font-semibold text-indigo-500 flex items-center gap-1.5">
-                  <Volume2 size={13} /> Sprachaufzeichnung abspielen
-                </span>
-                <audio src={audioUrl} controls className="w-full" />
-              </div>
-            )}
-
-            {aiError && <p className="text-xs text-red-500">{aiError}</p>}
-
-            {/* Modal Actions */}
-            <div className="flex justify-end gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-racing-800">
-              <button
-                type="button"
-                onClick={() => setIsCreating(false)}
-                className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold hover:bg-gray-50 dark:border-racing-800 dark:hover:bg-racing-800"
-              >
-                Verwerfen
-              </button>
-              <button
-                onClick={handleSaveNewPage}
-                className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark transition-all shadow-sm"
-              >
-                Speichern & Erstellen
-              </button>
-            </div>
-          </div>
-        </Modal>
       )}
     </div>
   )

@@ -21,7 +21,13 @@
     "upcomingDeadlines": "Anstehende Deadlines",
     "todayCalendar": "Heute",
     "upcomingEvents": "Nächste Events",
-    "projectsOverview": "Projekte-Übersicht"
+    "projectsOverview": "Projekte-Übersicht",
+    "topPriority": "Höchste Priorität",
+    "topPriorityBadge": "Eisenhower Q1",
+    "noTopPriority": "Keine dringend & wichtigen Aufgaben offen.",
+    "urgent": "Dringend",
+    "important": "Wichtig",
+    "manageEisenhower": "Eisenhower Quadranten verwalten"
   },
   "morningReport": {
     "greetingMorning": "Guten Morgen",

@@ -1098,13 +1098,12 @@ function SidebarOrderSection({ navOrder, setNavOrder, navVisibility, toggleNavIt
 
 // ── Dashboard widgets ─────────────────────────────────────────────────────
 const DASH_WIDGETS: { key: DashboardWidget; icon: React.ReactNode; label: string; desc: string }[] = [
-  { key: 'weather',          icon: <Cloud size={16} />,       label: 'Wetter',          desc: 'Aktuelles Wetter deines Standorts' },
   { key: 'stats',            icon: <BarChart2 size={16} />,   label: 'Statistiken',     desc: 'Aufgaben & Projekte' },
-  { key: 'todayTasks',       icon: <CheckSquare size={16} />, label: 'Heute',           desc: 'Heutige Aufgaben und Termine' },
+  { key: 'todayTasks',       icon: <CheckSquare size={16} />, label: 'Tagesübersicht',  desc: 'Heutige Aufgaben und Termine' },
+  { key: 'topPriority',      icon: <TrendingUp size={16} />,  label: 'Höchste Priorität', desc: 'Dringend & wichtige Aufgaben (Eisenhower Q1)' },
   { key: 'upcomingDeadlines',icon: <Clock size={16} />,       label: 'Deadlines',       desc: 'Anstehende Projekt-Deadlines' },
   { key: 'nextEvents',       icon: <CalendarClock size={16} />, label: 'Events',        desc: 'Nächste Ereignisse' },
   { key: 'projectsOverview', icon: <FolderKanban size={16} />,label: 'Projektübersicht',desc: 'Alle aktiven Projekte' },
-  { key: 'productivity',     icon: <TrendingUp size={16} />,  label: 'Produktivität',   desc: 'Fokus- & Flow-Statistiken' },
   { key: 'workoffice',       icon: <Users size={16} />,       label: 'Büro & Kollegen', desc: 'Wer ist im Büro, wer arbeitet von wo?' },
 ]
 

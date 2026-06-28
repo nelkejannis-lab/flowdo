@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import { useSocialStore } from '../store/socialStore'
 import { differenceInCalendarDays, format, parseISO } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
-import { Plus, CalendarClock, Instagram, TrendingUp, Heart, Bookmark, Users, Loader2, Sliders, Check, X, Sparkles } from 'lucide-react'
+import { Plus, CalendarClock, Instagram, TrendingUp, Heart, Bookmark, Users, Loader2, Sliders, Check, X, Sparkles, Flame, Star, ArrowRight } from 'lucide-react'
+import type { Task, CalendarEntry } from '../types'
 import { useAiSchedulerStore } from '../store/aiSchedulerStore'
 import { useTranslation } from 'react-i18next'
 import { useTasksStore } from '../store/tasksStore'
@@ -16,10 +17,11 @@ import { useCalendarEntriesStore } from '../store/calendarEntriesStore'
 import CalendarEntriesBlock from '../components/calendar/CalendarEntriesBlock'
 import TaskList from '../components/tasks/TaskList'
 import TaskFormModal from '../components/tasks/TaskFormModal'
+import ProjectTaskFormModal from '../components/boards/ProjectTaskFormModal'
 import BoardCard from '../components/boards/BoardCard'
-import WeatherWidget from '../components/dashboard/WeatherWidget'
 import AiDayPlannerModal from '../components/dashboard/AiDayPlannerModal'
-import ProductivityStatsWidget from '../components/dashboard/ProductivityStatsWidget'
+import DailyAgendaPanel from '../components/calendar/DailyAgendaPanel'
+import CalendarEntryFormModal from '../components/calendar/CalendarEntryFormModal'
 import WorkOfficeWidget from '../components/office/WorkOfficeWidget'
 import OfficePromptModal from '../components/office/OfficePromptModal'
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core'
@@ -41,6 +43,8 @@ export default function Dashboard() {
   const fetchBoards = useBoardsStore((s) => s.fetchBoards)
   const myProjectTasks = useProjectTasksStore((s) => s.myTasks)
   const fetchMyProjectTasks = useProjectTasksStore((s) => s.fetchMyTasks)
+  const toggleTaskCompleted = useTasksStore((s) => s.toggleTaskCompleted)
+  const toggleProjectTaskCompleted = useProjectTasksStore((s) => s.toggleTaskCompleted)
   const workEntries = useWorkTimeStore((s) => s.entries)
   const fetchWorkTime = useWorkTimeStore((s) => s.fetchAll)
   const events = useEventsStore((s) => s.events)
@@ -59,6 +63,10 @@ export default function Dashboard() {
   const openQuickTaskModal = useQuickTaskModalStore((s) => s.open)
   const [showForm, setShowForm] = useState(false)
   const [showAiDayPlanner, setShowAiDayPlanner] = useState(false)
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [editingEntry, setEditingEntry] = useState<CalendarEntry | undefined>()
+  const [showEntryForm, setShowEntryForm] = useState(false)
+  const [newTaskForToday, setNewTaskForToday] = useState(false)
   const [quickInput, setQuickInput] = useState('')
   const [parsingTask, setParsingTask] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
@@ -265,11 +273,10 @@ export default function Dashboard() {
           <h3 className="mb-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">Ausgeblendete Elemente hinzufügen:</h3>
           {(() => {
             const allDashboardItems = [
-              { key: 'weather',          label: 'Wetter' },
               { key: 'stats',            label: 'Statistiken (Aufgaben & Projekte)' },
-              { key: 'productivity',     label: 'Produktivität' },
-              { key: 'workoffice',       label: 'Büro & Kollegen' },
-              { key: 'todayTasks',       label: 'Heute & Termine' },
+              { key: 'workoffice',       label: 'Arbeitszeit & Standort' },
+              { key: 'todayTasks',       label: 'Tagesübersicht' },
+              { key: 'topPriority',      label: 'Höchste Priorität' },
               { key: 'upcomingDeadlines',label: 'Deadlines & Sektion Diese Woche' },
               { key: 'nextEvents',       label: 'Nächste Ereignisse' },
               { key: 'projectsOverview', label: 'Projektübersicht' },
@@ -359,13 +366,7 @@ export default function Dashboard() {
       )}
 
       {dashboardVisibility.todayTasks && (
-        todayEntries.length > 0 ||
-        allTasks.some((tk) => 
-          (!tk.completed && (isDueToday(tk.dueDate) || isOverdue(tk.dueDate))) ||
-          (tk.completed && isCompletedToday(tk.completedAt))
-        )
-      ) && (
-        <div className={`mb-6 relative group rounded-xl p-3 transition-all ${isEditing ? 'border-2 border-dashed border-accent/40 bg-accent/5' : ''}`}>
+        <div className={`mb-6 relative group rounded-xl transition-all ${isEditing ? 'border-2 border-dashed border-accent/40 bg-accent/5 p-3' : ''}`}>
           {isEditing && (
             <button
               type="button"
@@ -376,40 +377,90 @@ export default function Dashboard() {
               <X size={12} />
             </button>
           )}
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">{t('sections.todayCalendar')}</h2>
-            <div className="flex items-center gap-3">
-              {todayEntries.length > 0 && (
-                <label className="flex cursor-pointer items-center gap-1.5 text-xs text-gray-400">
-                  <span>Termine</span>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={showEntries}
-                    onClick={() => setShowEntries((v) => !v)}
-                    className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${showEntries ? 'bg-[#34c759]' : 'bg-gray-200 dark:bg-racing-700'}`}
-                  >
-                    <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${showEntries ? 'translate-x-5' : 'translate-x-0'}`} />
-                  </button>
-                </label>
-              )}
-              <Link to="/tasks/today" className="text-sm font-medium text-accent hover:underline">
-                {t('showAll')}
-              </Link>
-            </div>
-          </div>
-          {showEntries && <CalendarEntriesBlock entries={todayEntries} label="Termine heute" today={today} />}
-          <TaskList
-            tasks={sortByEisenhower(
-              allTasks.filter((tk) =>
-                (!tk.completed && (isDueToday(tk.dueDate) || isOverdue(tk.dueDate))) ||
-                (tk.completed && isCompletedToday(tk.completedAt))
-              )
-            )}
-            emptyMessage=""
+          <DailyAgendaPanel
+            selectedDate={today}
+            tasks={allTasks}
+            events={events}
+            entries={calendarEntries}
+            onTaskClick={(task) => setEditingTask(task)}
+            onEventClick={() => {}}
+            onEntryClick={(entry) => { setEditingEntry(entry); setShowEntryForm(true) }}
+            onAddTask={() => setNewTaskForToday(true)}
+            onAddEntry={() => { setEditingEntry(undefined); setShowEntryForm(true) }}
           />
         </div>
       )}
+
+      {dashboardVisibility.topPriority && (() => {
+        const topPriorityTasks = allTasks.filter((tk) => !tk.completed && tk.urgent && tk.important).slice(0, 6)
+        return (
+          <div className={`mb-6 relative group rounded-xl p-3 transition-all ${isEditing ? 'border-2 border-dashed border-accent/40 bg-accent/5' : ''}`}>
+            {isEditing && (
+              <button
+                type="button"
+                onClick={() => toggleDashboardWidget('topPriority')}
+                className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all"
+                title="Entfernen"
+              >
+                <X size={12} />
+              </button>
+            )}
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-lg font-semibold">
+                <Flame size={16} className="text-red-500" />
+                {t('sections.topPriority')}
+              </h2>
+              <span className="rounded-full bg-red-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-red-500">
+                {t('sections.topPriorityBadge')}
+              </span>
+            </div>
+            {topPriorityTasks.length === 0 ? (
+              <p className="text-sm text-gray-400">{t('sections.noTopPriority')}</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {topPriorityTasks.map((tk) => {
+                  const board = tk.boardId ? boards.find((b) => b.id === tk.boardId) : undefined
+                  return (
+                    <div
+                      key={tk.id}
+                      className="flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 transition-colors hover:border-accent/30 dark:border-racing-800 dark:bg-racing-900"
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (tk.boardId) toggleProjectTaskCompleted(tk.id)
+                          else toggleTaskCompleted(tk.id)
+                        }}
+                        className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 border-gray-300 hover:border-accent dark:border-racing-600"
+                      />
+                      <div className="min-w-0 flex-1 cursor-pointer" onClick={() => setEditingTask(tk)}>
+                        <p className="truncate text-sm font-medium">{tk.title}</p>
+                        <div className="mt-1 flex items-center gap-2 text-xs text-gray-400">
+                          <span className="flex items-center gap-1 text-red-500">
+                            <Flame size={10} /> {t('sections.urgent')}
+                          </span>
+                          <span className="flex items-center gap-1 text-amber-500">
+                            <Star size={10} /> {t('sections.important')}
+                          </span>
+                          {board && (
+                            <span className="rounded-full px-1.5 py-0.5 text-white" style={{ backgroundColor: board.color }}>
+                              {board.title}
+                            </span>
+                          )}
+                          {tk.dueDate && <span>{tk.dueDate}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+            <Link to="/termine" className="mt-3 flex items-center gap-1 text-xs font-semibold text-accent hover:underline">
+              {t('sections.manageEisenhower')} <ArrowRight size={12} />
+            </Link>
+          </div>
+        )
+      })()}
 
       {dashboardVisibility.upcomingDeadlines !== false && (weekTasks.length > 0 || weekEntries.length > 0) && (
         <div className={`mb-6 relative group rounded-xl p-3 transition-all ${isEditing ? 'border-2 border-dashed border-accent/40 bg-accent/5' : ''}`}>
@@ -455,12 +506,6 @@ export default function Dashboard() {
         <SortableContext items={widgetOrder} strategy={horizontalListSortingStrategy}>
           <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {widgetOrder.map((id) => {
-              if (id === 'weather' && (dashboardVisibility.weather ?? true)) return (
-                <SortableWidget key="weather" id="weather" isEditing={isEditing} onRemove={() => toggleDashboardWidget('weather')}><WeatherWidget /></SortableWidget>
-              )
-              if (id === 'productivity' && (dashboardVisibility.productivity ?? true)) return (
-                <SortableWidget key="productivity" id="productivity" isEditing={isEditing} onRemove={() => toggleDashboardWidget('productivity')}><ProductivityStatsWidget /></SortableWidget>
-              )
               if (id === 'workoffice' && (dashboardVisibility.workoffice ?? true)) return (
                 <SortableWidget key="workoffice" id="workoffice" isEditing={isEditing} onRemove={() => toggleDashboardWidget('workoffice')}><WorkOfficeWidget /></SortableWidget>
               )
@@ -631,6 +676,24 @@ export default function Dashboard() {
 
       {showForm && (
         <TaskFormModal defaultDueDate={todayISO()} onClose={() => setShowForm(false)} />
+      )}
+      {newTaskForToday && (
+        <TaskFormModal defaultDueDate={today} onClose={() => setNewTaskForToday(false)} />
+      )}
+      {editingTask && (() => {
+        const board = editingTask.boardId ? boards.find((b) => b.id === editingTask.boardId) : undefined
+        return board ? (
+          <ProjectTaskFormModal board={board} task={editingTask} onClose={() => setEditingTask(null)} />
+        ) : (
+          <TaskFormModal task={editingTask} onClose={() => setEditingTask(null)} />
+        )
+      })()}
+      {showEntryForm && (
+        <CalendarEntryFormModal
+          entry={editingEntry}
+          defaultDate={today}
+          onClose={() => { setShowEntryForm(false); setEditingEntry(undefined) }}
+        />
       )}
     </div>
   )

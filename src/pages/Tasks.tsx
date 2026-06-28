@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Archive, AtSign, Bell, Check, HelpCircle, Plus, Trello, X, Search, Loader2, List as ListIcon, Grid2x2 } from 'lucide-react'
+import { Archive, AtSign, Bell, Check, HelpCircle, Plus, Trello, X, Search, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTasksStore } from '../store/tasksStore'
 import { useTaskSharesStore } from '../store/taskSharesStore'
@@ -14,7 +14,6 @@ import { Users } from 'lucide-react'
 import { useNotificationsStore } from '../store/notificationsStore'
 import { isSupabaseConfigured } from '../lib/supabase'
 import TaskList from '../components/tasks/TaskList'
-import TaskEisenhowerGrid from '../components/tasks/TaskEisenhowerGrid'
 import TaskFormModal from '../components/tasks/TaskFormModal'
 import PriorityBadge from '../components/tasks/PriorityBadge'
 import { formatFriendlyDate, isDueThisWeek, isDueToday, isOverdue, todayISO, parseTaskInput, isCompletedToday, isCompletedThisWeek } from '../utils/date'
@@ -62,7 +61,6 @@ export default function TasksPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
   const [selectedProject, setSelectedProject] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   const openQuickTaskModal = useQuickTaskModalStore((s) => s.open)
   const [quickInput, setQuickInput] = useState('')
   const [parsingTask, setParsingTask] = useState(false)
@@ -282,11 +280,11 @@ export default function TasksPage() {
       )}
 
       {smartList !== 'inbox' && (
-        <div className="mb-6 flex gap-1 border-b border-gray-100 dark:border-racing-800">
+        <div className="mb-6 flex flex-wrap gap-1 border-b border-gray-100 dark:border-racing-800">
           <Link
             to="/tasks"
             className={`border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
-              smartList !== 'completed' && smartList !== 'someday'
+              !smartList
                 ? 'border-accent text-accent'
                 : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-racing-200'
             }`}
@@ -294,15 +292,24 @@ export default function TasksPage() {
             {t('page.tabs.tasks')}
           </Link>
           <Link
-            to="/tasks/someday"
-            className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
-              smartList === 'someday'
+            to="/tasks/today"
+            className={`border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+              smartList === 'today'
                 ? 'border-accent text-accent'
                 : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-racing-200'
             }`}
           >
-            <Archive size={14} />
-            {t('page.tabs.someday')}
+            {t('page.tabs.today')}
+          </Link>
+          <Link
+            to="/tasks/week"
+            className={`border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+              smartList === 'week'
+                ? 'border-accent text-accent'
+                : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-racing-200'
+            }`}
+          >
+            {t('page.tabs.week')}
           </Link>
           <Link
             to="/tasks/completed"
@@ -314,6 +321,17 @@ export default function TasksPage() {
           >
             <Check size={14} />
             {t('page.tabs.completed')}
+          </Link>
+          <Link
+            to="/tasks/someday"
+            className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+              smartList === 'someday'
+                ? 'border-accent text-accent'
+                : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-racing-200'
+            }`}
+          >
+            <Archive size={14} />
+            {t('page.tabs.someday')}
           </Link>
         </div>
       )}
@@ -626,45 +644,12 @@ export default function TasksPage() {
             <CalendarEntriesBlock entries={relevantEntries} label="" today={today} />
           )}
 
-          {smartList !== 'completed' && (
-            <div className="mb-4 inline-flex items-center gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1 dark:border-racing-700 dark:bg-racing-900">
-              <button
-                type="button"
-                onClick={() => setViewMode('list')}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  viewMode === 'list'
-                    ? 'bg-white text-gray-900 shadow-sm dark:bg-racing-700 dark:text-white'
-                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-racing-200'
-                }`}
-              >
-                <ListIcon size={14} />
-                {t('page.viewList')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('grid')}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  viewMode === 'grid'
-                    ? 'bg-white text-gray-900 shadow-sm dark:bg-racing-700 dark:text-white'
-                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-racing-200'
-                }`}
-              >
-                <Grid2x2 size={14} />
-                {t('page.viewGrid')}
-              </button>
-            </div>
-          )}
-
-          {viewMode === 'grid' && smartList !== 'completed' ? (
-            <TaskEisenhowerGrid tasks={displayTasks.filter((t) => !t.completed)} defaultDueDate={defaultDueDate} />
-          ) : (
-            <TaskList
-              tasks={displayTasks}
-              groupByDate={groupByDate}
-              flat={smartList === 'completed'}
-              emptyMessage={smartList === 'completed' ? t('page.noCompletedTasks') : t('list.noTasks')}
-            />
-          )}
+          <TaskList
+            tasks={displayTasks}
+            groupByDate={groupByDate}
+            flat={smartList === 'completed'}
+            emptyMessage={smartList === 'completed' ? t('page.noCompletedTasks') : t('list.noTasks')}
+          />
         </>
       )}
 

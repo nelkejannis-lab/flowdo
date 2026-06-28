@@ -94,7 +94,9 @@
       "someday": "Someday"
     },
     "tabs": {
-      "tasks": "Tasks",
+      "tasks": "All Active",
+      "today": "Today",
+      "week": "Week",
       "someday": "Someday",
       "completed": "Done"
     },

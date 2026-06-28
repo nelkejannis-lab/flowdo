@@ -2,28 +2,39 @@ import { useEffect, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
 import { useTranslation } from 'react-i18next'
-import { CalendarDays, Plus } from 'lucide-react'
+import { CalendarDays, Plus, Grid2x2 } from 'lucide-react'
 import { useCalendarEntriesStore } from '../store/calendarEntriesStore'
+import { useTasksStore } from '../store/tasksStore'
+import { useProjectTasksStore } from '../store/projectTasksStore'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { entryTypeIcon, entryTypeLabel } from '../utils/calendarEntry'
 import { todayISO } from '../utils/date'
 import CalendarEntryFormModal from '../components/calendar/CalendarEntryFormModal'
+import TaskEisenhowerGrid from '../components/tasks/TaskEisenhowerGrid'
 import type { CalendarEntry } from '../types'
 
 type Filter = 'upcoming' | 'past' | 'all'
+type View = 'termine' | 'eisenhower'
 
 export default function TerminePage() {
   const { t, i18n } = useTranslation('calendar')
   const dateLocale = i18n.language === 'en' ? enUS : de
   const entries = useCalendarEntriesStore((s) => s.entries)
   const fetchEntries = useCalendarEntriesStore((s) => s.fetchEntries)
+  const personalTasks = useTasksStore((s) => s.tasks.filter((t) => !t.completed))
+  const myProjectTasks = useProjectTasksStore((s) => s.myTasks.filter((t) => !t.completed))
+  const fetchMyProjectTasks = useProjectTasksStore((s) => s.fetchMyTasks)
+  const [view, setView] = useState<View>('termine')
   const [filter, setFilter] = useState<Filter>('upcoming')
   const [showForm, setShowForm] = useState(false)
   const [editEntry, setEditEntry] = useState<CalendarEntry | undefined>()
 
   useEffect(() => {
-    if (isSupabaseConfigured) fetchEntries()
-  }, [fetchEntries])
+    if (isSupabaseConfigured) {
+      fetchEntries()
+      fetchMyProjectTasks()
+    }
+  }, [fetchEntries, fetchMyProjectTasks])
 
   const today = todayISO()
 
@@ -112,15 +123,46 @@ export default function TerminePage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{t('termine.title')}</h1>
+        {view === 'termine' && (
+          <button
+            onClick={() => { setEditEntry(undefined); setShowForm(true) }}
+            className="flex items-center gap-2 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-dark"
+          >
+            <Plus size={16} />
+            {t('termine.add')}
+          </button>
+        )}
+      </div>
+
+      <div className="mb-6 flex gap-1 border-b border-gray-100 dark:border-racing-800">
         <button
-          onClick={() => { setEditEntry(undefined); setShowForm(true) }}
-          className="flex items-center gap-2 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-dark"
+          onClick={() => setView('termine')}
+          className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+            view === 'termine'
+              ? 'border-accent text-accent'
+              : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-racing-200'
+          }`}
         >
-          <Plus size={16} />
-          {t('termine.add')}
+          <CalendarDays size={14} />
+          {t('termine.title')}
+        </button>
+        <button
+          onClick={() => setView('eisenhower')}
+          className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+            view === 'eisenhower'
+              ? 'border-accent text-accent'
+              : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-racing-200'
+          }`}
+        >
+          <Grid2x2 size={14} />
+          {t('termine.eisenhowerTab')}
         </button>
       </div>
 
+      {view === 'eisenhower' ? (
+        <TaskEisenhowerGrid tasks={[...personalTasks, ...myProjectTasks]} />
+      ) : (
+      <>
       <div className="mb-6 flex gap-1 border-b border-gray-100 dark:border-racing-800">
         {filters.map((f) => (
           <button
@@ -170,6 +212,8 @@ export default function TerminePage() {
             </div>
           ))}
         </div>
+      )}
+      </>
       )}
 
       {showForm && (

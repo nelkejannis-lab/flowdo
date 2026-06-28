@@ -56,6 +56,7 @@
     "title": "Termine",
     "add": "Hinzufügen",
     "empty": "Keine Termine vorhanden",
+    "eisenhowerTab": "Eisenhower",
     "filters": {
       "today": "Heute",
       "week": "Diese Woche",

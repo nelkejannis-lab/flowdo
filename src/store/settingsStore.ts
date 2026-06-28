@@ -79,20 +79,19 @@ export const DEFAULT_FEATURE_VISIBILITY: Record<FeatureKey, boolean> = {
   weather: true,
 }
 
-export type DashboardWidget = 'weather' | 'stats' | 'todayTasks' | 'upcomingDeadlines' | 'nextEvents' | 'projectsOverview' | 'productivity' | 'workoffice'
+export type DashboardWidget = 'stats' | 'todayTasks' | 'upcomingDeadlines' | 'nextEvents' | 'projectsOverview' | 'workoffice' | 'topPriority'
 
 export const DEFAULT_DASHBOARD_VISIBILITY: Record<DashboardWidget, boolean> = {
-  weather: true,
   stats: true,
   todayTasks: true,
   upcomingDeadlines: true,
   nextEvents: true,
   projectsOverview: true,
-  productivity: true,
   workoffice: true,
+  topPriority: true,
 }
 
-export const DEFAULT_DASHBOARD_WIDGET_ORDER = ['weather', 'productivity', 'workoffice', 'stats_week', 'stats_projects']
+export const DEFAULT_DASHBOARD_WIDGET_ORDER = ['workoffice', 'stats_week', 'stats_projects']
 
 export const DEFAULT_COLOR_LABELS: Record<string, string> = Object.fromEntries(
   NAMED_COLORS.map((c) => [c.hex, c.label])
@@ -137,6 +136,7 @@ interface SettingsState {
   setNavOrder: (order: NavItemKey[]) => void
   toggleNavItem: (key: NavItemKey) => void
   togglePinnedNavItem: (key: NavItemKey) => void
+  setPinnedNavOrder: (order: NavItemKey[]) => void
   setWeatherCity: (city: string) => void
   setWeatherCoords: (coords: WeatherCoords) => void
   setDashboardWidgetOrder: (order: string[]) => void
@@ -202,6 +202,7 @@ export const useSettingsStore = create<SettingsState>()(
             ? s.pinnedNavItems.filter((k) => k !== key)
             : [...s.pinnedNavItems, key],
         })),
+      setPinnedNavOrder: (pinnedNavItems) => set({ pinnedNavItems }),
       setWeatherCity: (city) => set({ weatherCity: city }),
       setWeatherCoords: (coords) => set({ weatherCoords: coords }),
       setDashboardWidgetOrder: (dashboardWidgetOrder) => set({ dashboardWidgetOrder }),

@@ -110,6 +110,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const navVisibility = useSettingsStore((s) => s.navVisibility)
   const pinnedNavItems = useSettingsStore((s) => s.pinnedNavItems)
   const togglePinnedNavItem = useSettingsStore((s) => s.togglePinnedNavItem)
+  const setPinnedNavOrder = useSettingsStore((s) => s.setPinnedNavOrder)
   const profile = useAuthStore((s) => s.profile)
   const signOut = useAuthStore((s) => s.signOut)
   const openSearch = useSearchStore((s) => s.open)
@@ -175,8 +176,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     { key: 'meetings', to: '/meetings', icon: <Mic size={18} />, label: 'Meetings', visible: true },
     { key: 'projekte', to: '/projekte', icon: <Trello size={18} />, label: t('sidebar.projects.all'), visible: true, exact: true },
   ]
+  // These now only live as tabs inside other pages (Tasks: Heute/Woche tabs; Termine: Eisenhower tab),
+  // so they're hard-removed from the sidebar menu regardless of navVisibility settings.
+  const HIDDEN_FROM_MENU: NavItemKey[] = ['week', 'eisenhower']
+
   const navItemMap = Object.fromEntries(allNavItems.map((n) => [n.key, n])) as Record<NavItemKey, NavDef>
   const sortedNavItems = navOrder.map((k) => navItemMap[k]).filter(Boolean).filter((item) => {
+    if (HIDDEN_FROM_MENU.includes(item.key)) return false
     // Always show dashboard + calendar; for others check navVisibility
     if (item.key === 'dashboard' || item.key === 'calendar') return item.visible
     return (navVisibility?.[item.key] ?? true) && item.visible
@@ -187,27 +193,43 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   // still follows navOrder, so drag-to-reorder (within a group) keeps working.
   const NAV_GROUPS: { id: string; label: string | null; keys: NavItemKey[] }[] = [
     { id: 'home', label: null, keys: ['dashboard'] },
-    { id: 'tasks', label: t('sidebar.groups.tasks'), keys: ['week', 'inbox', 'tasks', 'eisenhower', 'brain', 'projekte'] },
+    { id: 'tasks', label: t('sidebar.groups.tasks'), keys: ['inbox', 'tasks', 'brain', 'projekte'] },
     { id: 'planning', label: t('sidebar.groups.planning'), keys: ['calendar', 'termine', 'pomodoro', 'worktime', 'aiScheduler', 'meetings'] },
     { id: 'team', label: t('sidebar.groups.team'), keys: ['chat', 'friends', 'social'] },
   ]
   const visibleNavItems = sortedNavItems.filter((item) => item.visible)
-  const usedKeys = new Set<string>()
-  const navGroups = NAV_GROUPS.map((group) => {
-    // Filter visibleNavItems (already in navOrder order) by this group's membership.
-    const items = visibleNavItems.filter((item) => group.keys.includes(item.key))
+  // Pinned items move to the "Angepinnt" shortcut list instead of staying in their group -
+  // a relocation, not a duplicate. Dashboard can't be pinned/hidden, it's always first.
+  const pinnedKeys = pinnedNavItems.filter((k) => k !== 'dashboard')
+  const pinnedItems = pinnedKeys
+    .map((k) => visibleNavItems.find((item) => item.key === k))
+    .filter((item): item is NavDef => Boolean(item))
+
+  const usedKeys = new Set<string>(pinnedKeys)
+  const navGroups = NAV_GROUPS.filter((g) => g.id !== 'home').map((group) => {
+    // Filter visibleNavItems (already in navOrder order) by this group's membership, minus pinned ones.
+    const items = visibleNavItems.filter((item) => group.keys.includes(item.key) && !usedKeys.has(item.key))
     items.forEach((item) => usedKeys.add(item.key))
     return { ...group, items }
   }).filter((group) => group.items.length > 0)
   // Any visible item not assigned to a group (e.g. a future nav key) falls into a "more" bucket.
-  const leftovers = visibleNavItems.filter((item) => !usedKeys.has(item.key))
+  const leftovers = visibleNavItems.filter((item) => !usedKeys.has(item.key) && item.key !== 'dashboard')
   if (leftovers.length > 0) {
     navGroups.push({ id: 'more', label: t('sidebar.groups.more'), keys: leftovers.map((i) => i.key), items: leftovers })
   }
 
-  // Pinned items stay visible in their normal group too - this is just a quick-access
-  // shortcut list, not a move, so users don't lose track of where something "lives".
-  const pinnedItems = visibleNavItems.filter((item) => pinnedNavItems.includes(item.key) && item.key !== 'dashboard')
+  const dashboardItem = visibleNavItems.find((item) => item.key === 'dashboard')
+
+  function handlePinnedDragEnd(e: DragEndEvent) {
+    const { active, over } = e
+    if (over && active.id !== over.id) {
+      const oldIndex = pinnedNavItems.indexOf(active.id as NavItemKey)
+      const newIndex = pinnedNavItems.indexOf(over.id as NavItemKey)
+      if (oldIndex !== -1 && newIndex !== -1) {
+        setPinnedNavOrder(arrayMove(pinnedNavItems, oldIndex, newIndex))
+      }
+    }
+  }
 
   function renderNavItemChildren(item: NavDef) {
     return (
@@ -337,26 +359,43 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
       </div>
 
-      {pinnedItems.length > 0 && (
+      {dashboardItem && (
         <div className="mb-4 flex flex-col gap-0.5">
-          <span className="px-3 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent/70">
-            {t('sidebar.groups.pinned')}
-          </span>
-          {pinnedItems.map((item) => (
-            <SortableNavItem
-              key={`pinned-${item.key}`}
-              id={`pinned-${item.key}`}
-              to={item.to}
-              exact={item.exact}
-              onClose={onClose}
-              draggable={false}
-              pinned
-              onTogglePin={() => togglePinnedNavItem(item.key)}
-            >
-              {renderNavItemChildren(item)}
-            </SortableNavItem>
-          ))}
+          <SortableNavItem
+            id={dashboardItem.key}
+            to={dashboardItem.to}
+            exact={dashboardItem.exact}
+            onClose={onClose}
+            draggable={false}
+          >
+            {renderNavItemChildren(dashboardItem)}
+          </SortableNavItem>
         </div>
+      )}
+
+      {pinnedItems.length > 0 && (
+        <DndContext sensors={navSensors} collisionDetection={closestCenter} onDragEnd={handlePinnedDragEnd}>
+          <div className="mb-4 flex flex-col gap-0.5">
+            <span className="px-3 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent/70">
+              {t('sidebar.groups.pinned')}
+            </span>
+            <SortableContext items={pinnedItems.map((i) => i.key)} strategy={verticalListSortingStrategy}>
+              {pinnedItems.map((item) => (
+                <SortableNavItem
+                  key={item.key}
+                  id={item.key}
+                  to={item.to}
+                  exact={item.exact}
+                  onClose={onClose}
+                  pinned
+                  onTogglePin={() => togglePinnedNavItem(item.key)}
+                >
+                  {renderNavItemChildren(item)}
+                </SortableNavItem>
+              ))}
+            </SortableContext>
+          </div>
+        </DndContext>
       )}
 
       <DndContext sensors={navSensors} collisionDetection={closestCenter} onDragEnd={handleNavDragEnd}>

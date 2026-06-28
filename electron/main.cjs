@@ -109,6 +109,12 @@ async function createWindow() {
     if (!staticServer) {
       staticServer = await startStaticServer(path.join(__dirname, '..', 'dist-electron-app'))
     }
+    // Earlier builds bundled the web app's PWA service worker, which registers itself
+    // against this same persistent origin/session and then keeps serving its OLD cached
+    // build forever afterwards - surviving every subsequent app update. Builds from here
+    // on no longer register one (see vite.config.ts), but installs that already have one
+    // active need it purged once so they actually pick up new code instead of stale cache.
+    await win.webContents.session.clearStorageData({ storages: ['serviceworkers', 'cachestorage'] })
     win.loadURL(`http://127.0.0.1:${STATIC_SERVER_PORT}`)
   }
 

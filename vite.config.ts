@@ -3,6 +3,14 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import pkg from './package.json'
 
+// The Electron build reuses this same config (vite build --outDir dist-electron-app).
+// A registered service worker would persist forever in Electron's session storage
+// (the same persistent partition that keeps the user logged in across restarts) and
+// silently keep serving a stale cached build after every later `electron:build`,
+// which is exactly the kind of "looks like my code change never happened" bug a
+// desktop app with its own auto-updater doesn't need - so skip the PWA plugin for it.
+const isElectronBuild = process.env.ELECTRON_BUILD === 'true'
+
 export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
@@ -14,7 +22,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
-    VitePWA({
+    ...(isElectronBuild ? [] : [VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icons/*.png'],
       manifest: {
@@ -59,6 +67,6 @@ export default defineConfig({
           },
         ],
       },
-    }),
+    })]),
   ],
 })
