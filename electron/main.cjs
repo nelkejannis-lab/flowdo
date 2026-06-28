@@ -27,8 +27,15 @@ const MIME_TYPES = {
 // Loading the built app via file:// breaks ES module <script type="module"> imports
 // (Chromium blocks them under the file: origin), which is why the window showed blank.
 // Serve the same static files over a local HTTP server instead - same content, a real origin.
+//
+// IMPORTANT: localStorage (and therefore the Supabase login session) is scoped to the
+// page's origin (host+port). Always serve on the SAME fixed port so the origin is
+// identical across app launches - otherwise every restart looks like a brand new site
+// with empty storage and the user gets logged out every time.
+const STATIC_SERVER_PORT = 47811
+
 function startStaticServer(rootDir) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
       let urlPath = decodeURIComponent(req.url.split('?')[0])
       if (urlPath === '/') urlPath = '/index.html'
@@ -57,7 +64,16 @@ function startStaticServer(rootDir) {
         res.end(data)
       })
     })
-    server.listen(0, '127.0.0.1', () => resolve(server))
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        // Another instance (or a previous run that didn't shut down cleanly) already
+        // owns the port - that's fine, we just reuse the same origin either way.
+        resolve(null)
+      } else {
+        reject(err)
+      }
+    })
+    server.listen(STATIC_SERVER_PORT, '127.0.0.1', () => resolve(server))
   })
 }
 
@@ -93,8 +109,7 @@ async function createWindow() {
     if (!staticServer) {
       staticServer = await startStaticServer(path.join(__dirname, '..', 'dist-electron-app'))
     }
-    const { port } = staticServer.address()
-    win.loadURL(`http://127.0.0.1:${port}`)
+    win.loadURL(`http://127.0.0.1:${STATIC_SERVER_PORT}`)
   }
 
   // Setup auto-updater IPC to frontend
