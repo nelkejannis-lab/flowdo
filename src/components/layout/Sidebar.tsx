@@ -179,6 +179,48 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     return (navVisibility?.[item.key] ?? true) && item.visible
   })
 
+  // Group the nav into labelled sections so it reads as a few short lists instead of one
+  // long undifferentiated column. Membership is fixed per group; the order WITHIN a group
+  // still follows navOrder, so drag-to-reorder (within a group) keeps working.
+  const NAV_GROUPS: { id: string; label: string | null; keys: NavItemKey[] }[] = [
+    { id: 'home', label: null, keys: ['dashboard'] },
+    { id: 'tasks', label: t('sidebar.groups.tasks'), keys: ['week', 'inbox', 'tasks', 'eisenhower', 'brain', 'projekte'] },
+    { id: 'planning', label: t('sidebar.groups.planning'), keys: ['calendar', 'termine', 'pomodoro', 'worktime', 'aiScheduler', 'meetings'] },
+    { id: 'team', label: t('sidebar.groups.team'), keys: ['chat', 'friends', 'social'] },
+  ]
+  const visibleNavItems = sortedNavItems.filter((item) => item.visible)
+  const usedKeys = new Set<string>()
+  const navGroups = NAV_GROUPS.map((group) => {
+    // Filter visibleNavItems (already in navOrder order) by this group's membership.
+    const items = visibleNavItems.filter((item) => group.keys.includes(item.key))
+    items.forEach((item) => usedKeys.add(item.key))
+    return { ...group, items }
+  }).filter((group) => group.items.length > 0)
+  // Any visible item not assigned to a group (e.g. a future nav key) falls into a "more" bucket.
+  const leftovers = visibleNavItems.filter((item) => !usedKeys.has(item.key))
+  if (leftovers.length > 0) {
+    navGroups.push({ id: 'more', label: t('sidebar.groups.more'), keys: leftovers.map((i) => i.key), items: leftovers })
+  }
+
+  function renderNavItemChildren(item: NavDef) {
+    return (
+      <>
+        {item.key === 'chat' ? (
+          <span className="relative flex-shrink-0">{item.icon}
+            {unreadMessages > 0 && (
+              <span className="absolute -right-1.5 -top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-accent text-[8px] font-bold text-white">
+                {unreadMessages > 9 ? '9+' : unreadMessages}
+              </span>
+            )}
+          </span>
+        ) : (
+          <span className="flex-shrink-0">{item.icon}</span>
+        )}
+        <span className="flex-1 truncate">{item.label}</span>
+      </>
+    )
+  }
+
   function toggleFolder(id: string) {
     setOpenFolders((prev) => {
       const next = new Set(prev)
@@ -289,26 +331,24 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       </div>
 
       <DndContext sensors={navSensors} collisionDetection={closestCenter} onDragEnd={handleNavDragEnd}>
-        <SortableContext items={navOrder} strategy={verticalListSortingStrategy}>
-          <nav className="flex flex-col gap-0.5">
-            {sortedNavItems.filter((item) => item.visible).map((item) => (
-              <SortableNavItem key={item.key} id={item.key} to={item.to} exact={item.exact} onClose={onClose}>
-                {item.key === 'chat' ? (
-                  <span className="relative flex-shrink-0">{item.icon}
-                    {unreadMessages > 0 && (
-                      <span className="absolute -right-1.5 -top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-accent text-[8px] font-bold text-white">
-                        {unreadMessages > 9 ? '9+' : unreadMessages}
-                      </span>
-                    )}
-                  </span>
-                ) : (
-                  <span className="flex-shrink-0">{item.icon}</span>
-                )}
-                <span className="flex-1 truncate">{item.label}</span>
-              </SortableNavItem>
-            ))}
-          </nav>
-        </SortableContext>
+        <nav className="flex flex-col gap-4">
+          {navGroups.map((group) => (
+            <div key={group.id} className="flex flex-col gap-0.5">
+              {group.label && (
+                <span className="px-3 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400/80">
+                  {group.label}
+                </span>
+              )}
+              <SortableContext items={group.items.map((i) => i.key)} strategy={verticalListSortingStrategy}>
+                {group.items.map((item) => (
+                  <SortableNavItem key={item.key} id={item.key} to={item.to} exact={item.exact} onClose={onClose}>
+                    {renderNavItemChildren(item)}
+                  </SortableNavItem>
+                ))}
+              </SortableContext>
+            </div>
+          ))}
+        </nav>
       </DndContext>
 
       <div className="mt-4">

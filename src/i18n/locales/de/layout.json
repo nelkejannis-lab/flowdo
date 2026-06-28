@@ -19,6 +19,12 @@
       "friends": "Kollegen",
       "social": "Social Media"
     },
+    "groups": {
+      "tasks": "Aufgaben",
+      "planning": "Kalender & Zeit",
+      "team": "Team",
+      "more": "Weiteres"
+    },
     "projects": {
       "title": "Projekte",
       "manage": "Projekte verwalten",
