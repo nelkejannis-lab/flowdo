@@ -78,8 +78,23 @@ export default function TaskList({ tasks, groupByDate = false, emptyMessage, fla
   const reorderTasks = useTasksStore((s) => s.reorderTasks)
   const editingBoard = editingTask?.boardId ? boards.find((b) => b.id === editingTask.boardId) : undefined
 
-  const activeTasks = useMemo(() => tasks.filter((t) => !t.completed), [tasks])
-  const completedTasks = useMemo(() => tasks.filter((t) => t.completed), [tasks])
+  // Always sort chronologically by due date (tasks without a due date sink to the end).
+  // The sort is stable, so tasks sharing a date (or lacking one) keep their relative
+  // order, which is how manual drag-reordering still has an effect.
+  const activeTasks = useMemo(
+    () =>
+      tasks
+        .filter((t) => !t.completed)
+        .sort((a, b) => (a.dueDate ?? '9999-12-31').localeCompare(b.dueDate ?? '9999-12-31')),
+    [tasks]
+  )
+  const completedTasks = useMemo(
+    () =>
+      tasks
+        .filter((t) => t.completed)
+        .sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? '')),
+    [tasks]
+  )
 
   const groups = useMemo(() => {
     if (!groupByDate) return { Alle: activeTasks }
@@ -124,7 +139,7 @@ export default function TaskList({ tasks, groupByDate = false, emptyMessage, fla
   if (flat) {
     return (
       <div className="flex flex-col gap-2">
-        {tasks.map((task) => (
+        {[...activeTasks, ...completedTasks].map((task) => (
           <TaskItem key={task.id} task={task} onClick={() => setEditingTask(task)} />
         ))}
 
