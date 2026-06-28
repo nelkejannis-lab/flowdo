@@ -17,6 +17,8 @@ interface NewProjectTaskInput {
   boardId: string
   columnId?: string
   assignedTo?: string
+  startTime?: string
+  estimatedMinutes?: number
 }
 
 interface ProjectTaskRow {
@@ -38,6 +40,8 @@ interface ProjectTaskRow {
   attachments: Attachment[]
   created_at: string
   assignee: Task['assignee'] | Task['assignee'][] | null
+  start_time: string | null
+  estimated_minutes: number | null
 }
 
 function single<T>(value: T | T[]): T {
@@ -65,6 +69,8 @@ function toTask(row: ProjectTaskRow, dependsOn?: string[]): Task {
     attachments: row.attachments ?? [],
     createdAt: row.created_at,
     dependsOn,
+    startTime: row.start_time ?? undefined,
+    estimatedMinutes: row.estimated_minutes ?? undefined,
   }
 }
 
@@ -172,6 +178,8 @@ export const useProjectTasksStore = create<ProjectTasksState>()(
             subtasks: [],
             attachments: [],
             createdAt: new Date().toISOString(),
+            startTime: input.startTime,
+            estimatedMinutes: input.estimatedMinutes,
           }
           set((state) => ({
             tasks: [newTask, ...state.tasks],
@@ -198,6 +206,8 @@ export const useProjectTasksStore = create<ProjectTasksState>()(
             important: input.important ?? false,
             board_id: input.boardId,
             column_id: input.columnId ?? null,
+            start_time: input.startTime ?? null,
+            estimated_minutes: input.estimatedMinutes ?? null,
           })
           .select('id')
           .single()
@@ -228,6 +238,8 @@ export const useProjectTasksStore = create<ProjectTasksState>()(
         if (updates.completedAt !== undefined) payload.completed_at = updates.completedAt ?? null
         if (updates.columnId !== undefined) payload.column_id = updates.columnId ?? null
         if (updates.assignedTo !== undefined) payload.assigned_to = updates.assignedTo ?? null
+        if (updates.startTime !== undefined) payload.start_time = updates.startTime ?? null
+        if (updates.estimatedMinutes !== undefined) payload.estimated_minutes = updates.estimatedMinutes ?? null
         if (updates.subtasks !== undefined) payload.subtasks = updates.subtasks
         if (updates.attachments !== undefined) payload.attachments = updates.attachments
 

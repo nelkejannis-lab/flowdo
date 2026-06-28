@@ -42,5 +42,20 @@
     "tomorrow": "Tomorrow",
     "inDays_one": "in {{count}} day",
     "inDays_other": "in {{count}} days"
+  },
+  "aiPlanner": {
+    "title": "AI Day Planner",
+    "subtitle": "Write down what's on today — the AI builds you a sorted schedule.",
+    "placeholder": "Example: I need to refactor the code at 9am, talk to Tom at 2pm, and finish the urgent tax return!",
+    "poweredBy": "// Powered by Claude",
+    "generate": "Generate plan",
+    "generating": "Planning…",
+    "errorGeneric": "Could not generate a day plan.",
+    "noItems": "No tasks recognized. Try adding more detail.",
+    "minutesShort": "min",
+    "urgent": "Urgent",
+    "important": "Important",
+    "backToInput": "← Back",
+    "importSelected": "Import {{count}}"
   }
 }

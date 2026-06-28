@@ -43,6 +43,8 @@ export interface Task {
   someday?: boolean
   recurrence?: 'daily' | 'weekly' | 'monthly'
   dependsOn?: string[]
+  startTime?: string // HH:MM, optional suggested/scheduled start time within dueDate
+  estimatedMinutes?: number
 }
 
 export type EisenhowerQuadrant = 'do' | 'decide' | 'delegate' | 'delete'

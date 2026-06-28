@@ -113,6 +113,7 @@ interface SettingsState {
   colorLabels: Record<string, string>
   navOrder: NavItemKey[]
   navVisibility: Record<NavItemKey, boolean>
+  pinnedNavItems: NavItemKey[]
   notifyAppointments: boolean
   notifyChat: boolean
   notifyTasks: boolean
@@ -135,6 +136,7 @@ interface SettingsState {
   setOnboardingPermissionsDone: () => void
   setNavOrder: (order: NavItemKey[]) => void
   toggleNavItem: (key: NavItemKey) => void
+  togglePinnedNavItem: (key: NavItemKey) => void
   setWeatherCity: (city: string) => void
   setWeatherCoords: (coords: WeatherCoords) => void
   setDashboardWidgetOrder: (order: string[]) => void
@@ -158,6 +160,7 @@ export const useSettingsStore = create<SettingsState>()(
       dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY },
       navOrder: [...DEFAULT_NAV_ORDER],
       navVisibility: { ...DEFAULT_NAV_VISIBILITY },
+      pinnedNavItems: [],
       colorLabels: { ...DEFAULT_COLOR_LABELS },
       notifyAppointments: true,
       notifyChat: true,
@@ -193,6 +196,12 @@ export const useSettingsStore = create<SettingsState>()(
             [key]: !s.navVisibility[key],
           },
         })),
+      togglePinnedNavItem: (key) =>
+        set((s) => ({
+          pinnedNavItems: s.pinnedNavItems.includes(key)
+            ? s.pinnedNavItems.filter((k) => k !== key)
+            : [...s.pinnedNavItems, key],
+        })),
       setWeatherCity: (city) => set({ weatherCity: city }),
       setWeatherCoords: (coords) => set({ weatherCoords: coords }),
       setDashboardWidgetOrder: (dashboardWidgetOrder) => set({ dashboardWidgetOrder }),
@@ -209,6 +218,7 @@ export const useSettingsStore = create<SettingsState>()(
           colorLabels: { ...state.colorLabels, ...settings.colorLabels },
           navOrder: settings.navOrder ?? state.navOrder,
           navVisibility: { ...state.navVisibility, ...settings.navVisibility },
+          pinnedNavItems: settings.pinnedNavItems ?? state.pinnedNavItems,
           notifyAppointments: settings.notifyAppointments ?? state.notifyAppointments,
           notifyChat: settings.notifyChat ?? state.notifyChat,
           notifyTasks: settings.notifyTasks ?? state.notifyTasks,
@@ -229,6 +239,7 @@ export const useSettingsStore = create<SettingsState>()(
           dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY },
           navOrder: [...DEFAULT_NAV_ORDER],
           navVisibility: { ...DEFAULT_NAV_VISIBILITY },
+          pinnedNavItems: [],
           colorLabels: { ...DEFAULT_COLOR_LABELS },
           notifyAppointments: true,
           notifyChat: true,
@@ -310,6 +321,7 @@ export function getSettingsPayload(state: any) {
     colorLabels: state.colorLabels,
     navOrder: state.navOrder,
     navVisibility: state.navVisibility,
+    pinnedNavItems: state.pinnedNavItems,
     notifyAppointments: state.notifyAppointments,
     notifyChat: state.notifyChat,
     notifyTasks: state.notifyTasks,

@@ -35,6 +35,7 @@ import {
   Keyboard,
   Brain,
   Mic,
+  Pin,
 } from 'lucide-react'
 import {
   DndContext,
@@ -107,6 +108,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const navOrder = useSettingsStore((s) => s.navOrder ?? DEFAULT_NAV_ORDER)
   const setNavOrder = useSettingsStore((s) => s.setNavOrder)
   const navVisibility = useSettingsStore((s) => s.navVisibility)
+  const pinnedNavItems = useSettingsStore((s) => s.pinnedNavItems)
+  const togglePinnedNavItem = useSettingsStore((s) => s.togglePinnedNavItem)
   const profile = useAuthStore((s) => s.profile)
   const signOut = useAuthStore((s) => s.signOut)
   const openSearch = useSearchStore((s) => s.open)
@@ -201,6 +204,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   if (leftovers.length > 0) {
     navGroups.push({ id: 'more', label: t('sidebar.groups.more'), keys: leftovers.map((i) => i.key), items: leftovers })
   }
+
+  // Pinned items stay visible in their normal group too - this is just a quick-access
+  // shortcut list, not a move, so users don't lose track of where something "lives".
+  const pinnedItems = visibleNavItems.filter((item) => pinnedNavItems.includes(item.key) && item.key !== 'dashboard')
 
   function renderNavItemChildren(item: NavDef) {
     return (
@@ -330,6 +337,28 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
       </div>
 
+      {pinnedItems.length > 0 && (
+        <div className="mb-4 flex flex-col gap-0.5">
+          <span className="px-3 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent/70">
+            {t('sidebar.groups.pinned')}
+          </span>
+          {pinnedItems.map((item) => (
+            <SortableNavItem
+              key={`pinned-${item.key}`}
+              id={`pinned-${item.key}`}
+              to={item.to}
+              exact={item.exact}
+              onClose={onClose}
+              draggable={false}
+              pinned
+              onTogglePin={() => togglePinnedNavItem(item.key)}
+            >
+              {renderNavItemChildren(item)}
+            </SortableNavItem>
+          ))}
+        </div>
+      )}
+
       <DndContext sensors={navSensors} collisionDetection={closestCenter} onDragEnd={handleNavDragEnd}>
         <nav className="flex flex-col gap-4">
           {navGroups.map((group) => (
@@ -341,7 +370,15 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               )}
               <SortableContext items={group.items.map((i) => i.key)} strategy={verticalListSortingStrategy}>
                 {group.items.map((item) => (
-                  <SortableNavItem key={item.key} id={item.key} to={item.to} exact={item.exact} onClose={onClose}>
+                  <SortableNavItem
+                    key={item.key}
+                    id={item.key}
+                    to={item.to}
+                    exact={item.exact}
+                    onClose={onClose}
+                    pinned={pinnedNavItems.includes(item.key)}
+                    onTogglePin={item.key === 'dashboard' ? undefined : () => togglePinnedNavItem(item.key)}
+                  >
                     {renderNavItemChildren(item)}
                   </SortableNavItem>
                 ))}
@@ -537,10 +574,14 @@ interface SortableNavItemProps {
   exact?: boolean
   onClose: () => void
   children: React.ReactNode
+  draggable?: boolean
+  pinned?: boolean
+  onTogglePin?: () => void
 }
 
-function SortableNavItem({ id, to, exact, onClose, children }: SortableNavItemProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+function SortableNavItem({ id, to, exact, onClose, children, draggable = true, pinned, onTogglePin }: SortableNavItemProps) {
+  const { t } = useTranslation('layout')
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, disabled: !draggable })
   const navItemClass = ({ isActive }: { isActive: boolean }) =>
     `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
       isActive
@@ -554,19 +595,42 @@ function SortableNavItem({ id, to, exact, onClose, children }: SortableNavItemPr
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
       className="group relative flex items-center"
     >
-      <button
-        {...attributes}
-        {...listeners}
-        className="absolute left-0 z-10 flex cursor-grab items-center justify-center rounded p-1 opacity-0 group-hover:opacity-40 hover:!opacity-80 active:cursor-grabbing touch-none"
-        style={{ left: -2 }}
-        tabIndex={-1}
-        onClick={(e) => e.preventDefault()}
+      {draggable && (
+        <button
+          {...attributes}
+          {...listeners}
+          className="absolute left-0 z-10 flex cursor-grab items-center justify-center rounded p-1 opacity-0 group-hover:opacity-40 hover:!opacity-80 active:cursor-grabbing touch-none"
+          style={{ left: -2 }}
+          tabIndex={-1}
+          onClick={(e) => e.preventDefault()}
+        >
+          <GripVertical size={12} className="text-gray-400" />
+        </button>
+      )}
+      <NavLink
+        to={to}
+        end={exact}
+        className={navItemClass}
+        onClick={onClose}
+        style={{ paddingLeft: draggable ? '12px' : '0px', paddingRight: onTogglePin ? '26px' : undefined, flex: 1 }}
       >
-        <GripVertical size={12} className="text-gray-400" />
-      </button>
-      <NavLink to={to} end={exact} className={navItemClass} onClick={onClose} style={{ paddingLeft: '12px', flex: 1 }}>
         {children}
       </NavLink>
+      {onTogglePin && (
+        <button
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onTogglePin()
+          }}
+          title={pinned ? t('sidebar.unpin') : t('sidebar.pin')}
+          className={`absolute right-1.5 z-10 flex items-center justify-center rounded p-1 transition-opacity ${
+            pinned ? 'text-accent opacity-70 hover:opacity-100' : 'text-gray-400 opacity-0 group-hover:opacity-60 hover:!opacity-100'
+          }`}
+        >
+          <Pin size={12} className={pinned ? 'fill-current' : ''} />
+        </button>
+      )}
     </div>
   )
 }

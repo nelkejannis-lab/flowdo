@@ -76,6 +76,26 @@ interface AiSchedulerState {
     text: string,
     boards: { id: string; title: string }[]
   ) => Promise<ParsedTaskInput>
+  planDay: (
+    text: string,
+    context: DayPlanContext
+  ) => Promise<PlannedTaskItem[]>
+}
+
+export interface PlannedTaskItem {
+  title: string
+  startTime: string | null
+  estimatedMinutes: number | null
+  projectId: string | null
+  priority: 'low' | 'medium' | 'high'
+  urgent: boolean
+  important: boolean
+}
+
+export interface DayPlanContext {
+  boards: { id: string; title: string }[]
+  busyEntries: { title: string; startTime?: string; endTime?: string }[]
+  existingTasks: { title: string; startTime?: string; estimatedMinutes?: number }[]
 }
 
 export const useAiSchedulerStore = create<AiSchedulerState>()(() => ({
@@ -277,5 +297,84 @@ Regeln:
       urgent: parsed.urgent || false,
       important: parsed.important || false,
     }
+  },
+
+  planDay: async (text, context) => {
+    const today = new Date()
+    const todayIso = format(today, 'yyyy-MM-dd')
+    const weekday = format(today, 'EEEE', { locale: de })
+
+    const boardsList = context.boards.length > 0
+      ? context.boards.map((b) => `- "${b.title}" (id: ${b.id})`).join('\n')
+      : '(keine Projekte vorhanden)'
+
+    const busyList = context.busyEntries.length > 0
+      ? context.busyEntries.map((e) => `- "${e.title}"${e.startTime ? ` ${e.startTime}–${e.endTime ?? '?'} Uhr` : ' (ganztags)'}`).join('\n')
+      : '(keine Termine heute)'
+
+    const existingList = context.existingTasks.length > 0
+      ? context.existingTasks.map((t) => `- "${t.title}"${t.startTime ? ` um ${t.startTime} Uhr` : ''}${t.estimatedMinutes ? ` (${t.estimatedMinutes} Min.)` : ''}`).join('\n')
+      : '(keine offenen Aufgaben heute)'
+
+    const systemPrompt = `Du bist ein Tagesplaner. Wandle eine ungefilterte deutsche Beschreibung des Tages in eine strukturierte Liste von Aufgaben mit Uhrzeiten um.
+Heutiges Datum: ${todayIso} (${weekday}).
+
+Bereits belegte Termine heute (NICHT überschreiben, drumherum planen):
+${busyList}
+
+Bereits vorhandene offene Aufgaben heute (nicht erneut anlegen, nur bei der Zeitplanung berücksichtigen):
+${existingList}
+
+Verfügbare Projekte (Boards):
+${boardsList}
+
+Antworte AUSSCHLIESSLICH mit kompaktem JSON ohne weiteren Text, in genau diesem Format:
+{
+  "items": [
+    {
+      "title": "kurzer prägnanter Titel",
+      "startTime": "HH:MM" oder null,
+      "estimatedMinutes": Zahl oder null,
+      "projectId": "id-des-passenden-projekts" oder null,
+      "priority": "low" | "medium" | "high",
+      "urgent": boolean,
+      "important": boolean
+    }
+  ]
+}
+
+Regeln:
+- Extrahiere JEDE einzelne Aufgabe/Tätigkeit aus dem Text als eigenes Item.
+- Wenn der Text eine konkrete Uhrzeit nennt (z. B. "um 9 Uhr", "nachmittags um 14 Uhr"), übernimm sie als startTime. "nachmittags" ohne genaue Zeit ≈ 14:00, "morgens" ≈ 09:00, "abends" ≈ 18:00, wenn keine Zeit erkennbar ist und auch keine sinnvoll ableitbar ist, setze startTime auf null.
+- Schätze estimatedMinutes realistisch anhand der Tätigkeit (z. B. "kurz", "schnell" ≈ 15-30 Min., "Meeting"/"sprechen mit" ≈ 30-60 Min., komplexe Arbeit wie "Code refaktorieren", "Steuererklärung" ≈ 60-120 Min.). Wenn der Text selbst eine Dauer nennt, nutze diese.
+- Plane NICHT in die oben genannten bereits belegten Zeiten hinein - wähle freie Slots drumherum, in plausibler chronologischer Reihenfolge ab 08:00 Uhr.
+- Erkenne Dringlichkeit ("dringend", "muss", "sofort") als urgent=true und Wichtigkeit ("wichtig", für ein großes Ziel relevant) als important=true.
+- Ordne ein passendes Projekt aus der obigen Liste zu, falls der Text einen Bezug erkennen lässt, sonst projectId: null.
+- Titel kurz und prägnant, ohne Füllwörter wie "ich muss", "heute".`
+
+    const { data, error } = await supabase.functions.invoke('ai-scheduler', {
+      body: { text, systemPrompt },
+    })
+
+    if (error || data?.error) {
+      throw new Error(error?.message || data?.error || 'KI-Verbindung fehlgeschlagen')
+    }
+
+    const raw: string = data?.content?.[0]?.text ?? ''
+    const jsonMatch = raw.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      throw new Error('Konnte die Antwort der KI nicht als JSON lesen.')
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]) as { items?: Partial<PlannedTaskItem>[] }
+    return (parsed.items ?? []).map((item) => ({
+      title: item.title || text,
+      startTime: item.startTime ?? null,
+      estimatedMinutes: item.estimatedMinutes ?? null,
+      projectId: item.projectId ?? null,
+      priority: item.priority ?? 'medium',
+      urgent: item.urgent ?? false,
+      important: item.important ?? false,
+    }))
   },
 }))

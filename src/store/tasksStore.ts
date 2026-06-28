@@ -19,6 +19,8 @@ interface NewTaskInput {
   evening?: boolean
   someday?: boolean
   recurrence?: Task['recurrence']
+  startTime?: string
+  estimatedMinutes?: number
 }
 
 interface TaskRow {
@@ -40,6 +42,8 @@ interface TaskRow {
   evening: boolean | null
   someday: boolean | null
   recurrence: Task['recurrence'] | null
+  start_time: string | null
+  estimated_minutes: number | null
 }
 
 function toTask(row: TaskRow): Task {
@@ -62,6 +66,8 @@ function toTask(row: TaskRow): Task {
     evening: row.evening ?? undefined,
     someday: row.someday ?? undefined,
     recurrence: row.recurrence ?? undefined,
+    startTime: row.start_time ?? undefined,
+    estimatedMinutes: row.estimated_minutes ?? undefined,
   }
 }
 
@@ -92,6 +98,8 @@ async function syncTask(task: Task, userId: string) {
     evening: task.evening ?? false,
     someday: task.someday ?? false,
     recurrence: task.recurrence ?? null,
+    start_time: task.startTime ?? null,
+    estimated_minutes: task.estimatedMinutes ?? null,
   })
 }
 
@@ -187,6 +195,8 @@ export const useTasksStore = create<TasksState>()(
           evening: input.evening,
           someday: input.someday,
           recurrence: input.recurrence,
+          startTime: input.startTime,
+          estimatedMinutes: input.estimatedMinutes,
         }
         set((state) => ({ tasks: [task, ...state.tasks] }))
         void getUserId().then((userId) => {

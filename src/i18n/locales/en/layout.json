@@ -19,7 +19,10 @@
       "friends": "Colleagues",
       "social": "Social Media"
     },
+    "pin": "Pin",
+    "unpin": "Unpin",
     "groups": {
+      "pinned": "Pinned",
       "tasks": "Tasks",
       "planning": "Calendar & Time",
       "team": "Team",

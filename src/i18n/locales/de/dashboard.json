@@ -42,5 +42,20 @@
     "tomorrow": "Morgen",
     "inDays_one": "in {{count}} Tag",
     "inDays_other": "in {{count}} Tagen"
+  },
+  "aiPlanner": {
+    "title": "KI-Tagesplaner",
+    "subtitle": "Schreib einfach auf, was heute ansteht — die KI baut dir einen sortierten Zeitplan.",
+    "placeholder": "Beispiel: Ich muss heute um 9 Uhr den Code refaktorieren, nachmittags um 14 Uhr mit Tom sprechen und die dringende Steuererklärung fertigmachen!",
+    "poweredBy": "// Angetrieben von Claude",
+    "generate": "Plan erstellen",
+    "generating": "Plane…",
+    "errorGeneric": "Tagesplan konnte nicht erstellt werden.",
+    "noItems": "Keine Aufgaben erkannt. Versuch es mit mehr Details.",
+    "minutesShort": "Min.",
+    "urgent": "Dringend",
+    "important": "Wichtig",
+    "backToInput": "← Zurück",
+    "importSelected": "{{count}} importieren"
   }
 }

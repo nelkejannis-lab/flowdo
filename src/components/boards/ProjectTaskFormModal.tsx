@@ -52,6 +52,8 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
   const [assignedTo, setAssignedTo] = useState(task?.assignedTo ?? '')
   const [urgent, setUrgent] = useState(task?.urgent ?? false)
   const [important, setImportant] = useState(task?.important ?? false)
+  const [startTime, setStartTime] = useState(task?.startTime ?? '')
+  const [estimatedMinutes, setEstimatedMinutes] = useState(task?.estimatedMinutes?.toString() ?? '')
   const [newSubtask, setNewSubtask] = useState('')
   const [localSubtasks, setLocalSubtasks] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
@@ -75,6 +77,7 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
 
     setSaving(true)
     setError(null)
+    const parsedEstimatedMinutes = estimatedMinutes.trim() ? Number(estimatedMinutes) : undefined
 
     if (task) {
       await updateTask(task.id, {
@@ -85,6 +88,8 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
         urgent,
         important,
         assignedTo: assignedTo || undefined,
+        startTime: startTime || undefined,
+        estimatedMinutes: parsedEstimatedMinutes,
       })
       setSaving(false)
     } else {
@@ -98,6 +103,8 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
         boardId: board.id,
         columnId: defaultColumnId ?? board.columns[0]?.id,
         assignedTo: assignedTo || undefined,
+        startTime: startTime || undefined,
+        estimatedMinutes: parsedEstimatedMinutes,
       })
       setSaving(false)
       if (result.error) {
@@ -334,6 +341,30 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
               <option value="medium">{t('taskForm.priorityMedium')}</option>
               <option value="high">{t('taskForm.priorityHigh')}</option>
             </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-500">{t('taskForm.startTime')}</label>
+            <input
+              type="time"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-500">{t('taskForm.estimatedMinutes')}</label>
+            <input
+              type="number"
+              min={0}
+              step={5}
+              placeholder={t('taskForm.estimatedMinutesPlaceholder')}
+              value={estimatedMinutes}
+              onChange={(e) => setEstimatedMinutes(e.target.value)}
+              className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+            />
           </div>
         </div>
 

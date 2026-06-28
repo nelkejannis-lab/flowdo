@@ -44,6 +44,9 @@
     "descriptionPlaceholder": "Description (optional)",
     "dueDate": "Due date",
     "priority": "Priority",
+    "startTime": "Time",
+    "estimatedMinutes": "Duration (min)",
+    "estimatedMinutesPlaceholder": "e.g. 30",
     "tonight": "Tonight",
     "repeatPlaceholder": "Repeat…",
     "repeatDaily": "Daily",
@@ -80,6 +83,8 @@
   "page": {
     "addTask": "Task",
     "noCompletedTasks": "No completed tasks",
+    "viewList": "List",
+    "viewGrid": "Eisenhower Grid",
     "titles": {
       "all": "All tasks",
       "today": "Today",

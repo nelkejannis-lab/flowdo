@@ -93,6 +93,8 @@ export default function TaskFormModal({
   const [evening, setEvening] = useState(task?.evening ?? false)
   const [someday, setSomeday] = useState(task?.someday ?? false)
   const [recurrence, setRecurrence] = useState<Task['recurrence']>(task?.recurrence)
+  const [startTime, setStartTime] = useState(task?.startTime ?? '')
+  const [estimatedMinutes, setEstimatedMinutes] = useState(task?.estimatedMinutes?.toString() ?? '')
   const [localSubtasks, setLocalSubtasks] = useState<string[]>([])
   const [assigneeId, setAssigneeId] = useState('')
   const [projectId, setProjectId] = useState(task?.boardId ?? defaultProjectId ?? '')
@@ -182,6 +184,8 @@ export default function TaskFormModal({
     e.preventDefault()
     if (!title.trim()) return
 
+    const parsedEstimatedMinutes = estimatedMinutes.trim() ? Number(estimatedMinutes) : undefined
+
     if (task && projectId) {
       const board = boards.find((b) => b.id === projectId)
       setSending(true)
@@ -196,6 +200,8 @@ export default function TaskFormModal({
         important,
         boardId: projectId,
         columnId: board?.columns[0]?.id,
+        startTime: startTime || undefined,
+        estimatedMinutes: parsedEstimatedMinutes,
       })
       setSending(false)
       if (result.error) {
@@ -235,6 +241,8 @@ export default function TaskFormModal({
         evening,
         someday,
         recurrence,
+        startTime: startTime || undefined,
+        estimatedMinutes: parsedEstimatedMinutes,
       })
       onSave?.()
     } else if (projectId) {
@@ -251,6 +259,8 @@ export default function TaskFormModal({
         important,
         boardId: projectId,
         columnId: board?.columns[0]?.id,
+        startTime: startTime || undefined,
+        estimatedMinutes: parsedEstimatedMinutes,
       })
       setSending(false)
       if (result.error) {
@@ -294,6 +304,8 @@ export default function TaskFormModal({
         evening,
         someday,
         recurrence,
+        startTime: startTime || undefined,
+        estimatedMinutes: parsedEstimatedMinutes,
       })
       localSubtasks.forEach((s) => addSubtask(created.id, s))
       onSave?.()
@@ -568,6 +580,31 @@ export default function TaskFormModal({
               <option value="medium">{t('priority.medium')}</option>
               <option value="high">{t('priority.high')}</option>
             </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.startTime')}</label>
+            <input
+              type="time"
+              value={startTime}
+              disabled={someday}
+              onChange={(e) => setStartTime(e.target.value)}
+              className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50 dark:border-racing-700"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.estimatedMinutes')}</label>
+            <input
+              type="number"
+              min={0}
+              step={5}
+              placeholder={t('form.estimatedMinutesPlaceholder')}
+              value={estimatedMinutes}
+              onChange={(e) => setEstimatedMinutes(e.target.value)}
+              className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+            />
           </div>
         </div>
 

@@ -44,6 +44,9 @@
     "descriptionPlaceholder": "Beschreibung (optional)",
     "dueDate": "Fällig am",
     "priority": "Priorität",
+    "startTime": "Uhrzeit",
+    "estimatedMinutes": "Dauer (Min.)",
+    "estimatedMinutesPlaceholder": "z. B. 30",
     "tonight": "Heute Abend",
     "repeatPlaceholder": "Wiederholen…",
     "repeatDaily": "Täglich",
@@ -80,6 +83,8 @@
   "page": {
     "addTask": "Aufgabe",
     "noCompletedTasks": "Keine erledigten Aufgaben",
+    "viewList": "Liste",
+    "viewGrid": "Eisenhower-Matrix",
     "titles": {
       "all": "Alle Aufgaben",
       "today": "Heute",

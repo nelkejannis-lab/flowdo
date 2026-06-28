@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useSocialStore } from '../store/socialStore'
 import { differenceInCalendarDays, format, parseISO } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
-import { Plus, CalendarClock, Instagram, TrendingUp, Heart, Bookmark, Users, Loader2, Sliders, Check, X } from 'lucide-react'
+import { Plus, CalendarClock, Instagram, TrendingUp, Heart, Bookmark, Users, Loader2, Sliders, Check, X, Sparkles } from 'lucide-react'
 import { useAiSchedulerStore } from '../store/aiSchedulerStore'
 import { useTranslation } from 'react-i18next'
 import { useTasksStore } from '../store/tasksStore'
@@ -18,6 +18,7 @@ import TaskList from '../components/tasks/TaskList'
 import TaskFormModal from '../components/tasks/TaskFormModal'
 import BoardCard from '../components/boards/BoardCard'
 import WeatherWidget from '../components/dashboard/WeatherWidget'
+import AiDayPlannerModal from '../components/dashboard/AiDayPlannerModal'
 import ProductivityStatsWidget from '../components/dashboard/ProductivityStatsWidget'
 import WorkOfficeWidget from '../components/office/WorkOfficeWidget'
 import OfficePromptModal from '../components/office/OfficePromptModal'
@@ -57,6 +58,7 @@ export default function Dashboard() {
   const onboardingPermissionsDone = useSettingsStore((s) => s.onboardingPermissionsDone)
   const openQuickTaskModal = useQuickTaskModalStore((s) => s.open)
   const [showForm, setShowForm] = useState(false)
+  const [showAiDayPlanner, setShowAiDayPlanner] = useState(false)
   const [quickInput, setQuickInput] = useState('')
   const [parsingTask, setParsingTask] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
@@ -245,8 +247,18 @@ export default function Dashboard() {
             {parsingTask ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
             {parsingTask ? "Analysiere..." : t('addTask')}
           </button>
+          <button
+            type="button"
+            onClick={() => setShowAiDayPlanner(true)}
+            title={t('aiPlanner.title')}
+            className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:brightness-110"
+          >
+            <Sparkles size={16} />
+          </button>
         </form>
       </div>
+
+      {showAiDayPlanner && <AiDayPlannerModal onClose={() => setShowAiDayPlanner(false)} />}
 
       {isEditing && (
         <div className="mb-6 rounded-xl border-2 border-dashed border-gray-200 dark:border-racing-800 p-4 bg-gray-50/50 dark:bg-racing-950/20 animate-in fade-in slide-in-from-top-2 duration-150">
