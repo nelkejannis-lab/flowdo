@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Archive, AtSign, Bell, Check, HelpCircle, Plus, Trello, X, Search, Loader2 } from 'lucide-react'
+import { Archive, AtSign, Bell, Check, HelpCircle, Plus, Trello, X, Search, Loader2, SlidersHorizontal } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTasksStore } from '../store/tasksStore'
 import { useTaskSharesStore } from '../store/taskSharesStore'
@@ -61,6 +61,7 @@ export default function TasksPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
   const [selectedProject, setSelectedProject] = useState<string | null>(null)
+  const [showFilterMenu, setShowFilterMenu] = useState(false)
   const openQuickTaskModal = useQuickTaskModalStore((s) => s.open)
   const [quickInput, setQuickInput] = useState('')
   const [parsingTask, setParsingTask] = useState(false)
@@ -338,98 +339,120 @@ export default function TasksPage() {
 
       {smartList !== 'inbox' && (
         <div className="mb-5 flex flex-col gap-3">
-          {/* Search bar */}
-          <div className="relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Aufgaben durchsuchen..."
-              className="w-full rounded-xl border border-gray-100 bg-white pl-9 pr-9 py-2 text-sm outline-none focus:border-accent dark:border-racing-800 dark:bg-racing-900/60 transition-all shadow-sm"
-            />
-            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            {searchQuery && (
+          {/* Search bar + filter toggle */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Aufgaben durchsuchen..."
+                className="w-full rounded-xl border border-gray-100 bg-white pl-9 pr-9 py-2 text-sm outline-none focus:border-accent dark:border-racing-800 dark:bg-racing-900/60 transition-all shadow-sm"
+              />
+              <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            {(relevantBoards.length > 0 || allUniqueTags.length > 0) && (
               <button
                 type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                onClick={() => setShowFilterMenu((v) => !v)}
+                className={`relative flex flex-shrink-0 items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
+                  showFilterMenu
+                    ? 'border-accent bg-accent/10 text-accent'
+                    : 'border-gray-100 bg-white text-gray-500 hover:bg-gray-50 dark:border-racing-800 dark:bg-racing-900/60 dark:text-racing-200 dark:hover:bg-racing-800'
+                }`}
               >
-                <X size={14} />
+                <SlidersHorizontal size={14} />
+                Filter
+                {(selectedProject !== null || selectedTag !== null) && (
+                  <span className="absolute -right-1 -top-1 flex h-2.5 w-2.5 rounded-full bg-accent" />
+                )}
               </button>
             )}
           </div>
 
-          {/* Project Pills */}
-          {relevantBoards.length > 0 && (
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mr-1.5 flex-shrink-0">Projekte:</span>
-              <button
-                type="button"
-                onClick={() => setSelectedProject(null)}
-                className={`rounded-full px-3 py-1 text-xs font-semibold transition-all duration-150 hover:scale-105 active:scale-95 ${
-                  selectedProject === null
-                    ? 'bg-accent text-white shadow-sm hover:brightness-105'
-                    : 'bg-black/[0.04] text-gray-600 hover:bg-black/[0.08] dark:bg-white/[0.06] dark:text-racing-200 dark:hover:bg-white/[0.1]'
-                }`}
-              >
-                Alle Projekte ({projectCounts.all})
-              </button>
-              {relevantBoards.map((board) => {
-                const count = projectCounts.byProject[board.id] ?? 0
-                return (
+          {/* Filter menu: project + tag pills, collapsed by default */}
+          {showFilterMenu && (relevantBoards.length > 0 || allUniqueTags.length > 0) && (
+            <div className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-white p-3 dark:border-racing-800 dark:bg-racing-900/60">
+              {relevantBoards.length > 0 && (
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mr-1.5 flex-shrink-0">Projekte:</span>
                   <button
-                    key={board.id}
                     type="button"
-                    onClick={() => setSelectedProject(selectedProject === board.id ? null : board.id)}
-                    className={`rounded-full px-3 py-1 text-xs font-semibold transition-all duration-150 hover:scale-105 active:scale-95 flex items-center gap-1.5 ${
-                      selectedProject === board.id
-                        ? 'text-white shadow-sm hover:brightness-105'
-                        : 'bg-black/[0.04] text-gray-600 hover:bg-black/[0.08] dark:bg-white/[0.06] dark:text-racing-200 dark:hover:bg-white/[0.1]'
-                    }`}
-                    style={{
-                      backgroundColor: selectedProject === board.id ? board.color : undefined,
-                    }}
-                  >
-                    <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: selectedProject === board.id ? 'white' : board.color }} />
-                    {board.title} ({count})
-                  </button>
-                )
-              })}
-            </div>
-          )}
-
-          {/* Tag Pills */}
-          {allUniqueTags.length > 0 && (
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mr-1.5 flex-shrink-0">Tags:</span>
-              <button
-                type="button"
-                onClick={() => setSelectedTag(null)}
-                className={`rounded-full px-3 py-1 text-xs font-semibold transition-all duration-150 hover:scale-105 active:scale-95 ${
-                  selectedTag === null
-                    ? 'bg-accent text-white shadow-sm hover:brightness-105'
-                    : 'bg-black/[0.04] text-gray-600 hover:bg-black/[0.08] dark:bg-white/[0.06] dark:text-racing-200 dark:hover:bg-white/[0.1]'
-                }`}
-              >
-                Alle Tags ({tagCounts.all})
-              </button>
-              {allUniqueTags.map((tag) => {
-                const count = tagCounts.byTag[tag] ?? 0
-                return (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                    onClick={() => setSelectedProject(null)}
                     className={`rounded-full px-3 py-1 text-xs font-semibold transition-all duration-150 hover:scale-105 active:scale-95 ${
-                      selectedTag === tag
+                      selectedProject === null
                         ? 'bg-accent text-white shadow-sm hover:brightness-105'
                         : 'bg-black/[0.04] text-gray-600 hover:bg-black/[0.08] dark:bg-white/[0.06] dark:text-racing-200 dark:hover:bg-white/[0.1]'
                     }`}
                   >
-                    #{tag} ({count})
+                    Alle Projekte ({projectCounts.all})
                   </button>
-                )
-              })}
+                  {relevantBoards.map((board) => {
+                    const count = projectCounts.byProject[board.id] ?? 0
+                    return (
+                      <button
+                        key={board.id}
+                        type="button"
+                        onClick={() => setSelectedProject(selectedProject === board.id ? null : board.id)}
+                        className={`rounded-full px-3 py-1 text-xs font-semibold transition-all duration-150 hover:scale-105 active:scale-95 flex items-center gap-1.5 ${
+                          selectedProject === board.id
+                            ? 'text-white shadow-sm hover:brightness-105'
+                            : 'bg-black/[0.04] text-gray-600 hover:bg-black/[0.08] dark:bg-white/[0.06] dark:text-racing-200 dark:hover:bg-white/[0.1]'
+                        }`}
+                        style={{
+                          backgroundColor: selectedProject === board.id ? board.color : undefined,
+                        }}
+                      >
+                        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: selectedProject === board.id ? 'white' : board.color }} />
+                        {board.title} ({count})
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
+              {allUniqueTags.length > 0 && (
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mr-1.5 flex-shrink-0">Tags:</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTag(null)}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold transition-all duration-150 hover:scale-105 active:scale-95 ${
+                      selectedTag === null
+                        ? 'bg-accent text-white shadow-sm hover:brightness-105'
+                        : 'bg-black/[0.04] text-gray-600 hover:bg-black/[0.08] dark:bg-white/[0.06] dark:text-racing-200 dark:hover:bg-white/[0.1]'
+                    }`}
+                  >
+                    Alle Tags ({tagCounts.all})
+                  </button>
+                  {allUniqueTags.map((tag) => {
+                    const count = tagCounts.byTag[tag] ?? 0
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                        className={`rounded-full px-3 py-1 text-xs font-semibold transition-all duration-150 hover:scale-105 active:scale-95 ${
+                          selectedTag === tag
+                            ? 'bg-accent text-white shadow-sm hover:brightness-105'
+                            : 'bg-black/[0.04] text-gray-600 hover:bg-black/[0.08] dark:bg-white/[0.06] dark:text-racing-200 dark:hover:bg-white/[0.1]'
+                        }`}
+                      >
+                        #{tag} ({count})
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>
