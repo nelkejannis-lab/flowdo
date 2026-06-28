@@ -311,9 +311,10 @@ export default function LoginPage() {
             </motion.div>
 
             {/* Footer */}
-            <motion.div variants={itemVariants} className="mt-14 flex gap-6 text-[12px] font-medium text-white/30">
+            <motion.div variants={itemVariants} className="mt-14 flex items-center gap-6 text-[12px] font-medium text-white/30">
               <Link to="/datenschutz" className="hover:text-white transition-colors">{t('footer.privacy')}</Link>
               <Link to="/impressum"   className="hover:text-white transition-colors">{t('footer.imprint')}</Link>
+              <span>v{__APP_VERSION__}</span>
             </motion.div>
           </motion.div>
 
@@ -406,9 +407,10 @@ export default function LoginPage() {
                     className="w-full rounded-2xl border border-white/10 py-4 text-[15px] font-bold text-white/70 backdrop-blur-md transition-all active:scale-[.98]">
                     Create account
                   </button>
-                  <div className="flex justify-center gap-6 pt-4 text-[12px] font-medium text-white/30">
+                  <div className="flex items-center justify-center gap-6 pt-4 text-[12px] font-medium text-white/30">
                     <Link to="/datenschutz" className="hover:text-white transition-colors">{t('footer.privacy')}</Link>
                     <Link to="/impressum"   className="hover:text-white transition-colors">{t('footer.imprint')}</Link>
+                    <span>v{__APP_VERSION__}</span>
                   </div>
                 </motion.div>
               </motion.div>

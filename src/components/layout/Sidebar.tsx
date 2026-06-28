@@ -465,6 +465,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <Link to="/datenschutz" target="_blank" className="hover:underline">{t('sidebar.legal.privacy')}</Link>
           <Link to="/impressum" target="_blank" className="hover:underline">{t('sidebar.legal.imprint')}</Link>
         </div>
+        <p className="mt-1 text-center text-[10px] text-gray-300 dark:text-racing-600">v{__APP_VERSION__}</p>
       </div>
       </aside>
       {showShortcuts && (
