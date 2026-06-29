@@ -91,12 +91,14 @@ export default function ArbeitszeitPage() {
         <OvertimeOverview />
       </div>
 
+      {/* On mobile the source order applies (Stempeluhr → Wochen-/Monatsansicht → Stempel-Protokoll
+          last). On desktop the grid places the clock and the stamp log in the left column and the
+          week/month view in the right column. */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr]">
-        <div className="flex flex-col gap-6">
+        <div className="lg:col-start-1 lg:row-start-1">
           <TimeClock />
-          <StampLog />
         </div>
-        <div>
+        <div className="lg:col-start-2 lg:row-start-1 lg:row-span-2">
           <div className="mb-3 flex gap-1 rounded-lg bg-gray-100 p-1 text-sm font-medium dark:bg-racing-800 w-fit">
             {(['week', 'month'] as const).map((v) => (
               <button
@@ -111,6 +113,9 @@ export default function ArbeitszeitPage() {
             ))}
           </div>
           {view === 'week' ? <WorkWeekView /> : <WorkMonthView />}
+        </div>
+        <div className="lg:col-start-1 lg:row-start-2">
+          <StampLog />
         </div>
       </div>
 

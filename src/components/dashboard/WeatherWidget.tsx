@@ -280,6 +280,8 @@ export default function WeatherWidget() {
   const setWeatherCity = useSettingsStore((s) => s.setWeatherCity)
   const weatherCoords = useSettingsStore((s) => s.weatherCoords)
   const setWeatherCoords = useSettingsStore((s) => s.setWeatherCoords)
+  const weatherGpsAsked = useSettingsStore((s) => s.weatherGpsAsked)
+  const setWeatherGpsAsked = useSettingsStore((s) => s.setWeatherGpsAsked)
 
   const [data, setData] = useState<WeatherData | null>(null)
   const [editing, setEditing] = useState(false)
@@ -290,9 +292,9 @@ export default function WeatherWidget() {
   const [activeIdx, setActiveIdx] = useState(-1)
   const [locating, setLocating] = useState(false)
 
-  async function detectLocation() {
+  async function detectLocation(silent = false) {
     if (!navigator.geolocation) {
-      alert('Geolokalisierung wird von diesem Browser nicht unterstützt.')
+      if (!silent) alert('Geolokalisierung wird von diesem Browser nicht unterstützt.')
       return
     }
     setLocating(true)
@@ -316,7 +318,7 @@ export default function WeatherWidget() {
       },
       (error) => {
         console.error(error)
-        alert('Standort konnte nicht bestimmt werden. Bitte manuell eingeben.')
+        if (!silent) alert('Standort konnte nicht bestimmt werden. Bitte manuell eingeben.')
         setLocating(false)
       },
       { timeout: 8000 }
@@ -333,6 +335,16 @@ export default function WeatherWidget() {
     if (weatherCoords) loadWeather(weatherCoords.lat, weatherCoords.lon)
     return () => weatherAbort.current?.abort()
   }, [weatherCoords])
+
+  // On first ever use, try to locate the user via GPS so the weather reflects their
+  // actual position out of the box. Only attempted once (the browser asks for permission
+  // once); after that the user can refresh the location manually via the GPS button.
+  useEffect(() => {
+    if (weatherGpsAsked) return
+    setWeatherGpsAsked()
+    if (navigator.geolocation) void detectLocation(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function loadWeather(lat: number, lon: number) {
     weatherAbort.current?.abort()
@@ -410,7 +422,7 @@ export default function WeatherWidget() {
           />
           <button
             type="button"
-            onClick={detectLocation}
+            onClick={() => detectLocation()}
             disabled={locating}
             className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-accent dark:hover:bg-racing-800 transition-colors disabled:opacity-50 flex-shrink-0"
             title="Aktuellen Standort verwenden"

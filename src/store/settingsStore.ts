@@ -79,7 +79,7 @@ export const DEFAULT_FEATURE_VISIBILITY: Record<FeatureKey, boolean> = {
   weather: true,
 }
 
-export type DashboardWidget = 'stats' | 'todayTasks' | 'upcomingDeadlines' | 'nextEvents' | 'projectsOverview' | 'workoffice' | 'topPriority' | 'dayPlan'
+export type DashboardWidget = 'stats' | 'todayTasks' | 'upcomingDeadlines' | 'nextEvents' | 'projectsOverview' | 'workoffice' | 'topPriority' | 'dayPlan' | 'weather'
 
 export const DEFAULT_DASHBOARD_VISIBILITY: Record<DashboardWidget, boolean> = {
   stats: true,
@@ -90,6 +90,7 @@ export const DEFAULT_DASHBOARD_VISIBILITY: Record<DashboardWidget, boolean> = {
   workoffice: true,
   topPriority: true,
   dayPlan: true,
+  weather: true,
 }
 
 export const DEFAULT_DASHBOARD_WIDGET_ORDER = ['workoffice', 'stats_week', 'stats_projects']
@@ -121,6 +122,7 @@ interface SettingsState {
   onboardingPermissionsDone: boolean
   weatherCity: string
   weatherCoords: WeatherCoords
+  weatherGpsAsked: boolean
   hideCompletedTasks: boolean
   dashboardWidgetOrder: string[]
   dailyAgendaOrder: Record<string, string[]>
@@ -141,6 +143,7 @@ interface SettingsState {
   setPinnedNavOrder: (order: NavItemKey[]) => void
   setWeatherCity: (city: string) => void
   setWeatherCoords: (coords: WeatherCoords) => void
+  setWeatherGpsAsked: () => void
   setDashboardWidgetOrder: (order: string[]) => void
   setDailyAgendaOrder: (date: string, order: string[]) => void
   toggleHideCompletedTasks: () => void
@@ -172,6 +175,7 @@ export const useSettingsStore = create<SettingsState>()(
       onboardingPermissionsDone: false,
       weatherCity: DEFAULT_WEATHER_CITY,
       weatherCoords: { ...DEFAULT_WEATHER_COORDS },
+      weatherGpsAsked: false,
       hideCompletedTasks: true,
       dashboardWidgetOrder: [...DEFAULT_DASHBOARD_WIDGET_ORDER],
       dailyAgendaOrder: {},
@@ -211,6 +215,7 @@ export const useSettingsStore = create<SettingsState>()(
         set((s) => ({ dailyAgendaOrder: { ...s.dailyAgendaOrder, [date]: order } })),
       setWeatherCity: (city) => set({ weatherCity: city }),
       setWeatherCoords: (coords) => set({ weatherCoords: coords }),
+      setWeatherGpsAsked: () => set({ weatherGpsAsked: true }),
       setDashboardWidgetOrder: (dashboardWidgetOrder) => set({ dashboardWidgetOrder }),
       toggleHideCompletedTasks: () => set((s) => ({ hideCompletedTasks: !s.hideCompletedTasks })),
       importSettings: (settings) => {
@@ -233,6 +238,7 @@ export const useSettingsStore = create<SettingsState>()(
           onboardingPermissionsDone: settings.onboardingPermissionsDone ?? state.onboardingPermissionsDone,
           weatherCity: settings.weatherCity ?? state.weatherCity,
           weatherCoords: settings.weatherCoords ?? state.weatherCoords,
+          weatherGpsAsked: settings.weatherGpsAsked ?? state.weatherGpsAsked,
           hideCompletedTasks: settings.hideCompletedTasks ?? state.hideCompletedTasks,
           dashboardWidgetOrder: settings.dashboardWidgetOrder ?? state.dashboardWidgetOrder,
           dailyAgendaOrder: settings.dailyAgendaOrder ?? state.dailyAgendaOrder,
@@ -256,6 +262,7 @@ export const useSettingsStore = create<SettingsState>()(
           onboardingPermissionsDone: false,
           weatherCity: DEFAULT_WEATHER_CITY,
           weatherCoords: { ...DEFAULT_WEATHER_COORDS },
+          weatherGpsAsked: false,
           hideCompletedTasks: true,
           dashboardWidgetOrder: [...DEFAULT_DASHBOARD_WIDGET_ORDER],
           dailyAgendaOrder: {},
@@ -338,6 +345,7 @@ export function getSettingsPayload(state: any) {
     onboardingPermissionsDone: state.onboardingPermissionsDone,
     weatherCity: state.weatherCity,
     weatherCoords: state.weatherCoords,
+    weatherGpsAsked: state.weatherGpsAsked,
     hideCompletedTasks: state.hideCompletedTasks,
     dashboardWidgetOrder: state.dashboardWidgetOrder,
     dailyAgendaOrder: state.dailyAgendaOrder,

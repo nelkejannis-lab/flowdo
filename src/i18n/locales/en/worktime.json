@@ -31,7 +31,8 @@
     "clockOut": "Out",
     "netOnDay": "Net on this day",
     "changeLog": "Change log",
-    "today": "Today"
+    "today": "Today",
+    "exportMonth": "Monthly report (CSV)"
   },
   "arbzg": {
     "maxDaily": "Maximum working time exceeded: more than 10 hrs (§3 ArbZG).",

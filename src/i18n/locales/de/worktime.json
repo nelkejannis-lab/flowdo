@@ -31,7 +31,8 @@
     "clockOut": "Gehen",
     "netOnDay": "Netto an diesem Tag",
     "changeLog": "Änderungsprotokoll",
-    "today": "Heute"
+    "today": "Heute",
+    "exportMonth": "Monatsnachweis (CSV)"
   },
   "arbzg": {
     "maxDaily": "Höchstarbeitszeit überschritten: mehr als 10 Std. (§3 ArbZG).",

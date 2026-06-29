@@ -1106,6 +1106,7 @@ const DASH_WIDGETS: { key: DashboardWidget; icon: React.ReactNode; label: string
   { key: 'nextEvents',       icon: <CalendarClock size={16} />, label: 'Events',        desc: 'Nächste Ereignisse' },
   { key: 'projectsOverview', icon: <FolderKanban size={16} />,label: 'Projektübersicht',desc: 'Alle aktiven Projekte' },
   { key: 'workoffice',       icon: <Users size={16} />,       label: 'Büro & Kollegen', desc: 'Wer ist im Büro, wer arbeitet von wo?' },
+  { key: 'weather',          icon: <Cloud size={16} />,       label: 'Wetter',          desc: 'Aktuelles Wetter per GPS-Standort' },
 ]
 
 function DashboardWidgetSection({ dashboardVisibility, toggleDashboardWidget }: { dashboardVisibility: Record<DashboardWidget, boolean>; toggleDashboardWidget: (k: DashboardWidget) => void }) {

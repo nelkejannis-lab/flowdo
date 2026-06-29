@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { de, enUS } from 'date-fns/locale'
 import { format, addDays, subDays, parseISO } from 'date-fns'
-import { LogIn, LogOut, ShieldCheck, AlertTriangle, History, ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react'
+import { LogIn, LogOut, ShieldCheck, AlertTriangle, History, ChevronLeft, ChevronRight, CalendarDays, Download } from 'lucide-react'
 import { useWorkTimeStore } from '../../store/workTimeStore'
+import { useAuthStore } from '../../store/authStore'
 import { todayISO, toISODate } from '../../utils/date'
 import {
   punchesForDay,
@@ -12,6 +13,7 @@ import {
   netMinutes,
   type ArbZgWarning,
 } from '../../utils/worktime'
+import { buildMonthlyTimesheetCsv, downloadCsv } from '../../utils/worktimeExport'
 
 function warningLabel(t: (k: string) => string, w: ArbZgWarning): string {
   if (w.code === 'maxDaily') return t('arbzg.maxDaily')
@@ -25,6 +27,8 @@ export default function StampLog() {
   const punches = useWorkTimeStore((s) => s.punches)
   const auditLog = useWorkTimeStore((s) => s.auditLog)
   const entries = useWorkTimeStore((s) => s.entries)
+  const settings = useWorkTimeStore((s) => s.settings)
+  const profile = useAuthStore((s) => s.profile)
 
   const today = todayISO()
   const [selectedDate, setSelectedDate] = useState(today)
@@ -49,6 +53,13 @@ export default function StampLog() {
     setSelectedDate((d) => toISODate(delta > 0 ? addDays(parseISO(d), 1) : subDays(parseISO(d), 1)))
   }
 
+  function handleExport() {
+    const month = selectedDate.slice(0, 7) // yyyy-MM
+    const name = profile?.display_name || profile?.username || 'Mitarbeiter'
+    const csv = buildMonthlyTimesheetCsv(month, entries, punches, auditLog, settings, name)
+    downloadCsv(`Arbeitszeitnachweis_${month}.csv`, csv)
+  }
+
   return (
     <div className="flex flex-col gap-4 rounded-xl border border-gray-100 bg-white p-5 dark:border-racing-800 dark:bg-racing-900">
       <div className="flex items-center gap-2">
@@ -58,6 +69,13 @@ export default function StampLog() {
           {t('stampLog.tamperProof')}
         </span>
       </div>
+
+      <button
+        onClick={handleExport}
+        className="flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50 dark:border-racing-700 dark:text-racing-200 dark:hover:bg-racing-800"
+      >
+        <Download size={13} /> {t('stampLog.exportMonth')}
+      </button>
 
       {/* Day navigation */}
       <div className="flex items-center gap-2">
