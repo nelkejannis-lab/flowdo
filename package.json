@@ -1,7 +1,7 @@
 {
   "name": "workorganizer",
   "private": true,
-  "version": "1.0.19",
+  "version": "1.0.20",
   "description": "Mooncrew Work Organizer",
   "author": "Mooncrew",
   "type": "module",
