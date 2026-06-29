@@ -14,9 +14,11 @@ import {
   FileText,
   List,
   Upload,
+  ListChecks,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { useBrainStore, NotePage, NoteColumn } from '../store/brainStore'
+import { useBrainStore, NotePage, NoteColumn, NoteChecklistItem } from '../store/brainStore'
+import { createId } from '../utils/id'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 export default function SecondBrainPage() {
@@ -54,6 +56,8 @@ export default function SecondBrainPage() {
   const [createColId, setCreateColId] = useState('')
   const [noteTitle, setNoteTitle] = useState('')
   const [noteContent, setNoteContent] = useState('')
+  const [noteChecklist, setNoteChecklist] = useState<NoteChecklistItem[]>([])
+  const [newChecklistText, setNewChecklistText] = useState('')
 
   // Speech Recognition & Recording states (for editing/creating notes)
   const [isTranscribing, setIsTranscribing] = useState(false)
@@ -306,6 +310,7 @@ ${textToSummarize}`
     setAudioBlob(null)
     setAiError(null)
     setJustSaved(false)
+    setNewChecklistText('')
   }
 
   // Handle saving the page edits
@@ -328,6 +333,8 @@ ${textToSummarize}`
     setIsCreating(true)
     setNoteTitle('')
     setNoteContent('')
+    setNoteChecklist([])
+    setNewChecklistText('')
     setAudioUrl(null)
     setAudioBlob(null)
     setAiError(null)
@@ -335,11 +342,11 @@ ${textToSummarize}`
 
   // Save new note page
   const handleSaveNewPage = () => {
-    if (!noteTitle.trim() && !noteContent.trim()) {
+    if (!noteTitle.trim() && !noteContent.trim() && noteChecklist.length === 0) {
       setIsCreating(false)
       return
     }
-    addPage(createColId, noteTitle.trim() || 'Unbenannte Seite', noteContent)
+    addPage(createColId, noteTitle.trim() || 'Unbenannte Seite', noteContent, noteChecklist)
 
     if (audioBlob) {
       const reader = new FileReader()
@@ -447,6 +454,75 @@ ${textToSummarize}`
           <Sparkles size={13} className={aiLoading ? 'animate-spin' : ''} />
           {aiLoading ? 'Fasst zusammen...' : 'KI Zusammenfassen'}
         </button>
+      </div>
+    )
+  }
+
+  // Structured checklist (todos/Stichpunkte) inside a note, alongside the freeform text
+  function ChecklistEditor({
+    items,
+    onAdd,
+    onToggle,
+    onDelete,
+  }: {
+    items: NoteChecklistItem[]
+    onAdd: (text: string) => void
+    onToggle: (id: string) => void
+    onDelete: (id: string) => void
+  }) {
+    return (
+      <div className="rounded-xl border border-gray-200 dark:border-racing-700 p-3.5">
+        <span className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-racing-300">
+          <ListChecks size={13} /> Checkliste
+        </span>
+        <div className="flex flex-col gap-1">
+          {items.map((item) => (
+            <div key={item.id} className="group flex items-center gap-2 py-0.5">
+              <button
+                type="button"
+                onClick={() => onToggle(item.id)}
+                className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                  item.done ? 'border-accent bg-accent text-white' : 'border-gray-300 dark:border-racing-600'
+                }`}
+              >
+                {item.done && <Check size={10} />}
+              </button>
+              <span className={`flex-1 text-sm ${item.done ? 'text-gray-400 line-through' : ''}`}>{item.text}</span>
+              <button
+                type="button"
+                onClick={() => onDelete(item.id)}
+                className="text-gray-300 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
+              >
+                <Trash2 size={12} />
+              </button>
+            </div>
+          ))}
+          {items.length === 0 && <p className="text-xs italic text-gray-400">Noch keine Punkte.</p>}
+        </div>
+        <div className="mt-2 flex items-center gap-2">
+          <input
+            value={newChecklistText}
+            onChange={(e) => setNewChecklistText(e.target.value)}
+            placeholder="Punkt hinzufügen..."
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter' || !newChecklistText.trim()) return
+              onAdd(newChecklistText.trim())
+              setNewChecklistText('')
+            }}
+            className="flex-1 rounded-lg border border-gray-200 bg-transparent px-2 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              if (!newChecklistText.trim()) return
+              onAdd(newChecklistText.trim())
+              setNewChecklistText('')
+            }}
+            className="rounded-lg bg-accent p-1.5 text-white hover:bg-accent-dark"
+          >
+            <Plus size={14} />
+          </button>
+        </div>
       </div>
     )
   }
@@ -560,6 +636,11 @@ ${textToSummarize}`
                       <Sparkles size={10} /> KI
                     </span>
                   )}
+                  {page.checklist && page.checklist.length > 0 && (
+                    <span className="flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-wider text-accent bg-accent/10 px-1.5 py-0.5 rounded-md">
+                      <ListChecks size={10} /> {page.checklist.filter((c) => c.done).length}/{page.checklist.length}
+                    </span>
+                  )}
                   <span className="text-[9px] text-gray-400 ml-auto">
                     {new Date(page.updatedAt).toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })}
                   </span>
@@ -606,6 +687,12 @@ ${textToSummarize}`
                 placeholder="Schreibe deine Gedanken auf oder füge Stichpunkte hinzu..."
                 rows={10}
                 className="w-full rounded-xl border border-gray-200 bg-transparent px-3.5 py-2.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700 leading-relaxed"
+              />
+              <ChecklistEditor
+                items={noteChecklist}
+                onAdd={(text) => setNoteChecklist((prev) => [...prev, { id: createId(), text, done: false }])}
+                onToggle={(id) => setNoteChecklist((prev) => prev.map((it) => (it.id === id ? { ...it, done: !it.done } : it)))}
+                onDelete={(id) => setNoteChecklist((prev) => prev.filter((it) => it.id !== id))}
               />
               <AudioPlayback />
               {aiError && <p className="text-xs text-red-500">{aiError}</p>}
@@ -657,6 +744,24 @@ ${textToSummarize}`
                 placeholder="Schreibe deine Gedanken auf oder füge Stichpunkte hinzu..."
                 rows={10}
                 className="w-full rounded-xl border border-gray-200 bg-transparent px-3.5 py-2.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700 leading-relaxed"
+              />
+              <ChecklistEditor
+                items={activePage.checklist ?? []}
+                onAdd={(text) => {
+                  const updated = [...(activePage.checklist ?? []), { id: createId(), text, done: false }]
+                  updatePage(activePage.id, { checklist: updated })
+                  setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
+                }}
+                onToggle={(id) => {
+                  const updated = (activePage.checklist ?? []).map((it) => (it.id === id ? { ...it, done: !it.done } : it))
+                  updatePage(activePage.id, { checklist: updated })
+                  setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
+                }}
+                onDelete={(id) => {
+                  const updated = (activePage.checklist ?? []).filter((it) => it.id !== id)
+                  updatePage(activePage.id, { checklist: updated })
+                  setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
+                }}
               />
               <AudioPlayback
                 onDelete={() => {

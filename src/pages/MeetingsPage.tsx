@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMeetingsStore } from '../store/meetingsStore'
 import LiveMeetingPanel from '../components/meetings/LiveMeetingPanel'
-import { Mic, Plus, Trash2, Calendar, FileText, CheckSquare, Pencil, Check, X } from 'lucide-react'
+import { Mic, Plus, Trash2, Calendar, FileText, CheckSquare, Pencil, Check, X, ChevronDown, ListChecks } from 'lucide-react'
 import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
 import { translateMeeting } from '../lib/aiService'
@@ -25,6 +25,9 @@ export default function MeetingsPage() {
   const [actionItemTaskDraft, setActionItemTaskDraft] = useState('')
   const [actionItemAssigneeDraft, setActionItemAssigneeDraft] = useState('')
   const [addingActionItem, setAddingActionItem] = useState(false)
+  const [expandedActionItemId, setExpandedActionItemId] = useState<string | null>(null)
+  const [addingSubtaskForId, setAddingSubtaskForId] = useState<string | null>(null)
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
 
   useEffect(() => {
     fetchMeetings()
@@ -180,8 +183,13 @@ export default function MeetingsPage() {
                   )}
                 </div>
                 <ul className="space-y-2">
-                  {(selectedMeeting.action_items ?? []).map((item) => (
-                    <li key={item.id} className="flex items-start gap-2 rounded-lg bg-gray-50 p-3 dark:bg-racing-800">
+                  {(selectedMeeting.action_items ?? []).map((item) => {
+                    const subtasks = item.subtasks ?? []
+                    const subtaskDone = subtasks.filter((s) => s.done).length
+                    const isExpanded = expandedActionItemId === item.id
+                    return (
+                    <li key={item.id} className="rounded-lg bg-gray-50 dark:bg-racing-800">
+                    <div className="flex items-start gap-2 p-3">
                       {editingActionItemId === item.id ? (
                         <div className="flex flex-1 flex-col gap-2">
                           <input
@@ -243,6 +251,12 @@ export default function MeetingsPage() {
                             )}
                           </div>
                           <div className="ml-auto flex flex-shrink-0 items-center gap-2">
+                            {subtasks.length > 0 && (
+                              <span className="flex items-center gap-1 text-[11px] text-gray-400">
+                                <ListChecks size={11} />
+                                {subtaskDone}/{subtasks.length}
+                              </span>
+                            )}
                             <button
                               onClick={() => setTransferringItem(item)}
                               disabled={item.done}
@@ -269,11 +283,105 @@ export default function MeetingsPage() {
                             >
                               <Trash2 size={13} />
                             </button>
+                            <button
+                              onClick={() => setExpandedActionItemId(isExpanded ? null : item.id)}
+                              className="text-gray-300 hover:text-gray-600 dark:hover:text-racing-200"
+                              title={t('subtasks')}
+                            >
+                              <ChevronDown size={14} className={`transition-transform duration-150 ${isExpanded ? '' : '-rotate-90'}`} />
+                            </button>
                           </div>
                         </>
                       )}
+                    </div>
+
+                    {isExpanded && editingActionItemId !== item.id && (
+                      <div className="flex flex-col gap-1.5 px-3 pb-3 pl-9">
+                        {subtasks.map((sub) => (
+                          <div key={sub.id} className="group flex items-center gap-2 py-0.5">
+                            <button
+                              onClick={() => {
+                                const updatedItems = (selectedMeeting.action_items ?? []).map((ai) =>
+                                  ai.id === item.id
+                                    ? { ...ai, subtasks: (ai.subtasks ?? []).map((s) => (s.id === sub.id ? { ...s, done: !s.done } : s)) }
+                                    : ai
+                                )
+                                updateMeeting(selectedMeeting.id, { action_items: updatedItems })
+                              }}
+                              className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                                sub.done ? 'border-accent bg-accent text-white' : 'border-gray-300 dark:border-racing-600'
+                              }`}
+                            >
+                              {sub.done && <Check size={10} />}
+                            </button>
+                            <span className={`flex-1 text-sm ${sub.done ? 'text-gray-400 line-through' : ''}`}>{sub.title}</span>
+                            <button
+                              onClick={() => {
+                                const updatedItems = (selectedMeeting.action_items ?? []).map((ai) =>
+                                  ai.id === item.id ? { ...ai, subtasks: (ai.subtasks ?? []).filter((s) => s.id !== sub.id) } : ai
+                                )
+                                updateMeeting(selectedMeeting.id, { action_items: updatedItems })
+                              }}
+                              className="text-gray-300 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        ))}
+                        {addingSubtaskForId === item.id ? (
+                          <div className="flex items-center gap-2 py-0.5">
+                            <input
+                              value={newSubtaskTitle}
+                              onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                              placeholder={t('subtaskPlaceholder')}
+                              autoFocus
+                              className="flex-1 rounded-lg border border-gray-200 bg-transparent px-2 py-1 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+                              onKeyDown={(e) => {
+                                if (e.key !== 'Enter' || !newSubtaskTitle.trim()) return
+                                const updatedItems = (selectedMeeting.action_items ?? []).map((ai) =>
+                                  ai.id === item.id
+                                    ? { ...ai, subtasks: [...(ai.subtasks ?? []), { id: crypto.randomUUID(), title: newSubtaskTitle.trim(), done: false }] }
+                                    : ai
+                                )
+                                updateMeeting(selectedMeeting.id, { action_items: updatedItems })
+                                setNewSubtaskTitle('')
+                              }}
+                            />
+                            <button
+                              onClick={() => {
+                                if (!newSubtaskTitle.trim()) return
+                                const updatedItems = (selectedMeeting.action_items ?? []).map((ai) =>
+                                  ai.id === item.id
+                                    ? { ...ai, subtasks: [...(ai.subtasks ?? []), { id: crypto.randomUUID(), title: newSubtaskTitle.trim(), done: false }] }
+                                    : ai
+                                )
+                                updateMeeting(selectedMeeting.id, { action_items: updatedItems })
+                                setNewSubtaskTitle('')
+                              }}
+                              className="rounded-lg bg-accent p-1 text-white hover:bg-accent-hover"
+                            >
+                              <Check size={12} />
+                            </button>
+                            <button
+                              onClick={() => { setAddingSubtaskForId(null); setNewSubtaskTitle('') }}
+                              className="rounded-lg bg-gray-100 p-1 text-gray-500 hover:bg-gray-200 dark:bg-racing-700"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => { setAddingSubtaskForId(item.id); setNewSubtaskTitle('') }}
+                            className="flex items-center gap-1 self-start text-xs font-semibold text-accent hover:text-accent-hover"
+                          >
+                            <Plus size={11} /> {t('addSubtask')}
+                          </button>
+                        )}
+                      </div>
+                    )}
                     </li>
-                  ))}
+                    )
+                  })}
                   {addingActionItem && (
                     <li className="flex flex-col gap-2 rounded-lg border border-accent/40 bg-accent/5 p-3">
                       <input

@@ -7,5 +7,8 @@
   "addActionItem": "Add item",
   "actionItemPlaceholder": "Task...",
   "assigneePlaceholder": "Assignee (optional)",
-  "noActionItems": "No action items yet."
+  "noActionItems": "No action items yet.",
+  "subtasks": "Subtasks",
+  "subtaskPlaceholder": "Subtask...",
+  "addSubtask": "Add subtask"
 }

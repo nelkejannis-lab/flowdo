@@ -1,7 +1,8 @@
+import { useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
 import { useTranslation } from 'react-i18next'
-import { Plus, Check, Clock, Calendar, CheckSquare, Square, Trash2, ArrowRight, GripVertical } from 'lucide-react'
+import { Plus, Check, Clock, Calendar, CheckSquare, Square, Trash2, ArrowRight, GripVertical, ChevronDown, ListChecks } from 'lucide-react'
 import type { CalendarEntry, CalendarEvent, Task, CalendarEntryType } from '../../types'
 import { entryTypeIcon } from '../../utils/calendarEntry'
 import { useTasksStore } from '../../store/tasksStore'
@@ -10,6 +11,7 @@ import { useSettingsStore } from '../../store/settingsStore'
 import BoardBadge from '../boards/BoardBadge'
 import PriorityBadge from '../tasks/PriorityBadge'
 import { eachEntryDate, eachEventDate } from '../../utils/events'
+import { todayISO } from '../../utils/date'
 import {
   DndContext,
   closestCenter,
@@ -75,13 +77,21 @@ export default function DailyAgendaPanel({
           const bi = dailyAgendaOrder.indexOf(b.id)
           return (ai === -1 ? Infinity : ai) - (bi === -1 ? Infinity : bi)
         })
-  const dayEvents = events.filter((e) => eachEventDate(e).includes(selectedDate))
-  const dayEntries = entries.filter((en) => eachEntryDate(en).includes(selectedDate))
+  // Passed appointments (today only) disappear once their end time is over - same rule as the Termine page.
+  const isViewingToday = selectedDate === todayISO()
+  const nowTime = new Date().toTimeString().slice(0, 5)
+  function isElapsedToday(startTime?: string, endTime?: string) {
+    if (!isViewingToday || !startTime) return false
+    return (endTime ?? startTime) < nowTime
+  }
+
+  const dayEvents = events.filter((e) => eachEventDate(e).includes(selectedDate) && !isElapsedToday((e as any).startTime, (e as any).endTime))
+  const dayEntries = entries.filter((en) => eachEntryDate(en).includes(selectedDate) && !isElapsedToday(en.startTime, en.endTime))
 
   // Sort timed vs untimed
   const timedEntries = dayEntries.filter((e) => !!e.startTime).sort((a, b) => a.startTime!.localeCompare(b.startTime!))
   const allDayEntries = dayEntries.filter((e) => !e.startTime)
-  
+
   const timedEvents = dayEvents.filter((e) => !!(e as any).startTime).sort((a, b) => (a as any).startTime.localeCompare((b as any).startTime))
   const allDayEvents = dayEvents.filter((e) => !(e as any).startTime)
 
@@ -266,6 +276,9 @@ interface SortableDayTaskProps {
 
 function SortableDayTask({ task, onToggle, onClick }: SortableDayTaskProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
+  const toggleSubtask = useTasksStore((s) => s.toggleSubtask)
+  const toggleProjectSubtask = useProjectTasksStore((s) => s.toggleSubtask)
+  const [expanded, setExpanded] = useState(false)
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -273,48 +286,89 @@ function SortableDayTask({ task, onToggle, onClick }: SortableDayTaskProps) {
     opacity: isDragging ? 0.6 : 1,
   }
 
+  const hasSubtasks = task.subtasks.length > 0
+  const subtaskDone = task.subtasks.filter((s) => s.completed).length
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`group flex items-start gap-2 rounded-xl border border-gray-100 p-3 transition-all dark:border-racing-850 ${
+      className={`group rounded-xl border border-gray-100 p-3 transition-all dark:border-racing-850 ${
         task.completed ? 'bg-gray-50/50 opacity-60 dark:bg-racing-950/20' : 'bg-white dark:bg-racing-950/30'
       }`}
     >
-      <button
-        type="button"
-        {...attributes}
-        {...listeners}
-        className="mt-0.5 flex-shrink-0 cursor-grab text-gray-300 hover:text-gray-500 active:cursor-grabbing dark:text-racing-700 dark:hover:text-racing-400"
-      >
-        <GripVertical size={14} />
-      </button>
-      <button onClick={onToggle} className="mt-0.5 flex-shrink-0 text-gray-400 hover:text-accent">
-        {task.completed ? <CheckSquare size={16} className="text-accent" /> : <Square size={16} />}
-      </button>
-      <div className="min-w-0 flex-1 cursor-pointer" onClick={onClick}>
-        <p
-          className={`text-sm font-semibold text-gray-800 dark:text-racing-100 truncate ${
-            task.completed ? 'line-through text-gray-400' : ''
-          }`}
+      <div className="flex items-start gap-2">
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          className="mt-0.5 flex-shrink-0 cursor-grab text-gray-300 hover:text-gray-500 active:cursor-grabbing dark:text-racing-700 dark:hover:text-racing-400"
         >
-          {task.title}
-        </p>
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-          <PriorityBadge priority={task.priority} />
-          {task.boardId && <BoardBadge boardId={task.boardId} />}
-          {task.urgent && (
-            <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-600 dark:bg-red-900/40 dark:text-red-400">
-              Dringend
-            </span>
-          )}
-          {task.important && (
-            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-600 dark:bg-amber-900/40 dark:text-amber-400">
-              Wichtig
-            </span>
-          )}
+          <GripVertical size={14} />
+        </button>
+        <button onClick={onToggle} className="mt-0.5 flex-shrink-0 text-gray-400 hover:text-accent">
+          {task.completed ? <CheckSquare size={16} className="text-accent" /> : <Square size={16} />}
+        </button>
+        <div className="min-w-0 flex-1 cursor-pointer" onClick={onClick}>
+          <p
+            className={`text-sm font-semibold text-gray-800 dark:text-racing-100 truncate ${
+              task.completed ? 'line-through text-gray-400' : ''
+            }`}
+          >
+            {task.title}
+          </p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            <PriorityBadge priority={task.priority} />
+            {task.boardId && <BoardBadge boardId={task.boardId} />}
+            {hasSubtasks && (
+              <span className="flex items-center gap-1 text-[11px] text-gray-400">
+                <ListChecks size={11} />
+                {subtaskDone}/{task.subtasks.length}
+              </span>
+            )}
+            {task.urgent && (
+              <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-600 dark:bg-red-900/40 dark:text-red-400">
+                Dringend
+              </span>
+            )}
+            {task.important && (
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-600 dark:bg-amber-900/40 dark:text-amber-400">
+                Wichtig
+              </span>
+            )}
+          </div>
         </div>
+        {hasSubtasks && (
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="mt-0.5 flex-shrink-0 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-racing-800"
+          >
+            <ChevronDown size={15} className={`transition-transform duration-150 ${expanded ? '' : '-rotate-90'}`} />
+          </button>
+        )}
       </div>
+
+      {expanded && hasSubtasks && (
+        <div className="mt-2 flex flex-col gap-1 border-t border-gray-100 pl-9 pt-2 dark:border-racing-800">
+          {task.subtasks.map((sub) => (
+            <div key={sub.id} className="flex items-center gap-2 py-0.5">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (task.boardId) toggleProjectSubtask(task.id, sub.id)
+                  else toggleSubtask(task.id, sub.id)
+                }}
+                className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                  sub.completed ? 'border-accent bg-accent text-white' : 'border-gray-300 dark:border-racing-600'
+                }`}
+              >
+                {sub.completed && <Check size={10} />}
+              </button>
+              <span className={`flex-1 text-sm ${sub.completed ? 'text-gray-400 line-through' : ''}`}>{sub.title}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -3,12 +3,19 @@ import { persist } from 'zustand/middleware'
 import { createId } from '../utils/id'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
+export interface NoteChecklistItem {
+  id: string
+  text: string
+  done: boolean
+}
+
 export interface NotePage {
   id: string
   columnId: string
   title: string
   content: string
   summary?: string
+  checklist?: NoteChecklistItem[]
   audioBase64?: string
   audioDuration?: number
   createdAt: string
@@ -29,7 +36,7 @@ interface BrainState {
   addColumn: (title: string) => void
   updateColumn: (id: string, title: string) => void
   deleteColumn: (id: string) => void
-  addPage: (columnId: string, title: string, content: string) => void
+  addPage: (columnId: string, title: string, content: string, checklist?: NoteChecklistItem[]) => void
   updatePage: (id: string, updates: Partial<NotePage>) => void
   deletePage: (id: string) => void
   movePage: (id: string, targetColumnId: string) => void
@@ -70,6 +77,7 @@ async function syncPage(page: NotePage, userId: string) {
     title: page.title,
     content: page.content,
     summary: page.summary ?? null,
+    checklist: page.checklist ?? [],
     audio_base64: page.audioBase64 ?? null,
     audio_duration: page.audioDuration ?? null,
     created_at: page.createdAt,
@@ -122,6 +130,7 @@ export const useBrainStore = create<BrainState>()(
           title: p.title,
           content: p.content,
           summary: p.summary ?? undefined,
+          checklist: p.checklist ?? [],
           audioBase64: p.audio_base64 ?? undefined,
           audioDuration: p.audio_duration ?? undefined,
           createdAt: p.created_at,
@@ -202,13 +211,14 @@ export const useBrainStore = create<BrainState>()(
           }
         }),
 
-      addPage: (columnId, title, content) =>
+      addPage: (columnId, title, content, checklist) =>
         set((state) => {
           const newPage: NotePage = {
             id: createId(),
             columnId,
             title: title.trim() || 'Unbenannte Seite',
             content,
+            checklist: checklist ?? [],
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           }

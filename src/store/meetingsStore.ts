@@ -2,12 +2,19 @@ import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from './authStore'
 
+export interface ActionItemSubtask {
+  id: string
+  title: string
+  done: boolean
+}
+
 export interface ActionItem {
   id: string
   task: string
   assignee?: string
   dueDate?: string
   done: boolean
+  subtasks?: ActionItemSubtask[]
 }
 
 export interface Meeting {
