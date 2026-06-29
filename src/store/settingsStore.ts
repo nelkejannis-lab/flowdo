@@ -122,6 +122,7 @@ interface SettingsState {
   weatherCoords: WeatherCoords
   hideCompletedTasks: boolean
   dashboardWidgetOrder: string[]
+  dailyAgendaOrder: Record<string, string[]>
   setMode: (mode: Mode) => void
   togglePinkAccent: () => void
   setLanguage: (language: Language) => void
@@ -140,6 +141,7 @@ interface SettingsState {
   setWeatherCity: (city: string) => void
   setWeatherCoords: (coords: WeatherCoords) => void
   setDashboardWidgetOrder: (order: string[]) => void
+  setDailyAgendaOrder: (date: string, order: string[]) => void
   toggleHideCompletedTasks: () => void
   importSettings: (settings: any) => void
   resetSettings: () => void
@@ -171,6 +173,7 @@ export const useSettingsStore = create<SettingsState>()(
       weatherCoords: { ...DEFAULT_WEATHER_COORDS },
       hideCompletedTasks: true,
       dashboardWidgetOrder: [...DEFAULT_DASHBOARD_WIDGET_ORDER],
+      dailyAgendaOrder: {},
       setMode: (mode) => set({ mode }),
       togglePinkAccent: () => set((s) => ({ pinkAccent: !s.pinkAccent })),
       setLanguage: (language) => {
@@ -203,6 +206,8 @@ export const useSettingsStore = create<SettingsState>()(
             : [...s.pinnedNavItems, key],
         })),
       setPinnedNavOrder: (pinnedNavItems) => set({ pinnedNavItems }),
+      setDailyAgendaOrder: (date, order) =>
+        set((s) => ({ dailyAgendaOrder: { ...s.dailyAgendaOrder, [date]: order } })),
       setWeatherCity: (city) => set({ weatherCity: city }),
       setWeatherCoords: (coords) => set({ weatherCoords: coords }),
       setDashboardWidgetOrder: (dashboardWidgetOrder) => set({ dashboardWidgetOrder }),
@@ -229,6 +234,7 @@ export const useSettingsStore = create<SettingsState>()(
           weatherCoords: settings.weatherCoords ?? state.weatherCoords,
           hideCompletedTasks: settings.hideCompletedTasks ?? state.hideCompletedTasks,
           dashboardWidgetOrder: settings.dashboardWidgetOrder ?? state.dashboardWidgetOrder,
+          dailyAgendaOrder: settings.dailyAgendaOrder ?? state.dailyAgendaOrder,
         }))
       },
       resetSettings: () => {
@@ -251,6 +257,7 @@ export const useSettingsStore = create<SettingsState>()(
           weatherCoords: { ...DEFAULT_WEATHER_COORDS },
           hideCompletedTasks: true,
           dashboardWidgetOrder: [...DEFAULT_DASHBOARD_WIDGET_ORDER],
+          dailyAgendaOrder: {},
         })
       },
       syncNow: () => {
@@ -332,6 +339,7 @@ export function getSettingsPayload(state: any) {
     weatherCoords: state.weatherCoords,
     hideCompletedTasks: state.hideCompletedTasks,
     dashboardWidgetOrder: state.dashboardWidgetOrder,
+    dailyAgendaOrder: state.dailyAgendaOrder,
   }
 }
 

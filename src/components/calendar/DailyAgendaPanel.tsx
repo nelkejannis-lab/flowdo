@@ -7,6 +7,7 @@ import { entryTypeIcon } from '../../utils/calendarEntry'
 import { useTasksStore } from '../../store/tasksStore'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
 import { useBoardsStore } from '../../store/boardsStore'
+import { useSettingsStore } from '../../store/settingsStore'
 import { eachEntryDate, eachEventDate } from '../../utils/events'
 import {
   DndContext,
@@ -55,7 +56,8 @@ export default function DailyAgendaPanel({
 
   const toggleTaskCompleted = useTasksStore((s) => s.toggleTaskCompleted)
   const toggleProjectTaskCompleted = useProjectTasksStore((s) => s.toggleTaskCompleted)
-  const reorderTasks = useTasksStore((s) => s.reorderTasks)
+  const dailyAgendaOrder = useSettingsStore((s) => s.dailyAgendaOrder[selectedDate] ?? [])
+  const setDailyAgendaOrder = useSettingsStore((s) => s.setDailyAgendaOrder)
 
   const taskSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -63,7 +65,15 @@ export default function DailyAgendaPanel({
   )
 
   // Filter day items
-  const dayTasks = tasks.filter((tk) => tk.dueDate === selectedDate)
+  const unorderedDayTasks = tasks.filter((tk) => tk.dueDate === selectedDate)
+  const dayTasks =
+    dailyAgendaOrder.length === 0
+      ? unorderedDayTasks
+      : [...unorderedDayTasks].sort((a, b) => {
+          const ai = dailyAgendaOrder.indexOf(a.id)
+          const bi = dailyAgendaOrder.indexOf(b.id)
+          return (ai === -1 ? Infinity : ai) - (bi === -1 ? Infinity : bi)
+        })
   const dayEvents = events.filter((e) => eachEventDate(e).includes(selectedDate))
   const dayEntries = entries.filter((en) => eachEntryDate(en).includes(selectedDate))
 
@@ -106,7 +116,7 @@ export default function DailyAgendaPanel({
     const oldIndex = ids.indexOf(String(active.id))
     const newIndex = ids.indexOf(String(over.id))
     if (oldIndex === -1 || newIndex === -1) return
-    reorderTasks(arrayMove(ids, oldIndex, newIndex))
+    setDailyAgendaOrder(selectedDate, arrayMove(ids, oldIndex, newIndex))
   }
 
   return (
