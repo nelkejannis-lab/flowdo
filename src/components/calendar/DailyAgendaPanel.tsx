@@ -2,12 +2,13 @@ import { format, parseISO } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
 import { useTranslation } from 'react-i18next'
 import { Plus, Check, Clock, Calendar, CheckSquare, Square, Trash2, ArrowRight, GripVertical } from 'lucide-react'
-import type { CalendarEntry, CalendarEvent, Task, CalendarEntryType, Board } from '../../types'
+import type { CalendarEntry, CalendarEvent, Task, CalendarEntryType } from '../../types'
 import { entryTypeIcon } from '../../utils/calendarEntry'
 import { useTasksStore } from '../../store/tasksStore'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
-import { useBoardsStore } from '../../store/boardsStore'
 import { useSettingsStore } from '../../store/settingsStore'
+import BoardBadge from '../boards/BoardBadge'
+import PriorityBadge from '../tasks/PriorityBadge'
 import { eachEntryDate, eachEventDate } from '../../utils/events'
 import {
   DndContext,
@@ -52,12 +53,12 @@ export default function DailyAgendaPanel({
 }: DailyAgendaPanelProps) {
   const { t, i18n } = useTranslation('calendar')
   const dateLocale = i18n.language === 'en' ? enUS : de
-  const boards = useBoardsStore((s) => s.boards)
 
   const toggleTaskCompleted = useTasksStore((s) => s.toggleTaskCompleted)
   const toggleProjectTaskCompleted = useProjectTasksStore((s) => s.toggleTaskCompleted)
   const dailyAgendaOrder = useSettingsStore((s) => s.dailyAgendaOrder[selectedDate] ?? [])
   const setDailyAgendaOrder = useSettingsStore((s) => s.setDailyAgendaOrder)
+  const hideCompletedTasks = useSettingsStore((s) => s.hideCompletedTasks)
 
   const taskSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -65,7 +66,7 @@ export default function DailyAgendaPanel({
   )
 
   // Filter day items
-  const unorderedDayTasks = tasks.filter((tk) => tk.dueDate === selectedDate)
+  const unorderedDayTasks = tasks.filter((tk) => tk.dueDate === selectedDate && (!hideCompletedTasks || !tk.completed))
   const dayTasks =
     dailyAgendaOrder.length === 0
       ? unorderedDayTasks
@@ -88,18 +89,6 @@ export default function DailyAgendaPanel({
   const formattedDayTitle = format(parsedDate, 'EEEE, d. MMMM yyyy', { locale: dateLocale })
 
   const hasItems = dayTasks.length > 0 || dayEvents.length > 0 || dayEntries.length > 0
-
-  const priorityColors: Record<string, string> = {
-    high: 'text-red-500 bg-red-500/10 border-red-500/20 dark:text-red-400',
-    medium: 'text-amber-500 bg-amber-500/10 border-amber-500/20 dark:text-amber-400',
-    low: 'text-blue-500 bg-blue-500/10 border-blue-500/20 dark:text-blue-400',
-  }
-
-  const priorityLabels: Record<string, string> = {
-    high: 'Hoch',
-    medium: 'Mittel',
-    low: 'Niedrig',
-  }
 
   async function handleToggleTask(task: Task) {
     if (task.boardId) {
@@ -251,9 +240,6 @@ export default function DailyAgendaPanel({
                     <SortableDayTask
                       key={task.id}
                       task={task}
-                      board={boards.find((b) => b.id === task.boardId)}
-                      priorityColors={priorityColors}
-                      priorityLabels={priorityLabels}
                       onToggle={() => handleToggleTask(task)}
                       onClick={() => onTaskClick(task)}
                     />
@@ -274,14 +260,11 @@ export default function DailyAgendaPanel({
 
 interface SortableDayTaskProps {
   task: Task
-  board: Board | undefined
-  priorityColors: Record<string, string>
-  priorityLabels: Record<string, string>
   onToggle: () => void
   onClick: () => void
 }
 
-function SortableDayTask({ task, board, priorityColors, priorityLabels, onToggle, onClick }: SortableDayTaskProps) {
+function SortableDayTask({ task, onToggle, onClick }: SortableDayTaskProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
 
   const style = {
@@ -318,28 +301,15 @@ function SortableDayTask({ task, board, priorityColors, priorityLabels, onToggle
           {task.title}
         </p>
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-          {board && (
-            <span
-              className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-semibold text-white shadow-sm"
-              style={{ backgroundColor: board.color }}
-            >
-              {board.title}
-            </span>
-          )}
-          <span
-            className={`rounded px-1.5 py-0.5 text-[9px] font-semibold border ${
-              priorityColors[task.priority] || 'border-gray-200 text-gray-400'
-            }`}
-          >
-            {priorityLabels[task.priority]} Prio
-          </span>
+          <PriorityBadge priority={task.priority} />
+          {task.boardId && <BoardBadge boardId={task.boardId} />}
           {task.urgent && (
-            <span className="rounded bg-red-100 px-1.5 py-0.5 text-[9px] font-semibold text-red-600 dark:bg-red-950/30 dark:text-red-400">
+            <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-600 dark:bg-red-900/40 dark:text-red-400">
               Dringend
             </span>
           )}
           {task.important && (
-            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold text-amber-600 dark:bg-amber-950/30 dark:text-amber-400">
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-600 dark:bg-amber-900/40 dark:text-amber-400">
               Wichtig
             </span>
           )}
