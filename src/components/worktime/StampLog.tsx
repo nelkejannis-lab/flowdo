@@ -1,7 +1,10 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LogIn, LogOut, ShieldCheck, AlertTriangle, History } from 'lucide-react'
+import { de, enUS } from 'date-fns/locale'
+import { format, addDays, subDays, parseISO } from 'date-fns'
+import { LogIn, LogOut, ShieldCheck, AlertTriangle, History, ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react'
 import { useWorkTimeStore } from '../../store/workTimeStore'
-import { todayISO } from '../../utils/date'
+import { todayISO, toISODate } from '../../utils/date'
 import {
   punchesForDay,
   formatPunchTime,
@@ -17,24 +20,34 @@ function warningLabel(t: (k: string) => string, w: ArbZgWarning): string {
 }
 
 export default function StampLog() {
-  const { t } = useTranslation('worktime')
+  const { t, i18n } = useTranslation('worktime')
+  const dateLocale = i18n.language === 'en' ? enUS : de
   const punches = useWorkTimeStore((s) => s.punches)
   const auditLog = useWorkTimeStore((s) => s.auditLog)
   const entries = useWorkTimeStore((s) => s.entries)
 
   const today = todayISO()
-  const todayPunches = punchesForDay(punches, today)
-  const todayEntry = entries[today]
+  const [selectedDate, setSelectedDate] = useState(today)
+  const isToday = selectedDate === today
 
-  // previous day's last "out" punch + today's first "in" for the rest-period check
+  const dayPunches = punchesForDay(punches, selectedDate)
+  const dayEntry = entries[selectedDate]
+
+  // previous day's last "out" punch + selected day's first "in" for the rest-period check
   const sortedPunches = [...punches].sort((a, b) => a.punchedAt.localeCompare(b.punchedAt))
-  const firstInToday = todayPunches.find((p) => p.kind === 'in')?.punchedAt
+  const firstInDay = dayPunches.find((p) => p.kind === 'in')?.punchedAt
   const prevOut = sortedPunches
-    .filter((p) => p.kind === 'out' && new Date(p.punchedAt).toISOString() < today + 'T00:00:00.000Z')
+    .filter((p) => p.kind === 'out' && p.punchedAt < selectedDate + 'T00:00:00.000Z')
     .slice(-1)[0]?.punchedAt
 
-  const warnings = arbzgWarnings(todayEntry, prevOut, firstInToday)
-  const todayAudit = auditLog.filter((a) => a.entryDate === today)
+  const warnings = arbzgWarnings(dayEntry, prevOut, firstInDay)
+  const dayAudit = auditLog.filter((a) => a.entryDate === selectedDate)
+
+  const dayLabel = format(parseISO(selectedDate), 'EEEE, d. MMMM yyyy', { locale: dateLocale })
+
+  function shiftDay(delta: number) {
+    setSelectedDate((d) => toISODate(delta > 0 ? addDays(parseISO(d), 1) : subDays(parseISO(d), 1)))
+  }
 
   return (
     <div className="flex flex-col gap-4 rounded-xl border border-gray-100 bg-white p-5 dark:border-racing-800 dark:bg-racing-900">
@@ -44,6 +57,35 @@ export default function StampLog() {
         <span className="ml-auto rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
           {t('stampLog.tamperProof')}
         </span>
+      </div>
+
+      {/* Day navigation */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => shiftDay(-1)}
+          className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800"
+        >
+          <ChevronLeft size={14} />
+        </button>
+        <div className="flex flex-1 items-center justify-center gap-1.5 text-xs font-medium text-gray-600 dark:text-racing-200">
+          <CalendarDays size={13} className="text-gray-400" />
+          {dayLabel}
+        </div>
+        <button
+          onClick={() => shiftDay(1)}
+          disabled={isToday}
+          className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-30 dark:border-racing-700 dark:hover:bg-racing-800"
+        >
+          <ChevronRight size={14} />
+        </button>
+        {!isToday && (
+          <button
+            onClick={() => setSelectedDate(today)}
+            className="rounded-lg border border-gray-200 px-2 py-1 text-[11px] font-semibold text-accent hover:bg-accent/5 dark:border-racing-700"
+          >
+            {t('stampLog.today')}
+          </button>
+        )}
       </div>
 
       {/* ArbZG warnings */}
@@ -67,12 +109,12 @@ export default function StampLog() {
 
       {/* Punch list */}
       <div>
-        <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">{t('stampLog.todayPunches')}</p>
-        {todayPunches.length === 0 ? (
+        <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">{t('stampLog.punchesOnDay')}</p>
+        {dayPunches.length === 0 ? (
           <p className="text-xs italic text-gray-400">{t('stampLog.noPunches')}</p>
         ) : (
           <ul className="flex flex-col gap-1.5">
-            {todayPunches.map((p) => (
+            {dayPunches.map((p) => (
               <li key={p.id} className="flex items-center gap-2 text-sm">
                 {p.kind === 'in' ? (
                   <LogIn size={14} className="text-emerald-500" />
@@ -85,21 +127,21 @@ export default function StampLog() {
             ))}
           </ul>
         )}
-        {todayEntry && (
+        {dayEntry && (
           <p className="mt-2 text-[11px] text-gray-400">
-            {t('stampLog.netToday')}: <span className="font-semibold text-gray-600 dark:text-racing-200">{Math.floor(netMinutes(todayEntry) / 60)}:{String(netMinutes(todayEntry) % 60).padStart(2, '0')} h</span>
+            {t('stampLog.netOnDay')}: <span className="font-semibold text-gray-600 dark:text-racing-200">{Math.floor(netMinutes(dayEntry) / 60)}:{String(netMinutes(dayEntry) % 60).padStart(2, '0')} h</span>
           </p>
         )}
       </div>
 
       {/* Audit trail */}
-      {todayAudit.length > 0 && (
+      {dayAudit.length > 0 && (
         <div>
           <p className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">
             <History size={12} /> {t('stampLog.changeLog')}
           </p>
           <ul className="flex flex-col gap-1">
-            {todayAudit.map((a) => (
+            {dayAudit.map((a) => (
               <li key={a.id} className="text-[11px] text-gray-500 dark:text-racing-400">
                 <span className="tabular-nums">{formatPunchTime(a.changedAt)}</span> · {a.field}: {a.oldValue ?? '—'} → {a.newValue ?? '—'}
               </li>

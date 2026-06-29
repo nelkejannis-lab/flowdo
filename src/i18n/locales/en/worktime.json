@@ -25,12 +25,13 @@
   "stampLog": {
     "title": "Punch log",
     "tamperProof": "Tamper-proof",
-    "todayPunches": "Today's punches",
-    "noPunches": "No punches today yet.",
+    "punchesOnDay": "Punches on this day",
+    "noPunches": "No punches on this day.",
     "clockIn": "In",
     "clockOut": "Out",
-    "netToday": "Net today",
-    "changeLog": "Change log"
+    "netOnDay": "Net on this day",
+    "changeLog": "Change log",
+    "today": "Today"
   },
   "arbzg": {
     "maxDaily": "Maximum working time exceeded: more than 10 hrs (§3 ArbZG).",
