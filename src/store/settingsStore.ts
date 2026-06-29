@@ -79,7 +79,7 @@ export const DEFAULT_FEATURE_VISIBILITY: Record<FeatureKey, boolean> = {
   weather: true,
 }
 
-export type DashboardWidget = 'stats' | 'todayTasks' | 'upcomingDeadlines' | 'nextEvents' | 'projectsOverview' | 'workoffice' | 'topPriority'
+export type DashboardWidget = 'stats' | 'todayTasks' | 'upcomingDeadlines' | 'nextEvents' | 'projectsOverview' | 'workoffice' | 'topPriority' | 'dayPlan'
 
 export const DEFAULT_DASHBOARD_VISIBILITY: Record<DashboardWidget, boolean> = {
   stats: true,
@@ -89,6 +89,7 @@ export const DEFAULT_DASHBOARD_VISIBILITY: Record<DashboardWidget, boolean> = {
   projectsOverview: true,
   workoffice: true,
   topPriority: true,
+  dayPlan: true,
 }
 
 export const DEFAULT_DASHBOARD_WIDGET_ORDER = ['workoffice', 'stats_week', 'stats_projects']

@@ -21,6 +21,7 @@ import ProjectTaskFormModal from '../components/boards/ProjectTaskFormModal'
 import BoardCard from '../components/boards/BoardCard'
 import AiDayPlannerModal from '../components/dashboard/AiDayPlannerModal'
 import DailyAgendaPanel from '../components/calendar/DailyAgendaPanel'
+import DayPlanWidget from '../components/dashboard/DayPlanWidget'
 import CalendarEntryFormModal from '../components/calendar/CalendarEntryFormModal'
 import WorkOfficeWidget from '../components/office/WorkOfficeWidget'
 import OfficePromptModal from '../components/office/OfficePromptModal'
@@ -276,6 +277,7 @@ export default function Dashboard() {
               { key: 'stats',            label: 'Statistiken (Aufgaben & Projekte)' },
               { key: 'workoffice',       label: 'Arbeitszeit & Standort' },
               { key: 'todayTasks',       label: 'Tagesübersicht' },
+              { key: 'dayPlan',          label: 'Tagesplan / Zeitstrahl' },
               { key: 'topPriority',      label: 'Höchste Priorität' },
               { key: 'upcomingDeadlines',label: 'Deadlines & Sektion Diese Woche' },
               { key: 'nextEvents',       label: 'Nächste Ereignisse' },
@@ -388,6 +390,22 @@ export default function Dashboard() {
             onAddTask={() => setNewTaskForToday(true)}
             onAddEntry={() => { setEditingEntry(undefined); setShowEntryForm(true) }}
           />
+        </div>
+      )}
+
+      {dashboardVisibility.dayPlan && (
+        <div className={`mb-6 relative group rounded-xl transition-all ${isEditing ? 'border-2 border-dashed border-accent/40 bg-accent/5 p-3' : ''}`}>
+          {isEditing && (
+            <button
+              type="button"
+              onClick={() => toggleDashboardWidget('dayPlan')}
+              className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all"
+              title="Entfernen"
+            >
+              <X size={12} />
+            </button>
+          )}
+          <DayPlanWidget date={today} />
         </div>
       )}
 

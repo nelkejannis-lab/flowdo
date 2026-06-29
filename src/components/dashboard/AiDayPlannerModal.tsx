@@ -7,8 +7,17 @@ import { useTasksStore } from '../../store/tasksStore'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
 import { useBoardsStore } from '../../store/boardsStore'
 import { useCalendarEntriesStore } from '../../store/calendarEntriesStore'
+import { useDayPlanStore, type DayPlanItem } from '../../store/dayPlanStore'
 import { expandRecurringEntries } from '../../utils/recurrence'
 import { todayISO } from '../../utils/date'
+
+function addMinutes(time: string, minutes: number): string {
+  const [h, m] = time.split(':').map(Number)
+  const total = h * 60 + m + minutes
+  const hh = Math.floor((total % (24 * 60)) / 60)
+  const mm = total % 60
+  return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`
+}
 
 interface AiDayPlannerModalProps {
   onClose: () => void
@@ -22,12 +31,11 @@ interface PlannedItemState extends PlannedTaskItem {
 export default function AiDayPlannerModal({ onClose }: AiDayPlannerModalProps) {
   const { t } = useTranslation('dashboard')
   const planDay = useAiSchedulerStore((s) => s.planDay)
-  const addTask = useTasksStore((s) => s.addTask)
   const tasks = useTasksStore((s) => s.tasks)
-  const addProjectTask = useProjectTasksStore((s) => s.addTask)
   const myProjectTasks = useProjectTasksStore((s) => s.myTasks)
   const boards = useBoardsStore((s) => s.boards)
   const calendarEntries = useCalendarEntriesStore((s) => s.entries)
+  const appendDayPlanItems = useDayPlanStore((s) => s.appendItems)
 
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -65,38 +73,20 @@ export default function AiDayPlannerModal({ onClose }: AiDayPlannerModalProps) {
     setItems((prev) => prev?.map((it) => (it.id === id ? { ...it, included: !it.included } : it)) ?? null)
   }
 
-  async function handleImport() {
+  function handleImport() {
     if (!items) return
     const selected = items.filter((it) => it.included)
     if (selected.length === 0) return
     setImporting(true)
     try {
-      for (const it of selected) {
-        if (it.projectId) {
-          const board = boards.find((b) => b.id === it.projectId)
-          await addProjectTask({
-            title: it.title,
-            dueDate: today,
-            priority: it.priority,
-            urgent: it.urgent,
-            important: it.important,
-            boardId: it.projectId,
-            columnId: board?.columns[0]?.id,
-            startTime: it.startTime ?? undefined,
-            estimatedMinutes: it.estimatedMinutes ?? undefined,
-          })
-        } else {
-          addTask({
-            title: it.title,
-            dueDate: today,
-            priority: it.priority,
-            urgent: it.urgent,
-            important: it.important,
-            startTime: it.startTime ?? undefined,
-            estimatedMinutes: it.estimatedMinutes ?? undefined,
-          })
-        }
-      }
+      const planItems: DayPlanItem[] = selected.map((it, i) => ({
+        id: `${Date.now()}-${i}`,
+        title: it.title,
+        startTime: it.startTime ?? null,
+        endTime: it.startTime && it.estimatedMinutes ? addMinutes(it.startTime, it.estimatedMinutes) : null,
+        projectId: it.projectId ?? null,
+      }))
+      appendDayPlanItems(today, planItems)
       onClose()
     } finally {
       setImporting(false)

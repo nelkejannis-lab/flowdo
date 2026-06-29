@@ -27,7 +27,12 @@
     "noTopPriority": "Keine dringend & wichtigen Aufgaben offen.",
     "urgent": "Dringend",
     "important": "Wichtig",
-    "manageEisenhower": "Eisenhower Quadranten verwalten"
+    "manageEisenhower": "Eisenhower Quadranten verwalten",
+    "dayPlan": "Tagesplan",
+    "dayPlanTitle": "Zeitstrahl",
+    "dayPlanAdd": "Punkt hinzufügen",
+    "dayPlanEmpty": "Noch kein Zeitplan für heute. Füge einen Punkt hinzu oder nutze den KI-Tagesplaner.",
+    "dayPlanNamePlaceholder": "Name des Termins/Punkts"
   },
   "morningReport": {
     "greetingMorning": "Guten Morgen",

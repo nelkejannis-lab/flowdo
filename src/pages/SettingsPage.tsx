@@ -1101,6 +1101,7 @@ const DASH_WIDGETS: { key: DashboardWidget; icon: React.ReactNode; label: string
   { key: 'stats',            icon: <BarChart2 size={16} />,   label: 'Statistiken',     desc: 'Aufgaben & Projekte' },
   { key: 'todayTasks',       icon: <CheckSquare size={16} />, label: 'Tagesübersicht',  desc: 'Heutige Aufgaben und Termine' },
   { key: 'topPriority',      icon: <TrendingUp size={16} />,  label: 'Höchste Priorität', desc: 'Dringend & wichtige Aufgaben (Eisenhower Q1)' },
+  { key: 'dayPlan',          icon: <Timer size={16} />,       label: 'Tagesplan',       desc: 'Zeitstrahl mit den Punkten aus dem KI-Tagesplaner' },
   { key: 'upcomingDeadlines',icon: <Clock size={16} />,       label: 'Deadlines',       desc: 'Anstehende Projekt-Deadlines' },
   { key: 'nextEvents',       icon: <CalendarClock size={16} />, label: 'Events',        desc: 'Nächste Ereignisse' },
   { key: 'projectsOverview', icon: <FolderKanban size={16} />,label: 'Projektübersicht',desc: 'Alle aktiven Projekte' },

@@ -27,7 +27,12 @@
     "noTopPriority": "No urgent & important tasks open.",
     "urgent": "Urgent",
     "important": "Important",
-    "manageEisenhower": "Manage Eisenhower quadrants"
+    "manageEisenhower": "Manage Eisenhower quadrants",
+    "dayPlan": "Day Plan",
+    "dayPlanTitle": "Timeline",
+    "dayPlanAdd": "Add item",
+    "dayPlanEmpty": "No schedule for today yet. Add an item or use the AI Day Planner.",
+    "dayPlanNamePlaceholder": "Name of the appointment/item"
   },
   "morningReport": {
     "greetingMorning": "Good morning",
