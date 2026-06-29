@@ -1,18 +1,36 @@
-// Removed local Whisper transcriber. Whisper logic is now inside src/lib/whisper.worker.ts
+// Meeting AI helpers.
+//
+// SECURITY: these used to call the Anthropic API directly from the browser with
+// `dangerouslyAllowBrowser` and VITE_ANTHROPIC_API_KEY. That bundles the secret API
+// key into the web client where anyone can read it — unacceptable for an enterprise
+// product. All calls now go through the server-side `ai-chat` Supabase Edge Function,
+// which holds the key in `ANTHROPIC_API_KEY` (server env) and never exposes it.
 
-import Anthropic from '@anthropic-ai/sdk'
+import { supabase } from './supabase'
 
-export async function generateMeetingSummary(transcript: string): Promise<{ summary: string; actionItems: { task: string; assignee?: string; dueDate?: string }[] }> {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
-  if (!apiKey) throw new Error('Anthropic API Key (VITE_ANTHROPIC_API_KEY) ist nicht gesetzt.')
-
-  const anthropic = new Anthropic({
-    apiKey: apiKey,
-    dangerouslyAllowBrowser: true, // We are running inside Electron renderer
+async function callAi(systemPrompt: string, userMessage: string): Promise<string> {
+  const { data, error } = await supabase.functions.invoke('ai-chat', {
+    body: {
+      systemPrompt,
+      messages: [{ role: 'user', content: userMessage }],
+    },
   })
+  if (error) throw new Error(error.message ?? 'KI-Verbindung fehlgeschlagen')
+  if (data?.error) throw new Error(typeof data.error === 'string' ? data.error : 'KI-Verbindung fehlgeschlagen')
+  return (data?.text as string) ?? ''
+}
 
+function extractJson(text: string): any {
+  const jsonStart = text.indexOf('{')
+  const jsonEnd = text.lastIndexOf('}') + 1
+  return JSON.parse(text.slice(jsonStart, jsonEnd))
+}
+
+export async function generateMeetingSummary(
+  transcript: string
+): Promise<{ summary: string; actionItems: { task: string; assignee?: string; dueDate?: string }[] }> {
   const prompt = `
-Du bist ein KI-Assistent, der ein laufendes Meeting analysiert. 
+Du bist ein KI-Assistent, der ein laufendes Meeting analysiert.
 Hier ist das bisherige Transkript des Meetings:
 
 <transcript>
@@ -39,39 +57,23 @@ Bitte antworte AUSSCHLIESSLICH im folgenden JSON-Format:
 }
 `
 
-  const response = await anthropic.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 1024,
-    messages: [
-      { role: 'user', content: prompt }
-    ]
-  })
-
   try {
-    const text = (response.content[0] as any).text
-    const jsonStart = text.indexOf('{')
-    const jsonEnd = text.lastIndexOf('}') + 1
-    const jsonString = text.slice(jsonStart, jsonEnd)
-    const result = JSON.parse(jsonString)
+    const text = await callAi('Du bist ein präziser Meeting-Analyst und antwortest ausschließlich mit JSON.', prompt)
+    const result = extractJson(text)
     return {
       summary: result.summary || '',
-      actionItems: result.actionItems || []
+      actionItems: result.actionItems || [],
     }
   } catch (error) {
-    console.error('Failed to parse Anthropic JSON:', error)
-    return { summary: 'Fehler beim Parsen der Zusammenfassung.', actionItems: [] }
+    console.error('Failed to generate meeting summary:', error)
+    return { summary: 'Fehler beim Erstellen der Zusammenfassung.', actionItems: [] }
   }
 }
 
-export async function translateMeeting(summary: string, transcript: string): Promise<{ summary: string; transcript: string }> {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
-  if (!apiKey) throw new Error('Anthropic API Key (VITE_ANTHROPIC_API_KEY) ist nicht gesetzt.')
-
-  const anthropic = new Anthropic({
-    apiKey: apiKey,
-    dangerouslyAllowBrowser: true,
-  })
-
+export async function translateMeeting(
+  summary: string,
+  transcript: string
+): Promise<{ summary: string; transcript: string }> {
   const prompt = `
 Please translate the following German meeting summary and transcript into English.
 Preserve all formatting (like Markdown bullet points) and keep the exact same structure.
@@ -91,26 +93,15 @@ Please reply STRICTLY with valid JSON in the following format:
 }
 `
 
-  const response = await anthropic.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 2000,
-    messages: [
-      { role: 'user', content: prompt }
-    ]
-  })
-
   try {
-    const text = (response.content[0] as any).text
-    const jsonStart = text.indexOf('{')
-    const jsonEnd = text.lastIndexOf('}') + 1
-    const jsonString = text.slice(jsonStart, jsonEnd)
-    const result = JSON.parse(jsonString)
+    const text = await callAi('You are a precise translator and reply strictly with JSON.', prompt)
+    const result = extractJson(text)
     return {
       summary: result.summary || summary,
-      transcript: result.transcript || transcript
+      transcript: result.transcript || transcript,
     }
   } catch (error) {
-    console.error('Failed to parse Anthropic JSON:', error)
+    console.error('Failed to translate meeting:', error)
     throw new Error('Übersetzung fehlgeschlagen.')
   }
 }

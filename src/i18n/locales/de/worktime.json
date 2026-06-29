@@ -22,6 +22,21 @@
     "alreadyTracked": "{{time}} bereits erfasst",
     "nothingTracked": "Noch nichts erfasst"
   },
+  "stampLog": {
+    "title": "Stempel-Protokoll",
+    "tamperProof": "Manipulationssicher",
+    "todayPunches": "Heutige Stempelungen",
+    "noPunches": "Heute noch nicht gestempelt.",
+    "clockIn": "Kommen",
+    "clockOut": "Gehen",
+    "netToday": "Netto heute",
+    "changeLog": "Änderungsprotokoll"
+  },
+  "arbzg": {
+    "maxDaily": "Höchstarbeitszeit überschritten: mehr als 10 Std. (§3 ArbZG).",
+    "break": "Pausenzeit zu kurz: >6 Std. erfordern 30 Min., >9 Std. erfordern 45 Min. Pause (§4 ArbZG).",
+    "rest": "Ruhezeit unter 11 Std. seit dem letzten Arbeitsende (§5 ArbZG)."
+  },
   "month": {
     "total": "Monat gesamt: {{value}}"
   },

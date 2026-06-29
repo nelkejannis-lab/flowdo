@@ -22,6 +22,21 @@
     "alreadyTracked": "{{time}} already tracked",
     "nothingTracked": "Nothing tracked yet"
   },
+  "stampLog": {
+    "title": "Punch log",
+    "tamperProof": "Tamper-proof",
+    "todayPunches": "Today's punches",
+    "noPunches": "No punches today yet.",
+    "clockIn": "In",
+    "clockOut": "Out",
+    "netToday": "Net today",
+    "changeLog": "Change log"
+  },
+  "arbzg": {
+    "maxDaily": "Maximum working time exceeded: more than 10 hrs (§3 ArbZG).",
+    "break": "Break too short: >6 hrs require 30 min, >9 hrs require 45 min break (§4 ArbZG).",
+    "rest": "Rest period under 11 hrs since last clock-out (§5 ArbZG)."
+  },
   "month": {
     "total": "Month total: {{value}}"
   },

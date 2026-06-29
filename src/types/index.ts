@@ -182,6 +182,25 @@ export interface WorkProfile {
   fridayHours?: number
 }
 
+// Tamper-proof punch event ("Stempeluhr") — append-only, never edited or deleted
+export interface WorkTimePunch {
+  id: string
+  punchedAt: string // ISO timestamp
+  kind: 'in' | 'out'
+  source: string // 'app' | 'manual' | ...
+}
+
+// Change/audit trail entry for manual corrections — append-only
+export interface WorkTimeAuditEntry {
+  id: string
+  entryDate: string // yyyy-MM-dd
+  field: string
+  oldValue: string | null
+  newValue: string | null
+  reason: string | null
+  changedAt: string // ISO timestamp
+}
+
 export interface CalendarEvent {
   id: string
   title: string

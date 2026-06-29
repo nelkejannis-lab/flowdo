@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Settings } from 'lucide-react'
 import TimeClock from '../components/worktime/TimeClock'
+import StampLog from '../components/worktime/StampLog'
 import OvertimeOverview from '../components/worktime/OvertimeOverview'
 import WorkWeekView from '../components/worktime/WorkWeekView'
 import WorkMonthView from '../components/worktime/WorkMonthView'
@@ -91,7 +92,10 @@ export default function ArbeitszeitPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr]">
-        <TimeClock />
+        <div className="flex flex-col gap-6">
+          <TimeClock />
+          <StampLog />
+        </div>
         <div>
           <div className="mb-3 flex gap-1 rounded-lg bg-gray-100 p-1 text-sm font-medium dark:bg-racing-800 w-fit">
             {(['week', 'month'] as const).map((v) => (

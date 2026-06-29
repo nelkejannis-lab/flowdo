@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { WorkDayEntry, WorkProfile, WorkTimeSettings } from '../types'
+import type { WorkDayEntry, WorkProfile, WorkTimeSettings, WorkTimePunch, WorkTimeAuditEntry } from '../types'
 import { createId } from '../utils/id'
 
 const GBM_PROFILE: WorkProfile = {
@@ -48,9 +48,28 @@ interface WorkTimeEntryRow {
   sick_day: boolean | null
 }
 
+interface WorkTimePunchRow {
+  id: string
+  punched_at: string
+  kind: 'in' | 'out'
+  source: string
+}
+
+interface WorkTimeAuditRow {
+  id: string
+  entry_date: string
+  field: string
+  old_value: string | null
+  new_value: string | null
+  reason: string | null
+  changed_at: string
+}
+
 interface WorkTimeState {
   settings: WorkTimeSettings
   entries: Record<string, WorkDayEntry>
+  punches: WorkTimePunch[]
+  auditLog: WorkTimeAuditEntry[]
   isRunning: boolean
   runningStartedAt?: string
   runningDate?: string
@@ -87,6 +106,23 @@ function ensureEntry(
   defaultBreakMinutes: number
 ): WorkDayEntry {
   return entries[date] ?? { date, workedMinutes: 0, breakMinutes: defaultBreakMinutes }
+}
+
+function makeAudit(
+  date: string,
+  field: string,
+  oldValue: string | number | null | undefined,
+  newValue: string | number | null | undefined
+): WorkTimeAuditEntry {
+  return {
+    id: createId(),
+    entryDate: date,
+    field,
+    oldValue: oldValue == null ? null : String(oldValue),
+    newValue: newValue == null ? null : String(newValue),
+    reason: null,
+    changedAt: new Date().toISOString(),
+  }
 }
 
 async function syncEntry(entry: WorkDayEntry) {
@@ -147,11 +183,46 @@ async function syncRunningState(runningStartedAt?: string, runningDate?: string)
   })
 }
 
+// Append-only: record an immutable punch event ("Stempel"). Never updated/deleted.
+async function syncPunch(punch: WorkTimePunch) {
+  if (!isSupabaseConfigured) return
+  const { data: userData } = await supabase.auth.getUser()
+  const userId = userData.user?.id
+  if (!userId) return
+  await supabase.from('work_time_punches').insert({
+    id: punch.id,
+    user_id: userId,
+    punched_at: punch.punchedAt,
+    kind: punch.kind,
+    source: punch.source,
+  })
+}
+
+// Append-only: record a manual correction in the audit trail (Manipulationssicherheit).
+async function syncAudit(entry: WorkTimeAuditEntry) {
+  if (!isSupabaseConfigured) return
+  const { data: userData } = await supabase.auth.getUser()
+  const userId = userData.user?.id
+  if (!userId) return
+  await supabase.from('work_time_audit').insert({
+    id: entry.id,
+    user_id: userId,
+    entry_date: entry.entryDate,
+    field: entry.field,
+    old_value: entry.oldValue,
+    new_value: entry.newValue,
+    reason: entry.reason,
+    changed_at: entry.changedAt,
+  })
+}
+
 export const useWorkTimeStore = create<WorkTimeState>()(
   persist(
     (set, get) => ({
       settings: defaultSettings,
       entries: {},
+      punches: [],
+      auditLog: [],
       isRunning: false,
       runningStartedAt: undefined,
       runningDate: undefined,
@@ -168,12 +239,24 @@ export const useWorkTimeStore = create<WorkTimeState>()(
         const userId = userData.user?.id
         if (!userId) return
 
-        const [entriesResult, settingsResult] = await Promise.all([
+        const since = new Date(Date.now() - 1000 * 60 * 60 * 24 * 120).toISOString()
+        const [entriesResult, settingsResult, punchesResult, auditResult] = await Promise.all([
           supabase
             .from('work_time_entries')
             .select('date, worked_minutes, break_minutes, start_time, end_time')
             .eq('user_id', userId),
           supabase.from('work_time_settings').select('*').eq('user_id', userId).maybeSingle(),
+          supabase
+            .from('work_time_punches')
+            .select('id, punched_at, kind, source')
+            .eq('user_id', userId)
+            .gte('punched_at', since)
+            .order('punched_at', { ascending: true }),
+          supabase
+            .from('work_time_audit')
+            .select('id, entry_date, field, old_value, new_value, reason, changed_at')
+            .eq('user_id', userId)
+            .order('changed_at', { ascending: false }),
         ])
 
         const rows = (entriesResult.data ?? []) as WorkTimeEntryRow[]
@@ -188,6 +271,22 @@ export const useWorkTimeStore = create<WorkTimeState>()(
             sickDay: row.sick_day ?? false,
           }
         }
+
+        const punches: WorkTimePunch[] = ((punchesResult.data ?? []) as WorkTimePunchRow[]).map((p) => ({
+          id: p.id,
+          punchedAt: p.punched_at,
+          kind: p.kind,
+          source: p.source,
+        }))
+        const auditLog: WorkTimeAuditEntry[] = ((auditResult.data ?? []) as WorkTimeAuditRow[]).map((a) => ({
+          id: a.id,
+          entryDate: a.entry_date,
+          field: a.field,
+          oldValue: a.old_value,
+          newValue: a.new_value,
+          reason: a.reason,
+          changedAt: a.changed_at,
+        }))
 
         const settingsRow = settingsResult.data as WorkTimeSettingsRow | null
         const settings: WorkTimeSettings = settingsRow
@@ -223,6 +322,8 @@ export const useWorkTimeStore = create<WorkTimeState>()(
 
         set({
           entries,
+          punches,
+          auditLog,
           settings,
           settledWeekendDays,
           isRunning: Boolean(runningStartedAt && runningDate),
@@ -247,14 +348,23 @@ export const useWorkTimeStore = create<WorkTimeState>()(
         const state = get()
         const entry = ensureEntry(state.entries, runningDate, state.settings.defaultBreakMinutes)
         const updated = { ...entry, startTime: entry.startTime ?? startTime }
-        set({ isRunning: true, runningStartedAt, runningDate, entries: { ...state.entries, [runningDate]: updated } })
+        const punch: WorkTimePunch = { id: createId(), punchedAt: runningStartedAt, kind: 'in', source: 'app' }
+        set({
+          isRunning: true,
+          runningStartedAt,
+          runningDate,
+          entries: { ...state.entries, [runningDate]: updated },
+          punches: [...state.punches, punch],
+        })
         void syncEntry(updated)
         void syncRunningState(runningStartedAt, runningDate)
+        void syncPunch(punch)
       },
 
       clockOut: () => {
         const state = get()
         if (!state.isRunning || !state.runningStartedAt || !state.runningDate) return
+        const punchedAt = new Date().toISOString()
         const elapsedMinutes = Math.round((Date.now() - new Date(state.runningStartedAt).getTime()) / 60000)
         const date = state.runningDate
         const endTime = new Date().toTimeString().slice(0, 5)
@@ -264,30 +374,37 @@ export const useWorkTimeStore = create<WorkTimeState>()(
           workedMinutes: entry.workedMinutes + Math.max(0, elapsedMinutes),
           endTime,
         }
+        const punch: WorkTimePunch = { id: createId(), punchedAt, kind: 'out', source: 'app' }
         set({
           entries: { ...state.entries, [date]: updated },
           isRunning: false,
           runningStartedAt: undefined,
           runningDate: undefined,
+          punches: [...state.punches, punch],
         })
         void syncEntry(updated)
         void syncRunningState()
+        void syncPunch(punch)
       },
 
       setWorkedMinutes: (date, minutes) => {
         const state = get()
         const entry = ensureEntry(state.entries, date, state.settings.defaultBreakMinutes)
         const updated = { ...entry, workedMinutes: Math.max(0, minutes) }
-        set({ entries: { ...state.entries, [date]: updated } })
+        const audit = makeAudit(date, 'workedMinutes', entry.workedMinutes, updated.workedMinutes)
+        set({ entries: { ...state.entries, [date]: updated }, auditLog: [audit, ...state.auditLog] })
         void syncEntry(updated)
+        void syncAudit(audit)
       },
 
       setBreakMinutes: (date, minutes) => {
         const state = get()
         const entry = ensureEntry(state.entries, date, state.settings.defaultBreakMinutes)
         const updated = { ...entry, breakMinutes: Math.max(0, minutes) }
-        set({ entries: { ...state.entries, [date]: updated } })
+        const audit = makeAudit(date, 'breakMinutes', entry.breakMinutes, updated.breakMinutes)
+        set({ entries: { ...state.entries, [date]: updated }, auditLog: [audit, ...state.auditLog] })
         void syncEntry(updated)
+        void syncAudit(audit)
       },
 
       setDayTimes: (date, startTime, endTime) => {
@@ -300,8 +417,15 @@ export const useWorkTimeStore = create<WorkTimeState>()(
           endTime: endTime || undefined,
           workedMinutes: duration ?? entry.workedMinutes,
         }
-        set({ entries: { ...state.entries, [date]: updated } })
+        const audit = makeAudit(
+          date,
+          'dayTimes',
+          `${entry.startTime ?? '—'}–${entry.endTime ?? '—'}`,
+          `${startTime || '—'}–${endTime || '—'}`
+        )
+        set({ entries: { ...state.entries, [date]: updated }, auditLog: [audit, ...state.auditLog] })
         void syncEntry(updated)
+        void syncAudit(audit)
       },
 
       updateSettings: (updates) => {
@@ -361,15 +485,19 @@ export const useWorkTimeStore = create<WorkTimeState>()(
           return Math.round((state.settings.weekdayHours ?? state.settings.weeklyHours / state.settings.workDaysPerWeek) * 60)
         })()
         const updated = { ...entry, sickDay: true, workedMinutes: target, breakMinutes: 0, startTime: undefined, endTime: undefined }
-        set({ entries: { ...state.entries, [date]: updated } })
+        const audit = makeAudit(date, 'sickDay', 'nein', 'ja')
+        set({ entries: { ...state.entries, [date]: updated }, auditLog: [audit, ...state.auditLog] })
         void syncEntry(updated)
+        void syncAudit(audit)
       },
       unmarkSickDay: (date) => {
         const state = get()
         const entry = ensureEntry(state.entries, date, state.settings.defaultBreakMinutes)
         const updated = { ...entry, sickDay: false, workedMinutes: 0 }
-        set({ entries: { ...state.entries, [date]: updated } })
+        const audit = makeAudit(date, 'sickDay', 'ja', 'nein')
+        set({ entries: { ...state.entries, [date]: updated }, auditLog: [audit, ...state.auditLog] })
         void syncEntry(updated)
+        void syncAudit(audit)
       },
       incrementManualCompDays: () => {
         const manualCompDays = get().manualCompDays + 1
@@ -392,6 +520,8 @@ export const useWorkTimeStore = create<WorkTimeState>()(
           .channel('worktime-realtime')
           .on('postgres_changes', { event: '*', schema: 'public', table: 'work_time_settings' }, () => get().fetchAll())
           .on('postgres_changes', { event: '*', schema: 'public', table: 'work_time_entries' }, () => get().fetchAll())
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'work_time_punches' }, () => get().fetchAll())
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'work_time_audit' }, () => get().fetchAll())
           .subscribe()
 
         return () => {
