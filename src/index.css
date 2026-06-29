@@ -265,6 +265,15 @@ input, textarea, select {
   @apply transition-all duration-200;
 }
 
+/* iOS Safari/Chrome auto-zoom into any focused field whose font-size is < 16px.
+   Force every form control to at least 16px on small screens so the viewport never
+   zooms when the on-screen keyboard opens. Visual size stays controlled via padding. */
+@media screen and (max-width: 640px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
 input:focus, textarea:focus, select:focus {
   box-shadow: 0 0 0 3px rgba(0,0,0,0.10);
 }

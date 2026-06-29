@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Outlet } from 'react-router-dom'
 import { Menu } from 'lucide-react'
 import Sidebar from './Sidebar'
+import MobileBottomNav from './MobileBottomNav'
 import Logo from './Logo'
 import GlobalSearch from './GlobalSearch'
 import OfflineBanner from './OfflineBanner'
@@ -38,11 +39,13 @@ export default function Layout() {
           
           <main className="relative flex-1 overflow-y-auto">
             <AppUpdater />
-            <div className="mx-auto h-full w-full max-w-7xl p-4 sm:p-6 lg:p-8 relative">
+            {/* Extra bottom padding on mobile so content clears the fixed bottom nav bar */}
+            <div className="mx-auto h-full w-full max-w-7xl p-4 pb-24 sm:p-6 sm:pb-6 lg:p-8 relative">
               <Outlet />
             </div>
           </main>
         </div>
+        <MobileBottomNav onOpenMenu={() => setSidebarOpen(true)} />
       </div>
       <ToastContainer />
       <AiChatPanel />

@@ -184,7 +184,7 @@ export default function CalendarPage() {
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate(-1)}
@@ -192,7 +192,7 @@ export default function CalendarPage() {
           >
             <ChevronLeft size={16} />
           </button>
-          <h1 className="min-w-[180px] text-xl font-semibold capitalize">{headerLabel}</h1>
+          <h1 className="flex-1 text-lg font-semibold capitalize sm:min-w-[180px] sm:flex-none sm:text-xl">{headerLabel}</h1>
           <button
             onClick={() => navigate(1)}
             className="rounded-lg border border-gray-200 p-1.5 hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800"
@@ -211,7 +211,7 @@ export default function CalendarPage() {
             <button
               key={v}
               onClick={() => setView(v)}
-              className={`rounded-md px-3 py-1 text-sm font-medium ${
+              className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium sm:flex-none sm:py-1 ${
                 view === v ? 'bg-accent text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
               }`}
             >
