@@ -1,13 +1,30 @@
 import { format, parseISO } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
 import { useTranslation } from 'react-i18next'
-import { Plus, Check, Clock, Calendar, CheckSquare, Square, Trash2, ArrowRight } from 'lucide-react'
-import type { CalendarEntry, CalendarEvent, Task, CalendarEntryType } from '../../types'
+import { Plus, Check, Clock, Calendar, CheckSquare, Square, Trash2, ArrowRight, GripVertical } from 'lucide-react'
+import type { CalendarEntry, CalendarEvent, Task, CalendarEntryType, Board } from '../../types'
 import { entryTypeIcon } from '../../utils/calendarEntry'
 import { useTasksStore } from '../../store/tasksStore'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
 import { useBoardsStore } from '../../store/boardsStore'
 import { eachEntryDate, eachEventDate } from '../../utils/events'
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 interface DailyAgendaPanelProps {
   selectedDate: string
@@ -38,6 +55,12 @@ export default function DailyAgendaPanel({
 
   const toggleTaskCompleted = useTasksStore((s) => s.toggleTaskCompleted)
   const toggleProjectTaskCompleted = useProjectTasksStore((s) => s.toggleTaskCompleted)
+  const reorderTasks = useTasksStore((s) => s.reorderTasks)
+
+  const taskSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
 
   // Filter day items
   const dayTasks = tasks.filter((tk) => tk.dueDate === selectedDate)
@@ -74,6 +97,16 @@ export default function DailyAgendaPanel({
     } else {
       toggleTaskCompleted(task.id)
     }
+  }
+
+  function handleTaskDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const ids = dayTasks.map((t) => t.id)
+    const oldIndex = ids.indexOf(String(active.id))
+    const newIndex = ids.indexOf(String(over.id))
+    if (oldIndex === -1 || newIndex === -1) return
+    reorderTasks(arrayMove(ids, oldIndex, newIndex))
   }
 
   return (
@@ -201,75 +234,107 @@ export default function DailyAgendaPanel({
           {/* Aufgaben Column */}
           <div className="space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">Aufgaben (To-Do)</h4>
-            <div className="space-y-2">
-              {dayTasks.map((task) => {
-                const board = boards.find((b) => b.id === task.boardId)
-                return (
-                  <div
-                    key={task.id}
-                    className={`flex items-start gap-3 rounded-xl border border-gray-100 p-3 transition-all dark:border-racing-850 ${
-                      task.completed
-                        ? 'bg-gray-50/50 opacity-60 dark:bg-racing-950/20'
-                        : 'bg-white dark:bg-racing-950/30'
-                    }`}
-                  >
-                    <button
-                      onClick={() => handleToggleTask(task)}
-                      className="mt-0.5 flex-shrink-0 text-gray-400 hover:text-accent"
-                    >
-                      {task.completed ? (
-                        <CheckSquare size={16} className="text-accent" />
-                      ) : (
-                        <Square size={16} />
-                      )}
-                    </button>
-                    <div className="min-w-0 flex-1 cursor-pointer" onClick={() => onTaskClick(task)}>
-                      <p
-                        className={`text-sm font-semibold text-gray-800 dark:text-racing-100 truncate ${
-                          task.completed ? 'line-through text-gray-400' : ''
-                        }`}
-                      >
-                        {task.title}
-                      </p>
-                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                        {board && (
-                          <span
-                            className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-semibold text-white shadow-sm"
-                            style={{ backgroundColor: board.color }}
-                          >
-                            {board.title}
-                          </span>
-                        )}
-                        <span
-                          className={`rounded px-1.5 py-0.5 text-[9px] font-semibold border ${
-                            priorityColors[task.priority] || 'border-gray-200 text-gray-400'
-                          }`}
-                        >
-                          {priorityLabels[task.priority]} Prio
-                        </span>
-                        {task.urgent && (
-                          <span className="rounded bg-red-100 px-1.5 py-0.5 text-[9px] font-semibold text-red-600 dark:bg-red-950/30 dark:text-red-400">
-                            Dringend
-                          </span>
-                        )}
-                        {task.important && (
-                          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold text-amber-600 dark:bg-amber-950/30 dark:text-amber-400">
-                            Wichtig
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
+            <DndContext sensors={taskSensors} collisionDetection={closestCenter} onDragEnd={handleTaskDragEnd}>
+              <SortableContext items={dayTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-2">
+                  {dayTasks.map((task) => (
+                    <SortableDayTask
+                      key={task.id}
+                      task={task}
+                      board={boards.find((b) => b.id === task.boardId)}
+                      priorityColors={priorityColors}
+                      priorityLabels={priorityLabels}
+                      onToggle={() => handleToggleTask(task)}
+                      onClick={() => onTaskClick(task)}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
 
-              {dayTasks.length === 0 && (
-                <p className="py-2 text-xs italic text-gray-400">Keine Aufgaben für diesen Tag.</p>
-              )}
-            </div>
+            {dayTasks.length === 0 && (
+              <p className="py-2 text-xs italic text-gray-400">Keine Aufgaben für diesen Tag.</p>
+            )}
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+interface SortableDayTaskProps {
+  task: Task
+  board: Board | undefined
+  priorityColors: Record<string, string>
+  priorityLabels: Record<string, string>
+  onToggle: () => void
+  onClick: () => void
+}
+
+function SortableDayTask({ task, board, priorityColors, priorityLabels, onToggle, onClick }: SortableDayTaskProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`group flex items-start gap-2 rounded-xl border border-gray-100 p-3 transition-all dark:border-racing-850 ${
+        task.completed ? 'bg-gray-50/50 opacity-60 dark:bg-racing-950/20' : 'bg-white dark:bg-racing-950/30'
+      }`}
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        className="mt-0.5 flex-shrink-0 cursor-grab text-gray-300 hover:text-gray-500 active:cursor-grabbing dark:text-racing-700 dark:hover:text-racing-400"
+      >
+        <GripVertical size={14} />
+      </button>
+      <button onClick={onToggle} className="mt-0.5 flex-shrink-0 text-gray-400 hover:text-accent">
+        {task.completed ? <CheckSquare size={16} className="text-accent" /> : <Square size={16} />}
+      </button>
+      <div className="min-w-0 flex-1 cursor-pointer" onClick={onClick}>
+        <p
+          className={`text-sm font-semibold text-gray-800 dark:text-racing-100 truncate ${
+            task.completed ? 'line-through text-gray-400' : ''
+          }`}
+        >
+          {task.title}
+        </p>
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          {board && (
+            <span
+              className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-semibold text-white shadow-sm"
+              style={{ backgroundColor: board.color }}
+            >
+              {board.title}
+            </span>
+          )}
+          <span
+            className={`rounded px-1.5 py-0.5 text-[9px] font-semibold border ${
+              priorityColors[task.priority] || 'border-gray-200 text-gray-400'
+            }`}
+          >
+            {priorityLabels[task.priority]} Prio
+          </span>
+          {task.urgent && (
+            <span className="rounded bg-red-100 px-1.5 py-0.5 text-[9px] font-semibold text-red-600 dark:bg-red-950/30 dark:text-red-400">
+              Dringend
+            </span>
+          )}
+          {task.important && (
+            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold text-amber-600 dark:bg-amber-950/30 dark:text-amber-400">
+              Wichtig
+            </span>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
