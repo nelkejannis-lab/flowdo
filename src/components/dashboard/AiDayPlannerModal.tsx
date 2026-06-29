@@ -42,8 +42,8 @@ export default function AiDayPlannerModal({ onClose }: AiDayPlannerModalProps) {
     setLoading(true)
     setError(null)
     try {
-      const todaysEntries = expandRecurringEntries(calendarEntries, today, today).filter(
-        (e) => e.date <= today && (!e.endDate || e.endDate >= today)
+      const todaysEntries = expandRecurringEntries(calendarEntries, today, today).filter((e) =>
+        e.endDate ? e.date <= today && e.endDate >= today : e.date === today
       )
       const todaysTasks = [...tasks, ...myProjectTasks].filter((t) => !t.completed && t.dueDate === today)
 

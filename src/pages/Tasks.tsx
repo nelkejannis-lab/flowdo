@@ -207,8 +207,12 @@ export default function TasksPage() {
 
   const relevantEntries = (() => {
     if (smartList === 'today') {
+      // Single-day entries (no endDate) must be exactly today; multi-day entries
+      // just need today to fall within [date, endDate]. The old `!e.endDate ||
+      // e.endDate >= today` check collapsed to always-true for single-day entries
+      // without an endDate, leaking every past one-off entry into "today".
       return calendarEntries
-        .filter((e) => e.date <= today && (!e.endDate || e.endDate >= today))
+        .filter((e) => (e.endDate ? e.date <= today && e.endDate >= today : e.date === today))
         .sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? ''))
     }
     if (smartList === 'week') {
