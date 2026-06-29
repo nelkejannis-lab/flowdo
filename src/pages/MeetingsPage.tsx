@@ -21,6 +21,10 @@ export default function MeetingsPage() {
   const [titleDraft, setTitleDraft] = useState('')
   const [editingSummary, setEditingSummary] = useState(false)
   const [summaryDraft, setSummaryDraft] = useState('')
+  const [editingActionItemId, setEditingActionItemId] = useState<string | null>(null)
+  const [actionItemTaskDraft, setActionItemTaskDraft] = useState('')
+  const [actionItemAssigneeDraft, setActionItemAssigneeDraft] = useState('')
+  const [addingActionItem, setAddingActionItem] = useState(false)
 
   useEffect(() => {
     fetchMeetings()
@@ -157,35 +161,165 @@ export default function MeetingsPage() {
                 <Calendar size={14} /> {format(new Date(selectedMeeting.date), "dd. MMMM yyyy, HH:mm 'Uhr'", { locale: de })}
               </p>
 
-              {selectedMeeting.action_items && selectedMeeting.action_items.length > 0 && (
-                <div className="mt-8">
-                  <h3 className="flex items-center gap-2 font-semibold text-accent border-b border-gray-100 pb-2 mb-4 dark:border-racing-800">
+              <div className="mt-8">
+                <div className="flex items-center justify-between border-b border-gray-100 pb-2 mb-4 dark:border-racing-800">
+                  <h3 className="flex items-center gap-2 font-semibold text-accent">
                     <CheckSquare size={18} /> Action Items
                   </h3>
-                  <ul className="space-y-2">
-                    {selectedMeeting.action_items.map((item) => (
-                      <li key={item.id} className="flex items-start gap-2 rounded-lg bg-gray-50 p-3 dark:bg-racing-800">
-                        <input type="checkbox" className="mt-1" defaultChecked={item.done} />
-                        <div>
-                          <span className="font-medium text-sm">{item.task}</span>
-                          {item.assignee && (
-                            <span className="ml-2 inline-flex rounded bg-accent/20 px-1.5 py-0.5 text-[10px] font-bold text-accent">
-                              @{item.assignee}
-                            </span>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => setTransferringItem(item)}
-                          disabled={item.done}
-                          className="ml-auto text-xs font-semibold text-accent hover:text-accent-hover disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
-                        >
-                          {item.done ? 'Im Dashboard' : '+ In Dashboard übertragen'}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+                  {!addingActionItem && (
+                    <button
+                      onClick={() => {
+                        setActionItemTaskDraft('')
+                        setActionItemAssigneeDraft('')
+                        setAddingActionItem(true)
+                      }}
+                      className="flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent-hover transition-colors"
+                    >
+                      <Plus size={12} /> {t('addActionItem')}
+                    </button>
+                  )}
                 </div>
-              )}
+                <ul className="space-y-2">
+                  {(selectedMeeting.action_items ?? []).map((item) => (
+                    <li key={item.id} className="flex items-start gap-2 rounded-lg bg-gray-50 p-3 dark:bg-racing-800">
+                      {editingActionItemId === item.id ? (
+                        <div className="flex flex-1 flex-col gap-2">
+                          <input
+                            value={actionItemTaskDraft}
+                            onChange={(e) => setActionItemTaskDraft(e.target.value)}
+                            placeholder={t('actionItemPlaceholder')}
+                            autoFocus
+                            className="rounded-lg border border-gray-200 bg-transparent px-2 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+                          />
+                          <div className="flex items-center gap-2">
+                            <input
+                              value={actionItemAssigneeDraft}
+                              onChange={(e) => setActionItemAssigneeDraft(e.target.value)}
+                              placeholder={t('assigneePlaceholder')}
+                              className="flex-1 rounded-lg border border-gray-200 bg-transparent px-2 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+                            />
+                            <button
+                              onClick={() => {
+                                if (!actionItemTaskDraft.trim()) return
+                                const updatedItems = (selectedMeeting.action_items ?? []).map((ai) =>
+                                  ai.id === item.id
+                                    ? { ...ai, task: actionItemTaskDraft.trim(), assignee: actionItemAssigneeDraft.trim() || undefined }
+                                    : ai
+                                )
+                                updateMeeting(selectedMeeting.id, { action_items: updatedItems })
+                                setEditingActionItemId(null)
+                              }}
+                              className="rounded-lg bg-accent p-1.5 text-white hover:bg-accent-hover"
+                            >
+                              <Check size={14} />
+                            </button>
+                            <button
+                              onClick={() => setEditingActionItemId(null)}
+                              className="rounded-lg bg-gray-100 p-1.5 text-gray-500 hover:bg-gray-200 dark:bg-racing-700"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <input
+                            type="checkbox"
+                            className="mt-1"
+                            checked={item.done}
+                            onChange={(e) => {
+                              const updatedItems = (selectedMeeting.action_items ?? []).map((ai) =>
+                                ai.id === item.id ? { ...ai, done: e.target.checked } : ai
+                              )
+                              updateMeeting(selectedMeeting.id, { action_items: updatedItems })
+                            }}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <span className={`font-medium text-sm ${item.done ? 'text-gray-400 line-through' : ''}`}>{item.task}</span>
+                            {item.assignee && (
+                              <span className="ml-2 inline-flex rounded bg-accent/20 px-1.5 py-0.5 text-[10px] font-bold text-accent">
+                                @{item.assignee}
+                              </span>
+                            )}
+                          </div>
+                          <div className="ml-auto flex flex-shrink-0 items-center gap-2">
+                            <button
+                              onClick={() => setTransferringItem(item)}
+                              disabled={item.done}
+                              className="text-xs font-semibold text-accent hover:text-accent-hover disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+                            >
+                              {item.done ? 'Im Dashboard' : '+ In Dashboard übertragen'}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setActionItemTaskDraft(item.task)
+                                setActionItemAssigneeDraft(item.assignee ?? '')
+                                setEditingActionItemId(item.id)
+                              }}
+                              className="text-gray-300 hover:text-accent"
+                            >
+                              <Pencil size={13} />
+                            </button>
+                            <button
+                              onClick={() => {
+                                const updatedItems = (selectedMeeting.action_items ?? []).filter((ai) => ai.id !== item.id)
+                                updateMeeting(selectedMeeting.id, { action_items: updatedItems })
+                              }}
+                              className="text-gray-300 hover:text-red-500"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </li>
+                  ))}
+                  {addingActionItem && (
+                    <li className="flex flex-col gap-2 rounded-lg border border-accent/40 bg-accent/5 p-3">
+                      <input
+                        value={actionItemTaskDraft}
+                        onChange={(e) => setActionItemTaskDraft(e.target.value)}
+                        placeholder={t('actionItemPlaceholder')}
+                        autoFocus
+                        className="rounded-lg border border-gray-200 bg-transparent px-2 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+                      />
+                      <div className="flex items-center gap-2">
+                        <input
+                          value={actionItemAssigneeDraft}
+                          onChange={(e) => setActionItemAssigneeDraft(e.target.value)}
+                          placeholder={t('assigneePlaceholder')}
+                          className="flex-1 rounded-lg border border-gray-200 bg-transparent px-2 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+                        />
+                        <button
+                          onClick={() => {
+                            if (!actionItemTaskDraft.trim()) return
+                            const newItem = {
+                              id: crypto.randomUUID(),
+                              task: actionItemTaskDraft.trim(),
+                              assignee: actionItemAssigneeDraft.trim() || undefined,
+                              done: false,
+                            }
+                            updateMeeting(selectedMeeting.id, { action_items: [...(selectedMeeting.action_items ?? []), newItem] })
+                            setAddingActionItem(false)
+                          }}
+                          className="rounded-lg bg-accent p-1.5 text-white hover:bg-accent-hover"
+                        >
+                          <Check size={14} />
+                        </button>
+                        <button
+                          onClick={() => setAddingActionItem(false)}
+                          className="rounded-lg bg-gray-100 p-1.5 text-gray-500 hover:bg-gray-200 dark:bg-racing-700"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </li>
+                  )}
+                  {(selectedMeeting.action_items ?? []).length === 0 && !addingActionItem && (
+                    <p className="py-2 text-center text-xs text-gray-400">{t('noActionItems')}</p>
+                  )}
+                </ul>
+              </div>
 
               <div className="mt-8">
                 <div className="flex items-center justify-between border-b border-gray-100 pb-2 mb-4 dark:border-racing-800">

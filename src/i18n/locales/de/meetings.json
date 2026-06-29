@@ -3,5 +3,9 @@
   "save": "Speichern",
   "cancel": "Abbrechen",
   "titlePlaceholder": "Meeting-Titel",
-  "summaryPlaceholder": "Zusammenfassung & Stichpunkte..."
+  "summaryPlaceholder": "Zusammenfassung & Stichpunkte...",
+  "addActionItem": "Punkt hinzufügen",
+  "actionItemPlaceholder": "Aufgabe...",
+  "assigneePlaceholder": "Zuständig (optional)",
+  "noActionItems": "Keine Action Items vorhanden."
 }

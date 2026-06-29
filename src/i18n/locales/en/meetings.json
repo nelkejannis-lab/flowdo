@@ -3,5 +3,9 @@
   "save": "Save",
   "cancel": "Cancel",
   "titlePlaceholder": "Meeting title",
-  "summaryPlaceholder": "Summary & bullet points..."
+  "summaryPlaceholder": "Summary & bullet points...",
+  "addActionItem": "Add item",
+  "actionItemPlaceholder": "Task...",
+  "assigneePlaceholder": "Assignee (optional)",
+  "noActionItems": "No action items yet."
 }
