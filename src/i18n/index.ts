@@ -18,6 +18,7 @@ import aiSchedulerDe from './locales/de/aiScheduler.json'
 import settingsDe from './locales/de/settings.json'
 import authDe from './locales/de/auth.json'
 import legalDe from './locales/de/legal.json'
+import meetingsDe from './locales/de/meetings.json'
 
 import commonEn from './locales/en/common.json'
 import layoutEn from './locales/en/layout.json'
@@ -34,6 +35,7 @@ import aiSchedulerEn from './locales/en/aiScheduler.json'
 import settingsEn from './locales/en/settings.json'
 import authEn from './locales/en/auth.json'
 import legalEn from './locales/en/legal.json'
+import meetingsEn from './locales/en/meetings.json'
 
 export const defaultNS = 'common'
 
@@ -55,6 +57,7 @@ export const resources = {
     auth: authDe,
     legal: legalDe,
     pomodoro: pomodoroDe,
+    meetings: meetingsDe,
   },
   en: {
     common: commonEn,
@@ -73,6 +76,7 @@ export const resources = {
     auth: authEn,
     legal: legalEn,
     pomodoro: pomodoroEn,
+    meetings: meetingsEn,
   },
 } as const
 

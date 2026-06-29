@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useMeetingsStore } from '../store/meetingsStore'
 import LiveMeetingPanel from '../components/meetings/LiveMeetingPanel'
-import { Mic, Plus, Trash2, Calendar, FileText, CheckSquare } from 'lucide-react'
+import { Mic, Plus, Trash2, Calendar, FileText, CheckSquare, Pencil, Check, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
 import { translateMeeting } from '../lib/aiService'
@@ -9,12 +10,17 @@ import { useTasksStore } from '../store/tasksStore'
 import TaskFormModal from '../components/tasks/TaskFormModal'
 
 export default function MeetingsPage() {
+  const { t } = useTranslation('meetings')
   const { meetings, fetchMeetings, deleteMeeting, updateMeeting, loading } = useMeetingsStore()
   const addTask = useTasksStore(s => s.addTask)
   const [isLiveMode, setIsLiveMode] = useState(false)
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null)
   const [isTranslating, setIsTranslating] = useState(false)
   const [transferringItem, setTransferringItem] = useState<any>(null)
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [titleDraft, setTitleDraft] = useState('')
+  const [editingSummary, setEditingSummary] = useState(false)
+  const [summaryDraft, setSummaryDraft] = useState('')
 
   useEffect(() => {
     fetchMeetings()
@@ -107,7 +113,46 @@ export default function MeetingsPage() {
         <div className="flex-1 rounded-xl border border-gray-100 bg-white shadow-sm dark:border-racing-800 dark:bg-racing-900 overflow-y-auto">
           {selectedMeeting ? (
             <div className="p-6">
-              <h2 className="text-xl font-bold">{selectedMeeting.title}</h2>
+              {editingTitle ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    value={titleDraft}
+                    onChange={(e) => setTitleDraft(e.target.value)}
+                    placeholder={t('titlePlaceholder')}
+                    autoFocus
+                    className="flex-1 rounded-lg border border-gray-200 bg-transparent px-2 py-1 text-xl font-bold focus:border-accent focus:outline-none dark:border-racing-700"
+                  />
+                  <button
+                    onClick={() => {
+                      if (titleDraft.trim()) updateMeeting(selectedMeeting.id, { title: titleDraft.trim() })
+                      setEditingTitle(false)
+                    }}
+                    className="rounded-lg bg-accent p-1.5 text-white hover:bg-accent-hover"
+                  >
+                    <Check size={16} />
+                  </button>
+                  <button
+                    onClick={() => setEditingTitle(false)}
+                    className="rounded-lg bg-gray-100 p-1.5 text-gray-500 hover:bg-gray-200 dark:bg-racing-800"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ) : (
+                <div className="group flex items-center gap-2">
+                  <h2 className="text-xl font-bold">{selectedMeeting.title}</h2>
+                  <button
+                    onClick={() => {
+                      setTitleDraft(selectedMeeting.title)
+                      setEditingTitle(true)
+                    }}
+                    className="text-gray-300 opacity-0 transition-opacity hover:text-accent group-hover:opacity-100"
+                    title={t('edit')}
+                  >
+                    <Pencil size={14} />
+                  </button>
+                </div>
+              )}
               <p className="mt-2 text-sm text-gray-500 flex items-center gap-2">
                 <Calendar size={14} /> {format(new Date(selectedMeeting.date), "dd. MMMM yyyy, HH:mm 'Uhr'", { locale: de })}
               </p>
@@ -147,36 +192,70 @@ export default function MeetingsPage() {
                   <h3 className="flex items-center gap-2 font-semibold text-gray-500">
                     <FileText size={18} className="text-gray-400" /> Zusammenfassung
                   </h3>
-                  <button
-                    onClick={async () => {
-                      try {
-                        setIsTranslating(true)
-                        const result = await translateMeeting(selectedMeeting.summary, selectedMeeting.transcript)
-                        updateMeeting(selectedMeeting.id, { summary: result.summary, transcript: result.transcript })
-                      } catch (err) {
-                        console.error('Translation failed', err)
-                      } finally {
-                        setIsTranslating(false)
-                      }
-                    }}
-                    disabled={isTranslating}
-                    className="text-xs font-semibold text-accent hover:text-accent-hover disabled:opacity-50 transition-colors"
-                  >
-                    {isTranslating ? 'Übersetze...' : 'Translate to English'}
-                  </button>
+                  <div className="flex items-center gap-3">
+                    {!editingSummary && (
+                      <button
+                        onClick={() => {
+                          setSummaryDraft(selectedMeeting.summary)
+                          setEditingSummary(true)
+                        }}
+                        className="flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent-hover transition-colors"
+                      >
+                        <Pencil size={12} /> {t('edit')}
+                      </button>
+                    )}
+                    <button
+                      onClick={async () => {
+                        try {
+                          setIsTranslating(true)
+                          const result = await translateMeeting(selectedMeeting.summary, selectedMeeting.transcript)
+                          updateMeeting(selectedMeeting.id, { summary: result.summary, transcript: result.transcript })
+                        } catch (err) {
+                          console.error('Translation failed', err)
+                        } finally {
+                          setIsTranslating(false)
+                        }
+                      }}
+                      disabled={isTranslating}
+                      className="text-xs font-semibold text-accent hover:text-accent-hover disabled:opacity-50 transition-colors"
+                    >
+                      {isTranslating ? 'Übersetze...' : 'Translate to English'}
+                    </button>
+                  </div>
                 </div>
-                <div className="prose prose-sm dark:prose-invert">
-                  <div dangerouslySetInnerHTML={{ __html: selectedMeeting.summary.replace(/\n/g, '<br/>') }} />
-                </div>
-              </div>
-
-              <div className="mt-8">
-                <h3 className="flex items-center gap-2 font-semibold border-b border-gray-100 pb-2 mb-4 dark:border-racing-800 text-gray-500">
-                  <Mic size={18} /> Rohes Transkript
-                </h3>
-                <div className="rounded-lg bg-gray-50 p-4 text-xs leading-relaxed text-gray-600 dark:bg-racing-800 dark:text-gray-400">
-                  {selectedMeeting.transcript}
-                </div>
+                {editingSummary ? (
+                  <div className="flex flex-col gap-2">
+                    <textarea
+                      value={summaryDraft}
+                      onChange={(e) => setSummaryDraft(e.target.value)}
+                      placeholder={t('summaryPlaceholder')}
+                      rows={10}
+                      autoFocus
+                      className="w-full rounded-lg border border-gray-200 bg-transparent p-3 text-sm leading-relaxed focus:border-accent focus:outline-none dark:border-racing-700"
+                    />
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => setEditingSummary(false)}
+                        className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800"
+                      >
+                        <X size={13} /> {t('cancel')}
+                      </button>
+                      <button
+                        onClick={() => {
+                          updateMeeting(selectedMeeting.id, { summary: summaryDraft })
+                          setEditingSummary(false)
+                        }}
+                        className="flex items-center gap-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-hover"
+                      >
+                        <Check size={13} /> {t('save')}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="prose prose-sm dark:prose-invert">
+                    <div dangerouslySetInnerHTML={{ __html: selectedMeeting.summary.replace(/\n/g, '<br/>') }} />
+                  </div>
+                )}
               </div>
             </div>
           ) : (
