@@ -237,4 +237,6 @@ export interface CalendarEntry {
   invitees: CalendarEntryInvitee[]
   createdAt: string
   recurrence?: 'daily' | 'weekly' | 'monthly' | 'yearly'
+  completed?: boolean
+  meetingLink?: string
 }

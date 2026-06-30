@@ -25,6 +25,7 @@ import DayView from '../components/calendar/DayView'
 import DailyAgendaPanel from '../components/calendar/DailyAgendaPanel'
 import TaskFormModal from '../components/tasks/TaskFormModal'
 import CalendarEntryFormModal from '../components/calendar/CalendarEntryFormModal'
+import CalendarTodoPanel from '../components/calendar/CalendarTodoPanel'
 import TeamAvailabilitySidebar from '../components/calendar/TeamAvailabilitySidebar'
 import { useTasksStore } from '../store/tasksStore'
 import { useEventsStore } from '../store/eventsStore'
@@ -42,17 +43,23 @@ export default function CalendarPage() {
   const { t, i18n } = useTranslation('calendar')
   const dateLocale = i18n.language === 'en' ? enUS : de
   const tasks = useTasksStore((s) => s.tasks)
+  const updateTask = useTasksStore((s) => s.updateTask)
+  const toggleTaskCompleted = useTasksStore((s) => s.toggleTaskCompleted)
   const events = useEventsStore((s) => s.events)
   const fetchEvents = useEventsStore((s) => s.fetchAll)
   const entries = useCalendarEntriesStore((s) => s.entries)
   const fetchEntries = useCalendarEntriesStore((s) => s.fetchEntries)
-  const [view, setView] = useState<ViewMode>('month')
+  const toggleEntryCompleted = useCalendarEntriesStore((s) => s.toggleCompleted)
+  const rescheduleEntry = useCalendarEntriesStore((s) => s.rescheduleEntry)
+  const [view, setView] = useState<ViewMode>('week')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [newTaskDate, setNewTaskDate] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState<string>(toISODate(currentDate))
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null)
   const [editingEntry, setEditingEntry] = useState<CalendarEntry | null>(null)
+  const [newEntryAt, setNewEntryAt] = useState<{ date: string; startTime: string } | null>(null)
+  const [newEntryRange, setNewEntryRange] = useState<{ startDate: string; endDate: string } | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [absenceFilter, setAbsenceFilter] = useState<AbsenceFilter>(null)
   const [showUpcoming, setShowUpcoming] = useState(false)
@@ -374,7 +381,7 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 lg:flex-row">
+      <div className="flex flex-col gap-4">
         <div className="flex-1">
           {view === 'month' && (
             <div className="space-y-6">
@@ -409,13 +416,18 @@ export default function CalendarPage() {
           {view === 'week' && (
             <WeekView
               currentDate={currentDate}
-              tasks={tasks}
               events={events}
               entries={filteredEntries}
-              onTaskClick={(task) => setEditingTask(task)}
-              onAddTask={(date) => setNewTaskDate(toISODate(date))}
+              tasks={tasks}
               onEventClick={(event) => setEditingEvent(event)}
               onEntryClick={(entry) => setEditingEntry(entry)}
+              onTaskClick={(task) => setEditingTask(task)}
+              onToggleTask={(task) => toggleTaskCompleted(task.id)}
+              onCreateEntryAt={(date, startTime) => setNewEntryAt({ date, startTime })}
+              onToggleEntry={(id) => toggleEntryCompleted(id)}
+              onReschedule={(id, patch) => rescheduleEntry(id, patch)}
+              onDropTodo={(date, startTime, todoId) => updateTask(todoId, { dueDate: date, startTime })}
+              onCreateRange={(startDate, endDate) => setNewEntryRange({ startDate, endDate })}
             />
           )}
           {view === 'day' && (
@@ -431,7 +443,11 @@ export default function CalendarPage() {
           )}
         </div>
 
-        {isSupabaseConfigured && <TeamAvailabilitySidebar entries={filteredEntries} />}
+        {/* Below the calendar: absence overview + next-week todos to drag in */}
+        <div className="grid gap-4 lg:grid-cols-2">
+          {isSupabaseConfigured && <TeamAvailabilitySidebar entries={filteredEntries} />}
+          <CalendarTodoPanel tasks={tasks} onTaskClick={(task) => setEditingTask(task)} />
+        </div>
         {showUpcoming && <UpcomingPanel tasks={tasks} entries={entries} />}
       </div>
 
@@ -482,6 +498,20 @@ export default function CalendarPage() {
       )}
       {showAddForm && (
         <CalendarEntryFormModal defaultDate={selectedDate} onClose={() => setShowAddForm(false)} />
+      )}
+      {newEntryAt && (
+        <CalendarEntryFormModal
+          defaultDate={newEntryAt.date}
+          defaultStartTime={newEntryAt.startTime}
+          onClose={() => setNewEntryAt(null)}
+        />
+      )}
+      {newEntryRange && (
+        <CalendarEntryFormModal
+          defaultDate={newEntryRange.startDate}
+          defaultEndDate={newEntryRange.endDate !== newEntryRange.startDate ? newEntryRange.endDate : undefined}
+          onClose={() => setNewEntryRange(null)}
+        />
       )}
       {editingEvent && <CalendarEntryFormModal event={editingEvent} onClose={() => setEditingEvent(null)} />}
       {editingEntry && <CalendarEntryFormModal entry={editingEntry} onClose={() => setEditingEntry(null)} />}

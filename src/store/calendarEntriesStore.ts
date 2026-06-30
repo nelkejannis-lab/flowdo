@@ -13,6 +13,8 @@ interface CalendarEntryRow {
   start_time: string | null
   end_time: string | null
   color: string
+  completed: boolean | null
+  meeting_link: string | null
   created_at: string
   owner: CalendarEntryInvitee | CalendarEntryInvitee[] | null
   calendar_entry_invites: { user: CalendarEntryInvitee | CalendarEntryInvitee[] }[] | null
@@ -29,6 +31,7 @@ export interface NewCalendarEntryInput {
   color: string
   invitedUserIds: string[]
   recurrence?: CalendarEntry['recurrence']
+  meetingLink?: string
 }
 
 interface CalendarEntriesState {
@@ -38,6 +41,8 @@ interface CalendarEntriesState {
   fetchEntries: () => Promise<void>
   addEntry: (input: NewCalendarEntryInput) => Promise<string | null>
   updateEntry: (id: string, input: NewCalendarEntryInput) => Promise<string | null>
+  toggleCompleted: (id: string) => Promise<void>
+  rescheduleEntry: (id: string, patch: { date?: string; endDate?: string | null; startTime?: string | null; endTime?: string | null }) => Promise<void>
   deleteEntry: (id: string) => Promise<void>
   undoDelete: (id: string) => void
   subscribeToEntries: () => () => void
@@ -63,6 +68,8 @@ function toEntry(row: CalendarEntryRow & { recurrence?: string | null }): Calend
     invitees: (row.calendar_entry_invites ?? []).map((i) => single(i.user)).filter(Boolean),
     createdAt: row.created_at,
     recurrence: (row.recurrence ?? undefined) as CalendarEntry['recurrence'],
+    completed: row.completed ?? false,
+    meetingLink: row.meeting_link ?? undefined,
   }
 }
 
@@ -117,6 +124,7 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()((set, get)
         end_time: input.endTime ?? null,
         color: input.color,
         recurrence: input.recurrence ?? null,
+        meeting_link: input.meetingLink ?? null,
       })
       .select('id')
       .single()
@@ -148,6 +156,7 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()((set, get)
         end_time: input.endTime ?? null,
         color: input.color,
         recurrence: input.recurrence ?? null,
+        meeting_link: input.meetingLink ?? null,
       })
       .eq('id', id)
 
@@ -156,6 +165,40 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()((set, get)
     await setInvites(id, input.invitedUserIds)
     await get().fetchEntries()
     return null
+  },
+
+  toggleCompleted: async (id) => {
+    const entry = get().entries.find((e) => e.id === id)
+    if (!entry) return
+    const next = !entry.completed
+    // optimistic
+    set((state) => ({ entries: state.entries.map((e) => (e.id === id ? { ...e, completed: next } : e)) }))
+    const { error } = await supabase.from('calendar_entries').update({ completed: next }).eq('id', id)
+    if (error) await get().fetchEntries()
+  },
+
+  rescheduleEntry: async (id, patch) => {
+    const payload: Record<string, unknown> = {}
+    if (patch.date !== undefined) payload.date = patch.date
+    if (patch.endDate !== undefined) payload.end_date = patch.endDate
+    if (patch.startTime !== undefined) payload.start_time = patch.startTime
+    if (patch.endTime !== undefined) payload.end_time = patch.endTime
+    // optimistic local update
+    set((state) => ({
+      entries: state.entries.map((e) =>
+        e.id === id
+          ? {
+              ...e,
+              date: patch.date ?? e.date,
+              endDate: patch.endDate === null ? undefined : patch.endDate ?? e.endDate,
+              startTime: patch.startTime === null ? undefined : patch.startTime ?? e.startTime,
+              endTime: patch.endTime === null ? undefined : patch.endTime ?? e.endTime,
+            }
+          : e
+      ),
+    }))
+    const { error } = await supabase.from('calendar_entries').update(payload).eq('id', id)
+    if (error) await get().fetchEntries()
   },
 
   deleteEntry: async (id) => {

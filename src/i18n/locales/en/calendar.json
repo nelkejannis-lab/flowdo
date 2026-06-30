@@ -78,6 +78,11 @@
     "tasks": "Tasks",
     "nothing": "Nothing coming up 🎉"
   },
+  "todoPanel": {
+    "title": "Tasks next week",
+    "hint": "Drag onto the calendar to schedule.",
+    "empty": "No open tasks in the next 7 days."
+  },
   "ownerOnly": "Only the creator can edit",
   "form": {
     "titleEdit": "Edit entry",
@@ -98,6 +103,9 @@
     "endDateOptional": "End date (optional)",
     "startTimeOptional": "From (time, optional)",
     "endTimeOptional": "To (time, optional)",
+    "meetingLink": "Meeting link (Teams, Zoom, …)",
+    "meetingLinkPlaceholder": "https://… (optional)",
+    "joinMeeting": "Join",
     "descriptionPlaceholder": "Description (optional)",
     "inviteColleagues": "Invite",
     "wholeTeam": "All colleagues",

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CalendarClock, CalendarHeart, Plane, RefreshCw, Sparkles } from 'lucide-react'
+import { CalendarClock, CalendarHeart, Plane, RefreshCw, Sparkles, Video } from 'lucide-react'
 import Modal from '../layout/Modal'
+import { detectMeetingProvider, meetingProviderColor } from '../../utils/meetingLink'
 import { useEventsStore, EVENT_COLORS, NAMED_COLORS } from '../../store/eventsStore'
 import { useCalendarEntriesStore } from '../../store/calendarEntriesStore'
 import { useToastStore } from '../../store/toastStore'
@@ -19,6 +20,8 @@ interface CalendarEntryFormModalProps {
   event?: CalendarEvent
   entry?: CalendarEntry
   defaultDate?: string
+  defaultStartTime?: string
+  defaultEndDate?: string
   onClose: () => void
 }
 
@@ -44,7 +47,7 @@ function addWeeks(isoDate: string, weeks: number): string {
   return d.toISOString().slice(0, 10)
 }
 
-export default function CalendarEntryFormModal({ event, entry, defaultDate, onClose }: CalendarEntryFormModalProps) {
+export default function CalendarEntryFormModal({ event, entry, defaultDate, defaultStartTime, defaultEndDate, onClose }: CalendarEntryFormModalProps) {
   const { t } = useTranslation('calendar')
   const typeOptions: { kind: Kind; label: string; icon: typeof CalendarClock }[] = [
     { kind: 'termin', label: t('form.types.termin'), icon: typeIcons.termin },
@@ -72,8 +75,8 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
   const [kind, setKind] = useState<Kind>(initialKind)
   const [title, setTitle] = useState(editing?.title ?? '')
   const [date, setDate] = useState(editing?.date ?? defaultDate ?? todayISO())
-  const [endDate, setEndDate] = useState(editing?.endDate ?? '')
-  const [startTime, setStartTime] = useState(entry?.startTime ?? '')
+  const [endDate, setEndDate] = useState(editing?.endDate ?? defaultEndDate ?? '')
+  const [startTime, setStartTime] = useState(entry?.startTime ?? defaultStartTime ?? '')
   const [endTime, setEndTime] = useState(entry?.endTime ?? '')
   const [description, setDescription] = useState(editing?.description ?? '')
   const [color, setColor] = useState(editing?.color ?? defaultColors.termin)
@@ -84,6 +87,7 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
   })
   const [recurrenceWeeks, setRecurrenceWeeks] = useState<RecurrenceWeeks>(0)
   const [entryRecurrence, setEntryRecurrence] = useState<CalendarEntry['recurrence']>(entry?.recurrence)
+  const [meetingLink, setMeetingLink] = useState(entry?.meetingLink ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -145,6 +149,7 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
       color,
       invitedUserIds,
       recurrence: entryRecurrence,
+      meetingLink: meetingLink.trim() || undefined,
     }
 
     if (entry) {
@@ -285,6 +290,35 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, onCl
                 className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
               />
             </div>
+          </div>
+        )}
+
+        {(kind === 'termin' || kind === 'reise') && (
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.meetingLink')}</label>
+            <input
+              type="url"
+              value={meetingLink}
+              onChange={(e) => setMeetingLink(e.target.value)}
+              placeholder={t('form.meetingLinkPlaceholder')}
+              className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+            />
+            {meetingLink.trim() && detectMeetingProvider(meetingLink) && (
+              <div className="mt-1 flex items-center justify-between">
+                <p className="flex items-center gap-1 text-[11px] font-medium" style={{ color: meetingProviderColor(detectMeetingProvider(meetingLink)!.provider) }}>
+                  <Video size={11} /> {detectMeetingProvider(meetingLink)!.label}
+                </p>
+                <a
+                  href={meetingLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-lg px-2.5 py-1 text-xs font-semibold text-white"
+                  style={{ backgroundColor: meetingProviderColor(detectMeetingProvider(meetingLink)!.provider) }}
+                >
+                  {t('form.joinMeeting')}
+                </a>
+              </div>
+            )}
           </div>
         )}
 

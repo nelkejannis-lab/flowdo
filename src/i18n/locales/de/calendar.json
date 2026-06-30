@@ -78,6 +78,11 @@
     "tasks": "Aufgaben",
     "nothing": "Nichts anstehend 🎉"
   },
+  "todoPanel": {
+    "title": "Aufgaben nächste Woche",
+    "hint": "Zum Verplanen in den Kalender ziehen.",
+    "empty": "Keine offenen Aufgaben in den nächsten 7 Tagen."
+  },
   "ownerOnly": "Nur der Ersteller kann bearbeiten",
   "form": {
     "titleEdit": "Eintrag bearbeiten",
@@ -98,6 +103,9 @@
     "endDateOptional": "Enddatum (optional)",
     "startTimeOptional": "Von (Uhrzeit, optional)",
     "endTimeOptional": "Bis (Uhrzeit, optional)",
+    "meetingLink": "Meeting-Link (Teams, Zoom, …)",
+    "meetingLinkPlaceholder": "https://… (optional)",
+    "joinMeeting": "Beitreten",
     "descriptionPlaceholder": "Beschreibung (optional)",
     "inviteColleagues": "Einladen",
     "wholeTeam": "Alle Kollegen",
