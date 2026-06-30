@@ -426,6 +426,7 @@ export default function CalendarPage() {
               onCreateEntryAt={(date, startTime) => setNewEntryAt({ date, startTime })}
               onToggleEntry={(id) => toggleEntryCompleted(id)}
               onReschedule={(id, patch) => rescheduleEntry(id, patch)}
+              onRescheduleTask={(id, patch) => updateTask(id, patch)}
               onDropTodo={(date, startTime, todoId) => updateTask(todoId, { dueDate: date, startTime })}
               onCreateRange={(startDate, endDate) => setNewEntryRange({ startDate, endDate })}
             />

@@ -25,6 +25,7 @@ interface WeekViewProps {
   onCreateEntryAt: (date: string, startTime: string) => void
   onToggleEntry: (id: string) => void
   onReschedule: (id: string, patch: { date?: string; startTime?: string | null; endTime?: string | null }) => void
+  onRescheduleTask: (id: string, patch: { dueDate: string; startTime: string; estimatedMinutes: number }) => void
   onDropTodo: (date: string, startTime: string, todoId: string) => void
   onCreateRange: (startDate: string, endDate: string) => void
 }
@@ -73,6 +74,7 @@ export default function WeekView({
   onCreateEntryAt,
   onToggleEntry,
   onReschedule,
+  onRescheduleTask,
   onDropTodo,
   onCreateRange,
 }: WeekViewProps) {
@@ -144,6 +146,7 @@ export default function WeekView({
   // ── drag / resize ──
   const [drag, setDrag] = useState<{
     id: string
+    kind: 'entry' | 'task'
     mode: 'move' | 'resize'
     startClientX: number
     startClientY: number
@@ -173,19 +176,26 @@ export default function WeekView({
     return () => window.removeEventListener('pointerup', onUp)
   }, [rangeSel, dayIsos, onCreateRange])
 
-  function beginDrag(e: React.PointerEvent, pe: PositionedEntry, dayIndex: number, mode: 'move' | 'resize') {
+  function beginDrag(
+    e: React.PointerEvent,
+    item: { id: string; startMin: number; endMin: number },
+    dayIndex: number,
+    mode: 'move' | 'resize',
+    kind: 'entry' | 'task'
+  ) {
     e.stopPropagation()
     e.preventDefault()
     setDrag({
-      id: pe.entry.id,
+      id: item.id,
+      kind,
       mode,
       startClientX: e.clientX,
       startClientY: e.clientY,
-      origStartMin: pe.startMin,
-      origEndMin: pe.endMin,
+      origStartMin: item.startMin,
+      origEndMin: item.endMin,
       origDayIndex: dayIndex,
-      curStartMin: pe.startMin,
-      curEndMin: pe.endMin,
+      curStartMin: item.startMin,
+      curEndMin: item.endMin,
       curDayIndex: dayIndex,
     })
   }
@@ -219,12 +229,21 @@ export default function WeekView({
         if (d) {
           const moved = d.curStartMin !== d.origStartMin || d.curEndMin !== d.origEndMin || d.curDayIndex !== d.origDayIndex
           if (moved) {
-            const patch: { date?: string; startTime?: string | null; endTime?: string | null } = {
-              startTime: hhmmOf(d.curStartMin),
-              endTime: hhmmOf(d.curEndMin),
+            const newDate = d.curDayIndex !== d.origDayIndex ? dayIsos[d.curDayIndex] : undefined
+            if (d.kind === 'entry') {
+              const patch: { date?: string; startTime?: string | null; endTime?: string | null } = {
+                startTime: hhmmOf(d.curStartMin),
+                endTime: hhmmOf(d.curEndMin),
+              }
+              if (d.mode === 'move' && newDate) patch.date = newDate
+              onReschedule(d.id, patch)
+            } else {
+              onRescheduleTask(d.id, {
+                dueDate: d.mode === 'move' && newDate ? newDate : dayIsos[d.origDayIndex],
+                startTime: hhmmOf(d.curStartMin),
+                estimatedMinutes: Math.max(15, d.curEndMin - d.curStartMin),
+              })
             }
-            if (d.mode === 'move' && d.curDayIndex !== d.origDayIndex) patch.date = dayIsos[d.curDayIndex]
-            onReschedule(d.id, patch)
             suppressClickRef.current = true // don't let the trailing click create/open anything
           }
         }
@@ -237,7 +256,7 @@ export default function WeekView({
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
     }
-  }, [drag, dayIsos, onReschedule])
+  }, [drag, dayIsos, onReschedule, onRescheduleTask])
 
   function handleGridClick(e: React.MouseEvent, iso: string) {
     if (drag) return
@@ -359,7 +378,7 @@ export default function WeekView({
                       <div
                         key={pe.entry.id}
                         onClick={(e) => { e.stopPropagation(); if (!drag) onEntryClick(pe.entry) }}
-                        onPointerDown={(e) => beginDrag(e, pe, dayIndex, 'move')}
+                        onPointerDown={(e) => beginDrag(e, { id: pe.entry.id, startMin: pe.startMin, endMin: pe.endMin }, dayIndex, 'move', 'entry')}
                         className={`absolute z-10 cursor-grab overflow-hidden rounded-md border-l-2 px-1.5 py-1 text-[10px] leading-tight text-white shadow-sm active:cursor-grabbing ${dragging ? 'opacity-80 ring-2 ring-white/40' : ''}`}
                         style={{
                           top: startMin * PX_PER_MIN,
@@ -393,22 +412,29 @@ export default function WeekView({
                         )}
                         {/* resize handle */}
                         <div
-                          onPointerDown={(e) => beginDrag(e, pe, dayIndex, 'resize')}
+                          onPointerDown={(e) => beginDrag(e, { id: pe.entry.id, startMin: pe.startMin, endMin: pe.endMin }, dayIndex, 'resize', 'entry')}
                           className="absolute inset-x-0 bottom-0 h-1.5 cursor-ns-resize"
                         />
                       </div>
                     )
                   })}
 
-                  {/* scheduled tasks (placed via drag) */}
-                  {(tasksByDay.get(iso) ?? []).map((tb) => (
+                  {/* scheduled tasks (placed via drag) — movable + resizable like entries */}
+                  {(tasksByDay.get(iso) ?? []).map((tb) => {
+                    const dragging = drag?.kind === 'task' && drag.id === tb.task.id
+                    const startMin = dragging ? drag!.curStartMin : tb.startMin
+                    const endMin = dragging ? drag!.curEndMin : tb.endMin
+                    const showOnDay = dragging && drag!.mode === 'move' ? drag!.curDayIndex === dayIndex : true
+                    if (!showOnDay) return null
+                    return (
                     <div
                       key={tb.task.id}
-                      onClick={(e) => { e.stopPropagation(); onTaskClick(tb.task) }}
-                      className="absolute z-10 overflow-hidden rounded-md border border-dashed border-accent/60 bg-accent/10 px-1.5 py-1 text-[10px] leading-tight text-accent"
+                      onClick={(e) => { e.stopPropagation(); if (!drag) onTaskClick(tb.task) }}
+                      onPointerDown={(e) => beginDrag(e, { id: tb.task.id, startMin: tb.startMin, endMin: tb.endMin }, dayIndex, 'move', 'task')}
+                      className={`absolute z-10 cursor-grab overflow-hidden rounded-md border border-dashed border-accent/60 bg-accent/10 px-1.5 py-1 text-[10px] leading-tight text-accent active:cursor-grabbing ${dragging ? 'opacity-80 ring-2 ring-accent/40' : ''}`}
                       style={{
-                        top: tb.startMin * PX_PER_MIN,
-                        height: Math.max(18, (tb.endMin - tb.startMin) * PX_PER_MIN - 2),
+                        top: startMin * PX_PER_MIN,
+                        height: Math.max(18, (endMin - startMin) * PX_PER_MIN - 2),
                         left: '1px',
                         right: '1px',
                       }}
@@ -416,15 +442,22 @@ export default function WeekView({
                       <div className="flex items-start gap-1">
                         <button
                           onClick={(e) => { e.stopPropagation(); onToggleTask(tb.task) }}
+                          onPointerDown={(e) => e.stopPropagation()}
                           className={`mt-px flex h-3 w-3 flex-shrink-0 items-center justify-center rounded-full border ${tb.task.completed ? 'border-accent bg-accent text-white' : 'border-accent/70'}`}
                         >
                           {tb.task.completed && <Check size={8} />}
                         </button>
                         <span className={`min-w-0 flex-1 truncate font-semibold ${tb.task.completed ? 'line-through opacity-60' : ''}`}>{tb.task.title}</span>
                       </div>
-                      <div className="truncate opacity-70">{tb.task.startTime}</div>
+                      <div className="truncate opacity-70">{hhmmOf(startMin)}–{hhmmOf(endMin)}</div>
+                      {/* resize handle */}
+                      <div
+                        onPointerDown={(e) => beginDrag(e, { id: tb.task.id, startMin: tb.startMin, endMin: tb.endMin }, dayIndex, 'resize', 'task')}
+                        className="absolute inset-x-0 bottom-0 h-1.5 cursor-ns-resize"
+                      />
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )
             })}
