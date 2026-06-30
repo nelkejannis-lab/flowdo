@@ -45,6 +45,7 @@ export interface Task {
   dependsOn?: string[]
   startTime?: string // HH:MM, optional suggested/scheduled start time within dueDate
   estimatedMinutes?: number
+  statusNote?: string // free-text status / progress note
 }
 
 export type EisenhowerQuadrant = 'do' | 'decide' | 'delegate' | 'delete'

@@ -47,6 +47,8 @@
     "startTime": "Time",
     "estimatedMinutes": "Duration (min)",
     "estimatedMinutesPlaceholder": "e.g. 30",
+    "statusNote": "Status note",
+    "statusNotePlaceholder": "e.g. Waiting for reply from …",
     "tonight": "Tonight",
     "repeatPlaceholder": "Repeat…",
     "repeatDaily": "Daily",
@@ -98,7 +100,8 @@
       "today": "Today",
       "week": "Week",
       "someday": "Someday",
-      "completed": "Done"
+      "completed": "Done",
+      "matrix": "Matrix"
     },
     "inbox": {
       "allDone": "All done. No new notifications.",

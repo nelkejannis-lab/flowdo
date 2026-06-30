@@ -402,6 +402,7 @@ export default function CalendarPage() {
                 onEntryClick={(entry) => setEditingEntry(entry)}
                 onAddTask={() => setNewTaskDate(selectedDate)}
                 onAddEntry={() => setShowAddForm(true)}
+                hideTasks
               />
             </div>
           )}

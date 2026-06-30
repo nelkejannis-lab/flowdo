@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AlarmClock, CircleDot, Flame, Snowflake } from 'lucide-react'
+import { AlarmClock, CircleDot, Flame } from 'lucide-react'
 import type { Task } from '../../types'
 import { useBoardsStore } from '../../store/boardsStore'
 import EisenhowerQuadrant from './EisenhowerQuadrant'
@@ -21,11 +21,13 @@ export default function TaskEisenhowerGrid({ tasks, defaultDueDate }: TaskEisenh
   const [newTaskQuadrant, setNewTaskQuadrant] = useState<{ urgent: boolean; important: boolean } | null>(null)
   const editingBoard = editingTask?.boardId ? boards.find((b) => b.id === editingTask.boardId) : undefined
 
+  // Only the three quadrants that represent an explicit choice. Tasks with neither
+  // "urgent" nor "important" set are intentionally NOT shown — they are uncategorized
+  // and must not be auto-dumped into a "neither" bucket.
   const quadrants = [
     { urgent: true, important: true, title: t('quadrants.urgentImportant'), colorClass: 'text-red-500', icon: <Flame size={16} /> },
     { urgent: false, important: true, title: t('quadrants.notUrgentImportant'), colorClass: 'text-amber-500', icon: <AlarmClock size={16} /> },
     { urgent: true, important: false, title: t('quadrants.urgentNotImportant'), colorClass: 'text-blue-500', icon: <CircleDot size={16} /> },
-    { urgent: false, important: false, title: t('quadrants.notUrgentNotImportant'), colorClass: 'text-emerald-500', icon: <Snowflake size={16} /> },
   ]
 
   return (

@@ -73,12 +73,6 @@ export default function WeekView({ currentDate, tasks, events, entries = [], onT
                     {format(day, 'd. MMM', { locale: dateLocale })}
                   </p>
                 </div>
-                <button
-                  onClick={() => onAddTask(day)}
-                  className="flex-shrink-0 rounded p-0.5 text-gray-300 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
-                >
-                  +
-                </button>
               </div>
               <div className="flex flex-col gap-1">
                 {dayEvents.map((event) => (
@@ -107,10 +101,7 @@ export default function WeekView({ currentDate, tasks, events, entries = [], onT
                     )}
                   </div>
                 ))}
-                {dayTasks.map((task) => (
-                  <TaskItem key={task.id} task={task} onClick={() => onTaskClick(task)} showBoard={false} />
-                ))}
-                {dayEvents.length === 0 && dayEntries.length === 0 && dayTasks.length === 0 && (
+                {dayEvents.length === 0 && dayEntries.length === 0 && (
                   <p className="text-[11px] text-gray-300">{t('weekday.noTasks')}</p>
                 )}
               </div>

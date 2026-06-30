@@ -54,6 +54,7 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
   const [important, setImportant] = useState(task?.important ?? false)
   const [startTime, setStartTime] = useState(task?.startTime ?? '')
   const [estimatedMinutes, setEstimatedMinutes] = useState(task?.estimatedMinutes?.toString() ?? '')
+  const [statusNote, setStatusNote] = useState(task?.statusNote ?? '')
   const [newSubtask, setNewSubtask] = useState('')
   const [localSubtasks, setLocalSubtasks] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
@@ -90,6 +91,7 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
         assignedTo: assignedTo || undefined,
         startTime: startTime || undefined,
         estimatedMinutes: parsedEstimatedMinutes,
+        statusNote: statusNote.trim() || undefined,
       })
       setSaving(false)
     } else {
@@ -105,6 +107,7 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
         assignedTo: assignedTo || undefined,
         startTime: startTime || undefined,
         estimatedMinutes: parsedEstimatedMinutes,
+        statusNote: statusNote.trim() || undefined,
       })
       setSaving(false)
       if (result.error) {
@@ -219,28 +222,67 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
             )}
           </div>
 
-          {/* Subtasks */}
-          {currentTask.subtasks && currentTask.subtasks.length > 0 && (
+          {/* Subtasks — viewable, toggleable, and addable directly here */}
+          <div className="border-t border-gray-100 dark:border-racing-850 pt-3">
+            <span className="text-xs font-medium text-gray-500 mb-2 block">{t('taskForm.subtasks')}</span>
+            <div className="flex flex-col gap-1.5">
+              {(currentTask.subtasks ?? []).map((s) => (
+                <div key={s.id} className="group flex items-center gap-2 py-0.5">
+                  <button
+                    type="button"
+                    onClick={() => toggleSubtask(currentTask.id, s.id)}
+                    className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 ${
+                      s.completed ? 'border-accent bg-accent text-white' : 'border-gray-300 dark:border-racing-600'
+                    }`}
+                  >
+                    {s.completed && <Check size={10} />}
+                  </button>
+                  <span className={`flex-1 text-sm ${s.completed ? 'text-gray-400 line-through' : ''}`}>
+                    {s.title}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => deleteSubtask(currentTask.id, s.id)}
+                    className="text-gray-300 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="mt-2 flex items-center gap-2">
+              <input
+                value={newSubtask}
+                onChange={(e) => setNewSubtask(e.target.value)}
+                placeholder={t('taskForm.addSubtaskPlaceholder')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newSubtask.trim()) {
+                    e.preventDefault()
+                    addSubtask(currentTask.id, newSubtask.trim())
+                    setNewSubtask('')
+                  }
+                }}
+                className="flex-1 rounded-lg border border-gray-200 bg-transparent px-2 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (!newSubtask.trim()) return
+                  addSubtask(currentTask.id, newSubtask.trim())
+                  setNewSubtask('')
+                }}
+                className="rounded-lg bg-accent p-1.5 text-white hover:bg-accent-dark"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* Status note */}
+          {currentTask.statusNote && (
             <div className="border-t border-gray-100 dark:border-racing-850 pt-3">
-              <span className="text-xs font-medium text-gray-500 mb-2 block">{t('taskForm.subtasks')}</span>
-              <div className="flex flex-col gap-1.5">
-                {currentTask.subtasks.map((s) => (
-                  <div key={s.id} className="flex items-center gap-2 py-0.5">
-                    <button
-                      type="button"
-                      onClick={() => toggleSubtask(currentTask.id, s.id)}
-                      className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 ${
-                        s.completed ? 'border-accent bg-accent text-white' : 'border-gray-300 dark:border-racing-600'
-                      }`}
-                    >
-                      {s.completed && <Check size={10} />}
-                    </button>
-                    <span className={`text-sm ${s.completed ? 'text-gray-400 line-through' : ''}`}>
-                      {s.title}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              <span className="text-xs font-medium text-gray-500 mb-2 block">{t('taskForm.statusNote')}</span>
+              <p className="whitespace-pre-wrap text-sm text-gray-700 dark:text-racing-200">{currentTask.statusNote}</p>
             </div>
           )}
 
@@ -366,6 +408,17 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
               className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
             />
           </div>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-500">{t('taskForm.statusNote')}</label>
+          <textarea
+            value={statusNote}
+            onChange={(e) => setStatusNote(e.target.value)}
+            placeholder={t('taskForm.statusNotePlaceholder')}
+            rows={2}
+            className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+          />
         </div>
 
         <div>

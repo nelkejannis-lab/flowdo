@@ -21,6 +21,7 @@ interface NewTaskInput {
   recurrence?: Task['recurrence']
   startTime?: string
   estimatedMinutes?: number
+  statusNote?: string
 }
 
 interface TaskRow {
@@ -44,6 +45,7 @@ interface TaskRow {
   recurrence: Task['recurrence'] | null
   start_time: string | null
   estimated_minutes: number | null
+  status_note: string | null
 }
 
 function toTask(row: TaskRow): Task {
@@ -68,6 +70,7 @@ function toTask(row: TaskRow): Task {
     recurrence: row.recurrence ?? undefined,
     startTime: row.start_time ?? undefined,
     estimatedMinutes: row.estimated_minutes ?? undefined,
+    statusNote: row.status_note ?? undefined,
   }
 }
 
@@ -100,6 +103,7 @@ async function syncTask(task: Task, userId: string) {
     recurrence: task.recurrence ?? null,
     start_time: task.startTime ?? null,
     estimated_minutes: task.estimatedMinutes ?? null,
+    status_note: task.statusNote ?? null,
   })
 }
 
@@ -197,6 +201,7 @@ export const useTasksStore = create<TasksState>()(
           recurrence: input.recurrence,
           startTime: input.startTime,
           estimatedMinutes: input.estimatedMinutes,
+          statusNote: input.statusNote,
         }
         set((state) => ({ tasks: [task, ...state.tasks] }))
         void getUserId().then((userId) => {

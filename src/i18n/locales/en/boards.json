@@ -105,6 +105,8 @@
     "noone": "No one",
     "subtasks": "Subtasks",
     "addSubtaskPlaceholder": "Add subtask",
+    "statusNote": "Status note",
+    "statusNotePlaceholder": "e.g. Waiting for reply from …",
     "dependsOn": "Blocked by",
     "addDependency": "Add dependency…",
     "delete": "Delete",

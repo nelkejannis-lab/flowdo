@@ -105,6 +105,8 @@
     "noone": "Niemand",
     "subtasks": "Unteraufgaben",
     "addSubtaskPlaceholder": "Unteraufgabe hinzufügen",
+    "statusNote": "Status-Notiz",
+    "statusNotePlaceholder": "z. B. Warte auf Rückmeldung von …",
     "dependsOn": "Blockiert durch",
     "addDependency": "Abhängigkeit hinzufügen…",
     "delete": "Löschen",

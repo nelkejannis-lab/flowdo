@@ -22,6 +22,18 @@
     "alreadyTracked": "{{time}} already tracked",
     "nothingTracked": "Nothing tracked yet"
   },
+  "break": {
+    "label": "Break",
+    "start": "Start break",
+    "paused": "Break – work time stopped",
+    "onBreak": "{{type}} in progress",
+    "resume": "End break",
+    "types": {
+      "break": "Break",
+      "smoke": "Smoke",
+      "drink": "Drink"
+    }
+  },
   "stampLog": {
     "title": "Punch log",
     "tamperProof": "Tamper-proof",

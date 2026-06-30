@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Archive, AtSign, Bell, Check, HelpCircle, Plus, Trello, X, Search, Loader2, SlidersHorizontal } from 'lucide-react'
+import { Archive, AtSign, Bell, Check, HelpCircle, Plus, Trello, X, Search, Loader2, SlidersHorizontal, Grid2x2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTasksStore } from '../store/tasksStore'
 import { useTaskSharesStore } from '../store/taskSharesStore'
@@ -14,6 +14,7 @@ import { Users } from 'lucide-react'
 import { useNotificationsStore } from '../store/notificationsStore'
 import { isSupabaseConfigured } from '../lib/supabase'
 import TaskList from '../components/tasks/TaskList'
+import TaskEisenhowerGrid from '../components/tasks/TaskEisenhowerGrid'
 import TaskFormModal from '../components/tasks/TaskFormModal'
 import PriorityBadge from '../components/tasks/PriorityBadge'
 import { formatFriendlyDate, isDueThisWeek, isDueToday, isOverdue, todayISO, parseTaskInput, isCompletedToday, isCompletedThisWeek } from '../utils/date'
@@ -338,10 +339,21 @@ export default function TasksPage() {
             <Archive size={14} />
             {t('page.tabs.someday')}
           </Link>
+          <Link
+            to="/tasks/matrix"
+            className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+              smartList === 'matrix'
+                ? 'border-accent text-accent'
+                : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-racing-200'
+            }`}
+          >
+            <Grid2x2 size={14} />
+            {t('page.tabs.matrix')}
+          </Link>
         </div>
       )}
 
-      {smartList !== 'inbox' && (
+      {smartList !== 'inbox' && smartList !== 'matrix' && (
         <div className="mb-5 flex flex-col gap-3">
           {/* Search bar + filter toggle */}
           <div className="flex items-center gap-2">
@@ -462,7 +474,9 @@ export default function TasksPage() {
         </div>
       )}
 
-      {smartList === 'inbox' ? (
+      {smartList === 'matrix' ? (
+        <TaskEisenhowerGrid tasks={allTasks} />
+      ) : smartList === 'inbox' ? (
         <div>
           {boardInvites.length === 0 && teamInvites.length === 0 && incoming.length === 0 && notifications.filter((n) => !n.read || n.type === 'birthday').length === 0 && (
             <p className="py-12 text-center text-sm text-gray-400">{t('page.inbox.allDone')}</p>

@@ -73,6 +73,9 @@ interface WorkTimeState {
   isRunning: boolean
   runningStartedAt?: string
   runningDate?: string
+  isOnBreak: boolean
+  breakStartedAt?: string
+  breakType?: string
   settledWeekendDays: number
   manualCompDays: number
   takenCompDays: number
@@ -82,6 +85,8 @@ interface WorkTimeState {
   fetchAll: () => Promise<void>
   clockIn: () => void
   clockOut: () => void
+  startBreak: (type: string) => void
+  endBreak: () => void
   setWorkedMinutes: (date: string, minutes: number) => void
   setBreakMinutes: (date: string, minutes: number) => void
   setDayTimes: (date: string, startTime: string, endTime: string) => void
@@ -226,6 +231,9 @@ export const useWorkTimeStore = create<WorkTimeState>()(
       isRunning: false,
       runningStartedAt: undefined,
       runningDate: undefined,
+      isOnBreak: false,
+      breakStartedAt: undefined,
+      breakType: undefined,
       settledWeekendDays: 0,
       manualCompDays: 0,
       takenCompDays: 0,
@@ -361,7 +369,41 @@ export const useWorkTimeStore = create<WorkTimeState>()(
         void syncPunch(punch)
       },
 
+      // Start a break (rauchen, trinken, …). Work time freezes in the UI; the actual
+      // break minutes are added to the day on endBreak so net work excludes the break.
+      startBreak: (type) => {
+        const s = get()
+        if (!s.isRunning || s.isOnBreak) return
+        set({ isOnBreak: true, breakStartedAt: new Date().toISOString(), breakType: type })
+      },
+
+      endBreak: () => {
+        const state = get()
+        if (!state.isOnBreak || !state.breakStartedAt) return
+        const now = new Date()
+        const startedAt = state.breakStartedAt
+        const durationMin = Math.max(0, Math.round((now.getTime() - new Date(startedAt).getTime()) / 60000))
+        const date = state.runningDate ?? todayISO()
+        const entry = ensureEntry(state.entries, date, state.settings.defaultBreakMinutes)
+        const updated = { ...entry, breakMinutes: entry.breakMinutes + durationMin }
+        // Record the break as a Gehen/Kommen pair in the tamper-proof punch log
+        const outPunch: WorkTimePunch = { id: createId(), punchedAt: startedAt, kind: 'out', source: 'break' }
+        const inPunch: WorkTimePunch = { id: createId(), punchedAt: now.toISOString(), kind: 'in', source: 'break' }
+        set({
+          entries: { ...state.entries, [date]: updated },
+          punches: [...state.punches, outPunch, inPunch],
+          isOnBreak: false,
+          breakStartedAt: undefined,
+          breakType: undefined,
+        })
+        void syncEntry(updated)
+        void syncPunch(outPunch)
+        void syncPunch(inPunch)
+      },
+
       clockOut: () => {
+        // Finish any running break first so its minutes are counted.
+        if (get().isOnBreak) get().endBreak()
         const state = get()
         if (!state.isRunning || !state.runningStartedAt || !state.runningDate) return
         const punchedAt = new Date().toISOString()

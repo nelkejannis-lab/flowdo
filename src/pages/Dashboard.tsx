@@ -45,6 +45,7 @@ export default function Dashboard() {
   const fetchBoards = useBoardsStore((s) => s.fetchBoards)
   const myProjectTasks = useProjectTasksStore((s) => s.myTasks)
   const fetchMyProjectTasks = useProjectTasksStore((s) => s.fetchMyTasks)
+  const subscribeToMyProjectTasks = useProjectTasksStore((s) => s.subscribeToMyTasks)
   const toggleTaskCompleted = useTasksStore((s) => s.toggleTaskCompleted)
   const toggleProjectTaskCompleted = useProjectTasksStore((s) => s.toggleTaskCompleted)
   const workEntries = useWorkTimeStore((s) => s.entries)
@@ -112,6 +113,11 @@ export default function Dashboard() {
   useEffect(() => {
     socialAccounts.forEach((a) => fetchSocialAccountData(a.id))
   }, [socialAccounts, fetchSocialAccountData])
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return
+    return subscribeToMyProjectTasks()
+  }, [subscribeToMyProjectTasks])
 
   const allTasks = [...tasks, ...myProjectTasks]
 

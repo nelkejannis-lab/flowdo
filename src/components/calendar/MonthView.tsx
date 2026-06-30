@@ -191,25 +191,6 @@ export default function MonthView({ currentDate, selectedDate, tasks, events, en
                       )}
                     </div>
                   ))}
-                  {dayTasks.slice(0, 3).map((task) => (
-                    <div
-                      key={task.id}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onTaskClick(task)
-                      }}
-                      className={`truncate rounded px-1.5 py-0.5 text-xs ${
-                        task.completed
-                          ? 'bg-gray-100 text-gray-400 line-through dark:bg-racing-800'
-                          : 'bg-accent/10 text-accent font-medium'
-                      }`}
-                    >
-                      {task.title}
-                    </div>
-                  ))}
-                  {dayTasks.length > 3 && (
-                    <span className="text-xs text-gray-400">{t('moreCount', { count: dayTasks.length - 3 })}</span>
-                  )}
                 </div>
 
                 {/* Mobile View: Clean Dot Indicators */}
@@ -228,15 +209,6 @@ export default function MonthView({ currentDate, selectedDate, tasks, events, en
                       className="h-1.5 w-1.5 rounded-full"
                       style={{ backgroundColor: entry.color }}
                       title={entry.title}
-                    />
-                  ))}
-                  {dayTasks.map((task) => (
-                    <span
-                      key={task.id}
-                      className={`h-1.5 w-1.5 rounded-full ${
-                        task.completed ? 'bg-gray-300 dark:bg-racing-600' : 'bg-accent'
-                      }`}
-                      title={task.title}
                     />
                   ))}
                 </div>

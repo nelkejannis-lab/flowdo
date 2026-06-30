@@ -40,6 +40,7 @@ interface DailyAgendaPanelProps {
   onEntryClick: (entry: CalendarEntry) => void
   onAddTask: () => void
   onAddEntry: () => void
+  hideTasks?: boolean
 }
 
 export default function DailyAgendaPanel({
@@ -52,6 +53,7 @@ export default function DailyAgendaPanel({
   onEntryClick,
   onAddTask,
   onAddEntry,
+  hideTasks = false,
 }: DailyAgendaPanelProps) {
   const { t, i18n } = useTranslation('calendar')
   const dateLocale = i18n.language === 'en' ? enUS : de
@@ -98,7 +100,7 @@ export default function DailyAgendaPanel({
   const parsedDate = parseISO(selectedDate)
   const formattedDayTitle = format(parsedDate, 'EEEE, d. MMMM yyyy', { locale: dateLocale })
 
-  const hasItems = dayTasks.length > 0 || dayEvents.length > 0 || dayEntries.length > 0
+  const hasItems = (!hideTasks && dayTasks.length > 0) || dayEvents.length > 0 || dayEntries.length > 0
 
   async function handleToggleTask(task: Task) {
     if (task.boardId) {
@@ -127,6 +129,7 @@ export default function DailyAgendaPanel({
           <h3 className="text-base font-bold text-gray-800 dark:text-racing-100 sm:text-lg">{formattedDayTitle}</h3>
         </div>
         <div className="flex gap-2">
+          {!hideTasks && (
           <button
             onClick={onAddTask}
             className="flex items-center gap-1 rounded-xl bg-accent px-3.5 py-2 text-xs font-semibold text-white transition-all hover:bg-accent-dark shadow-sm"
@@ -134,6 +137,7 @@ export default function DailyAgendaPanel({
             <Plus size={13} />
             Aufgabe
           </button>
+          )}
           <button
             onClick={onAddEntry}
             className="flex items-center gap-1 rounded-xl border border-gray-200 bg-transparent px-3.5 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50 dark:border-racing-700 dark:text-racing-200 dark:hover:bg-racing-850"
@@ -148,17 +152,19 @@ export default function DailyAgendaPanel({
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-150 py-10 text-center dark:border-racing-850">
           <Calendar size={28} className="mb-2 text-gray-300 dark:text-racing-750" />
           <p className="text-sm font-medium text-gray-400 dark:text-racing-400">
-            Keine Termine oder Aufgaben für diesen Tag geplant.
+            {hideTasks ? 'Keine Termine für diesen Tag geplant.' : 'Keine Termine oder Aufgaben für diesen Tag geplant.'}
           </p>
-          <button
-            onClick={onAddTask}
-            className="mt-3 flex items-center gap-1 text-xs font-semibold text-accent hover:underline"
-          >
-            Jetzt erste Aufgabe eintragen <ArrowRight size={12} />
-          </button>
+          {!hideTasks && (
+            <button
+              onClick={onAddTask}
+              className="mt-3 flex items-center gap-1 text-xs font-semibold text-accent hover:underline"
+            >
+              Jetzt erste Aufgabe eintragen <ArrowRight size={12} />
+            </button>
+          )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className={hideTasks ? '' : 'grid grid-cols-1 gap-6 md:grid-cols-2'}>
           {/* Termine & Events Column */}
           <div className="space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">Termine & Abwesenheiten</h4>
@@ -241,6 +247,7 @@ export default function DailyAgendaPanel({
           </div>
 
           {/* Aufgaben Column */}
+          {!hideTasks && (
           <div className="space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">Aufgaben (To-Do)</h4>
             <DndContext sensors={taskSensors} collisionDetection={closestCenter} onDragEnd={handleTaskDragEnd}>
@@ -262,6 +269,7 @@ export default function DailyAgendaPanel({
               <p className="py-2 text-xs italic text-gray-400">Keine Aufgaben für diesen Tag.</p>
             )}
           </div>
+          )}
         </div>
       )}
     </div>

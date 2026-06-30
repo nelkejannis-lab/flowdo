@@ -47,6 +47,8 @@
     "startTime": "Uhrzeit",
     "estimatedMinutes": "Dauer (Min.)",
     "estimatedMinutesPlaceholder": "z. B. 30",
+    "statusNote": "Status-Notiz",
+    "statusNotePlaceholder": "z. B. Warte auf Rückmeldung von …",
     "tonight": "Heute Abend",
     "repeatPlaceholder": "Wiederholen…",
     "repeatDaily": "Täglich",
@@ -98,7 +100,8 @@
       "today": "Heute",
       "week": "Woche",
       "someday": "Irgendwann",
-      "completed": "Erledigt"
+      "completed": "Erledigt",
+      "matrix": "Matrix"
     },
     "inbox": {
       "allDone": "Alles erledigt. Keine neuen Benachrichtigungen.",

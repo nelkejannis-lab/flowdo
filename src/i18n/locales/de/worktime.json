@@ -22,6 +22,18 @@
     "alreadyTracked": "{{time}} bereits erfasst",
     "nothingTracked": "Noch nichts erfasst"
   },
+  "break": {
+    "label": "Pause",
+    "start": "Pause starten",
+    "paused": "Pause – Arbeitszeit gestoppt",
+    "onBreak": "{{type}} läuft",
+    "resume": "Pause beenden",
+    "types": {
+      "break": "Pause",
+      "smoke": "Rauchen",
+      "drink": "Trinken"
+    }
+  },
   "stampLog": {
     "title": "Stempel-Protokoll",
     "tamperProof": "Manipulationssicher",

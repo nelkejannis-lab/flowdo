@@ -57,7 +57,6 @@ export default function SecondBrainPage() {
   const [noteTitle, setNoteTitle] = useState('')
   const [noteContent, setNoteContent] = useState('')
   const [noteChecklist, setNoteChecklist] = useState<NoteChecklistItem[]>([])
-  const [newChecklistText, setNewChecklistText] = useState('')
 
   // Speech Recognition & Recording states (for editing/creating notes)
   const [isTranscribing, setIsTranscribing] = useState(false)
@@ -310,7 +309,6 @@ ${textToSummarize}`
     setAudioBlob(null)
     setAiError(null)
     setJustSaved(false)
-    setNewChecklistText('')
   }
 
   // Handle saving the page edits
@@ -334,7 +332,6 @@ ${textToSummarize}`
     setNoteTitle('')
     setNoteContent('')
     setNoteChecklist([])
-    setNewChecklistText('')
     setAudioUrl(null)
     setAudioBlob(null)
     setAiError(null)
@@ -458,74 +455,6 @@ ${textToSummarize}`
     )
   }
 
-  // Structured checklist (todos/Stichpunkte) inside a note, alongside the freeform text
-  function ChecklistEditor({
-    items,
-    onAdd,
-    onToggle,
-    onDelete,
-  }: {
-    items: NoteChecklistItem[]
-    onAdd: (text: string) => void
-    onToggle: (id: string) => void
-    onDelete: (id: string) => void
-  }) {
-    return (
-      <div className="rounded-xl border border-gray-200 dark:border-racing-700 p-3.5">
-        <span className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-racing-300">
-          <ListChecks size={13} /> Checkliste
-        </span>
-        <div className="flex flex-col gap-1">
-          {items.map((item) => (
-            <div key={item.id} className="group flex items-center gap-2 py-0.5">
-              <button
-                type="button"
-                onClick={() => onToggle(item.id)}
-                className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
-                  item.done ? 'border-accent bg-accent text-white' : 'border-gray-300 dark:border-racing-600'
-                }`}
-              >
-                {item.done && <Check size={10} />}
-              </button>
-              <span className={`flex-1 text-sm ${item.done ? 'text-gray-400 line-through' : ''}`}>{item.text}</span>
-              <button
-                type="button"
-                onClick={() => onDelete(item.id)}
-                className="text-gray-300 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
-              >
-                <Trash2 size={12} />
-              </button>
-            </div>
-          ))}
-          {items.length === 0 && <p className="text-xs italic text-gray-400">Noch keine Punkte.</p>}
-        </div>
-        <div className="mt-2 flex items-center gap-2">
-          <input
-            value={newChecklistText}
-            onChange={(e) => setNewChecklistText(e.target.value)}
-            placeholder="Punkt hinzufügen..."
-            onKeyDown={(e) => {
-              if (e.key !== 'Enter' || !newChecklistText.trim()) return
-              onAdd(newChecklistText.trim())
-              setNewChecklistText('')
-            }}
-            className="flex-1 rounded-lg border border-gray-200 bg-transparent px-2 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
-          />
-          <button
-            type="button"
-            onClick={() => {
-              if (!newChecklistText.trim()) return
-              onAdd(newChecklistText.trim())
-              setNewChecklistText('')
-            }}
-            className="rounded-lg bg-accent p-1.5 text-white hover:bg-accent-dark"
-          >
-            <Plus size={14} />
-          </button>
-        </div>
-      </div>
-    )
-  }
 
   function AudioPlayback({ onDelete }: { onDelete?: () => void }) {
     if (!audioUrl) return null
@@ -688,7 +617,7 @@ ${textToSummarize}`
                 rows={10}
                 className="w-full rounded-xl border border-gray-200 bg-transparent px-3.5 py-2.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700 leading-relaxed"
               />
-              <ChecklistEditor
+              <BrainChecklist
                 items={noteChecklist}
                 onAdd={(text) => setNoteChecklist((prev) => [...prev, { id: createId(), text, done: false }])}
                 onToggle={(id) => setNoteChecklist((prev) => prev.map((it) => (it.id === id ? { ...it, done: !it.done } : it)))}
@@ -745,7 +674,7 @@ ${textToSummarize}`
                 rows={10}
                 className="w-full rounded-xl border border-gray-200 bg-transparent px-3.5 py-2.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700 leading-relaxed"
               />
-              <ChecklistEditor
+              <BrainChecklist
                 items={activePage.checklist ?? []}
                 onAdd={(text) => {
                   const updated = [...(activePage.checklist ?? []), { id: createId(), text, done: false }]
@@ -901,6 +830,76 @@ ${textToSummarize}`
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// Structured checklist (todos/Stichpunkte) inside a note, alongside the freeform text.
+// Defined at module scope (not nested in SecondBrainPage) so it keeps a stable identity
+// across the parent's re-renders — otherwise the new-item input loses focus on every keystroke.
+function BrainChecklist({
+  items,
+  onAdd,
+  onToggle,
+  onDelete,
+}: {
+  items: NoteChecklistItem[]
+  onAdd: (text: string) => void
+  onToggle: (id: string) => void
+  onDelete: (id: string) => void
+}) {
+  const [draft, setDraft] = useState('')
+  function commit() {
+    if (!draft.trim()) return
+    onAdd(draft.trim())
+    setDraft('')
+  }
+  return (
+    <div className="rounded-xl border border-gray-200 dark:border-racing-700 p-3.5">
+      <span className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-racing-300">
+        <ListChecks size={13} /> Checkliste
+      </span>
+      <div className="flex flex-col gap-1">
+        {items.map((item) => (
+          <div key={item.id} className="group flex items-center gap-2 py-0.5">
+            <button
+              type="button"
+              onClick={() => onToggle(item.id)}
+              className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                item.done ? 'border-accent bg-accent text-white' : 'border-gray-300 dark:border-racing-600'
+              }`}
+            >
+              {item.done && <Check size={10} />}
+            </button>
+            <span className={`flex-1 text-sm ${item.done ? 'text-gray-400 line-through' : ''}`}>{item.text}</span>
+            <button
+              type="button"
+              onClick={() => onDelete(item.id)}
+              className="text-gray-300 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
+            >
+              <Trash2 size={12} />
+            </button>
+          </div>
+        ))}
+        {items.length === 0 && <p className="text-xs italic text-gray-400">Noch keine Punkte.</p>}
+      </div>
+      <div className="mt-2 flex items-center gap-2">
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="Punkt hinzufügen..."
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              commit()
+            }
+          }}
+          className="flex-1 rounded-lg border border-gray-200 bg-transparent px-2 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+        />
+        <button type="button" onClick={commit} className="rounded-lg bg-accent p-1.5 text-white hover:bg-accent-dark">
+          <Plus size={14} />
+        </button>
+      </div>
     </div>
   )
 }

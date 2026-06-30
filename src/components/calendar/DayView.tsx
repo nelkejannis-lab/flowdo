@@ -53,13 +53,6 @@ export default function DayView({ currentDate, tasks, events, entries = [], onAd
         <h2 className="text-base font-semibold">
           {format(currentDate, 'EEEE, d. MMMM yyyy', { locale: dateLocale })}
         </h2>
-        <button
-          onClick={onAddTask}
-          className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:bg-accent-dark"
-        >
-          <Plus size={14} />
-          {t('day.addTask')}
-        </button>
       </div>
 
       {/* All-day section */}
@@ -178,14 +171,7 @@ export default function DayView({ currentDate, tasks, events, entries = [], onAd
         </div>
       </div>
 
-      {/* Tasks section */}
-      {dayTasks.length > 0 && (
-        <div className="border-t border-gray-100 p-4 dark:border-racing-800">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">{t('termine.tasks')}</div>
-          <TaskList tasks={dayTasks} emptyMessage={t('day.noTasksForDay')} />
-        </div>
-      )}
-      {dayTasks.length === 0 && allDayEntries.length === 0 && timedEntries.length === 0 && allDayEvents.length === 0 && timedEvents.length === 0 && (
+      {allDayEntries.length === 0 && timedEntries.length === 0 && allDayEvents.length === 0 && timedEvents.length === 0 && (
         <div className="p-6 text-center text-sm text-gray-400">{t('day.noTasksForDay')}</div>
       )}
     </div>

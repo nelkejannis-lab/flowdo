@@ -19,6 +19,7 @@ interface NewProjectTaskInput {
   assignedTo?: string
   startTime?: string
   estimatedMinutes?: number
+  statusNote?: string
 }
 
 interface ProjectTaskRow {
@@ -42,6 +43,7 @@ interface ProjectTaskRow {
   assignee: Task['assignee'] | Task['assignee'][] | null
   start_time: string | null
   estimated_minutes: number | null
+  status_note: string | null
 }
 
 function single<T>(value: T | T[]): T {
@@ -71,6 +73,7 @@ function toTask(row: ProjectTaskRow, dependsOn?: string[]): Task {
     dependsOn,
     startTime: row.start_time ?? undefined,
     estimatedMinutes: row.estimated_minutes ?? undefined,
+    statusNote: row.status_note ?? undefined,
   }
 }
 
@@ -107,6 +110,7 @@ interface ProjectTasksState {
   removeDependency: (taskId: string, dependsOnId: string) => Promise<void>
   isBlocked: (taskId: string) => boolean
   subscribeToBoard: (boardId: string) => () => void
+  subscribeToMyTasks: () => () => void
 }
 
 export const useProjectTasksStore = create<ProjectTasksState>()(
@@ -180,6 +184,7 @@ export const useProjectTasksStore = create<ProjectTasksState>()(
             createdAt: new Date().toISOString(),
             startTime: input.startTime,
             estimatedMinutes: input.estimatedMinutes,
+            statusNote: input.statusNote,
           }
           set((state) => ({
             tasks: [newTask, ...state.tasks],
@@ -208,6 +213,7 @@ export const useProjectTasksStore = create<ProjectTasksState>()(
             column_id: input.columnId ?? null,
             start_time: input.startTime ?? null,
             estimated_minutes: input.estimatedMinutes ?? null,
+            status_note: input.statusNote ?? null,
           })
           .select('id')
           .single()
@@ -240,6 +246,7 @@ export const useProjectTasksStore = create<ProjectTasksState>()(
         if (updates.assignedTo !== undefined) payload.assigned_to = updates.assignedTo ?? null
         if (updates.startTime !== undefined) payload.start_time = updates.startTime ?? null
         if (updates.estimatedMinutes !== undefined) payload.estimated_minutes = updates.estimatedMinutes ?? null
+        if (updates.statusNote !== undefined) payload.status_note = updates.statusNote ?? null
         if (updates.subtasks !== undefined) payload.subtasks = updates.subtasks
         if (updates.attachments !== undefined) payload.attachments = updates.attachments
 
@@ -402,6 +409,22 @@ export const useProjectTasksStore = create<ProjectTasksState>()(
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'task_dependencies' }, () => {
             get().fetchTasks(boardId)
+          })
+          .subscribe()
+
+        return () => {
+          supabase.removeChannel(channel)
+        }
+      },
+
+      // Keep the cross-board "my project tasks" list fresh (used by the dashboard
+      // Tagesübersicht). Any change to a project task refetches it.
+      subscribeToMyTasks: () => {
+        if (!isSupabaseConfigured) return () => {}
+        const channel = supabase
+          .channel('my-project-tasks')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
+            get().fetchMyTasks()
           })
           .subscribe()
 
