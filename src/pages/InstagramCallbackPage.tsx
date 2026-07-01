@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { useSocialStore } from '../store/socialStore'
 
 export default function InstagramCallbackPage() {
+  const { t } = useTranslation('social')
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { fetchAccounts, addAccount } = useSocialStore()
@@ -20,13 +22,13 @@ export default function InstagramCallbackPage() {
 
     if (error) {
       setStatus('error')
-      setMessage(`Instagram hat den Zugriff verweigert: ${searchParams.get('error_description') ?? error}`)
+      setMessage(t('page.callback.accessDenied', { reason: searchParams.get('error_description') ?? error }))
       return
     }
 
     if (!code) {
       setStatus('error')
-      setMessage('Kein Autorisierungscode erhalten.')
+      setMessage(t('page.callback.noAuthCode'))
       return
     }
 
@@ -37,7 +39,7 @@ export default function InstagramCallbackPage() {
 
       // Extract error message — Supabase wraps non-2xx in res.error but body has details
       if (res.error) {
-        let msg = res.error.message ?? 'Verbindung fehlgeschlagen'
+        let msg = res.error.message ?? t('page.callback.connectionFailed')
         try {
           const ctx = (res.error as any).context
           if (ctx) {
@@ -76,7 +78,7 @@ export default function InstagramCallbackPage() {
       }
 
       setStatus('success')
-      setMessage(`@${d.username} erfolgreich verbunden!`)
+      setMessage(t('page.callback.connectedSuccess', { username: d.username }))
       setTimeout(() => navigate('/social'), 2000)
     }
 
@@ -89,24 +91,24 @@ export default function InstagramCallbackPage() {
         {status === 'loading' && (
           <>
             <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-accent border-t-transparent" />
-            <p className="font-medium">Instagram wird verbunden…</p>
+            <p className="font-medium">{t('page.callback.connecting')}</p>
           </>
         )}
         {status === 'success' && (
           <>
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-2xl">✓</div>
             <p className="font-semibold text-green-700 dark:text-green-400">{message}</p>
-            <p className="mt-1 text-sm text-gray-400">Du wirst weitergeleitet…</p>
+            <p className="mt-1 text-sm text-gray-400">{t('page.callback.redirecting')}</p>
           </>
         )}
         {status === 'error' && (
           <>
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-2xl">✗</div>
-            <p className="font-semibold text-red-700 dark:text-red-400">Fehler</p>
+            <p className="font-semibold text-red-700 dark:text-red-400">{t('page.callback.error')}</p>
             <p className="mt-1 text-sm text-gray-500">{message}</p>
             <button onClick={() => navigate('/social')}
               className="mt-4 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90">
-              Zurück
+              {t('page.callback.back')}
             </button>
           </>
         )}

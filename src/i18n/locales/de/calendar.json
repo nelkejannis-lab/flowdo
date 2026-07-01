@@ -84,6 +84,7 @@
     "empty": "Keine offenen Aufgaben in den nächsten 7 Tagen."
   },
   "ownerOnly": "Nur der Ersteller kann bearbeiten",
+  "entryDeleted": "Termin gelöscht",
   "form": {
     "titleEdit": "Eintrag bearbeiten",
     "titleAdd": "Hinzufügen",
@@ -124,5 +125,20 @@
     "create": "Erstellen",
     "creating": "Wird erstellt…",
     "createSeries": "Serie erstellen"
+  },
+  "agenda": {
+    "overviewLabel": "Tagesübersicht",
+    "taskButton": "Aufgabe",
+    "entryButton": "Termin",
+    "noAppointmentsForDay": "Keine Termine für diesen Tag geplant.",
+    "noAppointmentsOrTasksForDay": "Keine Termine oder Aufgaben für diesen Tag geplant.",
+    "addFirstTask": "Jetzt erste Aufgabe eintragen",
+    "appointmentsAbsences": "Termine & Abwesenheiten",
+    "allDay": "Ganztägig",
+    "noAppointmentsForThisDay": "Keine Termine für diesen Tag.",
+    "tasksColumnTitle": "Aufgaben (To-Do)",
+    "noTasksForThisDay": "Keine Aufgaben für diesen Tag.",
+    "urgent": "Dringend",
+    "important": "Wichtig"
   }
 }

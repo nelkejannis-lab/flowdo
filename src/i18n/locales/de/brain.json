@@ -1,0 +1,66 @@
+{
+  "title": "Gehirn",
+  "searchPlaceholder": "Suchen...",
+  "newNote": "Neue Notiz",
+  "allTab": "Alle",
+  "addCategory": "Kategorie hinzufügen",
+  "noNotes": "Keine Notizen",
+  "noAudioSupport": "Spracherkennung wird in diesem Browser leider nicht unterstützt (Empfohlen: Chrome, Edge, Safari).",
+  "micDenied": "Mikrofon-Zugriff verweigert oder Fehler aufgetreten.",
+  "emptyNoteAlert": "Der Inhalt der Notiz ist leer und keine Audiodatei hochgeladen. Bitte schreibe etwas oder lade eine Audiodatei hoch.",
+  "summaryError": "Fehler beim Laden der KI-Zusammenfassung",
+  "summaryEmptyError": "Die KI hat keine Zusammenfassung zurückgegeben.",
+  "genericError": "Ein Fehler ist aufgetreten.",
+  "untitledPage": "Unbenannte Seite",
+  "aiLabel": "KI",
+  "toolbar": {
+    "insertBullet": "Stichpunkt einfügen",
+    "bulletLabel": "Stichpunkt",
+    "stopDictation": "Spracherkennung stoppen",
+    "startDictation": "Spracherkennung starten (Diktieren)",
+    "listening": "Hört zu...",
+    "dictate": "Diktieren",
+    "stopRecording": "Aufnahme stoppen",
+    "recordVoiceNote": "Sprachnotiz aufnehmen",
+    "recordAudio": "Audio aufnehmen",
+    "uploadAudioFile": "Audiodatei hochladen",
+    "uploadAudio": "Audio hochladen",
+    "generateSummary": "KI Zusammenfassung erstellen",
+    "summarizing": "Fasst zusammen...",
+    "summarize": "KI Zusammenfassen"
+  },
+  "audio": {
+    "play": "Sprachaufzeichnung abspielen",
+    "delete": "Sprachaufnahme löschen",
+    "confirmDelete": "Möchtest du diese Sprachaufnahme löschen?"
+  },
+  "editor": {
+    "titlePlaceholder": "Notiz Überschrift...",
+    "titlePlaceholderEdit": "Titel deiner Notiz...",
+    "categoryLabel": "In Kategorie ablegen",
+    "contentPlaceholder": "Schreibe deine Gedanken auf oder füge Stichpunkte hinzu...",
+    "discard": "Verwerfen",
+    "saveAndCreate": "Speichern & Erstellen",
+    "save": "Speichern",
+    "saved": "Gespeichert ✓",
+    "delete": "Löschen",
+    "confirmDeleteNote": "Möchtest du diese Notiz wirklich löschen?",
+    "aiSummaryTitle": "KI Zusammenfassung",
+    "deleteSummary": "Zusammenfassung löschen",
+    "confirmDeleteSummary": "KI-Zusammenfassung löschen?",
+    "emptyState": "Wähle eine Notiz aus der Liste oder erstelle eine neue."
+  },
+  "checklist": {
+    "title": "Checkliste",
+    "empty": "Noch keine Punkte.",
+    "addPlaceholder": "Punkt hinzufügen..."
+  },
+  "categoryModal": {
+    "title": "Neue Kategorie erstellen",
+    "namePlaceholder": "z.B. Meetings, Ideen, Archiv...",
+    "existing": "Bestehende Kategorien",
+    "confirmDelete": "Möchtest du die Kategorie \"{{name}}\" wirklich löschen?",
+    "close": "Schließen",
+    "create": "Erstellen"
+  }
+}

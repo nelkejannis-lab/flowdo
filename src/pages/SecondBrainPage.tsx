@@ -22,7 +22,7 @@ import { createId } from '../utils/id'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 export default function SecondBrainPage() {
-  const { t } = useTranslation(['common'])
+  const { t } = useTranslation('brain')
   const columns = useBrainStore((s) => s.columns)
   const pages = useBrainStore((s) => s.pages)
   const addColumn = useBrainStore((s) => s.addColumn)
@@ -119,7 +119,7 @@ export default function SecondBrainPage() {
   // Speech Recognition toggle
   const toggleTranscription = () => {
     if (!recognitionRef.current) {
-      alert('Spracherkennung wird in diesem Browser leider nicht unterstützt (Empfohlen: Chrome, Edge, Safari).')
+      alert(t('noAudioSupport'))
       return
     }
 
@@ -173,7 +173,7 @@ export default function SecondBrainPage() {
       setIsRecordingAudio(true)
     } catch (err) {
       console.error('Microphone access denied or error:', err)
-      alert('Mikrofon-Zugriff verweigert oder Fehler aufgetreten.')
+      alert(t('micDenied'))
     }
   }
 
@@ -212,7 +212,7 @@ export default function SecondBrainPage() {
     const isAudioOnly = audioBlob && !noteContent.trim()
     const textToSummarize = noteContent.trim()
     if (!textToSummarize && !audioBlob) {
-      alert('Der Inhalt der Notiz ist leer und keine Audiodatei hochgeladen. Bitte schreibe etwas oder lade eine Audiodatei hoch.')
+      alert(t('emptyNoteAlert'))
       return
     }
 
@@ -267,9 +267,9 @@ ${textToSummarize}`
         },
       })
 
-      if (error) throw new Error(error.message || 'Fehler beim Laden der KI-Zusammenfassung')
+      if (error) throw new Error(error.message || t('summaryError'))
       const summaryText = data?.text
-      if (!summaryText) throw new Error('Die KI hat keine Zusammenfassung zurückgegeben.')
+      if (!summaryText) throw new Error(t('summaryEmptyError'))
 
       if (activePage) {
         updatePage(activePage.id, { summary: summaryText })
@@ -283,7 +283,7 @@ ${textToSummarize}`
       }
     } catch (err: any) {
       console.error(err)
-      setAiError(err.message || 'Ein Fehler ist aufgetreten.')
+      setAiError(err.message || t('genericError'))
     } finally {
       setAiLoading(false)
     }
@@ -315,10 +315,10 @@ ${textToSummarize}`
   const handleSavePage = () => {
     if (!activePage) return
     updatePage(activePage.id, {
-      title: noteTitle.trim() || 'Unbenannte Seite',
+      title: noteTitle.trim() || t('untitledPage'),
       content: noteContent,
     })
-    setActivePage((prev) => (prev ? { ...prev, title: noteTitle.trim() || 'Unbenannte Seite', content: noteContent } : null))
+    setActivePage((prev) => (prev ? { ...prev, title: noteTitle.trim() || t('untitledPage'), content: noteContent } : null))
     setJustSaved(true)
     setTimeout(() => setJustSaved(false), 1500)
   }
@@ -343,7 +343,7 @@ ${textToSummarize}`
       setIsCreating(false)
       return
     }
-    addPage(createColId, noteTitle.trim() || 'Unbenannte Seite', noteContent, noteChecklist)
+    addPage(createColId, noteTitle.trim() || t('untitledPage'), noteContent, noteChecklist)
 
     if (audioBlob) {
       const reader = new FileReader()
@@ -394,10 +394,10 @@ ${textToSummarize}`
           type="button"
           onClick={insertBulletPoint}
           className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white"
-          title="Stichpunkt einfügen"
+          title={t('toolbar.insertBullet')}
         >
           <List size={13} />
-          Stichpunkt
+          {t('toolbar.bulletLabel')}
         </button>
         <button
           type="button"
@@ -407,10 +407,10 @@ ${textToSummarize}`
               ? 'bg-red-500 text-white animate-pulse'
               : 'bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white'
           }`}
-          title={isTranscribing ? 'Spracherkennung stoppen' : 'Spracherkennung starten (Diktieren)'}
+          title={isTranscribing ? t('toolbar.stopDictation') : t('toolbar.startDictation')}
         >
           {isTranscribing ? <MicOff size={13} /> : <Mic size={13} />}
-          {isTranscribing ? 'Hört zu...' : 'Diktieren'}
+          {isTranscribing ? t('toolbar.listening') : t('toolbar.dictate')}
         </button>
         <button
           type="button"
@@ -420,10 +420,10 @@ ${textToSummarize}`
               ? 'bg-indigo-600 text-white animate-pulse'
               : 'bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white'
           }`}
-          title={isRecordingAudio ? 'Aufnahme stoppen' : 'Sprachnotiz aufnehmen'}
+          title={isRecordingAudio ? t('toolbar.stopRecording') : t('toolbar.recordVoiceNote')}
         >
           <Volume2 size={13} />
-          {isRecordingAudio ? 'Aufnahme stoppen' : 'Audio aufnehmen'}
+          {isRecordingAudio ? t('toolbar.stopRecording') : t('toolbar.recordAudio')}
         </button>
         <input
           type="file"
@@ -436,20 +436,20 @@ ${textToSummarize}`
           type="button"
           onClick={() => document.getElementById('audio-file-upload')?.click()}
           className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white"
-          title="Audiodatei hochladen"
+          title={t('toolbar.uploadAudioFile')}
         >
           <Upload size={13} />
-          Audio hochladen
+          {t('toolbar.uploadAudio')}
         </button>
         <button
           type="button"
           disabled={aiLoading}
           onClick={generateAiSummary}
           className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-accent text-white hover:bg-accent-dark disabled:opacity-50 ml-auto transition-colors"
-          title="KI Zusammenfassung erstellen"
+          title={t('toolbar.generateSummary')}
         >
           <Sparkles size={13} className={aiLoading ? 'animate-spin' : ''} />
-          {aiLoading ? 'Fasst zusammen...' : 'KI Zusammenfassen'}
+          {aiLoading ? t('toolbar.summarizing') : t('toolbar.summarize')}
         </button>
       </div>
     )
@@ -461,12 +461,12 @@ ${textToSummarize}`
     return (
       <div className="rounded-xl bg-indigo-50/50 dark:bg-racing-950/40 p-3 border border-indigo-100/50 dark:border-racing-850 flex flex-col gap-2">
         <span className="text-xs font-semibold text-indigo-500 flex items-center gap-1.5">
-          <Volume2 size={13} /> Sprachaufzeichnung abspielen
+          <Volume2 size={13} /> {t('audio.play')}
         </span>
         <audio src={audioUrl} controls className="w-full" />
         {onDelete && (
           <button onClick={onDelete} className="text-[10px] text-red-500 hover:underline font-semibold self-start">
-            Sprachaufnahme löschen
+            {t('audio.delete')}
           </button>
         )}
       </div>
@@ -475,7 +475,7 @@ ${textToSummarize}`
 
   return (
     <div className="flex flex-col gap-4 h-full min-h-[75vh]">
-      <h1 className="text-2xl font-semibold">Gehirn</h1>
+      <h1 className="text-2xl font-semibold">{t('title')}</h1>
 
       <div className="flex flex-1 gap-4 min-h-0">
         {/* Left pane: search, tabs, list */}
@@ -486,7 +486,7 @@ ${textToSummarize}`
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Suchen..."
+                placeholder={t('searchPlaceholder')}
                 className="w-full rounded-xl border border-gray-200 bg-white dark:bg-racing-950/40 dark:border-racing-800 pl-9 pr-3 py-2 text-sm outline-none focus:border-accent transition-all"
               />
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -495,7 +495,7 @@ ${textToSummarize}`
               onClick={() => handleOpenCreate(activeTab !== 'all' ? activeTab : columns[0]?.id ?? '')}
               disabled={columns.length === 0}
               className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-accent text-white hover:bg-accent-dark disabled:opacity-40"
-              title="Neue Notiz"
+              title={t('newNote')}
             >
               <Plus size={16} />
             </button>
@@ -510,7 +510,7 @@ ${textToSummarize}`
                   : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-racing-800'
               }`}
             >
-              Alle
+              {t('allTab')}
             </button>
             {columns.map((col) => (
               <button
@@ -527,7 +527,7 @@ ${textToSummarize}`
             ))}
             <button
               onClick={() => setShowAddColumn(true)}
-              title="Kategorie hinzufügen"
+              title={t('addCategory')}
               className="flex-shrink-0 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-accent dark:hover:bg-racing-800"
             >
               <FolderPlus size={14} />
@@ -562,7 +562,7 @@ ${textToSummarize}`
                   )}
                   {page.summary && (
                     <span className="flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 px-1.5 py-0.5 rounded-md">
-                      <Sparkles size={10} /> KI
+                      <Sparkles size={10} /> {t('aiLabel')}
                     </span>
                   )}
                   {page.checklist && page.checklist.length > 0 && (
@@ -579,7 +579,7 @@ ${textToSummarize}`
 
             {filteredPages.length === 0 && (
               <div className="py-8 text-center text-xs text-gray-400 border border-dashed border-gray-200 dark:border-racing-800 rounded-xl select-none">
-                Keine Notizen
+                {t('noNotes')}
               </div>
             )}
           </div>
@@ -594,12 +594,12 @@ ${textToSummarize}`
                 type="text"
                 value={noteTitle}
                 onChange={(e) => setNoteTitle(e.target.value)}
-                placeholder="Notiz Überschrift..."
+                placeholder={t('editor.titlePlaceholder')}
                 className="w-full text-lg font-bold bg-transparent border-b border-gray-100 dark:border-racing-800 focus:border-accent focus:outline-none pb-1.5"
               />
               <Toolbar />
               <div>
-                <label className="block text-xs font-semibold text-gray-400 mb-1">In Kategorie ablegen</label>
+                <label className="block text-xs font-semibold text-gray-400 mb-1">{t('editor.categoryLabel')}</label>
                 <select
                   value={createColId}
                   onChange={(e) => setCreateColId(e.target.value)}
@@ -613,7 +613,7 @@ ${textToSummarize}`
               <textarea
                 value={noteContent}
                 onChange={(e) => setNoteContent(e.target.value)}
-                placeholder="Schreibe deine Gedanken auf oder füge Stichpunkte hinzu..."
+                placeholder={t('editor.contentPlaceholder')}
                 rows={10}
                 className="w-full rounded-xl border border-gray-200 bg-transparent px-3.5 py-2.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700 leading-relaxed"
               />
@@ -631,13 +631,13 @@ ${textToSummarize}`
                   onClick={() => setIsCreating(false)}
                   className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold hover:bg-gray-50 dark:border-racing-800 dark:hover:bg-racing-800"
                 >
-                  Verwerfen
+                  {t('editor.discard')}
                 </button>
                 <button
                   onClick={handleSaveNewPage}
                   className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark transition-all shadow-sm"
                 >
-                  Speichern & Erstellen
+                  {t('editor.saveAndCreate')}
                 </button>
               </div>
             </div>
@@ -647,12 +647,12 @@ ${textToSummarize}`
                 type="text"
                 value={noteTitle}
                 onChange={(e) => setNoteTitle(e.target.value)}
-                placeholder="Titel deiner Notiz..."
+                placeholder={t('editor.titlePlaceholderEdit')}
                 className="w-full text-lg font-bold bg-transparent border-b border-gray-100 dark:border-racing-800 focus:border-accent focus:outline-none pb-1.5"
               />
               <Toolbar />
               <div>
-                <label className="block text-xs font-semibold text-gray-400 mb-1">In Kategorie ablegen</label>
+                <label className="block text-xs font-semibold text-gray-400 mb-1">{t('editor.categoryLabel')}</label>
                 <select
                   value={activePage.columnId}
                   onChange={(e) => {
@@ -670,7 +670,7 @@ ${textToSummarize}`
               <textarea
                 value={noteContent}
                 onChange={(e) => setNoteContent(e.target.value)}
-                placeholder="Schreibe deine Gedanken auf oder füge Stichpunkte hinzu..."
+                placeholder={t('editor.contentPlaceholder')}
                 rows={10}
                 className="w-full rounded-xl border border-gray-200 bg-transparent px-3.5 py-2.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700 leading-relaxed"
               />
@@ -694,7 +694,7 @@ ${textToSummarize}`
               />
               <AudioPlayback
                 onDelete={() => {
-                  if (confirm('Möchtest du diese Sprachaufnahme löschen?')) {
+                  if (confirm(t('audio.confirmDelete'))) {
                     setAudioUrl(null)
                     updatePage(activePage.id, { audioBase64: undefined })
                     setActivePage((prev) => (prev ? { ...prev, audioBase64: undefined } : null))
@@ -704,21 +704,21 @@ ${textToSummarize}`
               {activePage.summary && (
                 <div className="rounded-xl bg-emerald-50/50 dark:bg-racing-950/40 p-3.5 border border-emerald-100/50 dark:border-racing-850 flex flex-col gap-2">
                   <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                    <Sparkles size={13} /> KI Zusammenfassung
+                    <Sparkles size={13} /> {t('editor.aiSummaryTitle')}
                   </span>
                   <div className="text-xs leading-relaxed text-gray-700 dark:text-racing-200 whitespace-pre-wrap border-l-2 border-emerald-400 pl-3">
                     {activePage.summary}
                   </div>
                   <button
                     onClick={() => {
-                      if (confirm('KI-Zusammenfassung löschen?')) {
+                      if (confirm(t('editor.confirmDeleteSummary'))) {
                         updatePage(activePage.id, { summary: undefined })
                         setActivePage((prev) => (prev ? { ...prev, summary: undefined } : null))
                       }
                     }}
                     className="text-[10px] text-red-500 hover:underline font-semibold self-start"
                   >
-                    Zusammenfassung löschen
+                    {t('editor.deleteSummary')}
                   </button>
                 </div>
               )}
@@ -727,27 +727,27 @@ ${textToSummarize}`
                 <button
                   type="button"
                   onClick={() => {
-                    if (confirm('Möchtest du diese Notiz wirklich löschen?')) {
+                    if (confirm(t('editor.confirmDeleteNote'))) {
                       deletePage(activePage.id)
                       setActivePage(null)
                     }
                   }}
                   className="text-sm font-semibold text-red-500 hover:underline"
                 >
-                  Löschen
+                  {t('editor.delete')}
                 </button>
                 <button
                   onClick={handleSavePage}
                   className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark transition-all shadow-sm"
                 >
-                  {justSaved ? 'Gespeichert ✓' : 'Speichern'}
+                  {justSaved ? t('editor.saved') : t('editor.save')}
                 </button>
               </div>
             </div>
           ) : (
             <div className="flex h-full min-h-[40vh] flex-col items-center justify-center text-center text-gray-400">
               <FileText size={32} className="mb-3 opacity-40" />
-              <p className="text-sm">Wähle eine Notiz aus der Liste oder erstelle eine neue.</p>
+              <p className="text-sm">{t('editor.emptyState')}</p>
             </div>
           )}
         </div>
@@ -760,19 +760,19 @@ ${textToSummarize}`
             className="bg-white dark:bg-racing-900 border border-gray-100 dark:border-racing-850 rounded-2xl p-5 shadow-2xl max-w-sm w-full"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-base font-bold mb-3">Neue Kategorie erstellen</h3>
+            <h3 className="text-base font-bold mb-3">{t('categoryModal.title')}</h3>
             <form onSubmit={handleCreateColumn} className="flex flex-col gap-3">
               <input
                 autoFocus
                 type="text"
                 value={newColTitle}
                 onChange={(e) => setNewColTitle(e.target.value)}
-                placeholder="z.B. Meetings, Ideen, Archiv..."
+                placeholder={t('categoryModal.namePlaceholder')}
                 className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
               />
               {columns.length > 0 && (
                 <div className="flex flex-col gap-1.5 max-h-32 overflow-y-auto">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Bestehende Kategorien</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{t('categoryModal.existing')}</span>
                   {columns.map((col) => (
                     <div key={col.id} className="flex items-center gap-1.5">
                       {editingColId === col.id ? (
@@ -798,7 +798,7 @@ ${textToSummarize}`
                             <button
                               type="button"
                               onClick={() => {
-                                if (confirm(`Möchtest du die Kategorie "${col.title}" wirklich löschen?`)) {
+                                if (confirm(t('categoryModal.confirmDelete', { name: col.title }))) {
                                   deleteColumn(col.id)
                                   if (activeTab === col.id) setActiveTab('all')
                                 }
@@ -820,10 +820,10 @@ ${textToSummarize}`
                   onClick={() => setShowAddColumn(false)}
                   className="rounded-lg border border-gray-200 px-3 py-2 hover:bg-gray-50 dark:border-racing-800 dark:hover:bg-racing-800"
                 >
-                  Schließen
+                  {t('categoryModal.close')}
                 </button>
                 <button type="submit" className="rounded-lg bg-accent text-white px-3 py-2 hover:bg-accent-dark">
-                  Erstellen
+                  {t('categoryModal.create')}
                 </button>
               </div>
             </form>
@@ -848,6 +848,7 @@ function BrainChecklist({
   onToggle: (id: string) => void
   onDelete: (id: string) => void
 }) {
+  const { t } = useTranslation('brain')
   const [draft, setDraft] = useState('')
   function commit() {
     if (!draft.trim()) return
@@ -857,7 +858,7 @@ function BrainChecklist({
   return (
     <div className="rounded-xl border border-gray-200 dark:border-racing-700 p-3.5">
       <span className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-racing-300">
-        <ListChecks size={13} /> Checkliste
+        <ListChecks size={13} /> {t('checklist.title')}
       </span>
       <div className="flex flex-col gap-1">
         {items.map((item) => (
@@ -881,13 +882,13 @@ function BrainChecklist({
             </button>
           </div>
         ))}
-        {items.length === 0 && <p className="text-xs italic text-gray-400">Noch keine Punkte.</p>}
+        {items.length === 0 && <p className="text-xs italic text-gray-400">{t('checklist.empty')}</p>}
       </div>
       <div className="mt-2 flex items-center gap-2">
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="Punkt hinzufügen..."
+          placeholder={t('checklist.addPlaceholder')}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault()

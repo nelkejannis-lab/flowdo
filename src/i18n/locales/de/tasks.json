@@ -67,6 +67,8 @@
     "assigneeOnVacationDueDate": "{{name}} ist am Fälligkeitsdatum im Urlaub.",
     "tags": "Tags",
     "tagPlaceholder": "Tag hinzufügen + Enter",
+    "tagSuggestions": "Vorschläge:",
+    "tagFrequentlyUsed": "Häufig verwendet:",
     "eisenhowerMatrix": "Eisenhower-Matrix",
     "quadrants": {
       "urgentImportant": "Dringend & Wichtig",
@@ -81,6 +83,15 @@
     "sending": "Sende…",
     "send": "Senden",
     "add": "Hinzufügen"
+  },
+  "toast": {
+    "taskDeleted": "Aufgabe gelöscht",
+    "undo": "Rückgängig"
+  },
+  "quickAdd": {
+    "placeholder": "Schnelleingabe: 'Meeting morgen um 14 Uhr #work'",
+    "analyzing": "Analysiere mit KI...",
+    "analyzingShort": "Analysiere..."
   },
   "page": {
     "addTask": "Aufgabe",

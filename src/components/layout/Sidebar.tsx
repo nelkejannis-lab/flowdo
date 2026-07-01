@@ -164,16 +164,16 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     { key: 'inbox', to: '/tasks/inbox', icon: <Inbox size={18} />, label: t('sidebar.nav.inbox'), visible: true },
     { key: 'tasks', to: '/tasks', icon: <ListTodo size={18} />, label: t('sidebar.nav.allTasks'), visible: true, exact: true },
     { key: 'calendar', to: '/calendar', icon: <CalendarDays size={18} />, label: t('sidebar.nav.calendar'), visible: !!featureVisibility.calendar },
-    { key: 'termine', to: '/termine', icon: <CalendarClock size={18} />, label: 'Termine', visible: true },
-    { key: 'pomodoro', to: '/pomodoro', icon: <Timer size={18} />, label: 'Pomodoro', visible: true },
-    { key: 'brain', to: '/gehirn', icon: <Brain size={18} />, label: 'Gehirn', visible: true },
+    { key: 'termine', to: '/termine', icon: <CalendarClock size={18} />, label: t('sidebar.nav.termine'), visible: true },
+    { key: 'pomodoro', to: '/pomodoro', icon: <Timer size={18} />, label: t('sidebar.nav.pomodoro'), visible: true },
+    { key: 'brain', to: '/gehirn', icon: <Brain size={18} />, label: t('sidebar.nav.brain'), visible: true },
     { key: 'eisenhower', to: '/eisenhower', icon: <Grid2x2 size={18} />, label: t('sidebar.nav.eisenhower'), visible: !!featureVisibility.eisenhower },
     { key: 'worktime', to: '/arbeitszeit', icon: <Clock size={18} />, label: t('sidebar.nav.worktime'), visible: !!featureVisibility.worktime },
     { key: 'aiScheduler', to: '/ki-termine', icon: <Sparkles size={18} />, label: t('sidebar.nav.aiScheduler'), visible: isSupabaseConfigured && !!featureVisibility.aiScheduler },
     { key: 'chat', to: '/chat', icon: <MessageCircle size={18} />, label: t('sidebar.nav.chat'), visible: isSupabaseConfigured && !!featureVisibility.chat },
     { key: 'friends', to: '/friends', icon: <Users size={18} />, label: t('sidebar.nav.friends'), visible: isSupabaseConfigured && !!featureVisibility.friends },
     { key: 'social', to: '/social', icon: <Instagram size={18} />, label: t('sidebar.nav.social'), visible: isSupabaseConfigured && !!featureVisibility.social },
-    { key: 'meetings', to: '/meetings', icon: <Mic size={18} />, label: 'Meetings', visible: true },
+    { key: 'meetings', to: '/meetings', icon: <Mic size={18} />, label: t('sidebar.nav.meetings'), visible: true },
     { key: 'projekte', to: '/projekte', icon: <Trello size={18} />, label: t('sidebar.projects.all'), visible: true, exact: true },
   ]
   // These now only live as tabs inside other pages (Tasks: Heute/Woche tabs; Termine: Eisenhower tab),
@@ -585,10 +585,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       </div>
       </aside>
       {showShortcuts && (
-        <Modal title="Tastaturkurzbefehle" onClose={() => setShowShortcuts(false)} widthClass="max-w-md">
+        <Modal title="Tastaturkurzbefehle / Keyboard Shortcuts" onClose={() => setShowShortcuts(false)} widthClass="max-w-md">
           <div className="flex flex-col gap-3">
             <p className="text-sm text-gray-500 dark:text-racing-200">
-              Drücke diese Tasten, wenn kein Eingabefeld fokussiert ist.
+              Drücke diese Tasten, wenn kein Eingabefeld fokussiert ist. / Press these keys when no input field is focused.
             </p>
             <div className="divide-y divide-gray-100 dark:divide-racing-800">
               {SHORTCUTS.map((s) => (

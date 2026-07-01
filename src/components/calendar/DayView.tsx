@@ -58,7 +58,7 @@ export default function DayView({ currentDate, tasks, events, entries = [], onAd
       {/* All-day section */}
       {(allDayEntries.length > 0 || allDayEvents.length > 0) && (
         <div className="border-b border-gray-100 px-4 py-2 dark:border-racing-800">
-          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400">Ganztägig</div>
+          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400">{t('agenda.allDay')}</div>
           <div className="flex flex-col gap-1">
             {allDayEvents.map((event) => (
               <div

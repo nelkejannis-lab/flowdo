@@ -83,6 +83,12 @@
     "save": "Speichern",
     "create": "Erstellen"
   },
+  "todos": {
+    "calendarHint": "Klicke auf einen Tag, um eine neue Aufgabe für diesen Tag hinzuzufügen.",
+    "addPlaceholder": "Todo hinzufügen…",
+    "empty": "Keine Todos. Füge oben einen hinzu.",
+    "noTasksInColumn": "Keine Aufgaben in dieser Spalte"
+  },
   "taskForm": {
     "editTask": "Aufgabe bearbeiten",
     "newTask": "Neue Aufgabe",

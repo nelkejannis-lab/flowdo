@@ -75,10 +75,18 @@
     "sat": "Sa",
     "sun": "So"
   },
+  "sickDay": {
+    "title": "Krankmeldung",
+    "noteEntered": "Heute als krank eingetragen · Soll-Zeit wird angerechnet",
+    "revoke": "Krankmeldung zurückziehen",
+    "markSick": "Krank",
+    "markSickTitle": "Heute als krank melden"
+  },
   "overview": {
     "totalOvertime": "Überstunden gesamt",
     "overtimeInDays": "Überstunden in Tagen",
     "compDays": "Ausgleichstage (Wochenende)",
+    "availableDays": "verfügbare Tage",
     "undoCompDay": "Ausgleichstag rückgängig machen",
     "markCompDayTaken": "Ausgleichstag als genommen markieren",
     "openCompDay_one": "offener Ausgleichstag",

@@ -52,7 +52,7 @@ export default function MobileBottomNav() {
         </NavLink>
         <NavLink to="/gehirn" className={itemClass}>
           <Brain size={20} />
-          <span>Gehirn</span>
+          <span>{t('sidebar.nav.brain')}</span>
         </NavLink>
       </nav>
 

@@ -419,11 +419,11 @@ export default function BoardDetailPage() {
                         className="flex items-center gap-1 rounded bg-gray-50 px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 dark:bg-racing-800 dark:text-racing-200"
                       >
                         <Plus size={12} />
-                        Aufgabe hinzufügen
+                        {t('kanban.addTask')}
                       </button>
                     </div>
                     {colTasks.length === 0 ? (
-                      <p className="text-center text-xs text-gray-400 py-3">Keine Aufgaben in dieser Spalte</p>
+                      <p className="text-center text-xs text-gray-400 py-3">{t('todos.noTasksInColumn')}</p>
                     ) : (
                       <div className="flex flex-col gap-2">
                         {colTasks.map((task) => (
@@ -468,7 +468,7 @@ export default function BoardDetailPage() {
                     Heute
                   </button>
                 </div>
-                <p className="text-xs text-gray-400">Klicke auf einen Tag, um eine neue Aufgabe für diesen Tag hinzuzufügen.</p>
+                <p className="text-xs text-gray-400">{t('todos.calendarHint')}</p>
               </div>
               <MonthView
                 currentDate={calendarDate}
@@ -541,7 +541,7 @@ export default function BoardDetailPage() {
                   <input
                     value={todoInput}
                     onChange={(e) => setTodoInput(e.target.value)}
-                    placeholder="Todo hinzufügen…"
+                    placeholder={t('todos.addPlaceholder')}
                     className="flex-1 rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
                   />
                   <button
@@ -571,7 +571,7 @@ export default function BoardDetailPage() {
                     </div>
                   ))}
                   {openTodos.length === 0 && doneTodos.length === 0 && (
-                    <p className="py-2 text-center text-xs text-gray-400">Keine Todos. Füge oben einen hinzu.</p>
+                    <p className="py-2 text-center text-xs text-gray-400">{t('todos.empty')}</p>
                   )}
                 </div>
 

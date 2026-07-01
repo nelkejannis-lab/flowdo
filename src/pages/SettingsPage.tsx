@@ -118,17 +118,18 @@ function WeatherCitySettings() {
 }
 
 function UpdateButton() {
+  const { t } = useTranslation('settings')
   const [status, setStatus] = useState<'idle' | 'checking' | 'available' | 'downloading' | 'ready'>('idle')
   const [error, setError] = useState<string | null>(null)
   const [progress, setProgress] = useState(0)
 
   useEffect(() => {
     if (!window.electronUpdater) return
-    
+
     window.electronUpdater.onUpdateAvailable(() => setStatus('available'))
     window.electronUpdater.onUpdateNotAvailable(() => {
       setStatus('idle')
-      alert('Die App ist auf dem neuesten Stand!')
+      alert(t('updater.upToDate'))
     })
     window.electronUpdater.onUpdateError((err) => {
       setStatus('idle')
@@ -139,11 +140,11 @@ function UpdateButton() {
       setProgress(Math.round(prog.percent))
     })
     window.electronUpdater.onUpdateDownloaded(() => setStatus('ready'))
-  }, [])
+  }, [t])
 
   async function handleCheck() {
     if (!window.electronUpdater) {
-      alert('Updates werden nur in der Desktop-App unterstützt.')
+      alert(t('updater.notSupported'))
       return
     }
     if (status === 'ready') {
@@ -159,7 +160,7 @@ function UpdateButton() {
     const result = await window.electronUpdater.checkForUpdates()
     if (result && result.error) {
       setStatus('idle')
-      alert('Fehler bei der Update-Suche: ' + result.error)
+      alert(t('updater.checkError', { error: result.error }))
     }
   }
 
@@ -167,17 +168,17 @@ function UpdateButton() {
 
   return (
     <div className="flex flex-col items-end">
-      <button 
+      <button
         onClick={handleCheck}
         disabled={status === 'checking' || status === 'downloading'}
         className="flex items-center gap-2 rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white shadow hover:bg-accent-dark disabled:opacity-50 transition-all"
       >
         <RefreshCw size={14} className={status === 'checking' ? 'animate-spin' : ''} />
-        {status === 'idle' && 'Nach Updates suchen'}
-        {status === 'checking' && 'Suche...'}
-        {status === 'available' && 'Update herunterladen'}
-        {status === 'downloading' && `Lädt... ${progress}%`}
-        {status === 'ready' && 'Jetzt neustarten & installieren'}
+        {status === 'idle' && t('updater.check')}
+        {status === 'checking' && t('updater.checking')}
+        {status === 'available' && t('updater.download')}
+        {status === 'downloading' && t('updater.downloading', { progress })}
+        {status === 'ready' && t('updater.restartInstall')}
       </button>
       {error && <span className="text-xs text-red-500 mt-1">{error}</span>}
     </div>
@@ -381,7 +382,7 @@ export default function SettingsPage() {
             onClick={() => setActiveTab(tab)}
             className={`flex-shrink-0 whitespace-nowrap rounded-md px-4 py-1.5 text-sm font-medium capitalize ${activeTab === tab ? 'bg-accent text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'}`}
           >
-            {tab === 'tastenkuerzel' ? 'Tastenkürzel' : tab === 'arbeitszeit' ? 'Arbeitszeit' : t(`tabs.${tab}`)}
+            {t(`tabs.${tab}`)}
           </button>
         ))}
       </div>
@@ -513,12 +514,12 @@ export default function SettingsPage() {
           <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
             <div className="mb-3 flex items-center gap-2">
               <CheckSquare size={16} className="text-accent" />
-              <h2 className="text-sm font-semibold">Aufgaben</h2>
+              <h2 className="text-sm font-semibold">{t('sections.tasksTitle')}</h2>
             </div>
             <div className="flex items-center gap-3 py-1">
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium">Erledigte Aufgaben ausblenden</p>
-                <p className="text-xs text-gray-400">Gilt für Aufgabenlisten, Kanban-Boards und Projekt-Todos</p>
+                <p className="text-sm font-medium">{t('sections.hideCompletedTitle')}</p>
+                <p className="text-xs text-gray-400">{t('sections.hideCompletedDesc')}</p>
               </div>
               <button
                 type="button"
@@ -536,11 +537,11 @@ export default function SettingsPage() {
           <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
             <div className="mb-3 flex items-center gap-2">
               <Bell size={16} className="text-accent" />
-              <h2 className="text-sm font-semibold">Benachrichtigungen</h2>
+              <h2 className="text-sm font-semibold">{t('sections.notificationsTitle')}</h2>
             </div>
 
             {!canNotify() ? (
-              <p className="text-xs text-gray-400">Dein Browser unterstützt keine Benachrichtigungen.</p>
+              <p className="text-xs text-gray-400">{t('sections.notificationsUnsupported')}</p>
             ) : notifPermission !== 'granted' ? (
               <div className="flex flex-col gap-2">
                 <p className="text-xs text-gray-400">
@@ -901,7 +902,7 @@ export default function SettingsPage() {
         <div className="flex flex-col gap-4">
           <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
             <h2 className="mb-1 text-sm font-semibold">Abteilungsprofile / Department Profiles</h2>
-            <p className="mb-4 text-xs text-gray-400">Arbeitszeitregelungen für verschiedene Abteilungen — aktiviertes Profil wird für alle Berechnungen verwendet.</p>
+            <p className="mb-4 text-xs text-gray-400">{t('sections.departmentProfilesDesc')}</p>
             <div className="flex flex-col gap-2">
               {workProfiles.map((p) => (
                 <div key={p.id} className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 ${activeProfileId === p.id ? 'border-accent bg-accent/5' : 'border-gray-200 dark:border-racing-700'}`}>
@@ -1051,6 +1052,7 @@ interface SidebarOrderSectionProps {
 }
 
 function SidebarOrderSection({ navOrder, setNavOrder, navVisibility, toggleNavItem }: SidebarOrderSectionProps) {
+  const { t } = useTranslation('settings')
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -1067,8 +1069,8 @@ function SidebarOrderSection({ navOrder, setNavOrder, navVisibility, toggleNavIt
 
   return (
     <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-      <h2 className="mb-1 text-sm font-semibold">Seitenleiste</h2>
-      <p className="mb-3 text-xs text-gray-400">Reihenfolge per Drag ändern · Dashboard &amp; Kalender sind immer sichtbar</p>
+      <h2 className="mb-1 text-sm font-semibold">{t('sections.sidebarTitle')}</h2>
+      <p className="mb-3 text-xs text-gray-400">{t('sections.sidebarDesc')}</p>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={fullOrder} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col divide-y divide-gray-100 dark:divide-racing-800">
@@ -1097,23 +1099,27 @@ function SidebarOrderSection({ navOrder, setNavOrder, navVisibility, toggleNavIt
 }
 
 // ── Dashboard widgets ─────────────────────────────────────────────────────
-const DASH_WIDGETS: { key: DashboardWidget; icon: React.ReactNode; label: string; desc: string }[] = [
-  { key: 'stats',            icon: <BarChart2 size={16} />,   label: 'Statistiken',     desc: 'Aufgaben & Projekte' },
-  { key: 'todayTasks',       icon: <CheckSquare size={16} />, label: 'Tagesübersicht',  desc: 'Heutige Aufgaben und Termine' },
-  { key: 'topPriority',      icon: <TrendingUp size={16} />,  label: 'Höchste Priorität', desc: 'Dringend & wichtige Aufgaben (Eisenhower Q1)' },
-  { key: 'dayPlan',          icon: <Timer size={16} />,       label: 'Tagesplan',       desc: 'Zeitstrahl mit den Punkten aus dem KI-Tagesplaner' },
-  { key: 'upcomingDeadlines',icon: <Clock size={16} />,       label: 'Deadlines',       desc: 'Anstehende Projekt-Deadlines' },
-  { key: 'nextEvents',       icon: <CalendarClock size={16} />, label: 'Events',        desc: 'Nächste Ereignisse' },
-  { key: 'projectsOverview', icon: <FolderKanban size={16} />,label: 'Projektübersicht',desc: 'Alle aktiven Projekte' },
-  { key: 'workoffice',       icon: <Users size={16} />,       label: 'Büro & Kollegen', desc: 'Wer ist im Büro, wer arbeitet von wo?' },
-  { key: 'weather',          icon: <Cloud size={16} />,       label: 'Wetter',          desc: 'Aktuelles Wetter per GPS-Standort' },
-]
+function getDashWidgets(t: (key: string) => string): { key: DashboardWidget; icon: React.ReactNode; label: string; desc: string }[] {
+  return [
+    { key: 'stats',            icon: <BarChart2 size={16} />,   label: t('dashboardWidgets.items.stats.label'),     desc: t('dashboardWidgets.items.stats.desc') },
+    { key: 'todayTasks',       icon: <CheckSquare size={16} />, label: t('dashboardWidgets.items.todayTasks.label'),  desc: t('dashboardWidgets.items.todayTasks.desc') },
+    { key: 'topPriority',      icon: <TrendingUp size={16} />,  label: t('dashboardWidgets.items.topPriority.label'), desc: t('dashboardWidgets.items.topPriority.desc') },
+    { key: 'dayPlan',          icon: <Timer size={16} />,       label: t('dashboardWidgets.items.dayPlan.label'),       desc: t('dashboardWidgets.items.dayPlan.desc') },
+    { key: 'upcomingDeadlines',icon: <Clock size={16} />,       label: t('dashboardWidgets.items.upcomingDeadlines.label'), desc: t('dashboardWidgets.items.upcomingDeadlines.desc') },
+    { key: 'nextEvents',       icon: <CalendarClock size={16} />, label: t('dashboardWidgets.items.nextEvents.label'), desc: t('dashboardWidgets.items.nextEvents.desc') },
+    { key: 'projectsOverview', icon: <FolderKanban size={16} />,label: t('dashboardWidgets.items.projectsOverview.label'), desc: t('dashboardWidgets.items.projectsOverview.desc') },
+    { key: 'workoffice',       icon: <Users size={16} />,       label: t('dashboardWidgets.items.workoffice.label'), desc: t('dashboardWidgets.items.workoffice.desc') },
+    { key: 'weather',          icon: <Cloud size={16} />,       label: t('dashboardWidgets.items.weather.label'),          desc: t('dashboardWidgets.items.weather.desc') },
+  ]
+}
 
 function DashboardWidgetSection({ dashboardVisibility, toggleDashboardWidget }: { dashboardVisibility: Record<DashboardWidget, boolean>; toggleDashboardWidget: (k: DashboardWidget) => void }) {
+  const { t } = useTranslation('settings')
+  const DASH_WIDGETS = getDashWidgets(t)
   return (
     <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-      <h2 className="mb-1 text-sm font-semibold">Dashboard-Widgets</h2>
-      <p className="mb-3 text-xs text-gray-400">Wähle aus, welche Bereiche auf dem Dashboard sichtbar sind.</p>
+      <h2 className="mb-1 text-sm font-semibold">{t('dashboardWidgets.title')}</h2>
+      <p className="mb-3 text-xs text-gray-400">{t('dashboardWidgets.description')}</p>
       <div className="flex flex-col divide-y divide-gray-100 dark:divide-racing-800">
         {DASH_WIDGETS.map(({ key, icon, label, desc }) => {
           const enabled = dashboardVisibility[key]

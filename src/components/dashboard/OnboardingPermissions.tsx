@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Bell, CheckCircle2, ChevronRight } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useSettingsStore } from '../../store/settingsStore'
 import { requestPermission, canNotify } from '../../utils/notifications'
 
 export default function OnboardingPermissions() {
+  const { t } = useTranslation('layout')
   const setDone = useSettingsStore((s) => s.setOnboardingPermissionsDone)
   const [requesting, setRequesting] = useState(false)
   const [granted, setGranted] = useState(false)
@@ -32,11 +34,9 @@ export default function OnboardingPermissions() {
           </span>
         </div>
 
-        <h2 className="mb-2 text-center text-xl font-bold text-white">Benachrichtigungen</h2>
+        <h2 className="mb-2 text-center text-xl font-bold text-white">{t('onboardingPermissions.title')}</h2>
         <p className="mb-8 text-center text-sm leading-relaxed text-white/50">
-          Erhalte Erinnerungen für Termine, Aufgaben und Nachrichten – direkt auf deinem Gerät.
-          <br />
-          <span className="text-white/30">Get reminders for appointments, tasks and messages.</span>
+          {t('onboardingPermissions.description')}
         </p>
 
         <button
@@ -50,7 +50,7 @@ export default function OnboardingPermissions() {
             : granted
               ? <CheckCircle2 size={16} className="text-[#34c759]" />
               : <Bell size={16} />}
-          {requesting ? 'Warte...' : 'Benachrichtigungen erlauben'}
+          {requesting ? t('onboardingPermissions.waiting') : t('onboardingPermissions.allow')}
           {!requesting && <ChevronRight size={15} className="ml-auto opacity-40" />}
         </button>
 
@@ -59,7 +59,7 @@ export default function OnboardingPermissions() {
           disabled={requesting}
           className="w-full rounded-xl py-2.5 text-sm text-white/40 transition-colors hover:text-white/60 disabled:opacity-40"
         >
-          Überspringen / Skip
+          {t('onboardingPermissions.skip')}
         </button>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import type { CalendarEntry } from '../../types'
 import { entryTypeIcon } from '../../utils/calendarEntry'
 
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function CalendarEntriesBlock({ entries, label, today }: Props) {
+  const { t } = useTranslation('dashboard')
   if (entries.length === 0) return null
 
   return (
@@ -19,7 +21,7 @@ export default function CalendarEntriesBlock({ entries, label, today }: Props) {
             🗓️ {label}
           </h3>
           <Link to="/calendar" className="text-xs font-medium text-accent hover:underline">
-            Kalender
+            {t('calendar')}
           </Link>
         </div>
       )}
@@ -42,7 +44,7 @@ export default function CalendarEntriesBlock({ entries, label, today }: Props) {
                   {entry.startTime && entry.endTime
                     ? `${entry.startTime} – ${entry.endTime}`
                     : entry.startTime ?? entry.endTime ?? ''}
-                  {entry.endDate && entry.endDate > today ? (entry.startTime ? ' · läuft noch' : 'läuft noch') : ''}
+                  {entry.endDate && entry.endDate > today ? (entry.startTime ? ` · ${t('ongoing')}` : t('ongoing')) : ''}
                 </p>
               )}
             </div>

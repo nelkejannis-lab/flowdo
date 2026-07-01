@@ -193,7 +193,7 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, defa
       onClose()
     } else if (entry) {
       void deleteEntry(entry.id)
-      useToastStore.getState().show({ message: 'Termin gelöscht', duration: 3000 })
+      useToastStore.getState().show({ message: t('entryDeleted'), duration: 3000 })
       onClose()
     }
   }

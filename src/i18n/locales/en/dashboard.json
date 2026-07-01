@@ -11,6 +11,7 @@
   "noUpcomingDeadlines": "No upcoming deadlines",
   "noUpcomingEvents": "No upcoming events",
   "noProjectsYet": "No projects yet",
+  "ongoing": "ongoing",
   "stats": {
     "dueThisWeek": "Due this week",
     "activeProjects": "Active projects",
@@ -18,6 +19,7 @@
   },
   "sections": {
     "dueThisWeek": "Due this week",
+    "showAppointmentsToggle": "Appointments",
     "upcomingDeadlines": "Upcoming deadlines",
     "todayCalendar": "Today",
     "upcomingEvents": "Upcoming events",
@@ -32,7 +34,22 @@
     "dayPlanTitle": "Timeline",
     "dayPlanAdd": "Add item",
     "dayPlanEmpty": "No schedule for today yet. Add an item or use the AI Day Planner.",
-    "dayPlanNamePlaceholder": "Name of the appointment/item"
+    "dayPlanNamePlaceholder": "Name of the appointment/item",
+    "hiddenWidgetsTitle": "Add hidden elements:",
+    "allWidgetsVisible": "All elements are currently visible on the dashboard.",
+    "removeWidget": "Remove",
+    "moveWidget": "Move",
+    "widgetLabels": {
+      "stats": "Statistics (tasks & projects)",
+      "workoffice": "Work time & location",
+      "weather": "Weather",
+      "todayTasks": "Today's overview",
+      "dayPlan": "Day plan / timeline",
+      "topPriority": "Top priority",
+      "upcomingDeadlines": "Deadlines & this week section",
+      "nextEvents": "Upcoming events",
+      "projectsOverview": "Projects overview"
+    }
   },
   "morningReport": {
     "greetingMorning": "Good morning",
@@ -68,5 +85,49 @@
     "important": "Important",
     "backToInput": "← Back",
     "importSelected": "Import {{count}}"
+  },
+  "weatherWidget": {
+    "conditions": {
+      "clear": "Clear",
+      "partlyCloudy": "Partly cloudy",
+      "cloudy": "Cloudy",
+      "fog": "Fog",
+      "drizzle": "Drizzle",
+      "rain": "Rain",
+      "snow": "Snow",
+      "showers": "Showers",
+      "thunder": "Thunderstorm"
+    },
+    "geoNotSupported": "Geolocation is not supported by this browser.",
+    "locationNotDetermined": "Could not determine location. Please enter it manually.",
+    "myLocation": "My location",
+    "useCurrentLocation": "Use current location",
+    "cityPlaceholder": "Enter city or ZIP code…",
+    "noResults": "No results found",
+    "clickForDetails": "Click for details",
+    "changeLocation": "Change location",
+    "nextHours": "Next hours",
+    "next6Days": "Next 6 days"
+  },
+  "officeWidget": {
+    "running": "Running",
+    "sick": "Sick",
+    "homeoffice": "Home office",
+    "office": "Office",
+    "onTarget": "On target",
+    "overtimeSuffix": "overtime",
+    "missingSuffix": "remaining",
+    "colleaguesActive_one": "{{count}} colleague active today",
+    "colleaguesActive_other": "{{count}} colleagues active today",
+    "inOffice": "In the office ({{count}})",
+    "homeofficeCount": "Home office ({{count}})",
+    "refresh": "Refresh",
+    "noStatusToday": "No status set for today yet",
+    "promptTitle": "Where are you working today?",
+    "notePlaceholder": "Note (optional)",
+    "todayLabel": "Work time today",
+    "exactOnTarget": "Exactly on target",
+    "stopwatchStart": "Start stopwatch",
+    "stopwatchStop": "Stop stopwatch"
   }
 }

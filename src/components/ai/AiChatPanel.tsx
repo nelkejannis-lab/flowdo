@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Bot, Image, Mic, MicOff, Send, Sparkles, X, Calendar, CheckSquare, ArrowRight, Users } from 'lucide-react'
 import BadgeChip from '../ui/BadgeChip'
 import { supabase } from '../../lib/supabase'
@@ -8,7 +9,7 @@ import { useTasksStore } from '../../store/tasksStore'
 import { useBoardsStore } from '../../store/boardsStore'
 import { useFriendsStore } from '../../store/friendsStore'
 import { format } from 'date-fns'
-import { de } from 'date-fns/locale'
+import { de, enUS } from 'date-fns/locale'
 import type { Task } from '../../types'
 
 interface Action {
@@ -33,10 +34,60 @@ interface Message {
   awaitingConfirm?: boolean
 }
 
-const TODAY = format(new Date(), 'EEEE, d. MMMM yyyy', { locale: de })
-
-function buildSystemPrompt(friendsList: { id: string; name: string }[], tasksList?: Task[]) {
+function buildSystemPrompt(friendsList: { id: string; name: string }[], tasksList: Task[] | undefined, language: string) {
   const yr = new Date().getFullYear()
+  const today = format(new Date(), 'EEEE, d. MMMM yyyy', { locale: language === 'en' ? enUS : de })
+
+  if (language === 'en') {
+    const friendsBlock = friendsList.length > 0
+      ? `\nKnown people (for event invitations):\n${friendsList.map((f) => `- "${f.name}" → id: "${f.id}"`).join('\n')}\nIf the user invites a person, add their ID to invitedUserIds.`
+      : ''
+    const tasksBlock = tasksList && tasksList.length > 0
+      ? `\nExisting tasks:\n${tasksList.map((t) => `- "${t.title}"${t.completed ? ' (done)' : ' (open)'}`).join('\n')}\nUse this list to determine the exact title for complete_task, delete_task, or update_task.`
+      : ''
+    return `You are an AI assistant for the Mooncrew app – a work organizer with calendar, tasks, and projects.
+Today is ${today} (${format(new Date(), 'yyyy-MM-dd')}).${friendsBlock}${tasksBlock}
+
+Respond EXCLUSIVELY with valid JSON in exactly this format – nothing before or after:
+
+{
+  "message": "Short friendly confirmation in English",
+  "actions": [ ...all recognized actions... ]
+}
+
+Possible action types:
+
+Create task:
+{ "type": "create_task", "label": "Create task: TITLE", "payload": { "title": "string", "dueDate": "yyyy-MM-dd or null", "priority": "low|medium|high", "description": "string or null" }}
+
+Mark task as done:
+{ "type": "complete_task", "label": "Complete task: EXACT_TITLE", "payload": { "title": "string" }}
+
+Delete task:
+{ "type": "delete_task", "label": "Delete task: EXACT_TITLE", "payload": { "title": "string" }}
+
+Update task (fields optional, only give changed ones):
+{ "type": "update_task", "label": "Update task: EXACT_TITLE", "payload": { "title": "string", "newTitle": "string or null", "dueDate": "yyyy-MM-dd or null", "priority": "low|medium|high or null", "evening": "boolean or null", "someday": "boolean or null", "description": "string or null", "recurrence": "daily|weekly|monthly or null" }}
+
+Create appointment:
+{ "type": "create_event", "label": "Appointment: TITLE", "payload": { "title": "string", "date": "yyyy-MM-dd", "endDate": "yyyy-MM-dd or null", "startTime": "HH:MM or null", "endTime": "HH:MM or null", "description": "string or null", "invitedUserIds": ["user-id-1", ...] }}
+
+Create project:
+{ "type": "create_board", "label": "Project: TITLE", "payload": { "title": "string", "description": "string or null", "color": "#6366f1" }}
+
+Navigate:
+{ "type": "navigate", "label": "Open PAGE", "payload": { "path": "/dashboard|/tasks|/calendar|/boards|/pomodoro|/ai-scheduler|/chat|/friends|/worktime|/eisenhower|/settings" }}
+
+IMPORTANT RULES:
+- For screenshots or photos of task lists, calendars, tables, or to-do lists: extract EVERY recognizable entry as its own action. Leave nothing out.
+- Date columns like "Jun 19", "Jun 26" → use the current year → "${yr}-06-19", "${yr}-06-26"
+- Date ranges like "Aug 10 - Sep 1" → date: "${yr}-08-10", endDate: "${yr}-09-01"
+- If an entry has a fixed time → create_event, otherwise → create_task with dueDate
+- For many entries (10+): still extract all of them completely
+- If no year is recognizable: assume the current year (${yr})
+- Respond ONLY with JSON, no markdown, no explanations outside the JSON`
+  }
+
   const friendsBlock = friendsList.length > 0
     ? `\nBekannte Personen (für Termin-Einladungen):\n${friendsList.map((f) => `- "${f.name}" → id: "${f.id}"`).join('\n')}\nWenn der Nutzer eine Person einlädt, füge ihre ID in invitedUserIds ein.`
     : ''
@@ -44,7 +95,7 @@ function buildSystemPrompt(friendsList: { id: string; name: string }[], tasksLis
     ? `\nVorhandene Aufgaben:\n${tasksList.map((t) => `- "${t.title}"${t.completed ? ' (erledigt)' : ' (offen)'}`).join('\n')}\nVerwende diese Liste, um den genauen Titel bei complete_task, delete_task oder update_task zu ermitteln.`
     : ''
   return `Du bist ein KI-Assistent für die App Mooncrew – ein Arbeits-Organizer mit Kalender, Aufgaben und Projekten.
-Heute ist ${TODAY} (${format(new Date(), 'yyyy-MM-dd')}).${friendsBlock}${tasksBlock}
+Heute ist ${today} (${format(new Date(), 'yyyy-MM-dd')}).${friendsBlock}${tasksBlock}
 
 Antworte AUSSCHLIESSLICH mit gültigem JSON in exakt diesem Format – nichts davor oder danach:
 
@@ -87,6 +138,7 @@ WICHTIGE REGELN:
 }
 
 export default function AiChatPanel() {
+  const { t, i18n } = useTranslation('aiChat')
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -119,7 +171,7 @@ export default function AiChatPanel() {
       }])
       setMessages([{
         role: 'assistant',
-        content: `Hallo! Ich bin dein KI-Assistent für Mooncrew. Ich kann die App für dich steuern:\n\n• Aufgaben & Termine erstellen\n• Projekte anlegen\n• Zu Seiten navigieren\n• Bilder auslesen 📸\n• Spracheingabe 🎙️\n\nWas soll ich für dich tun?`,
+        content: t('greeting'),
       }])
     }
   }, [open])
@@ -142,9 +194,9 @@ export default function AiChatPanel() {
 
   function startVoice() {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-    if (!SR) { alert('Spracheingabe wird in diesem Browser nicht unterstützt.'); return }
+    if (!SR) { alert(t('voiceNotSupported')); return }
     const rec = new SR()
-    rec.lang = 'de-DE'
+    rec.lang = i18n.language === 'en' ? 'en-US' : 'de-DE'
     rec.continuous = false
     rec.interimResults = false
     rec.onresult = (e: any) => {
@@ -173,7 +225,7 @@ export default function AiChatPanel() {
 
     try {
       if (action.type === 'create_task') {
-        if (!title) return { status: 'error', error: 'Kein Titel' }
+        if (!title) return { status: 'error', error: t('errors.noTitle') }
         await addTask({
           title,
           dueDate: date || undefined,
@@ -185,36 +237,36 @@ export default function AiChatPanel() {
         return { status: 'done' }
       }
       if (action.type === 'complete_task') {
-        if (!title) return { status: 'error', error: 'Kein Titel angegeben' }
+        if (!title) return { status: 'error', error: t('errors.noTitleGiven') }
         const tList = useTasksStore.getState().tasks
         let task = tList.find((t) => t.title.toLowerCase() === title.toLowerCase())
         if (!task) {
           task = tList.find((t) => t.title.toLowerCase().includes(title.toLowerCase()))
         }
-        if (!task) return { status: 'error', error: 'Aufgabe nicht gefunden' }
+        if (!task) return { status: 'error', error: t('errors.taskNotFound') }
         if (task.completed) return { status: 'done' }
         useTasksStore.getState().toggleTaskCompleted(task.id)
         return { status: 'done' }
       }
       if (action.type === 'delete_task') {
-        if (!title) return { status: 'error', error: 'Kein Titel angegeben' }
+        if (!title) return { status: 'error', error: t('errors.noTitleGiven') }
         const tList = useTasksStore.getState().tasks
         let task = tList.find((t) => t.title.toLowerCase() === title.toLowerCase())
         if (!task) {
           task = tList.find((t) => t.title.toLowerCase().includes(title.toLowerCase()))
         }
-        if (!task) return { status: 'error', error: 'Aufgabe nicht gefunden' }
+        if (!task) return { status: 'error', error: t('errors.taskNotFound') }
         useTasksStore.getState().deleteTask(task.id)
         return { status: 'done' }
       }
       if (action.type === 'update_task') {
-        if (!title) return { status: 'error', error: 'Kein Titel angegeben' }
+        if (!title) return { status: 'error', error: t('errors.noTitleGiven') }
         const tList = useTasksStore.getState().tasks
         let task = tList.find((t) => t.title.toLowerCase() === title.toLowerCase())
         if (!task) {
           task = tList.find((t) => t.title.toLowerCase().includes(title.toLowerCase()))
         }
-        if (!task) return { status: 'error', error: 'Aufgabe nicht gefunden' }
+        if (!task) return { status: 'error', error: t('errors.taskNotFound') }
 
         const updates: Partial<Task> = {}
         if (p.newTitle) updates.title = p.newTitle as string
@@ -229,8 +281,8 @@ export default function AiChatPanel() {
         return { status: 'done' }
       }
       if (action.type === 'create_event') {
-        if (!title) return { status: 'error', error: 'Kein Titel' }
-        if (!date) return { status: 'error', error: 'Kein Datum' }
+        if (!title) return { status: 'error', error: t('errors.noTitle') }
+        if (!date) return { status: 'error', error: t('errors.noDate') }
         const errMsg = await addEntry({
           type: 'termin',
           title,
@@ -246,7 +298,7 @@ export default function AiChatPanel() {
         return { status: 'done' }
       }
       if (action.type === 'create_board') {
-        if (!title) return { status: 'error', error: 'Kein Titel' }
+        if (!title) return { status: 'error', error: t('errors.noTitle') }
         await addBoard({
           title,
           description: (p.description as string) || undefined,
@@ -329,7 +381,7 @@ export default function AiChatPanel() {
 
     const userMsg: Message = {
       role: 'user',
-      content: text || '(Bild)',
+      content: text || t('imageMessagePlaceholder'),
       imageUrl: pendingImage?.url,
     }
     const history = [...messages, userMsg]
@@ -347,7 +399,7 @@ export default function AiChatPanel() {
       const { data, error } = await supabase.functions.invoke('ai-chat', {
         body: {
           messages: history.map((m) => ({ role: m.role, content: m.content })),
-          systemPrompt: buildSystemPrompt(friendsList, useTasksStore.getState().tasks),
+          systemPrompt: buildSystemPrompt(friendsList, useTasksStore.getState().tasks, i18n.language),
           imageBase64: imgToSend?.base64 ?? null,
           imageMimeType: imgToSend?.mimeType ?? null,
         },
@@ -383,7 +435,7 @@ export default function AiChatPanel() {
     } catch (err) {
       setMessages((prev) => [...prev, {
         role: 'assistant',
-        content: `Fehler: ${err instanceof Error ? err.message : String(err)}`,
+        content: t('errorPrefix', { message: err instanceof Error ? err.message : String(err) }),
       }])
     } finally {
       setLoading(false)
@@ -410,7 +462,7 @@ export default function AiChatPanel() {
       <button
         onClick={() => setOpen((v) => !v)}
         className="fixed bottom-24 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-accent shadow-lg transition-all hover:scale-105 hover:shadow-xl active:scale-95 sm:bottom-6 sm:right-6"
-        title="KI-Assistent"
+        title={t('assistantTitle')}
       >
         {open
           ? <X size={22} className="text-white" />
@@ -427,8 +479,8 @@ export default function AiChatPanel() {
           <div className="flex items-center gap-2.5 bg-accent px-4 py-3">
             <Sparkles size={17} className="text-white" />
             <div className="flex-1">
-              <p className="text-sm font-semibold text-white">Mooncrew Assistent</p>
-              <p className="text-[11px] text-white/70">Text · Bild · Sprache · App-Steuerung</p>
+              <p className="text-sm font-semibold text-white">{t('panelTitle')}</p>
+              <p className="text-[11px] text-white/70">{t('panelSubtitle')}</p>
             </div>
           </div>
 
@@ -453,7 +505,7 @@ export default function AiChatPanel() {
                   {m.actions && m.actions.length > 0 && m.awaitingConfirm && (
                     <div className="w-full rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
                       <p className="mb-2 text-xs font-semibold text-amber-700 dark:text-amber-400">
-                        Soll ich das ausführen?
+                        {t('confirmPrompt')}
                       </p>
                       <div className="space-y-2">
                         {m.actions.map((a, j) => (
@@ -461,7 +513,7 @@ export default function AiChatPanel() {
                             <div className="flex items-center gap-1.5">
                               <span className="text-amber-600 dark:text-amber-400">{iconFor[a.type] ?? <CheckSquare size={11} />}</span>
                               <span className="text-[10px] font-medium uppercase tracking-wide text-gray-400">
-                                {a.type === 'create_task' ? 'Aufgabe' : a.type === 'complete_task' ? 'Erledigen' : a.type === 'delete_task' ? 'Löschen' : a.type === 'update_task' ? 'Aktualisieren' : a.type === 'create_event' ? 'Termin' : a.type === 'create_board' ? 'Projekt' : 'Navigation'}
+                                {t(`actionTypes.${a.type}`, { defaultValue: t('actionTypes.navigate') })}
                               </span>
                             </div>
                             {/* Title */}
@@ -469,7 +521,7 @@ export default function AiChatPanel() {
                               className="w-full rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs dark:border-racing-600 dark:bg-racing-700 dark:text-racing-100"
                               value={a.editTitle ?? ''}
                               onChange={(e) => updateActionEdit(i, j, 'editTitle', e.target.value)}
-                              placeholder="Titel"
+                              placeholder={t('titlePlaceholder')}
                             />
                             {/* Date row */}
                             {(a.type === 'create_task' || a.type === 'create_event' || a.type === 'update_task') && (
@@ -486,9 +538,9 @@ export default function AiChatPanel() {
                                     value={a.editPriority ?? 'medium'}
                                     onChange={(e) => updateActionEdit(i, j, 'editPriority', e.target.value)}
                                   >
-                                    <option value="low">Niedrig</option>
-                                    <option value="medium">Mittel</option>
-                                    <option value="high">Hoch</option>
+                                    <option value="low">{t('priority.low')}</option>
+                                    <option value="medium">{t('priority.medium')}</option>
+                                    <option value="high">{t('priority.high')}</option>
                                   </select>
                                 )}
                               </div>
@@ -496,14 +548,14 @@ export default function AiChatPanel() {
                             {/* Time row for events */}
                             {a.type === 'create_event' && (
                               <div className="flex gap-1.5 items-center">
-                                <span className="text-[10px] text-gray-400">Von</span>
+                                <span className="text-[10px] text-gray-400">{t('from')}</span>
                                 <input
                                   type="time"
                                   className="flex-1 rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs dark:border-racing-600 dark:bg-racing-700 dark:text-racing-100"
                                   value={a.editStartTime ?? ''}
                                   onChange={(e) => updateActionEdit(i, j, 'editStartTime', e.target.value)}
                                 />
-                                <span className="text-[10px] text-gray-400">Bis</span>
+                                <span className="text-[10px] text-gray-400">{t('to')}</span>
                                 <input
                                   type="time"
                                   className="flex-1 rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs dark:border-racing-600 dark:bg-racing-700 dark:text-racing-100"
@@ -518,14 +570,14 @@ export default function AiChatPanel() {
                                 className="w-full rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs dark:border-racing-600 dark:bg-racing-700 dark:text-racing-100"
                                 value={a.editDescription ?? ''}
                                 onChange={(e) => updateActionEdit(i, j, 'editDescription', e.target.value)}
-                                placeholder="Notiz / Beschreibung"
+                                placeholder={t('descriptionPlaceholder')}
                               />
                             )}
                             {/* Invitees for events */}
                             {a.type === 'create_event' && friends.length > 0 && (
                               <div>
                                 <p className="mb-1 flex items-center gap-1 text-[10px] font-medium text-gray-400">
-                                  <Users size={10} /> Personen einladen
+                                  <Users size={10} /> {t('inviteLabel')}
                                 </p>
                                 <div className="flex flex-wrap gap-1">
                                   {friends.map((f) => {
@@ -560,13 +612,13 @@ export default function AiChatPanel() {
                           onClick={() => confirmActions(i)}
                           className="flex-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90"
                         >
-                          Alle ausführen ({m.actions.length})
+                          {t('executeAll', { count: m.actions.length })}
                         </button>
                         <button
                           onClick={() => declineActions(i)}
                           className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50 dark:border-racing-600 dark:text-racing-300"
                         >
-                          Ablehnen
+                          {t('decline')}
                         </button>
                       </div>
                     </div>
@@ -605,7 +657,7 @@ export default function AiChatPanel() {
                   {progress ? (
                     <div className="space-y-1.5">
                       <p className="text-xs font-medium text-gray-600 dark:text-racing-300">
-                        Erstelle {progress.done} / {progress.total}…
+                        {t('creatingProgress', { done: progress.done, total: progress.total })}
                       </p>
                       <div className="h-1.5 w-40 overflow-hidden rounded-full bg-gray-200 dark:bg-racing-700">
                         <div
@@ -645,7 +697,7 @@ export default function AiChatPanel() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={onKeyDown}
-                placeholder={'Frag mich alles… z.B. "Erstelle eine Aufgabe für morgen"'}
+                placeholder={t('inputPlaceholder')}
                 rows={2}
                 className="flex-1 resize-none rounded-xl bg-gray-100 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 dark:bg-racing-800 dark:text-racing-100"
                 style={{ minHeight: 52, maxHeight: 120 }}
@@ -656,11 +708,11 @@ export default function AiChatPanel() {
                 }}
               />
               <div className="flex flex-col gap-1.5">
-                <button onClick={() => fileRef.current?.click()} title="Bild hochladen"
+                <button onClick={() => fileRef.current?.click()} title={t('uploadImageTitle')}
                   className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-racing-800 dark:text-racing-300">
                   <Image size={15} />
                 </button>
-                <button onClick={listening ? stopVoice : startVoice} title={listening ? 'Stop' : 'Sprache'}
+                <button onClick={listening ? stopVoice : startVoice} title={listening ? t('voiceStop') : t('voiceStart')}
                   className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${listening ? 'animate-pulse bg-red-500 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-racing-800 dark:text-racing-300'}`}>
                   {listening ? <MicOff size={15} /> : <Mic size={15} />}
                 </button>

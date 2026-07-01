@@ -3,8 +3,11 @@
     "save": "Speichern",
     "cancel": "Abbrechen",
     "delete": "Löschen",
-    "close": "Schließen"
+    "close": "Schließen",
+    "maximize": "Maximieren"
   },
+  "project": "Projekt",
+  "inbox": "Inbox",
   "loading": "Lädt…",
   "comments": {
     "empty": "Noch keine Kommentare.",

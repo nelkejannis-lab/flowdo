@@ -1,8 +1,10 @@
 import { useEffect } from 'react'
 import { Home, Building2, Users, RefreshCw } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useOfficeStore } from '../../store/officeStore'
 
 export default function OfficeWidget() {
+  const { t } = useTranslation('dashboard')
   const todayEntry = useOfficeStore((s) => s.todayEntry)
   const colleagueEntries = useOfficeStore((s) => s.colleagueEntries)
   const loading = useOfficeStore((s) => s.loading)
@@ -20,12 +22,12 @@ export default function OfficeWidget() {
     <div className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400">
-          <Users size={12} /> Büro / Homeoffice
+          <Users size={12} /> {t('officeWidget.office')} / {t('officeWidget.homeoffice')}
         </span>
         <button
           onClick={fetchToday}
           className="text-gray-300 hover:text-gray-500"
-          title="Aktualisieren"
+          title={t('officeWidget.refresh')}
         >
           <RefreshCw size={11} className={loading ? 'animate-spin' : ''} />
         </button>
@@ -41,7 +43,7 @@ export default function OfficeWidget() {
               : 'bg-gray-100 text-gray-500 hover:bg-blue-50 hover:text-blue-600 dark:bg-racing-800 dark:text-racing-300'
           }`}
         >
-          <Home size={13} /> Homeoffice
+          <Home size={13} /> {t('officeWidget.homeoffice')}
         </button>
         <button
           onClick={() => setLocation('office')}
@@ -51,7 +53,7 @@ export default function OfficeWidget() {
               : 'bg-gray-100 text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 dark:bg-racing-800 dark:text-racing-300'
           }`}
         >
-          <Building2 size={13} /> Büro
+          <Building2 size={13} /> {t('officeWidget.office')}
         </button>
       </div>
 
@@ -65,7 +67,7 @@ export default function OfficeWidget() {
           {officeColleagues.length > 0 && (
             <div>
               <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-indigo-400">
-                Im Büro ({officeColleagues.length})
+                {t('officeWidget.inOffice', { count: officeColleagues.length })}
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {officeColleagues.map((c) => (
@@ -77,7 +79,7 @@ export default function OfficeWidget() {
           {homeColleagues.length > 0 && (
             <div>
               <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-blue-400">
-                Homeoffice ({homeColleagues.length})
+                {t('officeWidget.homeofficeCount', { count: homeColleagues.length })}
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {homeColleagues.map((c) => (
@@ -91,7 +93,7 @@ export default function OfficeWidget() {
 
       {!todayEntry && !loading && (
         <p className="text-center text-[11px] text-gray-400">
-          Noch kein Status für heute gesetzt
+          {t('officeWidget.noStatusToday')}
         </p>
       )}
     </div>

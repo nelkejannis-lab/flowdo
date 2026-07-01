@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Download, RefreshCw, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 export default function AppUpdater() {
+  const { t } = useTranslation('layout')
   const [updateAvailable, setUpdateAvailable] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
   const [updateDownloaded, setUpdateDownloaded] = useState(false)
@@ -47,18 +49,18 @@ export default function AppUpdater() {
 
       <div className="flex flex-col">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-          {updateDownloaded 
-            ? 'Update bereit' 
-            : isDownloading 
-              ? 'Update wird geladen...' 
-              : 'Neues Update verfügbar!'}
+          {updateDownloaded
+            ? t('appUpdater.readyTitle')
+            : isDownloading
+              ? t('appUpdater.downloadingTitle')
+              : t('appUpdater.availableTitle')}
         </h3>
         <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
           {updateDownloaded
-            ? 'Die neue Version kann jetzt installiert werden.'
+            ? t('appUpdater.readyDesc')
             : isDownloading
-              ? `${Math.round(progress)}% heruntergeladen`
-              : 'Möchtest du die neue Version herunterladen?'}
+              ? t('appUpdater.downloadingDesc', { progress: Math.round(progress) })
+              : t('appUpdater.availableDesc')}
         </p>
       </div>
 
@@ -68,7 +70,7 @@ export default function AppUpdater() {
             onClick={() => window.electronUpdater?.installUpdate()}
             className="shrink-0 rounded-lg bg-accent px-4 py-2 text-xs font-bold text-white shadow-md transition-all hover:bg-accent-hover hover:scale-105 active:scale-95"
           >
-            Jetzt neu starten
+            {t('appUpdater.restartNow')}
           </button>
         )}
 
@@ -77,7 +79,7 @@ export default function AppUpdater() {
             onClick={handleDownload}
             className="shrink-0 rounded-lg bg-accent px-4 py-2 text-xs font-bold text-white shadow-md transition-all hover:bg-accent-hover hover:scale-105 active:scale-95"
           >
-            Herunterladen
+            {t('appUpdater.download')}
           </button>
         )}
 
@@ -85,7 +87,7 @@ export default function AppUpdater() {
           <button
             onClick={() => setVisible(false)}
             className="shrink-0 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800 dark:hover:text-gray-300"
-            title="Später"
+            title={t('appUpdater.later')}
           >
             <X size={16} />
           </button>

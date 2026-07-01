@@ -83,6 +83,12 @@
     "save": "Save",
     "create": "Create"
   },
+  "todos": {
+    "calendarHint": "Click a day to add a new task for that day.",
+    "addPlaceholder": "Add todo…",
+    "empty": "No todos. Add one above.",
+    "noTasksInColumn": "No tasks in this column"
+  },
   "taskForm": {
     "editTask": "Edit task",
     "newTask": "New task",

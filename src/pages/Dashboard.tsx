@@ -278,22 +278,22 @@ export default function Dashboard() {
 
       {isEditing && (
         <div className="mb-6 rounded-xl border-2 border-dashed border-gray-200 dark:border-racing-800 p-4 bg-gray-50/50 dark:bg-racing-950/20 animate-in fade-in slide-in-from-top-2 duration-150">
-          <h3 className="mb-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">Ausgeblendete Elemente hinzufügen:</h3>
+          <h3 className="mb-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">{t('sections.hiddenWidgetsTitle')}</h3>
           {(() => {
             const allDashboardItems = [
-              { key: 'stats',            label: 'Statistiken (Aufgaben & Projekte)' },
-              { key: 'workoffice',       label: 'Arbeitszeit & Standort' },
-              { key: 'weather',          label: 'Wetter' },
-              { key: 'todayTasks',       label: 'Tagesübersicht' },
-              { key: 'dayPlan',          label: 'Tagesplan / Zeitstrahl' },
-              { key: 'topPriority',      label: 'Höchste Priorität' },
-              { key: 'upcomingDeadlines',label: 'Deadlines & Sektion Diese Woche' },
-              { key: 'nextEvents',       label: 'Nächste Ereignisse' },
-              { key: 'projectsOverview', label: 'Projektübersicht' },
+              { key: 'stats',            label: t('sections.widgetLabels.stats') },
+              { key: 'workoffice',       label: t('sections.widgetLabels.workoffice') },
+              { key: 'weather',          label: t('sections.widgetLabels.weather') },
+              { key: 'todayTasks',       label: t('sections.widgetLabels.todayTasks') },
+              { key: 'dayPlan',          label: t('sections.widgetLabels.dayPlan') },
+              { key: 'topPriority',      label: t('sections.widgetLabels.topPriority') },
+              { key: 'upcomingDeadlines',label: t('sections.widgetLabels.upcomingDeadlines') },
+              { key: 'nextEvents',       label: t('sections.widgetLabels.nextEvents') },
+              { key: 'projectsOverview', label: t('sections.widgetLabels.projectsOverview') },
             ] as const
             const hiddenItems = allDashboardItems.filter(item => !(dashboardVisibility[item.key] ?? true))
             if (hiddenItems.length === 0) {
-              return <p className="text-xs text-gray-400">Alle Elemente sind derzeit auf dem Dashboard sichtbar.</p>
+              return <p className="text-xs text-gray-400">{t('sections.allWidgetsVisible')}</p>
             }
             return (
               <div className="flex flex-wrap gap-2">
@@ -382,7 +382,7 @@ export default function Dashboard() {
               type="button"
               onClick={() => toggleDashboardWidget('weather')}
               className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all"
-              title="Entfernen"
+              title={t('sections.removeWidget')}
             >
               <X size={12} />
             </button>
@@ -400,7 +400,7 @@ export default function Dashboard() {
               type="button"
               onClick={() => toggleDashboardWidget('todayTasks')}
               className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all"
-              title="Entfernen"
+              title={t('sections.removeWidget')}
             >
               <X size={12} />
             </button>
@@ -426,7 +426,7 @@ export default function Dashboard() {
               type="button"
               onClick={() => toggleDashboardWidget('dayPlan')}
               className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all"
-              title="Entfernen"
+              title={t('sections.removeWidget')}
             >
               <X size={12} />
             </button>
@@ -444,7 +444,7 @@ export default function Dashboard() {
                 type="button"
                 onClick={() => toggleDashboardWidget('topPriority')}
                 className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all"
-                title="Entfernen"
+                title={t('sections.removeWidget')}
               >
                 <X size={12} />
               </button>
@@ -513,7 +513,7 @@ export default function Dashboard() {
               type="button"
               onClick={() => toggleDashboardWidget('upcomingDeadlines')}
               className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all"
-              title="Entfernen"
+              title={t('sections.removeWidget')}
             >
               <X size={12} />
             </button>
@@ -523,7 +523,7 @@ export default function Dashboard() {
             <div className="flex items-center gap-3">
               {weekEntries.length > 0 && (
                 <label className="flex cursor-pointer items-center gap-1.5 text-xs text-gray-400">
-                  <span>Termine</span>
+                  <span>{t('sections.showAppointmentsToggle')}</span>
                   <button
                     type="button"
                     role="switch"
@@ -608,7 +608,7 @@ export default function Dashboard() {
                   type="button"
                   onClick={() => toggleDashboardWidget('upcomingDeadlines')}
                   className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all"
-                  title="Entfernen"
+                  title={t('sections.removeWidget')}
                 >
                   <X size={12} />
                 </button>
@@ -638,7 +638,7 @@ export default function Dashboard() {
                   type="button"
                   onClick={() => toggleDashboardWidget('nextEvents')}
                   className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all"
-                  title="Entfernen"
+                  title={t('sections.removeWidget')}
                 >
                   <X size={12} />
                 </button>
@@ -695,7 +695,7 @@ export default function Dashboard() {
               type="button"
               onClick={() => toggleDashboardWidget('projectsOverview')}
               className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all"
-              title="Entfernen"
+              title={t('sections.removeWidget')}
             >
               <X size={12} />
             </button>
@@ -754,6 +754,7 @@ function SortableWidget({
   isEditing: boolean
   onRemove: () => void
 }) {
+  const { t } = useTranslation('dashboard')
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
   return (
     <div
@@ -770,7 +771,7 @@ function SortableWidget({
         className={`absolute left-2 top-2 z-10 cursor-grab rounded p-1 bg-white dark:bg-racing-900 border border-gray-100 dark:border-racing-800 shadow-sm transition-all active:cursor-grabbing touch-none ${
           isEditing ? 'opacity-100 scale-100' : 'opacity-0 group-hover:opacity-60 hover:!opacity-100'
         }`}
-        title="Verschieben"
+        title={t('sections.moveWidget')}
         tabIndex={-1}
       >
         <GripHorizontal size={12} className="text-gray-500" />
@@ -786,7 +787,7 @@ function SortableWidget({
             onRemove()
           }}
           className="absolute -right-1.5 -top-1.5 z-20 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all"
-          title="Entfernen"
+          title={t('sections.removeWidget')}
         >
           <X size={10} />
         </button>

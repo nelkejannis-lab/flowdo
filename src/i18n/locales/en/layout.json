@@ -17,7 +17,11 @@
       "aiScheduler": "AI Scheduler",
       "chat": "Chat",
       "friends": "Colleagues",
-      "social": "Social Media"
+      "social": "Social Media",
+      "termine": "Appointments",
+      "pomodoro": "Pomodoro",
+      "brain": "Brain",
+      "meetings": "Meetings"
     },
     "pin": "Pin",
     "unpin": "Unpin",
@@ -65,5 +69,23 @@
     "tags": "Tags",
     "createTask": "Create task"
   },
-  "loading": "Loading…"
+  "loading": "Loading…",
+  "onboardingPermissions": {
+    "title": "Notifications",
+    "description": "Get reminders for appointments, tasks, and messages – right on your device.",
+    "waiting": "Waiting...",
+    "allow": "Allow notifications",
+    "skip": "Skip"
+  },
+  "appUpdater": {
+    "readyTitle": "Update ready",
+    "downloadingTitle": "Downloading update...",
+    "availableTitle": "New update available!",
+    "readyDesc": "The new version can now be installed.",
+    "downloadingDesc": "{{progress}}% downloaded",
+    "availableDesc": "Do you want to download the new version?",
+    "restartNow": "Restart now",
+    "download": "Download",
+    "later": "Later"
+  }
 }

@@ -75,10 +75,18 @@
     "sat": "Sat",
     "sun": "Sun"
   },
+  "sickDay": {
+    "title": "Sick leave",
+    "noteEntered": "Marked as sick today · target time is credited",
+    "revoke": "Revoke sick leave",
+    "markSick": "Sick",
+    "markSickTitle": "Mark today as sick"
+  },
   "overview": {
     "totalOvertime": "Total overtime",
     "overtimeInDays": "Overtime in days",
     "compDays": "Comp days (weekend)",
+    "availableDays": "available days",
     "undoCompDay": "Undo comp day",
     "markCompDayTaken": "Mark comp day as taken",
     "openCompDay_one": "open comp day",

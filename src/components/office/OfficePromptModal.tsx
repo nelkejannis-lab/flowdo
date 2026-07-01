@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Home, Building2, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useOfficeStore, OfficeLocation } from '../../store/officeStore'
 
 export default function OfficePromptModal() {
+  const { t } = useTranslation('dashboard')
   const shouldShow = useOfficeStore((s) => s.shouldShowPrompt)
   const dismissPrompt = useOfficeStore((s) => s.dismissPrompt)
   const setLocation = useOfficeStore((s) => s.setLocation)
@@ -27,10 +29,9 @@ export default function OfficePromptModal() {
           <X size={16} />
         </button>
 
-        <h2 className="mb-1 text-base font-bold text-gray-800 dark:text-racing-100">
-          Wo arbeitest du heute?
+        <h2 className="mb-5 text-base font-bold text-gray-800 dark:text-racing-100">
+          {t('officeWidget.promptTitle')}
         </h2>
-        <p className="mb-5 text-xs text-gray-400">Where are you working today?</p>
 
         <div className="flex gap-3 mb-4">
           <button
@@ -39,7 +40,7 @@ export default function OfficePromptModal() {
             className="flex flex-1 flex-col items-center gap-2 rounded-xl border-2 border-transparent bg-blue-50 py-5 text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 disabled:opacity-50 dark:bg-blue-900/20 dark:text-blue-300"
           >
             <Home size={28} />
-            <span className="text-sm font-semibold">Homeoffice</span>
+            <span className="text-sm font-semibold">{t('officeWidget.homeoffice')}</span>
           </button>
           <button
             onClick={() => choose('office')}
@@ -47,13 +48,13 @@ export default function OfficePromptModal() {
             className="flex flex-1 flex-col items-center gap-2 rounded-xl border-2 border-transparent bg-indigo-50 py-5 text-indigo-700 transition hover:border-indigo-300 hover:bg-indigo-100 disabled:opacity-50 dark:bg-indigo-900/20 dark:text-indigo-300"
           >
             <Building2 size={28} />
-            <span className="text-sm font-semibold">Büro</span>
+            <span className="text-sm font-semibold">{t('officeWidget.office')}</span>
           </button>
         </div>
 
         <input
           className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/30 dark:border-racing-700 dark:bg-racing-800 dark:text-racing-100"
-          placeholder="Notiz (optional) / Note (optional)"
+          placeholder={t('officeWidget.notePlaceholder')}
           value={note}
           onChange={(e) => setNote(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}

@@ -81,7 +81,7 @@ export default function WorkWeekView() {
                 </span>
                 {isSick ? (
                   <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-                    <Thermometer size={10} /> Krank
+                    <Thermometer size={10} /> {t('sickDay.markSick')}
                   </span>
                 ) : (
                   <span className={`text-xs font-semibold ${diff > 0 ? 'text-emerald-500' : diff < 0 ? 'text-red-500' : 'text-gray-400'}`}>
@@ -91,7 +91,7 @@ export default function WorkWeekView() {
                 )}
               </div>
               {isSick ? (
-                <button onClick={() => unmarkSickDay(iso)} className="text-[11px] text-gray-400 hover:text-red-500 underline">zurückziehen</button>
+                <button onClick={() => unmarkSickDay(iso)} className="text-[11px] text-gray-400 hover:text-red-500 underline">{t('sickDay.revoke')}</button>
               ) : (
                 <div className="grid grid-cols-3 gap-2">
                   <div>
@@ -155,9 +155,9 @@ export default function WorkWeekView() {
                 </div>
                 <div className="col-span-4 flex items-center gap-1.5 py-1">
                   <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
-                    <Thermometer size={11} /> Krank
+                    <Thermometer size={11} /> {t('sickDay.markSick')}
                   </span>
-                  <button onClick={() => unmarkSickDay(iso)} className="text-[10px] text-gray-400 hover:text-red-500 underline">zurückziehen</button>
+                  <button onClick={() => unmarkSickDay(iso)} className="text-[10px] text-gray-400 hover:text-red-500 underline">{t('sickDay.revoke')}</button>
                 </div>
                 <div className="flex items-center justify-end py-1 text-gray-400">{formatHM(target)}</div>
                 <div className="flex items-center justify-end py-1 font-medium text-emerald-500">±0:00</div>

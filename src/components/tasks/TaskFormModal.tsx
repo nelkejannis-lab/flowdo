@@ -226,8 +226,8 @@ export default function TaskFormModal({
       const taskId = task.id
       deleteTask(taskId)
       useToastStore.getState().show({
-        message: 'Aufgabe gelöscht',
-        action: { label: 'Rückgängig', onClick: () => useTasksStore.getState().undoDelete(taskId) },
+        message: t('toast.taskDeleted'),
+        action: { label: t('toast.undo'), onClick: () => useTasksStore.getState().undoDelete(taskId) },
         duration: 5000,
       })
       onSave?.()
@@ -325,8 +325,8 @@ export default function TaskFormModal({
       deleteTask(taskId)
       useTaskTrayStore.getState().remove(taskId)
       useToastStore.getState().show({
-        message: 'Aufgabe gelöscht',
-        action: { label: 'Rückgängig', onClick: () => useTasksStore.getState().undoDelete(taskId) },
+        message: t('toast.taskDeleted'),
+        action: { label: t('toast.undo'), onClick: () => useTasksStore.getState().undoDelete(taskId) },
         duration: 5000,
       })
       onClose()
@@ -501,7 +501,7 @@ export default function TaskFormModal({
           {/* Attachments */}
           {attachments.length > 0 && (
             <div className="border-t border-gray-100 dark:border-racing-850 pt-3">
-              <span className="text-xs font-medium text-gray-500 mb-2 block">Anhänge</span>
+              <span className="text-xs font-medium text-gray-500 mb-2 block">{t('common:attachments.label')}</span>
               <div className="flex flex-wrap gap-2">
                 {attachments.map((a) => (
                   <a
@@ -774,7 +774,7 @@ export default function TaskFormModal({
           {filteredSuggestions.length > 0 && (
             <div className="mt-1.5 flex flex-wrap items-center gap-1">
               <span className="text-[10px] font-semibold text-gray-400 select-none uppercase tracking-wide mr-1">
-                {tagInput.trim() ? 'Vorschläge:' : 'Häufig verwendet:'}
+                {tagInput.trim() ? t('form.tagSuggestions') : t('form.tagFrequentlyUsed')}
               </span>
               {filteredSuggestions.map((tag) => (
                 <button

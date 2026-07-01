@@ -1,0 +1,42 @@
+{
+  "assistantTitle": "AI Assistant",
+  "panelTitle": "Mooncrew Assistant",
+  "panelSubtitle": "Text · Image · Voice · App control",
+  "greeting": "Hi! I'm your AI assistant for Mooncrew. I can control the app for you:\n\n• Create tasks & appointments\n• Set up projects\n• Navigate to pages\n• Read images 📸\n• Voice input 🎙️\n\nWhat can I do for you?",
+  "imageMessagePlaceholder": "(Image)",
+  "voiceNotSupported": "Voice input is not supported in this browser.",
+  "confirmPrompt": "Should I go ahead and do this?",
+  "actionTypes": {
+    "create_task": "Task",
+    "complete_task": "Complete",
+    "delete_task": "Delete",
+    "update_task": "Update",
+    "create_event": "Appointment",
+    "create_board": "Project",
+    "navigate": "Navigation"
+  },
+  "titlePlaceholder": "Title",
+  "priority": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High"
+  },
+  "from": "From",
+  "to": "To",
+  "descriptionPlaceholder": "Note / description",
+  "inviteLabel": "Invite people",
+  "executeAll": "Run all ({{count}})",
+  "decline": "Decline",
+  "creatingProgress": "Creating {{done}} / {{total}}…",
+  "inputPlaceholder": "Ask me anything… e.g. \"Create a task for tomorrow\"",
+  "uploadImageTitle": "Upload image",
+  "voiceStop": "Stop",
+  "voiceStart": "Voice",
+  "errorPrefix": "Error: {{message}}",
+  "errors": {
+    "noTitle": "No title",
+    "noTitleGiven": "No title given",
+    "taskNotFound": "Task not found",
+    "noDate": "No date"
+  }
+}

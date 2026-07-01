@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Play, Pause, X, Maximize2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useTaskTrayStore, type MinimizedTask } from '../../store/taskTrayStore'
 import { usePomodoroStore } from '../../store/pomodoroStore'
 import { useBoardsStore } from '../../store/boardsStore'
@@ -7,6 +8,7 @@ import TaskFormModal from '../tasks/TaskFormModal'
 import ProjectTaskFormModal from '../boards/ProjectTaskFormModal'
 
 export default function TaskTray() {
+  const { t } = useTranslation('common')
   const { tasks, remove } = useTaskTrayStore()
   const pomodoro = usePomodoroStore()
   const boards = useBoardsStore((s) => s.boards)
@@ -82,7 +84,7 @@ export default function TaskTray() {
                 </p>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="text-[10px] uppercase font-bold text-gray-400">
-                    {task.type === 'project' ? 'Projekt' : 'Inbox'}
+                    {task.type === 'project' ? t('project') : t('inbox')}
                   </span>
                   {isActive && (
                     <span className="text-[10px] font-mono font-bold text-emerald-500 dark:text-emerald-400">
@@ -95,7 +97,7 @@ export default function TaskTray() {
               <button
                 onClick={() => handleTaskClick(task)}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-white"
-                title="Maximieren"
+                title={t('buttons.maximize')}
               >
                 <Maximize2 size={13} />
               </button>
@@ -103,7 +105,7 @@ export default function TaskTray() {
               <button
                 onClick={() => remove(task.id)}
                 className="text-gray-400 hover:text-red-500"
-                title="Schließen"
+                title={t('buttons.close')}
               >
                 <X size={14} />
               </button>

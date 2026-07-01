@@ -84,6 +84,7 @@
     "empty": "No open tasks in the next 7 days."
   },
   "ownerOnly": "Only the creator can edit",
+  "entryDeleted": "Appointment deleted",
   "form": {
     "titleEdit": "Edit entry",
     "titleAdd": "Add",
@@ -124,5 +125,20 @@
     "create": "Create",
     "creating": "Creating…",
     "createSeries": "Create series"
+  },
+  "agenda": {
+    "overviewLabel": "Daily overview",
+    "taskButton": "Task",
+    "entryButton": "Appointment",
+    "noAppointmentsForDay": "No appointments planned for this day.",
+    "noAppointmentsOrTasksForDay": "No appointments or tasks planned for this day.",
+    "addFirstTask": "Add your first task now",
+    "appointmentsAbsences": "Appointments & Absences",
+    "allDay": "All day",
+    "noAppointmentsForThisDay": "No appointments for this day.",
+    "tasksColumnTitle": "Tasks (To-Do)",
+    "noTasksForThisDay": "No tasks for this day.",
+    "urgent": "Urgent",
+    "important": "Important"
   }
 }

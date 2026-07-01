@@ -11,6 +11,7 @@
   "noUpcomingDeadlines": "Keine anstehenden Deadlines",
   "noUpcomingEvents": "Keine anstehenden Events",
   "noProjectsYet": "Noch keine Projekte angelegt",
+  "ongoing": "läuft noch",
   "stats": {
     "dueThisWeek": "Diese Woche fällig",
     "activeProjects": "Aktive Projekte",
@@ -18,6 +19,7 @@
   },
   "sections": {
     "dueThisWeek": "Diese Woche fällig",
+    "showAppointmentsToggle": "Termine",
     "upcomingDeadlines": "Anstehende Deadlines",
     "todayCalendar": "Heute",
     "upcomingEvents": "Nächste Events",
@@ -32,7 +34,22 @@
     "dayPlanTitle": "Zeitstrahl",
     "dayPlanAdd": "Punkt hinzufügen",
     "dayPlanEmpty": "Noch kein Zeitplan für heute. Füge einen Punkt hinzu oder nutze den KI-Tagesplaner.",
-    "dayPlanNamePlaceholder": "Name des Termins/Punkts"
+    "dayPlanNamePlaceholder": "Name des Termins/Punkts",
+    "hiddenWidgetsTitle": "Ausgeblendete Elemente hinzufügen:",
+    "allWidgetsVisible": "Alle Elemente sind derzeit auf dem Dashboard sichtbar.",
+    "removeWidget": "Entfernen",
+    "moveWidget": "Verschieben",
+    "widgetLabels": {
+      "stats": "Statistiken (Aufgaben & Projekte)",
+      "workoffice": "Arbeitszeit & Standort",
+      "weather": "Wetter",
+      "todayTasks": "Tagesübersicht",
+      "dayPlan": "Tagesplan / Zeitstrahl",
+      "topPriority": "Höchste Priorität",
+      "upcomingDeadlines": "Deadlines & Sektion Diese Woche",
+      "nextEvents": "Nächste Ereignisse",
+      "projectsOverview": "Projektübersicht"
+    }
   },
   "morningReport": {
     "greetingMorning": "Guten Morgen",
@@ -68,5 +85,49 @@
     "important": "Wichtig",
     "backToInput": "← Zurück",
     "importSelected": "{{count}} importieren"
+  },
+  "weatherWidget": {
+    "conditions": {
+      "clear": "Klar",
+      "partlyCloudy": "Teilbewölkt",
+      "cloudy": "Bewölkt",
+      "fog": "Nebel",
+      "drizzle": "Nieselregen",
+      "rain": "Regen",
+      "snow": "Schnee",
+      "showers": "Schauer",
+      "thunder": "Gewitter"
+    },
+    "geoNotSupported": "Geolokalisierung wird von diesem Browser nicht unterstützt.",
+    "locationNotDetermined": "Standort konnte nicht bestimmt werden. Bitte manuell eingeben.",
+    "myLocation": "Mein Standort",
+    "useCurrentLocation": "Aktuellen Standort verwenden",
+    "cityPlaceholder": "Stadt oder PLZ eingeben…",
+    "noResults": "Keine Ergebnisse gefunden",
+    "clickForDetails": "Klicken für Details",
+    "changeLocation": "Ort ändern",
+    "nextHours": "Nächste Stunden",
+    "next6Days": "Nächste 6 Tage"
+  },
+  "officeWidget": {
+    "running": "Läuft",
+    "sick": "Krank",
+    "homeoffice": "Homeoffice",
+    "office": "Büro",
+    "onTarget": "Auf Soll",
+    "overtimeSuffix": "Überstunden",
+    "missingSuffix": "fehlen noch",
+    "colleaguesActive_one": "{{count}} Kollege heute aktiv",
+    "colleaguesActive_other": "{{count}} Kollegen heute aktiv",
+    "inOffice": "Im Büro ({{count}})",
+    "homeofficeCount": "Homeoffice ({{count}})",
+    "refresh": "Aktualisieren",
+    "noStatusToday": "Noch kein Status für heute gesetzt",
+    "promptTitle": "Wo arbeitest du heute?",
+    "notePlaceholder": "Notiz (optional)",
+    "todayLabel": "Arbeitszeit heute",
+    "exactOnTarget": "Genau auf Soll",
+    "stopwatchStart": "Stoppuhr starten",
+    "stopwatchStop": "Stoppuhr stoppen"
   }
 }

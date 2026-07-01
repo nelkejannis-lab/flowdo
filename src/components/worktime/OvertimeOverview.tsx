@@ -76,7 +76,7 @@ export default function OvertimeOverview() {
           </button>
           <div className="flex-1 text-center">
             <p className="text-3xl font-bold">{availableCompDays}</p>
-            <p className="text-xs text-gray-400">verfügbare Tage</p>
+            <p className="text-xs text-gray-400">{t('overview.availableDays')}</p>
           </div>
           <button
             onClick={incrementManualCompDays}

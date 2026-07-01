@@ -1,0 +1,42 @@
+{
+  "assistantTitle": "KI-Assistent",
+  "panelTitle": "Mooncrew Assistent",
+  "panelSubtitle": "Text · Bild · Sprache · App-Steuerung",
+  "greeting": "Hallo! Ich bin dein KI-Assistent für Mooncrew. Ich kann die App für dich steuern:\n\n• Aufgaben & Termine erstellen\n• Projekte anlegen\n• Zu Seiten navigieren\n• Bilder auslesen 📸\n• Spracheingabe 🎙️\n\nWas soll ich für dich tun?",
+  "imageMessagePlaceholder": "(Bild)",
+  "voiceNotSupported": "Spracheingabe wird in diesem Browser nicht unterstützt.",
+  "confirmPrompt": "Soll ich das ausführen?",
+  "actionTypes": {
+    "create_task": "Aufgabe",
+    "complete_task": "Erledigen",
+    "delete_task": "Löschen",
+    "update_task": "Aktualisieren",
+    "create_event": "Termin",
+    "create_board": "Projekt",
+    "navigate": "Navigation"
+  },
+  "titlePlaceholder": "Titel",
+  "priority": {
+    "low": "Niedrig",
+    "medium": "Mittel",
+    "high": "Hoch"
+  },
+  "from": "Von",
+  "to": "Bis",
+  "descriptionPlaceholder": "Notiz / Beschreibung",
+  "inviteLabel": "Personen einladen",
+  "executeAll": "Alle ausführen ({{count}})",
+  "decline": "Ablehnen",
+  "creatingProgress": "Erstelle {{done}} / {{total}}…",
+  "inputPlaceholder": "Frag mich alles… z.B. \"Erstelle eine Aufgabe für morgen\"",
+  "uploadImageTitle": "Bild hochladen",
+  "voiceStop": "Stop",
+  "voiceStart": "Sprache",
+  "errorPrefix": "Fehler: {{message}}",
+  "errors": {
+    "noTitle": "Kein Titel",
+    "noTitleGiven": "Kein Titel angegeben",
+    "taskNotFound": "Aufgabe nicht gefunden",
+    "noDate": "Kein Datum"
+  }
+}

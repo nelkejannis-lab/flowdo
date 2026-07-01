@@ -271,7 +271,7 @@ export default function TasksPage() {
             value={quickInput}
             onChange={(e) => setQuickInput(e.target.value)}
             disabled={parsingTask}
-            placeholder={parsingTask ? "Analysiere mit KI..." : "Schnelleingabe: 'Meeting morgen um 14 Uhr #work'"}
+            placeholder={parsingTask ? t('quickAdd.analyzing') : t('quickAdd.placeholder')}
             className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-accent dark:border-racing-700 dark:bg-racing-900 disabled:opacity-75 shadow-sm"
           />
           <button
@@ -280,7 +280,7 @@ export default function TasksPage() {
             className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-40 shadow-sm"
           >
             {parsingTask ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
-            {parsingTask ? "Analysiere..." : "Hinzufügen"}
+            {parsingTask ? t('quickAdd.analyzingShort') : t('form.add')}
           </button>
         </form>
       )}

@@ -3,6 +3,16 @@
     "title": "Social Media",
     "addAccount": "Account",
     "emptyState": "Noch kein Instagram-Account verbunden. Füge einen Account hinzu, um Follower, Reichweite und weitere Kennzahlen zu tracken.",
+    "callback": {
+      "accessDenied": "Instagram hat den Zugriff verweigert: {{reason}}",
+      "noAuthCode": "Kein Autorisierungscode erhalten.",
+      "connectionFailed": "Verbindung fehlgeschlagen",
+      "connecting": "Instagram wird verbunden…",
+      "connectedSuccess": "@{{username}} erfolgreich verbunden!",
+      "redirecting": "Du wirst weitergeleitet…",
+      "error": "Fehler",
+      "back": "Zurück"
+    },
     "lastSynced": "Zuletzt: {{date}}",
     "notSyncedYet": "Noch nicht synchronisiert",
     "syncNow": "Jetzt synchronisieren",

@@ -4,13 +4,14 @@ import { useMeetingsStore } from '../store/meetingsStore'
 import LiveMeetingPanel from '../components/meetings/LiveMeetingPanel'
 import { Mic, Plus, Trash2, Calendar, FileText, CheckSquare, Pencil, Check, X, ChevronDown, ListChecks } from 'lucide-react'
 import { format } from 'date-fns'
-import { de } from 'date-fns/locale'
+import { de, enUS } from 'date-fns/locale'
 import { translateMeeting } from '../lib/aiService'
 import { useTasksStore } from '../store/tasksStore'
 import TaskFormModal from '../components/tasks/TaskFormModal'
 
 export default function MeetingsPage() {
-  const { t } = useTranslation('meetings')
+  const { t, i18n } = useTranslation('meetings')
+  const dateLocale = i18n.language === 'en' ? enUS : de
   const { meetings, fetchMeetings, deleteMeeting, updateMeeting, loading } = useMeetingsStore()
   const addTask = useTasksStore(s => s.addTask)
   const [isLiveMode, setIsLiveMode] = useState(false)
@@ -37,12 +38,12 @@ export default function MeetingsPage() {
     return (
       <div className="flex h-full flex-col">
         <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">Live Meeting</h1>
-          <button 
+          <h1 className="text-2xl font-semibold">{t('liveMeetingTitle')}</h1>
+          <button
             onClick={() => setIsLiveMode(false)}
             className="text-sm font-medium text-gray-500 hover:text-gray-900 dark:hover:text-white"
           >
-            Zurück zur Übersicht
+            {t('backToOverview')}
           </button>
         </div>
         <div className="flex-1 min-h-0">
@@ -57,24 +58,24 @@ export default function MeetingsPage() {
   return (
     <div className="flex h-full flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Meetings</h1>
+        <h1 className="text-2xl font-semibold">{t('pageTitle')}</h1>
         <button
           onClick={() => setIsLiveMode(true)}
           className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-accent-hover transition-all"
         >
-          <Mic size={16} /> Live Aufnahme starten
+          <Mic size={16} /> {t('startLiveRecording')}
         </button>
       </div>
 
       <div className="flex flex-1 gap-6 min-h-0">
         {/* Left column: Meeting List */}
         <div className="w-1/3 flex flex-col gap-3 overflow-y-auto pr-2">
-          {loading && <p className="text-sm text-gray-500">Lade Meetings...</p>}
+          {loading && <p className="text-sm text-gray-500">{t('loadingMeetings')}</p>}
           {!loading && meetings.length === 0 && (
             <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center dark:border-racing-700 dark:bg-racing-800/50">
               <Mic size={32} className="mb-2 text-gray-400" />
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Keine Meetings vorhanden</p>
-              <p className="mt-1 text-xs text-gray-500">Starte eine neue Aufnahme, um loszulegen.</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">{t('noMeetingsTitle')}</p>
+              <p className="mt-1 text-xs text-gray-500">{t('noMeetingsDesc')}</p>
             </div>
           )}
           {meetings.map((meeting) => (
@@ -102,11 +103,11 @@ export default function MeetingsPage() {
               </div>
               <p className="mt-1 flex items-center gap-1 text-xs text-gray-500">
                 <Calendar size={12} />
-                {format(new Date(meeting.date), "dd. MMM yyyy, HH:mm 'Uhr'", { locale: de })}
+                {format(new Date(meeting.date), 'dd. MMM yyyy, HH:mm', { locale: dateLocale })}{t('uhr') ? ` ${t('uhr')}` : ''}
               </p>
               <div className="mt-3 flex gap-2">
                 <span className="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-racing-800 dark:text-gray-300">
-                  <FileText size={10} /> {(meeting.transcript.match(/ /g) || []).length} Wörter
+                  <FileText size={10} /> {(meeting.transcript.match(/ /g) || []).length} {t('wordsLabel')}
                 </span>
                 <span className="inline-flex items-center gap-1 rounded bg-accent/10 px-2 py-0.5 text-[10px] font-bold text-accent">
                   <CheckSquare size={10} /> {meeting.action_items?.length || 0} Tasks
@@ -161,13 +162,13 @@ export default function MeetingsPage() {
                 </div>
               )}
               <p className="mt-2 text-sm text-gray-500 flex items-center gap-2">
-                <Calendar size={14} /> {format(new Date(selectedMeeting.date), "dd. MMMM yyyy, HH:mm 'Uhr'", { locale: de })}
+                <Calendar size={14} /> {format(new Date(selectedMeeting.date), 'dd. MMMM yyyy, HH:mm', { locale: dateLocale })}{t('uhr') ? ` ${t('uhr')}` : ''}
               </p>
 
               <div className="mt-8">
                 <div className="flex items-center justify-between border-b border-gray-100 pb-2 mb-4 dark:border-racing-800">
                   <h3 className="flex items-center gap-2 font-semibold text-accent">
-                    <CheckSquare size={18} /> Action Items
+                    <CheckSquare size={18} /> {t('actionItemsTitle')}
                   </h3>
                   {!addingActionItem && (
                     <button
@@ -262,7 +263,7 @@ export default function MeetingsPage() {
                               disabled={item.done}
                               className="text-xs font-semibold text-accent hover:text-accent-hover disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
                             >
-                              {item.done ? 'Im Dashboard' : '+ In Dashboard übertragen'}
+                              {item.done ? t('inDashboard') : t('transferToDashboard')}
                             </button>
                             <button
                               onClick={() => {
@@ -432,7 +433,7 @@ export default function MeetingsPage() {
               <div className="mt-8">
                 <div className="flex items-center justify-between border-b border-gray-100 pb-2 mb-4 dark:border-racing-800">
                   <h3 className="flex items-center gap-2 font-semibold text-gray-500">
-                    <FileText size={18} className="text-gray-400" /> Zusammenfassung
+                    <FileText size={18} className="text-gray-400" /> {t('summaryTitle')}
                   </h3>
                   <div className="flex items-center gap-3">
                     {!editingSummary && (
@@ -461,7 +462,7 @@ export default function MeetingsPage() {
                       disabled={isTranslating}
                       className="text-xs font-semibold text-accent hover:text-accent-hover disabled:opacity-50 transition-colors"
                     >
-                      {isTranslating ? 'Übersetze...' : 'Translate to English'}
+                      {isTranslating ? t('translating') : t('translateToEnglish')}
                     </button>
                   </div>
                 </div>
@@ -502,7 +503,7 @@ export default function MeetingsPage() {
             </div>
           ) : (
             <div className="flex h-full items-center justify-center text-gray-400">
-              <p>Wähle ein Meeting aus der Liste aus.</p>
+              <p>{t('selectMeetingPrompt')}</p>
             </div>
           )}
         </div>

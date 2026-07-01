@@ -3,8 +3,11 @@
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
-    "close": "Close"
+    "close": "Close",
+    "maximize": "Maximize"
   },
+  "project": "Project",
+  "inbox": "Inbox",
   "loading": "Loading…",
   "comments": {
     "empty": "No comments yet.",

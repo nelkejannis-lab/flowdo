@@ -3,6 +3,16 @@
     "title": "Social Media",
     "addAccount": "Account",
     "emptyState": "No Instagram account connected yet. Add an account to track followers, reach, and other metrics.",
+    "callback": {
+      "accessDenied": "Instagram denied access: {{reason}}",
+      "noAuthCode": "No authorization code received.",
+      "connectionFailed": "Connection failed",
+      "connecting": "Connecting to Instagram…",
+      "connectedSuccess": "@{{username}} connected successfully!",
+      "redirecting": "You're being redirected…",
+      "error": "Error",
+      "back": "Back"
+    },
     "lastSynced": "Last: {{date}}",
     "notSyncedYet": "Not synced yet",
     "syncNow": "Sync now",

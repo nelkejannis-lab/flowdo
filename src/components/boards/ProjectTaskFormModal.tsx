@@ -26,7 +26,7 @@ interface ProjectTaskFormModalProps {
 }
 
 export default function ProjectTaskFormModal({ board, task, defaultColumnId, defaultDueDate, onClose }: ProjectTaskFormModalProps) {
-  const { t } = useTranslation('boards')
+  const { t } = useTranslation(['boards', 'common'])
   const addTask = useProjectTasksStore((s) => s.addTask)
   const updateTask = useProjectTasksStore((s) => s.updateTask)
   const deleteTask = useProjectTasksStore((s) => s.deleteTask)
@@ -309,7 +309,7 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
           {/* Attachments */}
           {attachments.length > 0 && (
             <div className="border-t border-gray-100 dark:border-racing-850 pt-3">
-              <span className="text-xs font-medium text-gray-500 mb-2 block">Anhänge</span>
+              <span className="text-xs font-medium text-gray-500 mb-2 block">{t('common:attachments.label')}</span>
               <div className="flex flex-wrap gap-2">
                 {attachments.map((a) => (
                   <a

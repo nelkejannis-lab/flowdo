@@ -1,4 +1,39 @@
 {
+  "sections": {
+    "tasksTitle": "Tasks",
+    "hideCompletedTitle": "Hide completed tasks",
+    "hideCompletedDesc": "Applies to task lists, Kanban boards and project todos",
+    "notificationsTitle": "Notifications",
+    "notificationsUnsupported": "Your browser does not support notifications.",
+    "departmentProfilesDesc": "Work time rules for different departments — the active profile is used for all calculations.",
+    "sidebarTitle": "Sidebar",
+    "sidebarDesc": "Drag to reorder · Dashboard & Calendar are always visible"
+  },
+  "updater": {
+    "notSupported": "Updates are only supported in the desktop app.",
+    "upToDate": "The app is up to date!",
+    "checkError": "Error checking for updates: {{error}}",
+    "check": "Check for updates",
+    "checking": "Checking...",
+    "download": "Download update",
+    "downloading": "Downloading... {{progress}}%",
+    "restartInstall": "Restart & install now"
+  },
+  "dashboardWidgets": {
+    "title": "Dashboard widgets",
+    "description": "Choose which sections are visible on the dashboard.",
+    "items": {
+      "stats": { "label": "Statistics", "desc": "Tasks & projects" },
+      "todayTasks": { "label": "Today's overview", "desc": "Today's tasks and appointments" },
+      "topPriority": { "label": "Top priority", "desc": "Urgent & important tasks (Eisenhower Q1)" },
+      "dayPlan": { "label": "Day plan", "desc": "Timeline with items from the AI day planner" },
+      "upcomingDeadlines": { "label": "Deadlines", "desc": "Upcoming project deadlines" },
+      "nextEvents": { "label": "Events", "desc": "Upcoming events" },
+      "projectsOverview": { "label": "Projects overview", "desc": "All active projects" },
+      "workoffice": { "label": "Office & colleagues", "desc": "Who's in the office, who's working from where?" },
+      "weather": { "label": "Weather", "desc": "Current weather via GPS location" }
+    }
+  },
   "language": {
     "title": "Language",
     "description": "Choose the language of the user interface.",
@@ -11,7 +46,8 @@
     "kalender": "Calendar",
     "funktionen": "Features",
     "datenschutz": "Privacy",
-    "tastenkuerzel": "Shortcuts"
+    "tastenkuerzel": "Shortcuts",
+    "arbeitszeit": "Work time"
   },
   "features": {
     "title": "Features",

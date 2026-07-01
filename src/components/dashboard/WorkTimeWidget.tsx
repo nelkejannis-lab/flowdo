@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Clock, Play, Square, TrendingUp } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useWorkTimeStore } from '../../store/workTimeStore'
 import { todayISO } from '../../utils/date'
 import { dayTargetMinutes, formatHM, netMinutes } from '../../utils/worktime'
 
 export default function WorkTimeWidget() {
+  const { t } = useTranslation(['dashboard', 'worktime'])
   const isRunning = useWorkTimeStore((s) => s.isRunning)
   const runningStartedAt = useWorkTimeStore((s) => s.runningStartedAt)
   const entries = useWorkTimeStore((s) => s.entries)
@@ -42,15 +44,15 @@ export default function WorkTimeWidget() {
     >
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400">
-          <Clock size={12} /> Arbeitszeit heute
+          <Clock size={12} /> {t('officeWidget.todayLabel')}
         </span>
         {isRunning && (
           <span className="flex items-center gap-1 text-xs font-medium text-accent">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" /> Läuft
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" /> {t('officeWidget.running')}
           </span>
         )}
         {isSick && (
-          <span className="text-xs font-medium text-amber-500">🤒 Krank</span>
+          <span className="text-xs font-medium text-amber-500">🤒 {t('officeWidget.sick')}</span>
         )}
       </div>
 
@@ -83,7 +85,7 @@ export default function WorkTimeWidget() {
             <span className="mb-0.5 text-xs text-gray-400">/ {formatHM(target)}</span>
           </div>
           <div className={`text-xs font-semibold ${diff >= 0 ? 'text-emerald-500' : 'text-red-400'}`}>
-            {diff === 0 ? 'Genau auf Soll' : `${diff > 0 ? '+' : ''}${formatHM(diff)} ${diff > 0 ? 'Überstunden' : 'fehlen noch'}`}
+            {diff === 0 ? t('officeWidget.exactOnTarget') : `${diff > 0 ? '+' : ''}${formatHM(diff)} ${diff > 0 ? t('officeWidget.overtimeSuffix') : t('officeWidget.missingSuffix')}`}
           </div>
         </div>
 
@@ -94,7 +96,7 @@ export default function WorkTimeWidget() {
             className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-white shadow ${
               isRunning ? 'bg-red-500 hover:bg-red-600' : 'bg-accent hover:bg-accent-dark'
             }`}
-            title={isRunning ? 'Stoppuhr stoppen' : 'Stoppuhr starten'}
+            title={isRunning ? t('officeWidget.stopwatchStop') : t('officeWidget.stopwatchStart')}
           >
             {isRunning ? <Square size={14} /> : <Play size={16} className="ml-0.5" />}
           </button>
@@ -103,7 +105,7 @@ export default function WorkTimeWidget() {
 
       {/* Week overview bar */}
       <div className="flex items-center gap-1">
-        {['Mo', 'Di', 'Mi', 'Do', 'Fr'].map((label, i) => {
+        {[t('worktime:weekdays.mon'), t('worktime:weekdays.tue'), t('worktime:weekdays.wed'), t('worktime:weekdays.thu'), t('worktime:weekdays.fri')].map((label, i) => {
           const dayDate = new Date()
           const dow = dayDate.getDay() // 0=Sun
           const diffDays = i + 1 - (dow === 0 ? 7 : dow)
@@ -134,7 +136,7 @@ export default function WorkTimeWidget() {
           <div className="relative h-8 w-full overflow-hidden rounded-sm bg-gray-100 dark:bg-racing-800">
             <div className="absolute bottom-0 w-full bg-gray-200 dark:bg-racing-700" style={{ height: '0%' }} />
           </div>
-          <span className="text-[9px] font-medium text-gray-300">Sa</span>
+          <span className="text-[9px] font-medium text-gray-300">{t('worktime:weekdays.sat')}</span>
         </div>
       </div>
     </Link>

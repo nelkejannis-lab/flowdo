@@ -1,4 +1,39 @@
 {
+  "sections": {
+    "tasksTitle": "Aufgaben",
+    "hideCompletedTitle": "Erledigte Aufgaben ausblenden",
+    "hideCompletedDesc": "Gilt für Aufgabenlisten, Kanban-Boards und Projekt-Todos",
+    "notificationsTitle": "Benachrichtigungen",
+    "notificationsUnsupported": "Dein Browser unterstützt keine Benachrichtigungen.",
+    "departmentProfilesDesc": "Arbeitszeitregelungen für verschiedene Abteilungen — aktiviertes Profil wird für alle Berechnungen verwendet.",
+    "sidebarTitle": "Seitenleiste",
+    "sidebarDesc": "Reihenfolge per Drag ändern · Dashboard & Kalender sind immer sichtbar"
+  },
+  "updater": {
+    "notSupported": "Updates werden nur in der Desktop-App unterstützt.",
+    "upToDate": "Die App ist auf dem neuesten Stand!",
+    "checkError": "Fehler bei der Update-Suche: {{error}}",
+    "check": "Nach Updates suchen",
+    "checking": "Suche...",
+    "download": "Update herunterladen",
+    "downloading": "Lädt... {{progress}}%",
+    "restartInstall": "Jetzt neustarten & installieren"
+  },
+  "dashboardWidgets": {
+    "title": "Dashboard-Widgets",
+    "description": "Wähle aus, welche Bereiche auf dem Dashboard sichtbar sind.",
+    "items": {
+      "stats": { "label": "Statistiken", "desc": "Aufgaben & Projekte" },
+      "todayTasks": { "label": "Tagesübersicht", "desc": "Heutige Aufgaben und Termine" },
+      "topPriority": { "label": "Höchste Priorität", "desc": "Dringend & wichtige Aufgaben (Eisenhower Q1)" },
+      "dayPlan": { "label": "Tagesplan", "desc": "Zeitstrahl mit den Punkten aus dem KI-Tagesplaner" },
+      "upcomingDeadlines": { "label": "Deadlines", "desc": "Anstehende Projekt-Deadlines" },
+      "nextEvents": { "label": "Events", "desc": "Nächste Ereignisse" },
+      "projectsOverview": { "label": "Projektübersicht", "desc": "Alle aktiven Projekte" },
+      "workoffice": { "label": "Büro & Kollegen", "desc": "Wer ist im Büro, wer arbeitet von wo?" },
+      "weather": { "label": "Wetter", "desc": "Aktuelles Wetter per GPS-Standort" }
+    }
+  },
   "language": {
     "title": "Sprache",
     "description": "Wähle die Sprache der Benutzeroberfläche.",
@@ -11,7 +46,8 @@
     "kalender": "Kalender",
     "funktionen": "Funktionen",
     "datenschutz": "Datenschutz",
-    "tastenkuerzel": "Tastenkürzel"
+    "tastenkuerzel": "Tastenkürzel",
+    "arbeitszeit": "Arbeitszeit"
   },
   "features": {
     "title": "Funktionen",

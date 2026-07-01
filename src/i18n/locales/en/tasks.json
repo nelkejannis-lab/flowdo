@@ -67,6 +67,8 @@
     "assigneeOnVacationDueDate": "{{name}} is on vacation on the due date.",
     "tags": "Tags",
     "tagPlaceholder": "Add tag + Enter",
+    "tagSuggestions": "Suggestions:",
+    "tagFrequentlyUsed": "Frequently used:",
     "eisenhowerMatrix": "Eisenhower matrix",
     "quadrants": {
       "urgentImportant": "Urgent & Important",
@@ -81,6 +83,15 @@
     "sending": "Sending…",
     "send": "Send",
     "add": "Add"
+  },
+  "toast": {
+    "taskDeleted": "Task deleted",
+    "undo": "Undo"
+  },
+  "quickAdd": {
+    "placeholder": "Quick add: 'Meeting tomorrow at 2pm #work'",
+    "analyzing": "Analyzing with AI...",
+    "analyzingShort": "Analyzing..."
   },
   "page": {
     "addTask": "Task",

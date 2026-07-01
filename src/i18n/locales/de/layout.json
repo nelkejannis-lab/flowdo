@@ -17,7 +17,11 @@
       "aiScheduler": "KI-Termine",
       "chat": "Chat",
       "friends": "Kollegen",
-      "social": "Social Media"
+      "social": "Social Media",
+      "termine": "Termine",
+      "pomodoro": "Pomodoro",
+      "brain": "Gehirn",
+      "meetings": "Meetings"
     },
     "pin": "Anpinnen",
     "unpin": "Lösen",
@@ -65,5 +69,23 @@
     "tags": "Tags",
     "createTask": "Aufgabe erstellen"
   },
-  "loading": "Lädt…"
+  "loading": "Lädt…",
+  "onboardingPermissions": {
+    "title": "Benachrichtigungen",
+    "description": "Erhalte Erinnerungen für Termine, Aufgaben und Nachrichten – direkt auf deinem Gerät.",
+    "waiting": "Warte...",
+    "allow": "Benachrichtigungen erlauben",
+    "skip": "Überspringen"
+  },
+  "appUpdater": {
+    "readyTitle": "Update bereit",
+    "downloadingTitle": "Update wird geladen...",
+    "availableTitle": "Neues Update verfügbar!",
+    "readyDesc": "Die neue Version kann jetzt installiert werden.",
+    "downloadingDesc": "{{progress}}% heruntergeladen",
+    "availableDesc": "Möchtest du die neue Version herunterladen?",
+    "restartNow": "Jetzt neu starten",
+    "download": "Herunterladen",
+    "later": "Später"
+  }
 }

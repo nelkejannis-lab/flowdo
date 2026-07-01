@@ -62,14 +62,14 @@ export default function TimeClock() {
       <div className="flex flex-col items-center gap-4 rounded-xl border border-amber-200 bg-amber-50 p-6 dark:border-amber-800 dark:bg-amber-900/20">
         <div className="flex flex-col items-center gap-2">
           <Thermometer size={36} className="text-amber-500" />
-          <span className="text-lg font-bold text-amber-700 dark:text-amber-300">Krankmeldung</span>
-          <span className="text-xs text-amber-600 dark:text-amber-400">Heute als krank eingetragen · Soll-Zeit wird angerechnet</span>
+          <span className="text-lg font-bold text-amber-700 dark:text-amber-300">{t('sickDay.title')}</span>
+          <span className="text-xs text-amber-600 dark:text-amber-400">{t('sickDay.noteEntered')}</span>
         </div>
         <button
           onClick={() => unmarkSickDay(today)}
           className="rounded-lg border border-amber-300 px-4 py-2 text-sm font-medium text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/40"
         >
-          Krankmeldung zurückziehen
+          {t('sickDay.revoke')}
         </button>
       </div>
     )
@@ -147,9 +147,9 @@ export default function TimeClock() {
           <button
             onClick={() => markSickDay(today)}
             className="flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300"
-            title="Heute als krank melden"
+            title={t('sickDay.markSickTitle')}
           >
-            <Thermometer size={16} /> Krank
+            <Thermometer size={16} /> {t('sickDay.markSick')}
           </button>
         )}
       </div>
