@@ -24,10 +24,13 @@ import WeekView from '../components/calendar/WeekView'
 import DayView from '../components/calendar/DayView'
 import DailyAgendaPanel from '../components/calendar/DailyAgendaPanel'
 import TaskFormModal from '../components/tasks/TaskFormModal'
+import ProjectTaskFormModal from '../components/boards/ProjectTaskFormModal'
 import CalendarEntryFormModal from '../components/calendar/CalendarEntryFormModal'
+import { useBoardsStore } from '../store/boardsStore'
 import CalendarTodoPanel from '../components/calendar/CalendarTodoPanel'
 import TeamAvailabilitySidebar from '../components/calendar/TeamAvailabilitySidebar'
 import { useTasksStore } from '../store/tasksStore'
+import { useProjectTasksStore } from '../store/projectTasksStore'
 import { useEventsStore } from '../store/eventsStore'
 import { useCalendarEntriesStore } from '../store/calendarEntriesStore'
 import { isSupabaseConfigured } from '../lib/supabase'
@@ -42,9 +45,27 @@ type AbsenceFilter = null | 'urlaub' | 'reise'
 export default function CalendarPage() {
   const { t, i18n } = useTranslation('calendar')
   const dateLocale = i18n.language === 'en' ? enUS : de
-  const tasks = useTasksStore((s) => s.tasks)
-  const updateTask = useTasksStore((s) => s.updateTask)
-  const toggleTaskCompleted = useTasksStore((s) => s.toggleTaskCompleted)
+  const personalTasks = useTasksStore((s) => s.tasks)
+  const updatePersonalTask = useTasksStore((s) => s.updateTask)
+  const togglePersonalTaskCompleted = useTasksStore((s) => s.toggleTaskCompleted)
+  const myProjectTasks = useProjectTasksStore((s) => s.myTasks)
+  const fetchMyProjectTasks = useProjectTasksStore((s) => s.fetchMyTasks)
+  const updateProjectTask = useProjectTasksStore((s) => s.updateTask)
+  const toggleProjectTaskCompleted = useProjectTasksStore((s) => s.toggleTaskCompleted)
+  const tasks = [...personalTasks, ...myProjectTasks]
+  const boards = useBoardsStore((s) => s.boards)
+
+  function updateTask(id: string, patch: Partial<Task>) {
+    const task = tasks.find((tk) => tk.id === id)
+    if (task?.boardId) void updateProjectTask(id, patch)
+    else updatePersonalTask(id, patch)
+  }
+
+  function toggleTaskCompleted(id: string) {
+    const task = tasks.find((tk) => tk.id === id)
+    if (task?.boardId) void toggleProjectTaskCompleted(id)
+    else togglePersonalTaskCompleted(id)
+  }
   const events = useEventsStore((s) => s.events)
   const fetchEvents = useEventsStore((s) => s.fetchAll)
   const entries = useCalendarEntriesStore((s) => s.entries)
@@ -84,8 +105,8 @@ export default function CalendarPage() {
   const fetchTeams = useTeamsStore((s) => s.fetch)
 
   useEffect(() => {
-    if (isSupabaseConfigured) { fetchEntries(); fetchFriends(); fetchTeams(); fetchConnections(); fetchEvents() }
-  }, [fetchEntries, fetchFriends, fetchTeams, fetchConnections, fetchEvents])
+    if (isSupabaseConfigured) { fetchEntries(); fetchFriends(); fetchTeams(); fetchConnections(); fetchEvents(); fetchMyProjectTasks() }
+  }, [fetchEntries, fetchFriends, fetchTeams, fetchConnections, fetchEvents, fetchMyProjectTasks])
 
   useEffect(() => {
     setSelectedDate(toISODate(currentDate))
@@ -492,7 +513,14 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {editingTask && <TaskFormModal task={editingTask} onClose={() => setEditingTask(null)} />}
+      {editingTask && (() => {
+        const board = editingTask.boardId ? boards.find((b) => b.id === editingTask.boardId) : undefined
+        return board ? (
+          <ProjectTaskFormModal board={board} task={editingTask} onClose={() => setEditingTask(null)} />
+        ) : (
+          <TaskFormModal task={editingTask} onClose={() => setEditingTask(null)} />
+        )
+      })()}
 
       {newTaskDate && (
         <TaskFormModal defaultDueDate={newTaskDate} onClose={() => setNewTaskDate(null)} />
