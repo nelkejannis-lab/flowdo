@@ -51,6 +51,11 @@
   "topbar": {
     "openMenu": "Open menu"
   },
+  "quickAdd": {
+    "title": "Quick add",
+    "task": "New task",
+    "entry": "New event"
+  },
   "search": {
     "placeholder": "Search tasks, projects, tags…",
     "esc": "Esc",

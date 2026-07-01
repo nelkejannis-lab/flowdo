@@ -46,7 +46,7 @@ export default function Layout() {
             </div>
           </main>
         </div>
-        <MobileBottomNav onOpenMenu={() => setSidebarOpen(true)} />
+        <MobileBottomNav />
       </div>
       <ToastContainer />
       <AiChatPanel />

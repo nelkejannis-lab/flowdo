@@ -409,7 +409,7 @@ export default function AiChatPanel() {
       {/* Floating button */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-accent shadow-lg transition-all hover:scale-105 hover:shadow-xl active:scale-95 sm:bottom-6 sm:right-6"
+        className="fixed bottom-24 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-accent shadow-lg transition-all hover:scale-105 hover:shadow-xl active:scale-95 sm:bottom-6 sm:right-6"
         title="KI-Assistent"
       >
         {open
@@ -420,7 +420,7 @@ export default function AiChatPanel() {
       {/* Panel */}
       {open && (
         <div
-          className="fixed bottom-20 right-3 z-40 flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-racing-700 dark:bg-racing-900 sm:bottom-24 sm:right-6"
+          className="fixed bottom-24 right-3 z-40 flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-racing-700 dark:bg-racing-900 sm:bottom-24 sm:right-6"
           style={{ width: 'min(420px, calc(100vw - 12px))', height: 'min(600px, calc(100dvh - 90px))' }}
         >
           {/* Header */}

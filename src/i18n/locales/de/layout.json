@@ -51,6 +51,11 @@
   "topbar": {
     "openMenu": "Menü öffnen"
   },
+  "quickAdd": {
+    "title": "Schnell hinzufügen",
+    "task": "Neue Aufgabe",
+    "entry": "Neuer Termin"
+  },
   "search": {
     "placeholder": "Aufgaben, Projekte, Tags durchsuchen…",
     "esc": "Esc",
