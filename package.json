@@ -18,6 +18,7 @@
   "build": {
     "appId": "app.mooncrew.desktop",
     "productName": "Mooncrew",
+    "artifactName": "Mooncrew-Setup-${version}.${ext}",
     "electronDist": "node_modules/electron/dist",
     "directories": {
       "output": "release"
