@@ -200,7 +200,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   },
 
   setBadgeForUser: async (userId, badge) => {
-    const { error } = await supabase.from('profiles').update({ badge }).eq('id', userId)
+    const { error } = await supabase.rpc('admin_set_badge', { p_user_id: userId, p_badge: badge })
     return error?.message ?? null
   },
 

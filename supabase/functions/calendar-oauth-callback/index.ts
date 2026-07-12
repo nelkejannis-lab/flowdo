@@ -1,5 +1,5 @@
-// Handles OAuth callback, stores tokens in DB, redirects back to app
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { parseOAuthState } from '../_shared/oauthState.ts'
 
 const APP_URL = 'https://mooncrew.app/einstellungen?tab=kalender'
 const callbackBase = `${Deno.env.get('SUPABASE_URL')}/functions/v1/calendar-oauth-callback`
@@ -7,18 +7,23 @@ const callbackBase = `${Deno.env.get('SUPABASE_URL')}/functions/v1/calendar-oaut
 Deno.serve(async (req: Request) => {
   const url = new URL(req.url)
   const code = url.searchParams.get('code')
-  const state = url.searchParams.get('state') // "provider:userId"
+  const state = url.searchParams.get('state')
   const error = url.searchParams.get('error')
 
   if (error || !code || !state) {
     return Response.redirect(`${APP_URL}&error=${error ?? 'missing_params'}`)
   }
 
-  const [provider, userId] = state.split(':')
+  const parsed = await parseOAuthState(state)
+  if (!parsed) {
+    return Response.redirect(`${APP_URL}&error=invalid_state`)
+  }
+
+  const { provider, userId } = parsed
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   )
 
   try {
@@ -47,16 +52,13 @@ Deno.serve(async (req: Request) => {
       refreshToken = tokens.refresh_token ?? null
       expiresAt = tokens.expires_in ? new Date(Date.now() + tokens.expires_in * 1000) : null
 
-      // Get user info
       const infoRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
         headers: { Authorization: `Bearer ${accessToken}` },
       })
       const info = await infoRes.json()
       email = info.email
       displayName = info.name
-    }
-
-    if (provider === 'microsoft') {
+    } else if (provider === 'microsoft') {
       const tokenRes = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
         method: 'POST',
         headers: { 'content-type': 'application/x-www-form-urlencoded' },
@@ -76,7 +78,6 @@ Deno.serve(async (req: Request) => {
       refreshToken = tokens.refresh_token ?? null
       expiresAt = tokens.expires_in ? new Date(Date.now() + tokens.expires_in * 1000) : null
 
-      // Get user info
       const infoRes = await fetch('https://graph.microsoft.com/v1.0/me', {
         headers: { Authorization: `Bearer ${accessToken}` },
       })

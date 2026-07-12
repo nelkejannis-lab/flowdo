@@ -496,7 +496,7 @@ export default function MeetingsPage() {
                   </div>
                 ) : (
                   <div className="prose prose-sm dark:prose-invert">
-                    <div dangerouslySetInnerHTML={{ __html: selectedMeeting.summary.replace(/\n/g, '<br/>') }} />
+                    <div className="whitespace-pre-wrap text-sm">{selectedMeeting.summary}</div>
                   </div>
                 )}
               </div>

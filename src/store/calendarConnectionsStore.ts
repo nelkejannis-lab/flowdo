@@ -75,15 +75,11 @@ export const useCalendarConnectionsStore = create<CalendarConnectionsState>()((s
   },
 
   startOAuth: async (provider) => {
-    const { data: { session } } = await supabase.auth.getSession()
-    const userId = session?.user?.id
-    if (!userId) return
-
-    const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string).replace(/^﻿/, '').trim()
-    const oauthUrl = `${supabaseUrl}/functions/v1/calendar-oauth-start?provider=${provider}&user_id=${userId}`
-
-    // Navigate directly — the edge function has verify_jwt=false so no auth header needed
-    window.location.href = oauthUrl
+    const { data, error } = await supabase.functions.invoke('calendar-oauth-start', {
+      body: { provider },
+    })
+    if (error || !data?.redirectUrl) return
+    window.location.href = data.redirectUrl as string
   },
 
   sync: async () => {

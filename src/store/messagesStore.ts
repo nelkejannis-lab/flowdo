@@ -53,10 +53,7 @@ interface MessageRow {
   to_user?: Profile | Profile[]
 }
 
-function single<T>(v: T | T[]): T {
-  return Array.isArray(v) ? v[0] : v
-}
-
+import { single } from '../lib/supabaseHelpers'
 function toMessage(row: MessageRow): Message {
   return {
     id: row.id,

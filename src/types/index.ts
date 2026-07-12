@@ -97,7 +97,9 @@ export interface SocialAccount {
   platform: 'instagram'
   username: string
   igUserId: string
+  /** @deprecated Tokens are stored server-side only. Use tokenConfigured. */
   accessToken?: string
+  tokenConfigured?: boolean
   name?: string
   biography?: string
   website?: string

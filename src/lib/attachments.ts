@@ -4,7 +4,11 @@ import type { Attachment } from '../types'
 const BUCKET = 'attachments'
 
 export async function uploadAttachment(folder: string, file: File): Promise<{ attachment?: Attachment; error?: string }> {
-  const path = `${folder}/${crypto.randomUUID()}-${file.name}`
+  const { data: userData } = await supabase.auth.getUser()
+  const userId = userData.user?.id
+  if (!userId) return { error: 'Nicht angemeldet' }
+
+  const path = `${userId}/${folder}/${crypto.randomUUID()}-${file.name}`
   const { error } = await supabase.storage.from(BUCKET).upload(path, file)
   if (error) return { error: error.message }
 

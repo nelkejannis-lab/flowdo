@@ -347,7 +347,6 @@ export default function WeatherWidget() {
     if (weatherGpsAsked) return
     setWeatherGpsAsked()
     if (navigator.geolocation) void detectLocation(true)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function loadWeather(lat: number, lon: number) {

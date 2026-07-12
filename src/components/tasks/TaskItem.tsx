@@ -41,7 +41,7 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
 
   useEffect(() => {
     if (isSupabaseConfigured && friends.length === 0) fetchFriends()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
   const [expanded, setExpanded] = useState(false)
   const [showComments, setShowComments] = useState(false)
   const [showAsk, setShowAsk] = useState(false)

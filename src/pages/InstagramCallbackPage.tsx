@@ -8,7 +8,7 @@ export default function InstagramCallbackPage() {
   const { t } = useTranslation('social')
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const { fetchAccounts, addAccount } = useSocialStore()
+  const { fetchAccounts } = useSocialStore()
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
   const ran = useRef(false)
@@ -45,7 +45,6 @@ export default function InstagramCallbackPage() {
           if (ctx) {
             const body = typeof ctx.json === 'function' ? await ctx.json() : ctx
             if (body?.error) msg = body.error
-            if (body?.debug) msg += ` | Debug: ${JSON.stringify(body.debug)}`
           }
         } catch { /* use generic message */ }
         setStatus('error')
@@ -62,17 +61,7 @@ export default function InstagramCallbackPage() {
       sessionStorage.removeItem('ig_connect_account_id')
 
       if (!accountId) {
-        // New account — create it
-        const err = await addAccount({
-          username: d.username || d.igUserId,
-          igUserId: d.igUserId,
-          accessToken: d.accessToken,
-        })
-        if (err) {
-          setStatus('error')
-          setMessage(err)
-          return
-        }
+        await fetchAccounts()
       } else {
         await fetchAccounts()
       }

@@ -1,28 +1,8 @@
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Layout from './components/layout/Layout'
-import Dashboard from './pages/Dashboard'
-import TasksPage from './pages/Tasks'
-import CalendarPage from './pages/CalendarPage'
-import TerminePage from './pages/TerminePage'
-import BoardsPage from './pages/Boards'
-import BoardDetailPage from './pages/BoardDetailPage'
-import ArbeitszeitPage from './pages/ArbeitszeitPage'
-import EisenhowerPage from './pages/EisenhowerPage'
 import LoginPage from './pages/LoginPage'
-import FriendsPage from './pages/FriendsPage'
-import SocialMediaPage from './pages/SocialMediaPage'
-import SocialAccountDetailPage from './pages/SocialAccountDetailPage'
-import AiSchedulerPage from './pages/AiSchedulerPage'
-import ChatPage from './pages/ChatPage'
-import SettingsPage from './pages/SettingsPage'
-import PomodoroPage from './pages/PomodoroPage'
-import SecondBrainPage from './pages/SecondBrainPage'
-import MeetingsPage from './pages/MeetingsPage'
-import DatenschutzPage from './pages/legal/DatenschutzPage'
-import ImpressumPage from './pages/legal/ImpressumPage'
-import InstagramCallbackPage from './pages/InstagramCallbackPage'
 import { useSettingsStore } from './store/settingsStore'
 import { useAuthStore } from './store/authStore'
 import { useTasksStore } from './store/tasksStore'
@@ -35,6 +15,36 @@ import TaskFormModal from './components/tasks/TaskFormModal'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useQuickTaskModalStore } from './store/quickTaskModalStore'
 import TaskTray from './components/layout/TaskTray'
+
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const TasksPage = lazy(() => import('./pages/Tasks'))
+const CalendarPage = lazy(() => import('./pages/CalendarPage'))
+const TerminePage = lazy(() => import('./pages/TerminePage'))
+const BoardsPage = lazy(() => import('./pages/Boards'))
+const BoardDetailPage = lazy(() => import('./pages/BoardDetailPage'))
+const ArbeitszeitPage = lazy(() => import('./pages/ArbeitszeitPage'))
+const EisenhowerPage = lazy(() => import('./pages/EisenhowerPage'))
+const FriendsPage = lazy(() => import('./pages/FriendsPage'))
+const SocialMediaPage = lazy(() => import('./pages/SocialMediaPage'))
+const SocialAccountDetailPage = lazy(() => import('./pages/SocialAccountDetailPage'))
+const AiSchedulerPage = lazy(() => import('./pages/AiSchedulerPage'))
+const ChatPage = lazy(() => import('./pages/ChatPage'))
+const SettingsPage = lazy(() => import('./pages/SettingsPage'))
+const PomodoroPage = lazy(() => import('./pages/PomodoroPage'))
+const SecondBrainPage = lazy(() => import('./pages/SecondBrainPage'))
+const MeetingsPage = lazy(() => import('./pages/MeetingsPage'))
+const DatenschutzPage = lazy(() => import('./pages/legal/DatenschutzPage'))
+const ImpressumPage = lazy(() => import('./pages/legal/ImpressumPage'))
+const InstagramCallbackPage = lazy(() => import('./pages/InstagramCallbackPage'))
+
+function PageLoader() {
+  const { t } = useTranslation('layout')
+  return (
+    <div className="flex min-h-[40vh] items-center justify-center text-gray-400">
+      {t('loading')}
+    </div>
+  )
+}
 
 export default function App() {
   const { t } = useTranslation('layout')
@@ -61,9 +71,6 @@ export default function App() {
 
   const [showNewTask, setShowNewTask] = useState(false)
   const quickTaskModal = useQuickTaskModalStore()
-  useEffect(() => {
-    console.log('[App.tsx] quickTaskModal state changed:', { isOpen: quickTaskModal.isOpen, props: quickTaskModal.props })
-  }, [quickTaskModal.isOpen, quickTaskModal.props])
   useKeyboardShortcuts({ onNewTask: () => setShowNewTask(true) })
 
   useEffect(() => {
@@ -77,8 +84,20 @@ export default function App() {
     return unsubscribe
   }, [init])
 
-  if (location.pathname === '/datenschutz') return <DatenschutzPage />
-  if (location.pathname === '/impressum') return <ImpressumPage />
+  if (location.pathname === '/datenschutz') {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <DatenschutzPage />
+      </Suspense>
+    )
+  }
+  if (location.pathname === '/impressum') {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <ImpressumPage />
+      </Suspense>
+    )
+  }
 
   if (isSupabaseConfigured && loading) {
     return (
@@ -108,6 +127,7 @@ export default function App() {
     )}
     <TaskTray />
     <ErrorBoundary>
+    <Suspense fallback={<PageLoader />}>
     <Routes>
       <Route path="/datenschutz" element={<DatenschutzPage />} />
       <Route path="/impressum" element={<ImpressumPage />} />
@@ -134,6 +154,7 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
+    </Suspense>
     </ErrorBoundary>
     </>
   )

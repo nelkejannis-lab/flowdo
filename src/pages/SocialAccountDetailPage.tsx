@@ -270,12 +270,12 @@ function PostModal({ post, followers, onClose }: { post: SocialPost; followers: 
 
 interface IgFound { igUserId: string; igUsername: string; igName: string; profilePic?: string; followers?: number }
 
-function EditAccountModal({ account, onClose }: { account: { id: string; username: string; igUserId: string; accessToken?: string }; onClose: () => void }) {
+function EditAccountModal({ account, onClose }: { account: { id: string; username: string; igUserId: string; tokenConfigured?: boolean }; onClose: () => void }) {
   const updateAccount = useSocialStore((s) => s.updateAccount)
   const updateAccessToken = useSocialStore((s) => s.updateAccessToken)
   const [username, setUsername] = useState(account.username)
   const [igUserId, setIgUserId] = useState(account.igUserId)
-  const [token, setToken] = useState(account.accessToken ?? '')
+  const [token, setToken] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [validating, setValidating] = useState(false)
@@ -321,7 +321,7 @@ function EditAccountModal({ account, onClose }: { account: { id: string; usernam
     setSaving(true)
     setError(null)
     const err1 = await updateAccount(account.id, { username, igUserId })
-    const err2 = token !== account.accessToken ? await updateAccessToken(account.id, token) : null
+    const err2 = tokenTrimmed ? await updateAccessToken(account.id, tokenTrimmed) : null
     setSaving(false)
     if (err1 || err2) { setError(err1 ?? err2); return }
     onClose()
@@ -898,7 +898,7 @@ export default function SocialAccountDetailPage() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={handleSync} disabled={syncingId === accountId || !account.accessToken}
+          <button onClick={handleSync} disabled={syncingId === accountId || !account.tokenConfigured}
             className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-60">
             <RefreshCw size={14} className={syncingId === accountId ? 'animate-spin' : ''} />
             {syncingId === accountId ? 'Synchronisiere…' : 'Synchronisieren'}
@@ -924,7 +924,7 @@ export default function SocialAccountDetailPage() {
       </div>
 
       {/* Token missing */}
-      {!account.accessToken && (
+      {!account.tokenConfigured && (
         <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
           <p className="mb-1 flex items-center gap-1.5 font-semibold text-amber-700 dark:text-amber-400"><AlertTriangle size={15} /> Access Token fehlt</p>
           <p className="mb-3 text-sm text-amber-600 dark:text-amber-300">Ohne Token können keine Daten abgerufen werden.</p>
@@ -1455,7 +1455,7 @@ export default function SocialAccountDetailPage() {
       {/* Edit Modal */}
       {showEdit && (
         <EditAccountModal
-          account={{ id: accountId, username: account.username, igUserId: account.igUserId, accessToken: account.accessToken }}
+          account={{ id: accountId, username: account.username, igUserId: account.igUserId, tokenConfigured: account.tokenConfigured }}
           onClose={() => setShowEdit(false)}
         />
       )}

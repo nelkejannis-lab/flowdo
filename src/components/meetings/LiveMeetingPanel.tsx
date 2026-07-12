@@ -96,7 +96,7 @@ export default function LiveMeetingPanel({ onSaveComplete }: { onSaveComplete: (
               
               {summary && (
                 <div className="prose prose-sm dark:prose-invert">
-                  <div dangerouslySetInnerHTML={{ __html: summary.replace(/\n/g, '<br/>') }} />
+                  <div className="whitespace-pre-wrap text-sm">{summary}</div>
                 </div>
               )}
             </div>

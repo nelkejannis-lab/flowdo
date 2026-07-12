@@ -1,19 +1,17 @@
 import Anthropic from 'npm:@anthropic-ai/sdk@0.24.3'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { corsHeaders, jsonResponse, optionsResponse, requireUser } from '../_shared/auth.ts'
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  if (req.method === 'OPTIONS') return optionsResponse()
+
+  const auth = await requireUser(req)
+  if ('error' in auth) return auth.error
 
   try {
     const { messages, systemPrompt, imageBase64, imageMimeType } = await req.json()
 
     const client = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY') })
 
-    // Build the last user message — optionally with image
     const lastMsg = messages[messages.length - 1]
     const userContent: Anthropic.MessageParam['content'] = []
 
@@ -42,13 +40,8 @@ Deno.serve(async (req) => {
     })
 
     const text = response.content[0]?.type === 'text' ? response.content[0].text : ''
-    return new Response(JSON.stringify({ text }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return jsonResponse({ text })
   } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return jsonResponse({ error: String(err) }, 500)
   }
 })

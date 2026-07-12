@@ -1,12 +1,7 @@
-// Supabase Edge Function: proxies appointment-parsing and best-slot-finding to the Anthropic API.
+import { corsHeaders, jsonResponse, optionsResponse, requireUser } from '../_shared/auth.ts'
 
 const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages'
 const CLAUDE_MODEL = 'claude-haiku-4-5-20251001'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
 
 async function callClaude(apiKey: string, system: string, userMessage: string) {
   const res = await fetch(CLAUDE_API_URL, {
@@ -27,22 +22,19 @@ async function callClaude(apiKey: string, system: string, userMessage: string) {
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  if (req.method === 'OPTIONS') return optionsResponse()
+
+  const auth = await requireUser(req)
+  if ('error' in auth) return auth.error
 
   const apiKey = Deno.env.get('ANTHROPIC_API_KEY')
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY ist auf dem Server nicht konfiguriert' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'content-type': 'application/json' },
-    })
+    return jsonResponse({ error: 'ANTHROPIC_API_KEY ist auf dem Server nicht konfiguriert' }, 500)
   }
 
   try {
     const body = await req.json()
 
-    // Action: find-best-slot
     if (body.action === 'find-best-slot') {
       const { colleagues, busySlots, fromDate, toDate, durationMinutes, preferredStartTime, preferredEndTime } = body
 
@@ -90,13 +82,9 @@ Regeln:
       })
     }
 
-    // Default action: parse appointment from text
     const { text, systemPrompt } = body
     if (!text || !systemPrompt) {
-      return new Response(JSON.stringify({ error: 'text und systemPrompt sind erforderlich' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'content-type': 'application/json' },
-      })
+      return jsonResponse({ error: 'text und systemPrompt sind erforderlich' }, 400)
     }
 
     const res = await callClaude(apiKey, systemPrompt, text)
@@ -106,9 +94,6 @@ Regeln:
       headers: { ...corsHeaders, 'content-type': 'application/json' },
     })
   } catch (err) {
-    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : 'Unbekannter Fehler' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'content-type': 'application/json' },
-    })
+    return jsonResponse({ error: err instanceof Error ? err.message : 'Unbekannter Fehler' }, 500)
   }
 })

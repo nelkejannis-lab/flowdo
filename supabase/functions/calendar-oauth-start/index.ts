@@ -1,48 +1,71 @@
-// Redirects the user to the OAuth provider's login page
-// JWT verification disabled — this function only builds a public redirect URL
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { createOAuthState } from '../_shared/oauthState.ts'
+import { jsonResponse, optionsResponse, requireUser } from '../_shared/auth.ts'
 
-Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+const callbackBase = () => `${Deno.env.get('SUPABASE_URL')}/functions/v1/calendar-oauth-callback`
 
-  const url = new URL(req.url)
-  const provider = url.searchParams.get('provider')
-  const userId = url.searchParams.get('user_id')
-
-  const callbackBase = `${Deno.env.get('SUPABASE_URL')}/functions/v1/calendar-oauth-callback`
+async function buildRedirect(provider: string, userId: string): Promise<string> {
+  const signedState = await createOAuthState(provider, userId)
 
   if (provider === 'google') {
     const clientId = Deno.env.get('GOOGLE_CLIENT_ID')
-    if (!clientId) return new Response('GOOGLE_CLIENT_ID not set', { status: 500, headers: corsHeaders })
+    if (!clientId) throw new Error('GOOGLE_CLIENT_ID not set')
 
     const params = new URLSearchParams({
       client_id: clientId,
-      redirect_uri: callbackBase,
+      redirect_uri: callbackBase(),
       response_type: 'code',
       scope: 'https://www.googleapis.com/auth/calendar',
       access_type: 'offline',
       prompt: 'consent',
-      state: `google:${userId}`,
+      state: signedState,
     })
-    return Response.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`)
+    return `https://accounts.google.com/o/oauth2/v2/auth?${params}`
   }
 
   if (provider === 'microsoft') {
     const clientId = Deno.env.get('MICROSOFT_CLIENT_ID')
-    if (!clientId) return new Response('MICROSOFT_CLIENT_ID not set', { status: 500, headers: corsHeaders })
+    if (!clientId) throw new Error('MICROSOFT_CLIENT_ID not set')
 
     const params = new URLSearchParams({
       client_id: clientId,
-      redirect_uri: callbackBase,
+      redirect_uri: callbackBase(),
       response_type: 'code',
       scope: 'https://graph.microsoft.com/Calendars.ReadWrite offline_access',
-      state: `microsoft:${userId}`,
+      state: signedState,
     })
-    return Response.redirect(`https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params}`)
+    return `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params}`
   }
 
-  return new Response('Unknown provider', { status: 400, headers: corsHeaders })
+  throw new Error('Unknown provider')
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') return optionsResponse()
+
+  const auth = await requireUser(req)
+  if ('error' in auth) return auth.error
+
+  try {
+    let provider: string | null = null
+
+    if (req.method === 'POST') {
+      const body = await req.json()
+      provider = body.provider ?? null
+    } else {
+      const url = new URL(req.url)
+      provider = url.searchParams.get('provider')
+    }
+
+    if (!provider || (provider !== 'google' && provider !== 'microsoft')) {
+      return jsonResponse({ error: 'Unknown provider' }, 400)
+    }
+
+    const redirectUrl = await buildRedirect(provider, auth.user.id)
+    if (req.method === 'POST') {
+      return jsonResponse({ redirectUrl })
+    }
+    return Response.redirect(redirectUrl, 302)
+  } catch (err) {
+    return jsonResponse({ error: err instanceof Error ? err.message : 'OAuth start failed' }, 500)
+  }
 })

@@ -2,14 +2,13 @@ import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
 import type { SocialAccount, SocialMetric, SocialPost, SocialStory } from '../types'
 
-
 interface SocialAccountRow {
   id: string
   owner_id: string
   platform: 'instagram'
   username: string
   ig_user_id: string
-  access_token: string | null
+  token_configured: boolean
   name: string | null
   biography: string | null
   website: string | null
@@ -67,6 +66,8 @@ interface SocialStoryRow {
   taps_back: number | null
 }
 
+const ACCOUNT_COLUMNS = 'id, owner_id, platform, username, ig_user_id, token_configured, name, biography, website, profile_picture_url, last_synced_at, created_at, shared_with'
+
 function toAccount(row: SocialAccountRow): SocialAccount {
   return {
     id: row.id,
@@ -74,7 +75,7 @@ function toAccount(row: SocialAccountRow): SocialAccount {
     platform: row.platform,
     username: row.username,
     igUserId: row.ig_user_id,
-    accessToken: row.access_token ?? undefined,
+    tokenConfigured: row.token_configured,
     name: row.name ?? undefined,
     biography: row.biography ?? undefined,
     website: row.website ?? undefined,
@@ -139,7 +140,6 @@ function toStory(row: SocialStoryRow): SocialStory {
   }
 }
 
-
 interface SocialState {
   accounts: SocialAccount[]
   metrics: Record<string, SocialMetric[]>
@@ -172,7 +172,7 @@ export const useSocialStore = create<SocialState>()((set, get) => ({
     set({ loading: true, error: null })
     const { data, error } = await supabase
       .from('social_accounts')
-      .select('*')
+      .select(ACCOUNT_COLUMNS)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -189,15 +189,20 @@ export const useSocialStore = create<SocialState>()((set, get) => ({
     const userId = userData.user?.id
     if (!userId) return 'Nicht angemeldet'
 
-    const { error } = await supabase.from('social_accounts').insert({
+    const { data, error } = await supabase.from('social_accounts').insert({
       owner_id: userId,
       platform: 'instagram',
       username: input.username.trim(),
       ig_user_id: input.igUserId.trim(),
-      access_token: input.accessToken?.trim() || null,
-    })
+      token_configured: false,
+    }).select('id').single()
 
     if (error) return error.message
+
+    if (input.accessToken?.trim()) {
+      const tokenErr = await get().updateAccessToken(data.id, input.accessToken)
+      if (tokenErr) return tokenErr
+    }
 
     await get().fetchAccounts()
     return null
@@ -214,10 +219,10 @@ export const useSocialStore = create<SocialState>()((set, get) => ({
   },
 
   updateAccessToken: async (accountId, accessToken) => {
-    const { error } = await supabase
-      .from('social_accounts')
-      .update({ access_token: accessToken.trim() || null })
-      .eq('id', accountId)
+    const { error } = await supabase.rpc('set_social_account_token', {
+      p_account_id: accountId,
+      p_token: accessToken.trim(),
+    })
     if (error) return error.message
     await get().fetchAccounts()
     return null
@@ -244,36 +249,15 @@ export const useSocialStore = create<SocialState>()((set, get) => ({
 
   fetchAccountData: async (accountId) => {
     const [metricsRes, postsRes, storiesRes] = await Promise.all([
-      supabase
-        .from('social_metrics')
-        .select('*')
-        .eq('account_id', accountId)
-        .order('date', { ascending: true }),
-      supabase
-        .from('social_posts')
-        .select('*')
-        .eq('account_id', accountId)
-        .order('posted_at', { ascending: false }),
-      supabase
-        .from('social_stories')
-        .select('*')
-        .eq('account_id', accountId)
-        .order('posted_at', { ascending: false }),
+      supabase.from('social_metrics').select('*').eq('account_id', accountId).order('date', { ascending: true }),
+      supabase.from('social_posts').select('*').eq('account_id', accountId).order('posted_at', { ascending: false }),
+      supabase.from('social_stories').select('*').eq('account_id', accountId).order('posted_at', { ascending: false }),
     ])
 
     set((state) => ({
-      metrics: {
-        ...state.metrics,
-        [accountId]: ((metricsRes.data ?? []) as unknown as SocialMetricRow[]).map(toMetric),
-      },
-      posts: {
-        ...state.posts,
-        [accountId]: ((postsRes.data ?? []) as unknown as SocialPostRow[]).map(toPost),
-      },
-      stories: {
-        ...state.stories,
-        [accountId]: ((storiesRes.data ?? []) as unknown as SocialStoryRow[]).map(toStory),
-      },
+      metrics: { ...state.metrics, [accountId]: ((metricsRes.data ?? []) as unknown as SocialMetricRow[]).map(toMetric) },
+      posts: { ...state.posts, [accountId]: ((postsRes.data ?? []) as unknown as SocialPostRow[]).map(toPost) },
+      stories: { ...state.stories, [accountId]: ((storiesRes.data ?? []) as unknown as SocialStoryRow[]).map(toStory) },
     }))
   },
 
@@ -281,38 +265,20 @@ export const useSocialStore = create<SocialState>()((set, get) => ({
     const account = get().accounts.find((a) => a.id === accountId)
     if (!account) return 'Account nicht gefunden'
 
-    if (!account.accessToken) {
+    if (!account.tokenConfigured) {
       return 'Kein Access Token hinterlegt. Bitte füge einen Access Token hinzu, um zu synchronisieren.'
     }
 
     set({ syncingId: accountId })
 
     try {
-      // All Meta API calls run server-side via Edge Function to avoid CORS
-      const { data: sessionData } = await supabase.auth.getSession()
-      const token = sessionData.session?.access_token
-      const res = await supabase.functions.invoke('instagram-sync', {
-        body: { accountId },
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      })
+      const res = await supabase.functions.invoke('instagram-sync', { body: { accountId } })
 
-      if (res.error) {
-        // Try to extract detailed message from Edge Function response body
-        let msg = res.error.message ?? 'Synchronisierung fehlgeschlagen'
-        try {
-          const ctx = (res.error as any).context
-          if (ctx) {
-            const body = typeof ctx.json === 'function' ? await ctx.json() : ctx
-            if (body?.error) msg = body.error
-          }
-        } catch { /* use original message */ }
-        throw new Error(msg)
-      }
+      if (res.error) throw new Error(res.error.message ?? 'Synchronisierung fehlgeschlagen')
       if (res.data?.error) throw new Error(res.data.error)
 
       await Promise.all([get().fetchAccounts(), get().fetchAccountData(accountId)])
       set({ syncingId: null })
-      // Return warnings (missing permissions) as a soft message, not an error
       if (res.data?.warnings?.length) return `⚠️ ${res.data.warnings[0]}`
       return null
     } catch (err) {
