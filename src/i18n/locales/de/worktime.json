@@ -41,6 +41,7 @@
     "noPunches": "Keine Stempelungen an diesem Tag.",
     "clockIn": "Kommen",
     "clockOut": "Gehen",
+    "break": "Pause",
     "netOnDay": "Netto an diesem Tag",
     "changeLog": "Änderungsprotokoll",
     "today": "Heute",
@@ -81,6 +82,16 @@
     "revoke": "Krankmeldung zurückziehen",
     "markSick": "Krank",
     "markSickTitle": "Heute als krank melden"
+  },
+  "absence": {
+    "title": "Abwesenheiten",
+    "types": {
+      "vacation": "Urlaub",
+      "sick": "Krank",
+      "overtime": "Überstunden"
+    },
+    "notePlaceholder": "Notiz (optional)",
+    "save": "Eintragen"
   },
   "overview": {
     "totalOvertime": "Überstunden gesamt",

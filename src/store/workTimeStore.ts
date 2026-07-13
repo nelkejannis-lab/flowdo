@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { WorkDayEntry, WorkProfile, WorkTimeSettings, WorkTimePunch, WorkTimeAuditEntry } from '../types'
+import type { WorkDayEntry, WorkProfile, WorkTimeSettings, WorkTimePunch, WorkTimeAuditEntry, AbsencePeriod, AbsenceType } from '../types'
 import { createId } from '../utils/id'
 
 const GBM_PROFILE: WorkProfile = {
@@ -82,6 +82,7 @@ interface WorkTimeState {
   compensationDaysCount: number
   workProfiles: WorkProfile[]
   activeProfileId?: string
+  absencePeriods: AbsencePeriod[]
   fetchAll: () => Promise<void>
   clockIn: () => void
   clockOut: () => void
@@ -96,6 +97,7 @@ interface WorkTimeState {
   applyWorkProfile: (id: string) => void
   markSickDay: (date: string) => void
   unmarkSickDay: (date: string) => void
+  addAbsencePeriod: (startDate: string, endDate: string, type: AbsenceType, note?: string) => void
   incrementSettledWeekendDays: () => void
   decrementSettledWeekendDays: () => void
   incrementManualCompDays: () => void
@@ -108,9 +110,28 @@ interface WorkTimeState {
 function ensureEntry(
   entries: Record<string, WorkDayEntry>,
   date: string,
-  defaultBreakMinutes: number
+  _defaultBreakMinutes: number
 ): WorkDayEntry {
-  return entries[date] ?? { date, workedMinutes: 0, breakMinutes: defaultBreakMinutes }
+  return entries[date] ?? { date, workedMinutes: 0, breakMinutes: 0 }
+}
+
+function eachDateInRange(start: string, end: string): string[] {
+  const dates: string[] = []
+  const d = new Date(start + 'T12:00:00')
+  const last = new Date(end + 'T12:00:00')
+  while (d <= last) {
+    dates.push(d.toISOString().slice(0, 10))
+    d.setDate(d.getDate() + 1)
+  }
+  return dates
+}
+
+function dayTargetForDate(date: string, settings: WorkTimeSettings): number {
+  const d = new Date(date + 'T12:00:00')
+  const dow = d.getDay()
+  if (dow === 0 || dow === 6) return 0
+  if (dow === 5) return Math.round((settings.fridayHours ?? settings.weeklyHours / settings.workDaysPerWeek) * 60)
+  return Math.round((settings.weekdayHours ?? settings.weeklyHours / settings.workDaysPerWeek) * 60)
 }
 
 function makeAudit(
@@ -240,6 +261,7 @@ export const useWorkTimeStore = create<WorkTimeState>()(
       compensationDaysCount: 0,
       workProfiles: [GBM_PROFILE],
       activeProfileId: undefined,
+      absencePeriods: [],
 
       fetchAll: async () => {
         if (!isSupabaseConfigured) return
@@ -248,7 +270,7 @@ export const useWorkTimeStore = create<WorkTimeState>()(
         if (!userId) return
 
         const since = new Date(Date.now() - 1000 * 60 * 60 * 24 * 120).toISOString()
-        const [entriesResult, settingsResult, punchesResult, auditResult] = await Promise.all([
+        const [entriesResult, settingsResult, punchesResult, auditResult, absenceResult] = await Promise.all([
           supabase
             .from('work_time_entries')
             .select('date, worked_minutes, break_minutes, start_time, end_time')
@@ -265,6 +287,11 @@ export const useWorkTimeStore = create<WorkTimeState>()(
             .select('id, entry_date, field, old_value, new_value, reason, changed_at')
             .eq('user_id', userId)
             .order('changed_at', { ascending: false }),
+          supabase
+            .from('absence_periods')
+            .select('id, type, start_date, end_date, note')
+            .eq('user_id', userId)
+            .order('start_date', { ascending: false }),
         ])
 
         const rows = (entriesResult.data ?? []) as WorkTimeEntryRow[]
@@ -328,6 +355,14 @@ export const useWorkTimeStore = create<WorkTimeState>()(
         const manualCompDays = settingsRow?.manual_comp_days ?? get().manualCompDays
         const takenCompDays = settingsRow?.taken_comp_days ?? get().takenCompDays
 
+        const absencePeriods: AbsencePeriod[] = ((absenceResult.data ?? []) as { id: string; type: AbsenceType; start_date: string; end_date: string; note: string | null }[]).map((a) => ({
+          id: a.id,
+          type: a.type,
+          startDate: a.start_date,
+          endDate: a.end_date,
+          note: a.note ?? undefined,
+        }))
+
         set({
           entries,
           punches,
@@ -341,6 +376,7 @@ export const useWorkTimeStore = create<WorkTimeState>()(
           activeProfileId,
           manualCompDays,
           takenCompDays,
+          absencePeriods,
         })
 
         if (!settingsRow) {
@@ -540,6 +576,40 @@ export const useWorkTimeStore = create<WorkTimeState>()(
         set({ entries: { ...state.entries, [date]: updated }, auditLog: [audit, ...state.auditLog] })
         void syncEntry(updated)
         void syncAudit(audit)
+      },
+      addAbsencePeriod: (startDate, endDate, type, note) => {
+        const state = get()
+        const period: AbsencePeriod = { id: createId(), type, startDate, endDate, note }
+        const dates = eachDateInRange(startDate, endDate)
+        const newEntries = { ...state.entries }
+        for (const date of dates) {
+          if (type === 'sick') {
+            const entry = ensureEntry(newEntries, date, state.settings.defaultBreakMinutes)
+            const target = dayTargetForDate(date, state.settings)
+            newEntries[date] = { ...entry, sickDay: true, workedMinutes: target, breakMinutes: 0, startTime: undefined, endTime: undefined }
+            void syncEntry(newEntries[date])
+          } else if (type === 'vacation') {
+            const entry = ensureEntry(newEntries, date, state.settings.defaultBreakMinutes)
+            const target = dayTargetForDate(date, state.settings)
+            newEntries[date] = { ...entry, workedMinutes: target, breakMinutes: 0 }
+            void syncEntry(newEntries[date])
+          }
+        }
+        set({ entries: newEntries, absencePeriods: [period, ...state.absencePeriods] })
+        if (isSupabaseConfigured) {
+          void supabase.auth.getUser().then(({ data }) => {
+            const userId = data.user?.id
+            if (!userId) return
+            void supabase.from('absence_periods').insert({
+              id: period.id,
+              user_id: userId,
+              type: period.type,
+              start_date: period.startDate,
+              end_date: period.endDate,
+              note: period.note ?? null,
+            })
+          })
+        }
       },
       incrementManualCompDays: () => {
         const manualCompDays = get().manualCompDays + 1

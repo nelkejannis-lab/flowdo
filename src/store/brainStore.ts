@@ -16,6 +16,9 @@ export interface NotePage {
   content: string
   summary?: string
   checklist?: NoteChecklistItem[]
+  tags?: string[]
+  people?: { name: string }[]
+  linkedBoardId?: string
   audioBase64?: string
   audioDuration?: number
   createdAt: string
@@ -78,6 +81,9 @@ async function syncPage(page: NotePage, userId: string) {
     content: page.content,
     summary: page.summary ?? null,
     checklist: page.checklist ?? [],
+    tags: page.tags ?? [],
+    people: page.people ?? [],
+    linked_board_id: page.linkedBoardId ?? null,
     audio_base64: page.audioBase64 ?? null,
     audio_duration: page.audioDuration ?? null,
     created_at: page.createdAt,
@@ -131,6 +137,9 @@ export const useBrainStore = create<BrainState>()(
           content: p.content,
           summary: p.summary ?? undefined,
           checklist: p.checklist ?? [],
+          tags: p.tags ?? [],
+          people: p.people ?? [],
+          linkedBoardId: p.linked_board_id ?? undefined,
           audioBase64: p.audio_base64 ?? undefined,
           audioDuration: p.audio_duration ?? undefined,
           createdAt: p.created_at,

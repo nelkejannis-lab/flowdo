@@ -121,6 +121,7 @@ export default function GlobalSearch() {
           <Search size={16} className="text-gray-400" />
           <input
             ref={inputRef}
+            data-global-search
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {

@@ -16,6 +16,7 @@ interface DayViewProps {
   onAddTask: () => void
   onEventClick: (event: CalendarEvent) => void
   onEntryClick?: (entry: CalendarEntry) => void
+  onTaskDrop?: (task: Task, hour: number) => void
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
@@ -25,7 +26,7 @@ function timeToMinutes(t: string): number {
   return h * 60 + (m ?? 0)
 }
 
-export default function DayView({ currentDate, tasks, events, entries = [], onAddTask, onEventClick, onEntryClick }: DayViewProps) {
+export default function DayView({ currentDate, tasks, events, entries = [], onAddTask, onEventClick, onEntryClick, onTaskDrop }: DayViewProps) {
   const { t, i18n } = useTranslation('calendar')
   const dateLocale = i18n.language === 'en' ? enUS : de
   const iso = toISODate(currentDate)
@@ -98,6 +99,17 @@ export default function DayView({ currentDate, tasks, events, entries = [], onAd
               key={h}
               className="absolute left-0 right-0 flex border-b border-gray-100 dark:border-racing-800/60"
               style={{ top: h * HOUR_H, height: HOUR_H }}
+              onDragOver={(e) => { if (onTaskDrop) e.preventDefault() }}
+              onDrop={(e) => {
+                if (!onTaskDrop) return
+                e.preventDefault()
+                const raw = e.dataTransfer.getData('application/x-mooncrew-task')
+                if (!raw) return
+                try {
+                  const task = JSON.parse(raw) as Task
+                  onTaskDrop(task, h)
+                } catch { /* ignore */ }
+              }}
             >
               <div className="w-14 flex-shrink-0 pr-2 pt-1 text-right text-[10px] font-medium text-gray-400 select-none">
                 {h === 0 ? '' : `${h.toString().padStart(2, '0')}:00`}

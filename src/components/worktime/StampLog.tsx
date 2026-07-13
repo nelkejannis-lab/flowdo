@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { de, enUS } from 'date-fns/locale'
 import { format, addDays, subDays, parseISO } from 'date-fns'
-import { LogIn, LogOut, ShieldCheck, AlertTriangle, History, ChevronLeft, ChevronRight, CalendarDays, Download } from 'lucide-react'
+import { LogIn, LogOut, Coffee, ShieldCheck, AlertTriangle, History, ChevronLeft, ChevronRight, CalendarDays, Download } from 'lucide-react'
 import { useWorkTimeStore } from '../../store/workTimeStore'
 import { useAuthStore } from '../../store/authStore'
 import { todayISO, toISODate } from '../../utils/date'
@@ -134,12 +134,20 @@ export default function StampLog() {
           <ul className="flex flex-col gap-1.5">
             {dayPunches.map((p) => (
               <li key={p.id} className="flex items-center gap-2 text-sm">
-                {p.kind === 'in' ? (
+                {p.source === 'break' ? (
+                  <Coffee size={14} className="text-amber-500" />
+                ) : p.kind === 'in' ? (
                   <LogIn size={14} className="text-emerald-500" />
                 ) : (
                   <LogOut size={14} className="text-red-500" />
                 )}
-                <span className="font-medium">{p.kind === 'in' ? t('stampLog.clockIn') : t('stampLog.clockOut')}</span>
+                <span className="font-medium">
+                  {p.source === 'break'
+                    ? t('stampLog.break')
+                    : p.kind === 'in'
+                      ? t('stampLog.clockIn')
+                      : t('stampLog.clockOut')}
+                </span>
                 <span className="ml-auto tabular-nums text-gray-500 dark:text-racing-300">{formatPunchTime(p.punchedAt)}</span>
               </li>
             ))}

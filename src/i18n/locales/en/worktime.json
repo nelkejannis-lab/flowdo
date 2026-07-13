@@ -41,6 +41,7 @@
     "noPunches": "No punches on this day.",
     "clockIn": "In",
     "clockOut": "Out",
+    "break": "Break",
     "netOnDay": "Net on this day",
     "changeLog": "Change log",
     "today": "Today",
@@ -81,6 +82,16 @@
     "revoke": "Revoke sick leave",
     "markSick": "Sick",
     "markSickTitle": "Mark today as sick"
+  },
+  "absence": {
+    "title": "Absences",
+    "types": {
+      "vacation": "Vacation",
+      "sick": "Sick",
+      "overtime": "Overtime"
+    },
+    "notePlaceholder": "Note (optional)",
+    "save": "Save"
   },
   "overview": {
     "totalOvertime": "Total overtime",

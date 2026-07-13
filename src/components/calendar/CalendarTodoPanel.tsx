@@ -36,6 +36,7 @@ export default function CalendarTodoPanel({ tasks, onTaskClick }: CalendarTodoPa
               draggable
               onDragStart={(e) => {
                 e.dataTransfer.setData('text/todo-id', tk.id)
+                e.dataTransfer.setData('application/x-mooncrew-task', JSON.stringify(tk))
                 e.dataTransfer.effectAllowed = 'move'
               }}
               onClick={() => onTaskClick(tk)}

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useBrainStore, NotePage, NoteColumn, NoteChecklistItem } from '../store/brainStore'
+import { useBoardsStore } from '../store/boardsStore'
 import { createId } from '../utils/id'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
@@ -25,6 +26,7 @@ export default function SecondBrainPage() {
   const { t } = useTranslation('brain')
   const columns = useBrainStore((s) => s.columns)
   const pages = useBrainStore((s) => s.pages)
+  const boards = useBoardsStore((s) => s.boards)
   const addColumn = useBrainStore((s) => s.addColumn)
   const updateColumn = useBrainStore((s) => s.updateColumn)
   const deleteColumn = useBrainStore((s) => s.deleteColumn)
@@ -57,6 +59,9 @@ export default function SecondBrainPage() {
   const [noteTitle, setNoteTitle] = useState('')
   const [noteContent, setNoteContent] = useState('')
   const [noteChecklist, setNoteChecklist] = useState<NoteChecklistItem[]>([])
+  const [noteTags, setNoteTags] = useState('')
+  const [notePeople, setNotePeople] = useState('')
+  const [noteLinkedBoardId, setNoteLinkedBoardId] = useState('')
 
   // Speech Recognition & Recording states (for editing/creating notes)
   const [isTranscribing, setIsTranscribing] = useState(false)
@@ -305,6 +310,9 @@ ${textToSummarize}`
     setActivePage(page)
     setNoteTitle(page.title)
     setNoteContent(page.content)
+    setNoteTags((page.tags ?? []).join(', '))
+    setNotePeople((page.people ?? []).map((p) => p.name).join(', '))
+    setNoteLinkedBoardId(page.linkedBoardId ?? '')
     setAudioUrl(page.audioBase64 || null)
     setAudioBlob(null)
     setAiError(null)
@@ -317,6 +325,9 @@ ${textToSummarize}`
     updatePage(activePage.id, {
       title: noteTitle.trim() || t('untitledPage'),
       content: noteContent,
+      tags: noteTags.split(',').map((s) => s.trim()).filter(Boolean),
+      people: notePeople.split(',').map((s) => s.trim()).filter(Boolean).map((name) => ({ name })),
+      linkedBoardId: noteLinkedBoardId || undefined,
     })
     setActivePage((prev) => (prev ? { ...prev, title: noteTitle.trim() || t('untitledPage'), content: noteContent } : null))
     setJustSaved(true)
@@ -667,6 +678,19 @@ ${textToSummarize}`
                   ))}
                 </select>
               </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <input value={noteTags} onChange={(e) => setNoteTags(e.target.value)} placeholder="Tags (kommagetrennt)"
+                  className="rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-xs dark:border-racing-700" />
+                <input value={notePeople} onChange={(e) => setNotePeople(e.target.value)} placeholder="Personen (kommagetrennt)"
+                  className="rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-xs dark:border-racing-700" />
+              </div>
+              {boards.length > 0 && (
+                <select value={noteLinkedBoardId} onChange={(e) => setNoteLinkedBoardId(e.target.value)}
+                  className="w-full max-w-xs rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-xs dark:border-racing-700">
+                  <option value="">Projekt verknüpfen…</option>
+                  {boards.map((b) => <option key={b.id} value={b.id}>{b.title}</option>)}
+                </select>
+              )}
               <textarea
                 value={noteContent}
                 onChange={(e) => setNoteContent(e.target.value)}

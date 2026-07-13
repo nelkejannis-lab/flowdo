@@ -72,6 +72,7 @@ export default function CalendarPage() {
   const fetchEntries = useCalendarEntriesStore((s) => s.fetchEntries)
   const toggleEntryCompleted = useCalendarEntriesStore((s) => s.toggleCompleted)
   const rescheduleEntry = useCalendarEntriesStore((s) => s.rescheduleEntry)
+  const addEntry = useCalendarEntriesStore((s) => s.addEntry)
   const [view, setView] = useState<ViewMode>('week')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [editingTask, setEditingTask] = useState<Task | null>(null)
@@ -461,6 +462,22 @@ export default function CalendarPage() {
               onAddTask={() => setNewTaskDate(toISODate(currentDate))}
               onEventClick={(event) => setEditingEvent(event)}
               onEntryClick={(entry) => setEditingEntry(entry)}
+              onTaskDrop={(task, hour) => {
+                const date = toISODate(currentDate)
+                const startTime = `${hour.toString().padStart(2, '0')}:00`
+                const duration = task.estimatedMinutes ?? 60
+                const endTotal = hour * 60 + duration
+                const endTime = `${Math.floor(endTotal / 60).toString().padStart(2, '0')}:${(endTotal % 60).toString().padStart(2, '0')}`
+                void addEntry({
+                  type: 'termin',
+                  title: task.title,
+                  date,
+                  startTime,
+                  endTime,
+                  color: '#10B981',
+                  invitedUserIds: [],
+                })
+              }}
             />
           )}
         </div>

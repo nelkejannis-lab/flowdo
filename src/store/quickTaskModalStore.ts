@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { Priority } from '../types'
 
 export interface QuickTaskModalProps {
+  mode?: 'task' | 'termin'
   defaultTitle?: string
   defaultDueDate?: string
   defaultPriority?: Priority

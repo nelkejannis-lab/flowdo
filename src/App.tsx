@@ -1,5 +1,5 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { lazy, Suspense, useEffect, useState, useMemo } from 'react'
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import Layout from './components/layout/Layout'
 import LoginPage from './pages/LoginPage'
@@ -12,8 +12,11 @@ import { useCalendarReminders } from './hooks/useCalendarReminders'
 import { isSupabaseConfigured } from './lib/supabase'
 import ErrorBoundary from './components/layout/ErrorBoundary'
 import TaskFormModal from './components/tasks/TaskFormModal'
+import CalendarEntryFormModal from './components/calendar/CalendarEntryFormModal'
+import ShortcutsHelpModal from './components/layout/ShortcutsHelpModal'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useQuickTaskModalStore } from './store/quickTaskModalStore'
+import { useWorkTimeStore } from './store/workTimeStore'
 import TaskTray from './components/layout/TaskTray'
 
 const Dashboard = lazy(() => import('./pages/Dashboard'))
@@ -49,6 +52,7 @@ function PageLoader() {
 export default function App() {
   const { t } = useTranslation('layout')
   const location = useLocation()
+  const navigate = useNavigate()
   const mode = useSettingsStore((s) => s.mode)
   const pinkAccent = useSettingsStore((s) => s.pinkAccent)
   const init = useAuthStore((s) => s.init)
@@ -70,8 +74,27 @@ export default function App() {
   }, [session, subscribeToTasks, subscribeToEntries])
 
   const [showNewTask, setShowNewTask] = useState(false)
+  const [showNewTermin, setShowNewTermin] = useState(false)
+  const [showShortcuts, setShowShortcuts] = useState(false)
   const quickTaskModal = useQuickTaskModalStore()
-  useKeyboardShortcuts({ onNewTask: () => setShowNewTask(true) })
+  const clockIn = useWorkTimeStore((s) => s.clockIn)
+  const isRunning = useWorkTimeStore((s) => s.isRunning)
+  const isOnBreak = useWorkTimeStore((s) => s.isOnBreak)
+  const startBreak = useWorkTimeStore((s) => s.startBreak)
+  const endBreak = useWorkTimeStore((s) => s.endBreak)
+
+  const shortcutHandlers = useMemo(() => ({
+    onNewTask: () => setShowNewTask(true),
+    onNewTermin: () => setShowNewTermin(true),
+    onCalendar: () => navigate('/calendar'),
+    onClockIn: () => { if (!isRunning) clockIn() },
+    onPause: () => { if (isOnBreak) endBreak(); else if (isRunning) startBreak('break') },
+    onSearch: () => document.querySelector<HTMLInputElement>('[data-global-search]')?.focus(),
+    onBrain: () => navigate('/gehirn'),
+    onShowHelp: () => setShowShortcuts(true),
+  }), [navigate, clockIn, isRunning, isOnBreak, startBreak, endBreak])
+
+  useKeyboardShortcuts(shortcutHandlers)
 
   useEffect(() => {
     const root = document.documentElement
@@ -114,6 +137,8 @@ export default function App() {
   return (
     <>
     {showNewTask && <TaskFormModal onClose={() => setShowNewTask(false)} />}
+    {showNewTermin && <CalendarEntryFormModal onClose={() => setShowNewTermin(false)} />}
+    {showShortcuts && <ShortcutsHelpModal onClose={() => setShowShortcuts(false)} />}
     {quickTaskModal.isOpen && (
       <TaskFormModal
         defaultTitle={quickTaskModal.props?.defaultTitle}

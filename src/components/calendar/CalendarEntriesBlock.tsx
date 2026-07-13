@@ -1,3 +1,5 @@
+import { format, parseISO } from 'date-fns'
+import { de, enUS } from 'date-fns/locale'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import type { CalendarEntry } from '../../types'
@@ -10,7 +12,8 @@ interface Props {
 }
 
 export default function CalendarEntriesBlock({ entries, label, today }: Props) {
-  const { t } = useTranslation('dashboard')
+  const { t, i18n } = useTranslation('dashboard')
+  const dateLocale = i18n.language === 'en' ? enUS : de
   if (entries.length === 0) return null
 
   return (
@@ -39,12 +42,12 @@ export default function CalendarEntriesBlock({ entries, label, today }: Props) {
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{entry.title}</p>
-              {(entry.startTime || entry.endTime || (entry.endDate && entry.endDate > today)) && (
+              {(entry.startTime || entry.endTime || entry.date !== today || (entry.endDate && entry.endDate > today)) && (
                 <p className="text-xs text-gray-400">
-                  {entry.startTime && entry.endTime
-                    ? `${entry.startTime} – ${entry.endTime}`
-                    : entry.startTime ?? entry.endTime ?? ''}
-                  {entry.endDate && entry.endDate > today ? (entry.startTime ? ` · ${t('ongoing')}` : t('ongoing')) : ''}
+                  <span className="font-medium">{format(parseISO(entry.date), 'dd.MM.', { locale: dateLocale })}</span>
+                  {entry.startTime && <span> {entry.startTime}</span>}
+                  {entry.endTime && entry.startTime ? ` – ${entry.endTime}` : entry.endTime ?? ''}
+                  {entry.endDate && entry.endDate > today ? ` · ${t('ongoing')}` : ''}
                 </p>
               )}
             </div>

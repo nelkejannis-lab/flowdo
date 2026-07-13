@@ -6,6 +6,7 @@ import { ArrowLeft, Building2, Check, ChevronDown, ChevronRight, ChevronLeft, Gl
 import { useBoardsStore } from '../store/boardsStore'
 import { useBoardInvitesStore } from '../store/boardInvitesStore'
 import { useProjectTasksStore } from '../store/projectTasksStore'
+import ProjectTimeReport from '../components/boards/ProjectTimeReport'
 import { useFriendsStore } from '../store/friendsStore'
 import { useAuthStore } from '../store/authStore'
 import { useCommentsStore } from '../store/commentsStore'
@@ -43,6 +44,7 @@ export default function BoardDetailPage() {
   const deleteColumn = useBoardsStore((s) => s.deleteColumn)
 
   const friends = useFriendsStore((s) => s.friends)
+  const searchAllProfiles = useFriendsStore((s) => s.searchAllProfiles)
   const fetchFriends = useFriendsStore((s) => s.fetchAll)
   const currentUserId = useAuthStore((s) => s.user?.id)
 
@@ -51,7 +53,7 @@ export default function BoardDetailPage() {
   const deleteTask = useProjectTasksStore((s) => s.deleteTask)
   const toggleTaskCompleted = useProjectTasksStore((s) => s.toggleTaskCompleted)
 
-  const [activeView, setActiveView] = useState<'board' | 'list' | 'calendar'>('board')
+  const [activeView, setActiveView] = useState<'board' | 'list' | 'calendar' | 'overview'>('board')
   const [calendarDate, setCalendarDate] = useState(new Date())
   const [newTaskDate, setNewTaskDate] = useState<string | null>(null)
 
@@ -61,6 +63,8 @@ export default function BoardDetailPage() {
   const [todoInput, setTodoInput] = useState('')
   const [todosOpen, setTodosOpen] = useState(true)
   const [showMembers, setShowMembers] = useState(false)
+  const [memberSearch, setMemberSearch] = useState('')
+  const [searchResults, setSearchResults] = useState<{ id: string; display_name: string; avatar_color: string }[]>([])
   const [memberError, setMemberError] = useState<string | null>(null)
   const [invitedIds, setInvitedIds] = useState<string[]>([])
   const [progressFilter, setProgressFilter] = useState<ProgressFilter>('all')
@@ -235,6 +239,11 @@ export default function BoardDetailPage() {
                             {profile ? profile.display_name : t('detail.me')}
                             {m.role === 'owner' && <span className="ml-1 text-xs text-gray-400">{t('detail.owner')}</span>}
                           </span>
+                          {profile && (
+                            <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-bold text-gray-500 dark:bg-racing-800">
+                              {tasks.filter((tk) => !tk.completed && (tk.assignedTo === m.userId || tk.ownerId === m.userId)).length}
+                            </span>
+                          )}
                           {isOwner && m.role !== 'owner' && (
                             <button
                               onClick={() => removeMember(board.id, m.userId)}
@@ -256,10 +265,32 @@ export default function BoardDetailPage() {
                       <UserPlus size={12} />
                       {t('detail.addMember')}
                     </p>
-                    {availableFriends.length === 0 ? (
+                    {availableFriends.length === 0 && searchResults.length === 0 ? (
                       <p className="text-xs text-gray-400">{t('detail.noFriendsAvailable')}</p>
                     ) : (
                       <div className="flex flex-col gap-1">
+                        <input
+                          value={memberSearch}
+                          onChange={async (e) => {
+                            const q = e.target.value
+                            setMemberSearch(q)
+                            if (q.length >= 2) {
+                              const results = await searchAllProfiles(q)
+                              setSearchResults(results.map((p) => ({ id: p.id, display_name: p.display_name, avatar_color: p.avatar_color })))
+                            } else setSearchResults([])
+                          }}
+                          placeholder={t('detail.searchColleagues')}
+                          className="mb-1 w-full rounded-lg border border-gray-200 px-2 py-1 text-xs dark:border-racing-700"
+                        />
+                        {searchResults.filter((p) => !board.members.some((m) => m.userId === p.id) && p.id !== board.ownerId).map((p) => (
+                          <button key={p.id} onClick={() => handleAddMember(p.id)}
+                            className="flex items-center gap-2 rounded-lg px-1.5 py-1 text-left text-sm hover:bg-gray-50 dark:hover:bg-racing-800">
+                            <span className="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold text-white" style={{ backgroundColor: p.avatar_color }}>
+                              {p.display_name.slice(0, 2).toUpperCase()}
+                            </span>
+                            <span className="truncate">{p.display_name}</span>
+                          </button>
+                        ))}
                         {availableFriends.map((f) => {
                           const invited = invitedIds.includes(f.profile.id)
                           return (
@@ -336,6 +367,15 @@ export default function BoardDetailPage() {
           >
             <List size={13} />
             Liste
+          </button>
+          <button
+            onClick={() => setActiveView('overview')}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              activeView === 'overview' ? 'bg-accent text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
+            }`}
+          >
+            <Users size={13} />
+            {t('detail.overview')}
           </button>
           <button
             onClick={() => setActiveView('calendar')}
@@ -440,6 +480,10 @@ export default function BoardDetailPage() {
                 )
               })}
             </div>
+          )}
+
+          {activeView === 'overview' && (
+            <ProjectTimeReport board={board} tasks={tasks} />
           )}
 
           {activeView === 'calendar' && (

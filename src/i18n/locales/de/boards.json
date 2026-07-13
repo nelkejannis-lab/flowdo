@@ -50,6 +50,8 @@
     "deadline": "Deadline: {{date}}",
     "filterAll": "Alle Beteiligten",
     "filterMine": "Nur ich",
+    "overview": "Übersicht",
+    "searchColleagues": "Kollegen suchen…",
     "hideCompleted": "Erledigte ausblenden",
     "addColumn": "Spalte hinzufügen",
     "newColumnTitle": "Neue Spalte",
@@ -81,7 +83,19 @@
     "externalLaunch": "Externer Launch",
     "delete": "Löschen",
     "save": "Speichern",
-    "create": "Erstellen"
+    "create": "Erstellen",
+    "template": "Vorlage",
+    "noTemplate": "Leeres Projekt"
+  },
+  "timeReport": {
+    "title": "Zeit & Fortschritt",
+    "totalTime": "Gesamtzeit",
+    "progress": "Fortschritt",
+    "openTasks": "Offen",
+    "minutes": "Minuten",
+    "task": "Aufgabe",
+    "noTask": "Allgemein",
+    "log": "Erfassen"
   },
   "todos": {
     "calendarHint": "Klicke auf einen Tag, um eine neue Aufgabe für diesen Tag hinzuzufügen.",

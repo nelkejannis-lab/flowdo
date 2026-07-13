@@ -4,6 +4,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { deleteAttachment, uploadAttachment } from '../lib/attachments'
 import { createId } from '../utils/id'
 import type { Attachment, Board, BoardColumn, BoardFolder, ProjectMember } from '../types'
+import { BOARD_TEMPLATES } from '../lib/boardTemplates'
 
 interface NewBoardInput {
   title: string
@@ -115,6 +116,7 @@ interface BoardsState {
   renameFolder: (id: string, title: string) => Promise<void>
   deleteFolder: (id: string) => Promise<void>
   moveBoardToFolder: (boardId: string, folderId: string | null) => Promise<void>
+  createFromTemplate: (templateId: string, title?: string) => Promise<Board | null>
   subscribeToBoards: () => () => void
 }
 
@@ -432,6 +434,38 @@ export const useBoardsStore = create<BoardsState>()(
         set((state) => ({
           boards: state.boards.map((b) => (b.id === boardId ? { ...b, folderId: folderId ?? undefined } : b)),
         }))
+      },
+
+      createFromTemplate: async (templateId, title) => {
+        const template = BOARD_TEMPLATES.find((t) => t.id === templateId)
+        if (!template) return null
+        const board = await get().addBoard({
+          title: title ?? template.title,
+          description: template.description,
+          color: template.color,
+        })
+        if (!board || !isSupabaseConfigured) return board
+
+        const columns = board.columns
+        for (const tmplTask of template.tasks) {
+          const columnId = columns[tmplTask.columnIndex]?.id ?? columns[0]?.id
+          if (!columnId) continue
+          await supabase.from('tasks').insert({
+            board_id: board.id,
+            column_id: columnId,
+            title: tmplTask.title,
+            owner_id: board.ownerId,
+            priority: 'medium',
+            tags: [],
+            urgent: false,
+            important: false,
+            completed: false,
+            subtasks: [],
+            attachments: [],
+          })
+        }
+        await get().fetchBoards()
+        return get().boards.find((b) => b.id === board.id) ?? board
       },
 
       subscribeToBoards: () => {

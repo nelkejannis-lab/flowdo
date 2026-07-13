@@ -50,6 +50,8 @@
     "deadline": "Deadline: {{date}}",
     "filterAll": "All participants",
     "filterMine": "Only me",
+    "overview": "Overview",
+    "searchColleagues": "Search colleagues…",
     "hideCompleted": "Hide completed",
     "addColumn": "Add column",
     "newColumnTitle": "New column",
@@ -81,7 +83,19 @@
     "externalLaunch": "External launch",
     "delete": "Delete",
     "save": "Save",
-    "create": "Create"
+    "create": "Create",
+    "template": "Template",
+    "noTemplate": "Empty project"
+  },
+  "timeReport": {
+    "title": "Time & progress",
+    "totalTime": "Total time",
+    "progress": "Progress",
+    "openTasks": "Open",
+    "minutes": "Minutes",
+    "task": "Task",
+    "noTask": "General",
+    "log": "Log"
   },
   "todos": {
     "calendarHint": "Click a day to add a new task for that day.",

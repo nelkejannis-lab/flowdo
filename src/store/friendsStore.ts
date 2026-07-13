@@ -15,6 +15,7 @@ interface FriendsState {
   error: string | null
   fetchAll: () => Promise<void>
   searchUsers: (query: string) => Promise<Profile[]>
+  searchAllProfiles: (query: string) => Promise<Profile[]>
   sendRequest: (username: string) => Promise<string | null>
   acceptRequest: (friendshipId: string) => Promise<void>
   declineOrCancel: (friendshipId: string) => Promise<void>
@@ -98,6 +99,21 @@ export const useFriendsStore = create<FriendsState>()((set, get) => ({
     ])
 
     return (data as Profile[]).filter((p) => !excludedIds.has(p.id))
+  },
+
+  searchAllProfiles: async (query) => {
+    const cleanQuery = query.trim().toLowerCase().replace(/^@/, '')
+    if (!cleanQuery || cleanQuery.length < 2) return []
+    const { data: userData } = await supabase.auth.getUser()
+    const userId = userData.user?.id
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .or(`username.ilike.%${cleanQuery}%,display_name.ilike.%${cleanQuery}%`)
+      .neq('id', userId ?? '')
+      .limit(8)
+    if (error || !data) return []
+    return data as Profile[]
   },
 
   sendRequest: async (username) => {

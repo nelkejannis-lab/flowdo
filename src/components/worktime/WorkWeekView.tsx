@@ -14,6 +14,7 @@ export default function WorkWeekView() {
   const entries = useWorkTimeStore((s) => s.entries)
   const settings = useWorkTimeStore((s) => s.settings)
   const setBreakMinutes = useWorkTimeStore((s) => s.setBreakMinutes)
+  const setWorkedMinutes = useWorkTimeStore((s) => s.setWorkedMinutes)
   const setDayTimes = useWorkTimeStore((s) => s.setDayTimes)
   const markSickDay = useWorkTimeStore((s) => s.markSickDay)
   const unmarkSickDay = useWorkTimeStore((s) => s.unmarkSickDay)
@@ -106,6 +107,12 @@ export default function WorkWeekView() {
                       : <input type="time" value={entry?.endTime ?? ''} onChange={(e) => setDayTimes(iso, entry?.startTime ?? '', e.target.value)}
                           className="w-full rounded border border-gray-200 bg-transparent px-1.5 py-1 text-sm focus:border-accent focus:outline-none dark:border-racing-700" />
                     }
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400 mb-0.5">{t('week.columns.worked')}</p>
+                    <input type="number" min={0} step={5} value={entry ? Math.round(net) : ''} placeholder="0"
+                      onChange={(e) => setWorkedMinutes(iso, Math.max(0, Number(e.target.value)))}
+                      className="w-full rounded border border-gray-200 bg-transparent px-1.5 py-1 text-sm focus:border-accent focus:outline-none dark:border-racing-700" />
                   </div>
                   <div>
                     <p className="text-[10px] text-gray-400 mb-0.5">{t('week.columns.break')} min</p>
@@ -208,9 +215,20 @@ export default function WorkWeekView() {
                   className="w-16 rounded-md border border-gray-200 bg-transparent px-2 py-1 text-right text-sm focus:border-accent focus:outline-none dark:border-racing-700"
                 />
               </div>
-              <div className="flex items-center justify-end gap-1 py-1 font-medium">
-                {(entry || isLive) ? formatHM(net) : '–'}
-                {isLive && <span className="text-accent animate-pulse">●</span>}
+              <div className="flex items-center justify-end py-1">
+                {isLive ? (
+                  <span className="w-20 px-2 py-1 text-right text-sm font-medium text-accent animate-pulse">{formatHM(net)} ●</span>
+                ) : (
+                  <input
+                    type="number"
+                    min={0}
+                    step={5}
+                    value={entry ? Math.round(net) : ''}
+                    placeholder="0"
+                    onChange={(e) => setWorkedMinutes(iso, Math.max(0, Number(e.target.value)))}
+                    className="w-20 rounded-md border border-gray-200 bg-transparent px-2 py-1 text-right text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+                  />
+                )}
               </div>
               <div className="flex items-center justify-end py-1 text-gray-400">{formatHM(target)}</div>
               <div

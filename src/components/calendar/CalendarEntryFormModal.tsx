@@ -62,6 +62,7 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, defa
   const updateEntry = useCalendarEntriesStore((s) => s.updateEntry)
   const deleteEntry = useCalendarEntriesStore((s) => s.deleteEntry)
   const friends = useFriendsStore((s) => s.friends)
+  const searchAllProfiles = useFriendsStore((s) => s.searchAllProfiles)
   const fetchFriends = useFriendsStore((s) => s.fetchAll)
   const teams = useTeamsStore((s) => s.teams)
   const fetchTeams = useTeamsStore((s) => s.fetch)
@@ -88,6 +89,8 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, defa
   const [recurrenceWeeks, setRecurrenceWeeks] = useState<RecurrenceWeeks>(0)
   const [entryRecurrence, setEntryRecurrence] = useState<CalendarEntry['recurrence']>(entry?.recurrence)
   const [meetingLink, setMeetingLink] = useState(entry?.meetingLink ?? '')
+  const [colleagueSearch, setColleagueSearch] = useState('')
+  const [colleagueResults, setColleagueResults] = useState<{ id: string; display_name: string; avatar_color: string }[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -402,6 +405,32 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, defa
                   </button>
                 )
               })}
+            </div>
+            {/* Kollegen-Suche (alle Nutzer) */}
+            <div className="mt-2">
+              <input
+                value={colleagueSearch}
+                onChange={async (e) => {
+                  const q = e.target.value
+                  setColleagueSearch(q)
+                  if (q.length >= 2) {
+                    const results = await searchAllProfiles(q)
+                    setColleagueResults(results.map((p) => ({ id: p.id, display_name: p.display_name, avatar_color: p.avatar_color })))
+                  } else setColleagueResults([])
+                }}
+                placeholder={t('form.searchColleagues')}
+                className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-xs dark:border-racing-700"
+              />
+              {colleagueResults.length > 0 && (
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {colleagueResults.map((p) => (
+                    <button key={p.id} type="button" onClick={() => toggleInvitee(p.id)}
+                      className={`rounded-full border px-2 py-0.5 text-xs ${invitedUserIds.includes(p.id) ? 'border-accent bg-accent/10 text-accent' : 'border-gray-200 text-gray-500'}`}>
+                      {p.display_name}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             {/* Einzelne Kollegen */}
             {friends.length > 0 && (

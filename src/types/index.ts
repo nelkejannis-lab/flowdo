@@ -30,6 +30,7 @@ export interface Task {
   columnId?: string
   ownerId?: string
   assignedTo?: string
+  assigneeIds?: string[]
   assignee?: {
     id: string
     username: string
@@ -156,6 +157,16 @@ export interface SocialStory {
   exits?: number
   tapsForward?: number
   tapsBack?: number
+}
+
+export type AbsenceType = 'vacation' | 'sick' | 'overtime'
+
+export interface AbsencePeriod {
+  id: string
+  type: AbsenceType
+  startDate: string
+  endDate: string
+  note?: string
 }
 
 export interface WorkDayEntry {

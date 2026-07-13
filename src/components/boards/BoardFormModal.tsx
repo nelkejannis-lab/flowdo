@@ -6,6 +6,7 @@ import { useBoardsStore, BOARD_COLORS } from '../../store/boardsStore'
 import { useFriendsStore } from '../../store/friendsStore'
 import { useAuthStore } from '../../store/authStore'
 import type { Attachment, Board } from '../../types'
+import { BOARD_TEMPLATES } from '../../lib/boardTemplates'
 
 interface BoardFormModalProps {
   board?: Board
@@ -15,6 +16,7 @@ interface BoardFormModalProps {
 export default function BoardFormModal({ board, onClose }: BoardFormModalProps) {
   const { t } = useTranslation('boards')
   const addBoard = useBoardsStore((s) => s.addBoard)
+  const createFromTemplate = useBoardsStore((s) => s.createFromTemplate)
   const updateBoard = useBoardsStore((s) => s.updateBoard)
   const deleteBoard = useBoardsStore((s) => s.deleteBoard)
   const addAttachment = useBoardsStore((s) => s.addAttachment)
@@ -37,6 +39,7 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
   const [error, setError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [attachments, setAttachments] = useState<Attachment[]>(board?.attachments ?? [])
+  const [templateId, setTemplateId] = useState('')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -53,6 +56,8 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
         folderId: folderId || null,
         responsibleUserId: responsibleUserId || null,
       })
+    } else if (templateId) {
+      await createFromTemplate(templateId, title.trim())
     } else {
       await addBoard({
         title: title.trim(),
@@ -85,6 +90,19 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
           rows={2}
           className="rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
         />
+
+        {!board && (
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.template')}</label>
+            <select value={templateId} onChange={(e) => setTemplateId(e.target.value)}
+              className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm dark:border-racing-700">
+              <option value="">{t('form.noTemplate')}</option>
+              {BOARD_TEMPLATES.map((tmpl) => (
+                <option key={tmpl.id} value={tmpl.id}>{tmpl.title}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div>
           <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.responsible')}</label>

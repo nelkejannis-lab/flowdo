@@ -36,6 +36,13 @@ import { useSettingsStore } from '../store/settingsStore'
 import { isDueThisWeek, isDueToday, isOverdue, todayISO, parseNaturalDate, parseTaskInput, isCompletedToday } from '../utils/date'
 import { useQuickTaskModalStore } from '../store/quickTaskModalStore'
 
+function isLikelyAppointment(input: string): boolean {
+  const lower = input.toLowerCase()
+  return /\b(termin|meeting|besprechung|call|zoom|teams|interview|arzt)\b/.test(lower)
+    || /\d{1,2}[:.]\d{2}/.test(input)
+    || /\bum\s+\d{1,2}/.test(lower)
+}
+
 export default function Dashboard() {
   const { t, i18n } = useTranslation('dashboard')
   const dateLocale = i18n.language === 'en' ? enUS : de
@@ -226,6 +233,12 @@ export default function Dashboard() {
             if (!input || parsingTask) return
             setParsingTask(true)
             try {
+              if (isLikelyAppointment(input)) {
+                setEditingEntry(undefined)
+                setShowEntryForm(true)
+                setQuickInput('')
+                return
+              }
               let parsed
               try {
                 parsed = await useAiSchedulerStore.getState().parseTaskWithAi(input, boards)
