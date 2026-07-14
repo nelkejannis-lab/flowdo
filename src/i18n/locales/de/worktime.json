@@ -67,7 +67,10 @@
     },
     "total": "Woche gesamt",
     "workedPlaceholder": "8:00",
-    "workedHint": "Stunden: 8, 8.5 oder 8:30",
+    "workedHint": "Direkte Eingabe: Pause wird nicht abgezogen (8, 8.5 oder 8:30)",
+    "fromHint": "Von/Bis: Zeitspanne; Pause wird davon abgezogen",
+    "toHint": "Von/Bis: Zeitspanne; Pause wird davon abgezogen",
+    "breakHint": "Separat erfasst; bei Von/Bis von der Zeitspanne abgezogen",
     "fillTarget": "Soll"
   },
   "weekdays": {

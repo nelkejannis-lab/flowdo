@@ -67,7 +67,10 @@
     },
     "total": "Week total",
     "workedPlaceholder": "8:00",
-    "workedHint": "Hours: 8, 8.5 or 8:30",
+    "workedHint": "Direct entry: break is not deducted (8, 8.5 or 8:30)",
+    "fromHint": "From/To: time range; break is deducted from the span",
+    "toHint": "From/To: time range; break is deducted from the span",
+    "breakHint": "Tracked separately; deducted from span when using From/To",
     "fillTarget": "Target"
   },
   "weekdays": {

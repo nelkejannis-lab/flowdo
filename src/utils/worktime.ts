@@ -25,9 +25,25 @@ export function dayTargetMinutes(date: Date, settings: WorkTimeSettings): number
   return weekdayTargetMinutes(settings)
 }
 
+/** True when work time was entered via Von/Bis (or clock in/out), not direct hours. */
+export function isTimeRangeEntry(entry?: WorkDayEntry): boolean {
+  return Boolean(entry?.startTime)
+}
+
+/** Billable / counted work minutes. Pause is only deducted in Von/Bis (time-range) mode. */
 export function netMinutes(entry?: WorkDayEntry): number {
   if (!entry) return 0
-  return Math.max(0, entry.workedMinutes - entry.breakMinutes)
+  if (isTimeRangeEntry(entry)) {
+    return Math.max(0, entry.workedMinutes - entry.breakMinutes)
+  }
+  return Math.max(0, entry.workedMinutes)
+}
+
+/** Gross presence minutes (for ArbZG break checks). */
+export function grossMinutes(entry?: WorkDayEntry): number {
+  if (!entry) return 0
+  if (isTimeRangeEntry(entry)) return entry.workedMinutes
+  return entry.workedMinutes + entry.breakMinutes
 }
 
 export function formatHM(minutes: number): string {
@@ -137,8 +153,8 @@ export function arbzgWarnings(
     warnings.push({ code: 'maxDaily', severity: 'error' })
   }
 
-  // §4 Pausen (based on gross worked time)
-  const gross = entry.workedMinutes
+  // §4 Pausen (based on gross presence time)
+  const gross = grossMinutes(entry)
   if (gross > ARBZG_BREAK_THRESHOLD_2 && entry.breakMinutes < ARBZG_BREAK_MINUTES_2) {
     warnings.push({ code: 'break', severity: 'warn' })
   } else if (gross > ARBZG_BREAK_THRESHOLD_1 && entry.breakMinutes < ARBZG_BREAK_MINUTES_1) {

@@ -527,7 +527,13 @@ export const useWorkTimeStore = create<WorkTimeState>()(
       setWorkedMinutes: (date, minutes) => {
         const state = get()
         const entry = ensureEntry(state.entries, date, state.settings.defaultBreakMinutes)
-        const updated = { ...entry, workedMinutes: Math.max(0, minutes) }
+        // Direct hours entry: pause is tracked separately; clear Von/Bis so netMinutes won't deduct break.
+        const updated = {
+          ...entry,
+          workedMinutes: Math.max(0, minutes),
+          startTime: undefined,
+          endTime: undefined,
+        }
         const audit = makeAudit(date, 'workedMinutes', entry.workedMinutes, updated.workedMinutes)
         set({ entries: { ...state.entries, [date]: updated }, auditLog: [audit, ...state.auditLog] })
         void syncEntry(updated)

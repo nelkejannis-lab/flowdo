@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, Thermometer } from 'lucide-react'
 import { useWorkTimeStore } from '../../store/workTimeStore'
 import { toISODate } from '../../utils/date'
 import { dayTargetMinutes, formatHM, netMinutes } from '../../utils/worktime'
-import WorkedHoursInput, { netToWorkedMinutes } from './WorkedHoursInput'
+import WorkedHoursInput from './WorkedHoursInput'
 
 export default function WorkWeekView() {
   const { t, i18n } = useTranslation('worktime')
@@ -17,9 +17,6 @@ export default function WorkWeekView() {
   const setBreakMinutes = useWorkTimeStore((s) => s.setBreakMinutes)
   const setWorkedMinutes = useWorkTimeStore((s) => s.setWorkedMinutes)
 
-  function setNetWorkedMinutes(date: string, netMins: number, breakMins: number) {
-    setWorkedMinutes(date, netToWorkedMinutes(netMins, breakMins))
-  }
   const setDayTimes = useWorkTimeStore((s) => s.setDayTimes)
   const markSickDay = useWorkTimeStore((s) => s.markSickDay)
   const unmarkSickDay = useWorkTimeStore((s) => s.unmarkSickDay)
@@ -101,15 +98,15 @@ export default function WorkWeekView() {
               ) : (
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <p className="text-[10px] text-gray-400 mb-0.5">{t('week.columns.from')}</p>
-                    <input type="time" value={entry?.startTime ?? ''} onChange={(e) => setDayTimes(iso, e.target.value, entry?.endTime ?? '')}
+                    <p className="text-[10px] text-gray-400 mb-0.5" title={t('week.fromHint')}>{t('week.columns.from')}</p>
+                    <input type="time" value={entry?.startTime ?? ''} title={t('week.fromHint')} onChange={(e) => setDayTimes(iso, e.target.value, entry?.endTime ?? '')}
                       className="w-full rounded border border-gray-200 bg-transparent px-1.5 py-1 text-sm focus:border-accent focus:outline-none dark:border-racing-700" />
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-400 mb-0.5">{t('week.columns.to')}</p>
+                    <p className="text-[10px] text-gray-400 mb-0.5" title={t('week.toHint')}>{t('week.columns.to')}</p>
                     {isLive
                       ? <span className="block w-full px-1.5 py-1 text-sm font-medium text-accent animate-pulse">{liveEndTime} ●</span>
-                      : <input type="time" value={entry?.endTime ?? ''} onChange={(e) => setDayTimes(iso, entry?.startTime ?? '', e.target.value)}
+                      : <input type="time" value={entry?.endTime ?? ''} title={t('week.toHint')} onChange={(e) => setDayTimes(iso, entry?.startTime ?? '', e.target.value)}
                           className="w-full rounded border border-gray-200 bg-transparent px-1.5 py-1 text-sm focus:border-accent focus:outline-none dark:border-racing-700" />
                     }
                   </div>
@@ -119,12 +116,12 @@ export default function WorkWeekView() {
                       compact
                       netMinutes={net}
                       targetMinutes={target}
-                      onCommit={(mins) => setNetWorkedMinutes(iso, mins, entry?.breakMinutes ?? settings.defaultBreakMinutes)}
+                      onCommit={(mins) => setWorkedMinutes(iso, mins)}
                     />
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-400 mb-0.5">{t('week.columns.break')} min</p>
-                    <input type="number" min={0} step={5} value={entry ? entry.breakMinutes : ''} placeholder={String(settings.defaultBreakMinutes)}
+                    <p className="text-[10px] text-gray-400 mb-0.5" title={t('week.breakHint')}>{t('week.columns.break')} min</p>
+                    <input type="number" min={0} step={5} title={t('week.breakHint')} value={entry ? entry.breakMinutes : ''} placeholder={String(settings.defaultBreakMinutes)}
                       onChange={(e) => setBreakMinutes(iso, Math.max(0, Number(e.target.value)))}
                       className="w-full rounded border border-gray-200 bg-transparent px-1.5 py-1 text-sm focus:border-accent focus:outline-none dark:border-racing-700" />
                   </div>
@@ -145,10 +142,10 @@ export default function WorkWeekView() {
       <div className="hidden sm:block overflow-x-auto -mx-1">
       <div className="grid grid-cols-[minmax(90px,1fr)_auto_auto_auto_auto_auto_auto] items-center gap-x-2 gap-y-1 p-3 text-sm min-w-[560px]">
         <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">{t('week.columns.day')}</div>
-        <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">{t('week.columns.from')}</div>
-        <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">{t('week.columns.to')}</div>
-        <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">{t('week.columns.break')}</div>
-        <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">{t('week.columns.worked')}</div>
+        <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400" title={t('week.fromHint')}>{t('week.columns.from')}</div>
+        <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400" title={t('week.toHint')}>{t('week.columns.to')}</div>
+        <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400" title={t('week.breakHint')}>{t('week.columns.break')}</div>
+        <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400" title={t('week.workedHint')}>{t('week.columns.worked')}</div>
         <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">{t('week.columns.target')}</div>
         <div className="text-right text-xs font-semibold uppercase tracking-wide text-gray-400">{t('week.columns.diff')}</div>
 
@@ -194,6 +191,7 @@ export default function WorkWeekView() {
                 <input
                   type="time"
                   value={entry?.startTime ?? ''}
+                  title={t('week.fromHint')}
                   onChange={(e) => setDayTimes(iso, e.target.value, entry?.endTime ?? '')}
                   className="w-24 rounded-md border border-gray-200 bg-transparent px-2 py-1 text-right text-sm focus:border-accent focus:outline-none dark:border-racing-700"
                 />
@@ -207,6 +205,7 @@ export default function WorkWeekView() {
                   <input
                     type="time"
                     value={entry?.endTime ?? ''}
+                    title={t('week.toHint')}
                     onChange={(e) => setDayTimes(iso, entry?.startTime ?? '', e.target.value)}
                     className="w-24 rounded-md border border-gray-200 bg-transparent px-2 py-1 text-right text-sm focus:border-accent focus:outline-none dark:border-racing-700"
                   />
@@ -217,6 +216,7 @@ export default function WorkWeekView() {
                   type="number"
                   min={0}
                   step={5}
+                  title={t('week.breakHint')}
                   value={entry ? entry.breakMinutes : ''}
                   placeholder={String(settings.defaultBreakMinutes)}
                   onChange={(e) => setBreakMinutes(iso, Math.max(0, Number(e.target.value)))}
@@ -230,7 +230,7 @@ export default function WorkWeekView() {
                   <WorkedHoursInput
                     netMinutes={net}
                     targetMinutes={target}
-                    onCommit={(mins) => setNetWorkedMinutes(iso, mins, entry?.breakMinutes ?? settings.defaultBreakMinutes)}
+                    onCommit={(mins) => setWorkedMinutes(iso, mins)}
                   />
                 )}
               </div>

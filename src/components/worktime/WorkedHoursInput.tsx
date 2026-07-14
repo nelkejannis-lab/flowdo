@@ -100,7 +100,3 @@ export default function WorkedHoursInput({
   )
 }
 
-/** Store gross worked minutes from desired net (after break). */
-export function netToWorkedMinutes(netMinutes: number, breakMinutes: number): number {
-  return Math.max(0, netMinutes + breakMinutes)
-}
