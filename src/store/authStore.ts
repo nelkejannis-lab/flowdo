@@ -10,6 +10,8 @@ export interface Profile {
   avatar_url?: string | null
   birthday?: string | null
   is_admin?: boolean
+  app_role?: 'user' | 'admin'
+  role_description?: string | null
   job_title?: string | null
   work_location?: string | null
   badge?: string | null
@@ -26,6 +28,7 @@ interface ProfileUpdate {
   birthday?: string | null
   job_title?: string | null
   work_location?: string | null
+  role_description?: string | null
   badge?: string | null
 }
 
@@ -37,7 +40,7 @@ interface AuthState {
   init: () => () => void
   fetchProfile: () => Promise<void>
   subscribeToProfile: () => () => void
-  signUp: (email: string, password: string, username: string, displayName: string, birthday?: string) => Promise<string | null>
+  signUp: (email: string, password: string, username: string, displayName: string, birthday?: string, roleDescription?: string) => Promise<string | null>
   signIn: (email: string, password: string) => Promise<string | null>
   signOut: () => Promise<void>
   updateProfile: (updates: ProfileUpdate) => Promise<string | null>
@@ -115,16 +118,26 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     }
   },
 
-  signUp: async (email, password, username, displayName, birthday) => {
+  signUp: async (email, password, username, displayName, birthday, roleDescription) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { username, display_name: displayName } },
+      options: {
+        data: {
+          username,
+          display_name: displayName,
+          role_description: roleDescription?.trim() || null,
+        },
+      },
     })
     if (error) return error.message
-    // Save birthday to profile after signup
-    if (birthday && data.user) {
-      await supabase.from('profiles').update({ birthday }).eq('id', data.user.id)
+    if (data.user) {
+      const updates: ProfileUpdate = {}
+      if (birthday) updates.birthday = birthday
+      if (roleDescription?.trim()) updates.role_description = roleDescription.trim()
+      if (Object.keys(updates).length > 0) {
+        await supabase.from('profiles').update(updates).eq('id', data.user.id)
+      }
     }
     return null
   },

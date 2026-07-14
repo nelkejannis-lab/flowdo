@@ -1,7 +1,12 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
-import type { Organization, OrganizationMember, OrgRole } from '../types'
+import type { AppRole, Organization, OrganizationMember, OrgRole } from '../types'
 import { useAuthStore } from './authStore'
+import {
+  canApproveAbsences as checkApprove,
+  canManageOrg as checkManageOrg,
+  isSuperAdmin,
+} from '../lib/roles'
 
 interface OrgState {
   organization: Organization | null
@@ -10,10 +15,12 @@ interface OrgState {
   loading: boolean
   fetch: () => Promise<void>
   create: (name: string) => Promise<string | null>
-  inviteMember: (userId: string, role?: OrgRole) => Promise<string | null>
+  inviteMember: (userId: string, role?: OrgRole, departmentId?: string) => Promise<string | null>
   updateMemberRole: (userId: string, role: OrgRole) => Promise<string | null>
   removeMember: (userId: string) => Promise<string | null>
-  searchProfiles: (query: string) => Promise<{ id: string; display_name: string; username: string }[]>
+  searchProfiles: (query: string) => Promise<{ id: string; display_name: string; username: string; app_role?: string; role_description?: string | null }[]>
+  setAppRole: (userId: string, role: AppRole) => Promise<string | null>
+  setOrgRole: (orgId: string, userId: string, role: OrgRole) => Promise<string | null>
   canManage: () => boolean
   canApproveAbsences: () => boolean
 }
@@ -29,27 +36,35 @@ export const useOrganizationStore = create<OrgState>()((set, get) => ({
   loading: false,
 
   fetch: async () => {
+    const profile = useAuthStore.getState().profile
     const userId = useAuthStore.getState().user?.id
     if (!userId) return
     set({ loading: true })
 
-    const { data: membership } = await supabase
+    let membership: { org_id: string; role: string } | null = null
+    const { data: mem } = await supabase
       .from('organization_members')
       .select('org_id, role')
       .eq('user_id', userId)
       .maybeSingle()
+    membership = mem
 
-    if (!membership) {
+    if (!membership && !isSuperAdmin(profile)) {
       set({ organization: null, members: [], myRole: null, loading: false })
       return
     }
 
-    const orgId = membership.org_id
+    const orgId = membership?.org_id
+    if (!orgId) {
+      set({ organization: null, members: [], myRole: null, loading: false })
+      return
+    }
+
     const [{ data: org }, { data: members }] = await Promise.all([
       supabase.from('organizations').select('*').eq('id', orgId).single(),
       supabase
         .from('organization_members')
-        .select('user_id, role, profile:profiles!organization_members_user_id_fkey(id, display_name, username, avatar_color, job_title)')
+        .select('user_id, role, department_id, profile:profiles!organization_members_user_id_fkey(id, display_name, username, avatar_color, job_title, role_description, app_role, is_admin)')
         .eq('org_id', orgId)
         .order('joined_at', { ascending: true }),
     ])
@@ -62,6 +77,7 @@ export const useOrganizationStore = create<OrgState>()((set, get) => ({
     const parsedMembers: OrganizationMember[] = (members ?? []).map((m: any) => ({
       userId: m.user_id,
       role: m.role as OrgRole,
+      departmentId: m.department_id ?? undefined,
       profile: single(m.profile),
     }))
 
@@ -73,7 +89,7 @@ export const useOrganizationStore = create<OrgState>()((set, get) => ({
         createdAt: org.created_at,
       },
       members: parsedMembers,
-      myRole: membership.role as OrgRole,
+      myRole: (membership?.role as OrgRole) ?? null,
       loading: false,
     })
   },
@@ -103,7 +119,7 @@ export const useOrganizationStore = create<OrgState>()((set, get) => ({
     return null
   },
 
-  inviteMember: async (userId, role = 'member') => {
+  inviteMember: async (userId, role = 'member', departmentId) => {
     const org = get().organization
     if (!org) return 'No organization'
     if (!get().canManage()) return 'Not allowed'
@@ -112,9 +128,17 @@ export const useOrganizationStore = create<OrgState>()((set, get) => ({
       org_id: org.id,
       user_id: userId,
       role,
+      department_id: departmentId ?? null,
     })
     if (error) return error.message
     await supabase.from('profiles').update({ org_id: org.id }).eq('id', userId)
+    if (departmentId) {
+      await supabase.from('department_members').upsert({
+        department_id: departmentId,
+        user_id: userId,
+        role: 'member',
+      })
+    }
     await get().fetch()
     return null
   },
@@ -151,23 +175,39 @@ export const useOrganizationStore = create<OrgState>()((set, get) => ({
     if (q.length < 2) return []
     const { data } = await supabase
       .from('profiles')
-      .select('id, display_name, username')
+      .select('id, display_name, username, app_role, role_description')
       .or(`username.ilike.%${q}%,display_name.ilike.%${q}%`)
-      .limit(8)
+      .limit(12)
     return data ?? []
+  },
+
+  setAppRole: async (userId, role) => {
+    const profile = useAuthStore.getState().profile
+    if (!isSuperAdmin(profile)) return 'Not allowed'
+    const { error } = await supabase.rpc('admin_set_app_role', { p_user_id: userId, p_role: role })
+    return error?.message ?? null
+  },
+
+  setOrgRole: async (orgId, userId, role) => {
+    const profile = useAuthStore.getState().profile
+    if (!isSuperAdmin(profile) && !get().canManage()) return 'Not allowed'
+    const { error } = await supabase.rpc('admin_set_org_role', {
+      p_org_id: orgId,
+      p_user_id: userId,
+      p_role: role,
+    })
+    if (error) return error.message
+    await get().fetch()
+    return null
   },
 
   canManage: () => {
     const profile = useAuthStore.getState().profile
-    if (profile?.is_admin) return true
-    const role = get().myRole
-    return role === 'owner' || role === 'admin'
+    return checkManageOrg(profile, get().myRole)
   },
 
   canApproveAbsences: () => {
     const profile = useAuthStore.getState().profile
-    if (profile?.is_admin) return true
-    const role = get().myRole
-    return role === 'owner' || role === 'admin' || role === 'manager'
+    return checkApprove(profile, get().myRole)
   },
 }))

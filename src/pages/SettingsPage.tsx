@@ -232,6 +232,7 @@ export default function SettingsPage() {
   const [username, setUsername] = useState(profile?.username ?? '')
   const [birthday, setBirthday] = useState(profile?.birthday ?? '')
   const [jobTitle, setJobTitle] = useState(profile?.job_title ?? '')
+  const [roleDescription, setRoleDescription] = useState(profile?.role_description ?? '')
   const [workLocation, setWorkLocation] = useState(profile?.work_location ?? '')
   const [profileError, setProfileError] = useState<string | null>(null)
   const [profileSuccess, setProfileSuccess] = useState<string | null>(null)
@@ -285,6 +286,7 @@ export default function SettingsPage() {
       setUsername(profile.username)
       setBirthday(profile.birthday ?? '')
       setJobTitle(profile.job_title ?? '')
+      setRoleDescription(profile.role_description ?? '')
       setWorkLocation(profile.work_location ?? '')
     }
   }, [profile])
@@ -300,6 +302,7 @@ export default function SettingsPage() {
       display_name: displayName.trim(),
       username: username.trim(),
       job_title: jobTitle.trim() || null,
+      role_description: roleDescription.trim() || null,
       work_location: workLocation.trim() || null,
       birthday: birthday || null,
     })
@@ -769,6 +772,16 @@ export default function SettingsPage() {
             max={new Date().toISOString().split('T')[0]}
             className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
           />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-500">{t('profile.roleDescription')}</label>
+          <input
+            value={roleDescription}
+            onChange={(e) => setRoleDescription(e.target.value)}
+            placeholder={t('profile.roleDescriptionPlaceholder')}
+            className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+          />
+          <p className="mt-1 text-[11px] text-gray-400">{t('profile.roleDescriptionHint')}</p>
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-gray-500">Berufsbezeichnung</label>

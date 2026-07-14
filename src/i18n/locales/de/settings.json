@@ -195,6 +195,9 @@
     "username": "Benutzername",
     "birthday": "Geburtsdatum",
     "email": "E-Mail",
+    "roleDescription": "Rollenbeschreibung",
+    "roleDescriptionPlaceholder": "z.B. Projektleiter, Teamleitung Vertrieb…",
+    "roleDescriptionHint": "Kurze Beschreibung deiner Rolle im Unternehmen — sichtbar für Kollegen und Admins.",
     "saveSuccess": "Profil gespeichert",
     "saving": "Speichere…",
     "save": "Speichern"

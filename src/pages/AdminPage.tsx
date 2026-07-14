@@ -2,21 +2,43 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router-dom'
 import {
-  Building2, Users, UserPlus, Shield, BarChart3, Loader2, Trash2,
+  Building2, Users, UserPlus, Shield, BarChart3, Loader2, Trash2, Layers, Globe,
 } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { useOrganizationStore } from '../store/organizationStore'
+import { useDepartmentStore } from '../store/departmentStore'
 import { useTeamsStore } from '../store/teamsStore'
 import { useWorkTimeStore } from '../store/workTimeStore'
 import { useBoardsStore } from '../store/boardsStore'
 import { useTaskTimeStore } from '../store/taskTimeStore'
 import AbsenceApprovals from '../components/worktime/AbsenceApprovals'
-import type { OrgRole } from '../types'
+import type { AppRole, OrgRole } from '../types'
+import {
+  APP_ROLE_LABELS,
+  ORG_ROLE_LABELS,
+  canAccessAdmin,
+  canAssignGlobalRoles,
+  canManageDepartments,
+  canManageOrg,
+  canManageTeams,
+  isSuperAdmin,
+} from '../lib/roles'
 
-const ROLES: OrgRole[] = ['member', 'manager', 'admin']
+type AdminTab = 'overview' | 'members' | 'departments' | 'teams' | 'global'
+const ORG_ROLES: OrgRole[] = ['member', 'manager', 'admin', 'owner']
+const INVITE_ROLES: OrgRole[] = ['member', 'manager', 'admin']
+
+function RoleHint({ type, role, lang }: { type: 'app' | 'org'; role: string; lang: 'de' | 'en' }) {
+  const labels = type === 'app' ? APP_ROLE_LABELS[role as AppRole] : ORG_ROLE_LABELS[role as OrgRole]
+  if (!labels) return null
+  return (
+    <p className="mt-0.5 text-[10px] text-gray-400">{lang === 'en' ? labels.descEn : labels.descDe}</p>
+  )
+}
 
 export default function AdminPage() {
-  const { t } = useTranslation('admin')
+  const { t, i18n } = useTranslation('admin')
+  const lang = i18n.language === 'en' ? 'en' : 'de'
   const profile = useAuthStore((s) => s.profile)
   const organization = useOrganizationStore((s) => s.organization)
   const members = useOrganizationStore((s) => s.members)
@@ -28,42 +50,67 @@ export default function AdminPage() {
   const updateMemberRole = useOrganizationStore((s) => s.updateMemberRole)
   const removeMember = useOrganizationStore((s) => s.removeMember)
   const searchProfiles = useOrganizationStore((s) => s.searchProfiles)
-  const canManage = useOrganizationStore((s) => s.canManage)
+  const setAppRole = useOrganizationStore((s) => s.setAppRole)
+  const setOrgRole = useOrganizationStore((s) => s.setOrgRole)
+  const departments = useDepartmentStore((s) => s.departments)
+  const fetchDepartments = useDepartmentStore((s) => s.fetch)
+  const createDepartment = useDepartmentStore((s) => s.create)
+  const removeDepartment = useDepartmentStore((s) => s.remove)
+  const assignOrgMemberDepartment = useDepartmentStore((s) => s.assignOrgMemberDepartment)
   const teams = useTeamsStore((s) => s.teams)
   const fetchTeams = useTeamsStore((s) => s.fetch)
-  const teamAbsences = useWorkTimeStore((s) => s.teamAbsences)
+  const createTeam = useTeamsStore((s) => s.create)
+  const removeTeam = useTeamsStore((s) => s.remove)
   const fetchTeamAbsences = useWorkTimeStore((s) => s.fetchTeamAbsences)
+  const teamAbsences = useWorkTimeStore((s) => s.teamAbsences)
   const boards = useBoardsStore((s) => s.boards)
   const timeEntries = useTaskTimeStore((s) => s.entries)
 
+  const [tab, setTab] = useState<AdminTab>('overview')
   const [orgName, setOrgName] = useState('')
   const [inviteQuery, setInviteQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<{ id: string; display_name: string; username: string }[]>([])
+  const [searchResults, setSearchResults] = useState<any[]>([])
   const [inviteRole, setInviteRole] = useState<OrgRole>('member')
+  const [inviteDept, setInviteDept] = useState('')
+  const [globalQuery, setGlobalQuery] = useState('')
+  const [globalResults, setGlobalResults] = useState<any[]>([])
+  const [deptName, setDeptName] = useState('')
+  const [deptDesc, setDeptDesc] = useState('')
+  const [teamName, setTeamName] = useState('')
+  const [teamDept, setTeamDept] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [saved, setSaved] = useState<string | null>(null)
 
-  const hasAccess = profile?.is_admin || myRole === 'owner' || myRole === 'admin' || myRole === 'manager'
+  const superAdmin = isSuperAdmin(profile)
+  const hasAccess = canAccessAdmin(profile, myRole)
 
   useEffect(() => {
     void fetchOrg()
-    void fetchTeams()
-    void fetchTeamAbsences()
-  }, [fetchOrg, fetchTeams, fetchTeamAbsences])
+  }, [fetchOrg])
 
   useEffect(() => {
-    if (!inviteQuery.trim() || inviteQuery.length < 2) {
-      setSearchResults([])
-      return
+    if (organization) {
+      void fetchDepartments(organization.id)
+      void fetchTeams(organization.id)
+      void fetchTeamAbsences()
     }
-    const tmr = setTimeout(() => {
-      void searchProfiles(inviteQuery).then(setSearchResults)
-    }, 300)
+  }, [organization, fetchDepartments, fetchTeams, fetchTeamAbsences])
+
+  useEffect(() => {
+    if (!inviteQuery.trim() || inviteQuery.length < 2) { setSearchResults([]); return }
+    const tmr = setTimeout(() => { void searchProfiles(inviteQuery).then(setSearchResults) }, 300)
     return () => clearTimeout(tmr)
   }, [inviteQuery, searchProfiles])
 
+  useEffect(() => {
+    if (!globalQuery.trim() || globalQuery.length < 2) { setGlobalResults([]); return }
+    const tmr = setTimeout(() => { void searchProfiles(globalQuery).then(setGlobalResults) }, 300)
+    return () => clearTimeout(tmr)
+  }, [globalQuery, searchProfiles])
+
   if (!profile) return null
-  if (!hasAccess && !profile.is_admin) return <Navigate to="/" replace />
+  if (!hasAccess) return <Navigate to="/" replace />
 
   async function handleCreateOrg(e: React.FormEvent) {
     e.preventDefault()
@@ -76,18 +123,17 @@ export default function AdminPage() {
 
   async function handleInvite(userId: string) {
     setError(null)
-    const err = await inviteMember(userId, inviteRole)
+    const err = await inviteMember(userId, inviteRole, inviteDept || undefined)
     if (err) setError(err)
-    else {
-      setInviteQuery('')
-      setSearchResults([])
-    }
+    else { setInviteQuery(''); setSearchResults([]) }
   }
 
-  const pendingAbsences = teamAbsences.filter((a) => a.status === 'pending').length
-  const totalMembers = members.length
-  const activeProjects = boards.length
-  const totalTrackedMinutes = timeEntries.reduce((sum, e) => sum + e.minutes, 0)
+  async function handleAssignDept(userId: string, departmentId: string) {
+    if (!organization) return
+    const err = await assignOrgMemberDepartment(organization.id, userId, departmentId || null)
+    if (err) setError(err)
+    else await fetchOrg()
+  }
 
   if (loading) {
     return (
@@ -97,21 +143,19 @@ export default function AdminPage() {
     )
   }
 
-  if (!organization && canManage()) {
+  if (!organization && canManageOrg(profile, myRole)) {
     return (
       <div className="mx-auto max-w-md p-6">
         <div className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-racing-800 dark:bg-racing-900">
           <Building2 size={32} className="mb-4 text-accent" />
           <h1 className="text-xl font-bold">{t('createOrg.title')}</h1>
           <p className="mt-2 text-sm text-gray-500">{t('createOrg.desc')}</p>
+          {superAdmin && (
+            <p className="mt-2 text-xs text-accent">{t('global.desc')}</p>
+          )}
           <form onSubmit={handleCreateOrg} className="mt-4 flex flex-col gap-3">
-            <input
-              value={orgName}
-              onChange={(e) => setOrgName(e.target.value)}
-              placeholder={t('createOrg.placeholder')}
-              className="rounded-xl border border-gray-200 px-3 py-2 text-sm dark:border-racing-700"
-              required
-            />
+            <input value={orgName} onChange={(e) => setOrgName(e.target.value)} placeholder={t('createOrg.placeholder')}
+              className="rounded-xl border border-gray-200 px-3 py-2 text-sm dark:border-racing-700" required />
             {error && <p className="text-sm text-red-500">{error}</p>}
             <button type="submit" disabled={busy} className="rounded-xl bg-accent py-2.5 text-sm font-semibold text-white">
               {busy ? t('createOrg.creating') : t('createOrg.submit')}
@@ -122,64 +166,165 @@ export default function AdminPage() {
     )
   }
 
-  if (!organization) return <Navigate to="/" replace />
+  if (!organization && !superAdmin) return <Navigate to="/" replace />
+
+  const pendingAbsences = teamAbsences.filter((a) => a.status === 'pending').length
+  const totalTrackedMinutes = timeEntries.reduce((sum, e) => sum + e.minutes, 0)
+  const tabs: { id: AdminTab; label: string; icon: typeof Users; show?: boolean }[] = [
+    { id: 'overview', label: t('tabs.overview'), icon: BarChart3 },
+    { id: 'members', label: t('tabs.members'), icon: Users, show: !!organization },
+    { id: 'departments', label: t('tabs.departments'), icon: Layers, show: !!organization && canManageDepartments(profile, myRole) },
+    { id: 'teams', label: t('tabs.teams'), icon: Building2, show: !!organization && canManageTeams(profile, myRole) },
+    { id: 'global', label: t('tabs.global'), icon: Globe, show: canAssignGlobalRoles(profile) },
+  ]
 
   return (
     <div className="mx-auto max-w-4xl p-4 sm:p-6">
-      <div className="mb-6">
+      <div className="mb-4">
         <h1 className="text-2xl font-bold">{t('title')}</h1>
-        <p className="text-sm text-gray-500">{organization.name} · {t(`roles.${myRole ?? 'member'}`)}</p>
+        {organization && (
+          <p className="text-sm text-gray-500">
+            {organization.name} · {t(`roles.${myRole ?? 'member'}`)}
+            {superAdmin && ` · ${t('roles.appAdmin')}`}
+          </p>
+        )}
       </div>
 
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: t('stats.members'), value: totalMembers, icon: Users },
-          { label: t('stats.teams'), value: teams.length, icon: Building2 },
-          { label: t('stats.projects'), value: activeProjects, icon: BarChart3 },
-          { label: t('stats.pendingAbsences'), value: pendingAbsences, icon: Shield },
-        ].map(({ label, value, icon: Icon }) => (
-          <div key={label} className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-            <div className="flex items-center gap-2 text-gray-400">
-              <Icon size={14} />
-              <span className="text-xs">{label}</span>
-            </div>
-            <p className="mt-1 text-2xl font-bold">{value}</p>
-          </div>
+      <div className="mb-6 flex gap-1 overflow-x-auto rounded-lg border border-gray-200 p-1 dark:border-racing-700">
+        {tabs.filter((tb) => tb.show !== false).map(({ id, label, icon: Icon }) => (
+          <button key={id} type="button" onClick={() => setTab(id)}
+            className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium ${
+              tab === id ? 'bg-accent text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
+            }`}>
+            <Icon size={14} /> {label}
+          </button>
         ))}
       </div>
 
-      {canManage() && (
-        <div className="mb-6 rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-          <div className="mb-3 flex items-center gap-2">
-            <UserPlus size={16} className="text-accent" />
-            <h2 className="text-sm font-semibold">{t('invite.title')}</h2>
+      {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
+      {saved && <p className="mb-4 text-sm text-emerald-500">{t('global.saved')}</p>}
+
+      {tab === 'overview' && organization && (
+        <>
+          <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { label: t('stats.members'), value: members.length, icon: Users },
+              { label: t('stats.departments'), value: departments.length, icon: Layers },
+              { label: t('stats.teams'), value: teams.length, icon: Building2 },
+              { label: t('stats.pendingAbsences'), value: pendingAbsences, icon: Shield },
+            ].map(({ label, value, icon: Icon }) => (
+              <div key={label} className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+                <div className="flex items-center gap-2 text-gray-400"><Icon size={14} /><span className="text-xs">{label}</span></div>
+                <p className="mt-1 text-2xl font-bold">{value}</p>
+              </div>
+            ))}
           </div>
-          <div className="flex flex-wrap gap-2">
-            <input
-              value={inviteQuery}
-              onChange={(e) => setInviteQuery(e.target.value)}
-              placeholder={t('invite.placeholder')}
-              className="min-w-[200px] flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-racing-700"
-            />
-            <select
-              value={inviteRole}
-              onChange={(e) => setInviteRole(e.target.value as OrgRole)}
-              className="rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-racing-700"
-            >
-              {ROLES.map((r) => (
-                <option key={r} value={r}>{t(`roles.${r}`)}</option>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <AbsenceApprovals />
+            <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+              <h2 className="mb-2 text-sm font-semibold">{t('reports.title')}</h2>
+              <p className="text-xs text-gray-500">{t('reports.trackedHours', { hours: (totalTrackedMinutes / 60).toFixed(1) })}</p>
+              <p className="mt-1 text-xs text-gray-500">{t('stats.projects')}: {boards.length}</p>
+            </div>
+          </div>
+        </>
+      )}
+
+      {tab === 'members' && organization && canManageOrg(profile, myRole) && (
+        <div className="flex flex-col gap-4">
+          <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+            <div className="mb-3 flex items-center gap-2"><UserPlus size={16} className="text-accent" /><h2 className="text-sm font-semibold">{t('invite.title')}</h2></div>
+            <div className="flex flex-wrap gap-2">
+              <input value={inviteQuery} onChange={(e) => setInviteQuery(e.target.value)} placeholder={t('invite.placeholder')}
+                className="min-w-[200px] flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-racing-700" />
+              <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value as OrgRole)}
+                className="rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-racing-700">
+                {INVITE_ROLES.map((r) => <option key={r} value={r}>{t(`roles.${r}`)}</option>)}
+              </select>
+              <select value={inviteDept} onChange={(e) => setInviteDept(e.target.value)}
+                className="rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-racing-700">
+                <option value="">{t('invite.department')}</option>
+                {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+            </div>
+            {searchResults.length > 0 && (
+              <ul className="mt-2 rounded-lg border border-gray-100 dark:border-racing-800">
+                {searchResults.map((u) => (
+                  <li key={u.id} className="flex items-center justify-between px-3 py-2 text-sm">
+                    <span>{u.display_name} <span className="text-gray-400">@{u.username}</span></span>
+                    <button type="button" onClick={() => handleInvite(u.id)} className="text-xs font-semibold text-accent">{t('invite.add')}</button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+            <h2 className="mb-3 text-sm font-semibold">{t('members.title')}</h2>
+            <ul className="flex flex-col gap-2">
+              {members.map((m) => (
+                <li key={m.userId} className="rounded-lg bg-gray-50 px-3 py-2 dark:bg-racing-800">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">{m.profile.display_name}</p>
+                      <p className="text-xs text-gray-400">@{m.profile.username}</p>
+                      {m.profile.role_description && (
+                        <p className="mt-1 text-xs text-gray-500">{t('members.roleDescription')}: {m.profile.role_description}</p>
+                      )}
+                      {(m.profile.app_role === 'admin' || m.profile.is_admin) && (
+                        <span className="mt-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                          {t('roles.appAdmin')}
+                        </span>
+                      )}
+                    </div>
+                    {m.role !== 'owner' && canManageOrg(profile, myRole) && (
+                      <div className="flex flex-col items-end gap-1">
+                        <select value={m.role} onChange={(e) => void updateMemberRole(m.userId, e.target.value as OrgRole)}
+                          className="rounded border border-gray-200 bg-transparent px-2 py-1 text-xs dark:border-racing-700">
+                          {INVITE_ROLES.map((r) => <option key={r} value={r}>{t(`roles.${r}`)}</option>)}
+                        </select>
+                        <RoleHint type="org" role={m.role} lang={lang} />
+                        <select value={m.departmentId ?? ''} onChange={(e) => void handleAssignDept(m.userId, e.target.value)}
+                          className="rounded border border-gray-200 bg-transparent px-2 py-1 text-xs dark:border-racing-700">
+                          <option value="">{t('members.noDepartment')}</option>
+                          {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                        </select>
+                        <button type="button" onClick={() => void removeMember(m.userId)} className="text-red-400"><Trash2 size={14} /></button>
+                      </div>
+                    )}
+                  </div>
+                </li>
               ))}
-            </select>
+            </ul>
           </div>
-          {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
-          {searchResults.length > 0 && (
-            <ul className="mt-2 rounded-lg border border-gray-100 dark:border-racing-800">
-              {searchResults.map((u) => (
-                <li key={u.id} className="flex items-center justify-between px-3 py-2 text-sm">
-                  <span>{u.display_name} <span className="text-gray-400">@{u.username}</span></span>
-                  <button type="button" onClick={() => handleInvite(u.id)} className="text-xs font-semibold text-accent">
-                    {t('invite.add')}
-                  </button>
+        </div>
+      )}
+
+      {tab === 'departments' && organization && canManageDepartments(profile, myRole) && (
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-gray-500">{t('departments.desc')}</p>
+          <form onSubmit={async (e) => {
+            e.preventDefault()
+            const err = await createDepartment(organization.id, deptName, deptDesc)
+            if (err) setError(err)
+            else { setDeptName(''); setDeptDesc('') }
+          }} className="flex flex-wrap gap-2 rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+            <input value={deptName} onChange={(e) => setDeptName(e.target.value)} placeholder={t('departments.namePlaceholder')} required
+              className="min-w-[160px] flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-racing-700" />
+            <input value={deptDesc} onChange={(e) => setDeptDesc(e.target.value)} placeholder={t('departments.descPlaceholder')}
+              className="min-w-[160px] flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-racing-700" />
+            <button type="submit" className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white">{t('departments.add')}</button>
+          </form>
+          {departments.length === 0 ? (
+            <p className="text-sm text-gray-400">{t('departments.empty')}</p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {departments.map((d) => (
+                <li key={d.id} className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-4 py-3 dark:border-racing-800 dark:bg-racing-900">
+                  <div>
+                    <p className="text-sm font-semibold">{d.name}</p>
+                    {d.description && <p className="text-xs text-gray-400">{d.description}</p>}
+                  </div>
+                  <button type="button" onClick={() => void removeDepartment(d.id)} className="text-red-400"><Trash2 size={16} /></button>
                 </li>
               ))}
             </ul>
@@ -187,51 +332,86 @@ export default function AdminPage() {
         </div>
       )}
 
-      <div className="mb-6 grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-          <h2 className="mb-3 text-sm font-semibold">{t('members.title')}</h2>
-          <ul className="flex flex-col gap-2">
-            {members.map((m) => (
-              <li key={m.userId} className="flex items-center justify-between gap-2 rounded-lg bg-gray-50 px-3 py-2 dark:bg-racing-800">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{m.profile.display_name}</p>
-                  <p className="text-xs text-gray-400">@{m.profile.username}</p>
-                </div>
-                {canManage() && m.role !== 'owner' ? (
-                  <div className="flex items-center gap-1">
-                    <select
-                      value={m.role}
-                      onChange={(e) => void updateMemberRole(m.userId, e.target.value as OrgRole)}
-                      className="rounded border border-gray-200 bg-transparent px-2 py-1 text-xs dark:border-racing-700"
-                    >
-                      {ROLES.map((r) => <option key={r} value={r}>{t(`roles.${r}`)}</option>)}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => void removeMember(m.userId)}
-                      className="rounded p-1 text-red-400 hover:bg-red-500/10"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ) : (
-                  <span className="text-xs text-gray-400">{t(`roles.${m.role}`)}</span>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-
+      {tab === 'teams' && organization && canManageTeams(profile, myRole) && (
         <div className="flex flex-col gap-4">
-          <AbsenceApprovals />
-          <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
-            <h2 className="mb-2 text-sm font-semibold">{t('reports.title')}</h2>
-            <p className="text-xs text-gray-500">{t('reports.trackedHours', { hours: (totalTrackedMinutes / 60).toFixed(1) })}</p>
-            <p className="mt-1 text-xs text-gray-500">{t('reports.teamsCount', { count: teams.length })}</p>
-            <p className="mt-3 text-[11px] text-gray-400">{t('reports.hint')}</p>
-          </div>
+          <p className="text-sm text-gray-500">{t('teams.desc')}</p>
+          <form onSubmit={async (e) => {
+            e.preventDefault()
+            await createTeam(teamName, organization.id, teamDept || undefined)
+            setTeamName('')
+            await fetchTeams(organization.id)
+          }} className="flex flex-wrap gap-2 rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+            <input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder={t('teams.namePlaceholder')} required
+              className="min-w-[160px] flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-racing-700" />
+            <select value={teamDept} onChange={(e) => setTeamDept(e.target.value)}
+              className="rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-racing-700">
+              <option value="">{t('teams.noDepartment')}</option>
+              {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+            <button type="submit" className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white">{t('teams.add')}</button>
+          </form>
+          {teams.length === 0 ? (
+            <p className="text-sm text-gray-400">{t('teams.empty')}</p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {teams.map((tm) => (
+                <li key={tm.id} className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-4 py-3 dark:border-racing-800 dark:bg-racing-900">
+                  <div>
+                    <p className="text-sm font-semibold">{tm.name}</p>
+                    <p className="text-xs text-gray-400">
+                      {tm.departmentId ? departments.find((d) => d.id === tm.departmentId)?.name : t('teams.noDepartment')}
+                      · {tm.members.length} {t('stats.members').toLowerCase()}
+                    </p>
+                  </div>
+                  <button type="button" onClick={() => void removeTeam(tm.id)} className="text-red-400"><Trash2 size={16} /></button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-      </div>
+      )}
+
+      {tab === 'global' && canAssignGlobalRoles(profile) && (
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-gray-500">{t('global.desc')}</p>
+          <input value={globalQuery} onChange={(e) => setGlobalQuery(e.target.value)} placeholder={t('global.searchPlaceholder')}
+            className="rounded-xl border border-gray-200 px-3 py-2 text-sm dark:border-racing-700 dark:bg-racing-900" />
+          {globalResults.length > 0 && (
+            <ul className="flex flex-col gap-2">
+              {globalResults.map((u) => (
+                <li key={u.id} className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+                  <p className="text-sm font-medium">{u.display_name} <span className="text-gray-400">@{u.username}</span></p>
+                  {u.role_description && <p className="text-xs text-gray-500">{u.role_description}</p>}
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <select defaultValue={u.app_role === 'admin' ? 'admin' : 'user'}
+                      onChange={async (e) => {
+                        const err = await setAppRole(u.id, e.target.value as AppRole)
+                        if (err) setError(err)
+                        else { setSaved(u.id); setTimeout(() => setSaved(null), 2000) }
+                      }}
+                      className="rounded border border-gray-200 px-2 py-1 text-xs dark:border-racing-700">
+                      <option value="user">{t('roles.appUser')}</option>
+                      <option value="admin">{t('roles.appAdmin')}</option>
+                    </select>
+                    {organization && (
+                      <select defaultValue="member"
+                        onChange={async (e) => {
+                          const err = await setOrgRole(organization.id, u.id, e.target.value as OrgRole)
+                          if (err) setError(err)
+                          else { setSaved(u.id); setTimeout(() => setSaved(null), 2000) }
+                        }}
+                        className="rounded border border-gray-200 px-2 py-1 text-xs dark:border-racing-700">
+                        {ORG_ROLES.map((r) => <option key={r} value={r}>{t(`roles.${r}`)}</option>)}
+                      </select>
+                    )}
+                  </div>
+                  <RoleHint type="app" role={u.app_role === 'admin' ? 'admin' : 'user'} lang={lang} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   )
 }

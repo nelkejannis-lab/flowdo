@@ -35,6 +35,7 @@ export default function LoginPage() {
   const [uname, setUname]   = useState('')
   const [dname, setDname]   = useState('')
   const [bday,  setBday]    = useState('')
+  const [roleDesc, setRoleDesc] = useState('')
   const [error, setError]   = useState<string | null>(null)
   const [info,  setInfo]    = useState<string | null>(null)
   const [busy,  setBusy]    = useState(false)
@@ -59,7 +60,7 @@ export default function LoginPage() {
       } else {
         if (pw.length < 8)  { setError(t('errors.passwordTooShort')); return }
         if (pw !== pw2)     { setError(t('errors.passwordMismatch'));  return }
-        const err = await signUp(email, pw, uname, dname || uname, bday || undefined)
+        const err = await signUp(email, pw, uname, dname || uname, bday || undefined, roleDesc || undefined)
         err ? setError(err) : (setInfo(t('messages.accountCreated')), switchMode('login'))
       }
     } finally { setBusy(false) }
@@ -147,6 +148,8 @@ export default function LoginPage() {
                   </select>
                 ))}
               </div>
+              <input value={roleDesc} onChange={(e) => setRoleDesc(e.target.value)}
+                placeholder={t('fields.roleDescriptionPlaceholder')} className={inp} />
             </>)}
 
             <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)}

@@ -1,5 +1,12 @@
 {
   "title": "Administration",
+  "tabs": {
+    "overview": "Overview",
+    "members": "Members & roles",
+    "departments": "Departments",
+    "teams": "Teams",
+    "global": "Global roles"
+  },
   "createOrg": {
     "title": "Create organization",
     "desc": "Set up your company organization to manage 60+ team members.",
@@ -10,22 +17,56 @@
   "stats": {
     "members": "Members",
     "teams": "Teams",
+    "departments": "Departments",
     "projects": "Projects",
     "pendingAbsences": "Pending requests"
   },
   "invite": {
     "title": "Invite member",
     "placeholder": "Search name or @username…",
-    "add": "Add"
+    "add": "Add",
+    "department": "Department (optional)"
   },
   "members": {
-    "title": "Members"
+    "title": "Members & roles",
+    "roleDescription": "Role description",
+    "orgRole": "Organization role",
+    "department": "Department",
+    "noDepartment": "No department"
+  },
+  "departments": {
+    "title": "Departments",
+    "desc": "Any number of departments under the organization — e.g. Marketing, IT, HR.",
+    "namePlaceholder": "Department name",
+    "descPlaceholder": "Description (optional)",
+    "add": "Create department",
+    "empty": "No departments yet.",
+    "members": "{{count}} members"
+  },
+  "teams": {
+    "title": "Teams",
+    "desc": "Optional teams within a department or the organization.",
+    "namePlaceholder": "Team name",
+    "add": "Create team",
+    "department": "Department",
+    "noDepartment": "Organization (no department)",
+    "empty": "No teams yet."
+  },
+  "global": {
+    "title": "Global app roles",
+    "desc": "Only app admins can assign global roles. App Admin is the highest level — independent of organization.",
+    "searchPlaceholder": "Search users…",
+    "appRole": "App role",
+    "assignOrgRole": "Assign organization role",
+    "saved": "Saved"
   },
   "roles": {
     "owner": "Owner",
-    "admin": "Admin",
+    "admin": "Org Admin",
     "manager": "Manager",
-    "member": "Member"
+    "member": "Member",
+    "appAdmin": "App Admin",
+    "appUser": "User"
   },
   "reports": {
     "title": "Team overview",

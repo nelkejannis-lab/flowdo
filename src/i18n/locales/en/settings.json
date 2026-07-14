@@ -195,6 +195,9 @@
     "username": "Username",
     "birthday": "Date of birth",
     "email": "Email",
+    "roleDescription": "Role description",
+    "roleDescriptionPlaceholder": "e.g. Project lead, sales team lead…",
+    "roleDescriptionHint": "Short description of your role in the company — visible to colleagues and admins.",
     "saveSuccess": "Profile saved",
     "saving": "Saving…",
     "save": "Save"

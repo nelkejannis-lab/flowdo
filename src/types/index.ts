@@ -187,7 +187,9 @@ export interface AbsencePeriod {
   profile?: { display_name: string; username: string }
 }
 
+export type AppRole = 'user' | 'admin'
 export type OrgRole = 'owner' | 'admin' | 'manager' | 'member'
+export type DepartmentRole = 'head' | 'member'
 
 export interface Organization {
   id: string
@@ -196,10 +198,29 @@ export interface Organization {
   createdAt: string
 }
 
+export interface OrgDepartment {
+  id: string
+  orgId: string
+  name: string
+  description?: string
+  parentId?: string
+  memberCount?: number
+}
+
 export interface OrganizationMember {
   userId: string
   role: OrgRole
-  profile: { id: string; display_name: string; username: string; avatar_color: string; job_title?: string | null }
+  departmentId?: string
+  profile: {
+    id: string
+    display_name: string
+    username: string
+    avatar_color: string
+    job_title?: string | null
+    role_description?: string | null
+    app_role?: AppRole
+    is_admin?: boolean
+  }
 }
 
 export interface WorkDayEntry {
