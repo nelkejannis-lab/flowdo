@@ -91,11 +91,6 @@
         "desc": "Automatic appointment suggestions, AI day planner and weekly report.",
         "tip": "The day planner creates real tasks with start times"
       },
-      "pomodoro": {
-        "title": "Pomodoro",
-        "desc": "Focus sessions with timer — time can be logged to projects.",
-        "tip": "Select a project before starting for automatic time tracking"
-      },
       "brain": {
         "title": "Second brain",
         "desc": "Notes, ideas and knowledge base — linked to tasks and projects.",

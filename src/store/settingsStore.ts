@@ -16,7 +16,6 @@ export type NavItemKey =
   | 'tasks'
   | 'calendar'
   | 'termine'
-  | 'pomodoro'
   | 'brain'
   | 'eisenhower'
   | 'worktime'
@@ -34,7 +33,6 @@ export const DEFAULT_NAV_ORDER: NavItemKey[] = [
   'tasks',
   'calendar',
   'termine',
-  'pomodoro',
   'brain',
   'eisenhower',
   'worktime',
@@ -56,7 +54,6 @@ export const DEFAULT_NAV_VISIBILITY: Record<NavItemKey, boolean> = {
   tasks: true,
   calendar: true,
   termine: true,
-  pomodoro: true,
   brain: true,
   eisenhower: true,
   worktime: true,
@@ -300,7 +297,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'flowdo-settings',
-      version: 12,
+      version: 13,
       migrate: (persisted, version) => {
         const legacy = persisted as LegacyState & Partial<SettingsState>
         if (version < 1) {
@@ -315,16 +312,22 @@ export const useSettingsStore = create<SettingsState>()(
         }
         const city = (legacy as any).weatherCity
         const hasCustomCity = city && city !== 'Eneppetal' && city !== 'Ennepetal'
-        const existingNavOrder = ((legacy as any).navOrder ?? []) as NavItemKey[]
+        const stripPomodoro = <T extends string>(keys: T[]) =>
+          keys.filter((k) => k !== 'pomodoro') as T[]
+        const existingNavOrder = stripPomodoro(((legacy as any).navOrder ?? []) as NavItemKey[])
         const missingNavItems = DEFAULT_NAV_ORDER.filter((k) => !existingNavOrder.includes(k))
         const mergedNavOrder = existingNavOrder.length > 0 ? [...existingNavOrder, ...missingNavItems] : [...DEFAULT_NAV_ORDER]
+        const navVisibility = { ...DEFAULT_NAV_VISIBILITY, ...(legacy as any).navVisibility }
+        delete (navVisibility as Record<string, boolean>).pomodoro
+        const pinnedNavItems = stripPomodoro(((legacy as any).pinnedNavItems ?? []) as NavItemKey[])
         return {
           ...legacy,
           language: legacy.language ?? 'de',
           featureVisibility: { ...DEFAULT_FEATURE_VISIBILITY, ...legacy.featureVisibility },
           dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY, ...legacy.dashboardVisibility },
           navOrder: mergedNavOrder,
-          navVisibility: { ...DEFAULT_NAV_VISIBILITY, ...(legacy as any).navVisibility },
+          navVisibility,
+          pinnedNavItems,
           colorLabels: { ...DEFAULT_COLOR_LABELS, ...(legacy as any).colorLabels },
           onboardingPermissionsDone: legacy.onboardingPermissionsDone ?? false,
           onboardingTourDone: (legacy as any).onboardingTourDone ?? false,

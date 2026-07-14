@@ -91,11 +91,6 @@
         "desc": "Automatische Terminvorschläge, KI-Tagesplaner und Wochenreport.",
         "tip": "Der Tagesplaner erstellt echte Aufgaben mit Startzeiten"
       },
-      "pomodoro": {
-        "title": "Pomodoro",
-        "desc": "Fokus-Sessions mit Timer — Zeit wird optional auf Projekte gebucht.",
-        "tip": "Wähle ein Projekt vor dem Start für automatische Zeiterfassung"
-      },
       "brain": {
         "title": "Zweites Gehirn",
         "desc": "Notizen, Ideen und Wissenssammlung — verknüpft mit Aufgaben und Projekten.",

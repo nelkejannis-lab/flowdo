@@ -107,17 +107,3 @@ export const useTaskTimerStore = create<TaskTimerState>()(
     }
   )
 )
-
-/** Log pomodoro focus session to project time tracking. */
-export async function logPomodoroToProjectTime(taskId: string, boardId: string, minutes: number) {
-  const userId = useAuthStore.getState().user?.id
-  if (!userId) return
-  await useTaskTimeStore.getState().addEntry({
-    taskId,
-    boardId,
-    userId,
-    minutes,
-    date: todayISO(),
-    note: 'Pomodoro',
-  })
-}

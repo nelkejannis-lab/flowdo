@@ -36,7 +36,6 @@ const AiSchedulerPage = lazy(() => import('./pages/AiSchedulerPage'))
 const ChatPage = lazy(() => import('./pages/ChatPage'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
-const PomodoroPage = lazy(() => import('./pages/PomodoroPage'))
 const SecondBrainPage = lazy(() => import('./pages/SecondBrainPage'))
 const MeetingsPage = lazy(() => import('./pages/MeetingsPage'))
 const DatenschutzPage = lazy(() => import('./pages/legal/DatenschutzPage'))
@@ -178,7 +177,6 @@ export default function App() {
         <Route path="/social" element={isSupabaseConfigured ? <SocialMediaPage /> : <Navigate to="/" replace />} />
         <Route path="/social/:accountId" element={isSupabaseConfigured ? <SocialAccountDetailPage /> : <Navigate to="/" replace />} />
         <Route path="/instagram-callback" element={<InstagramCallbackPage />} />
-        <Route path="/pomodoro" element={<PomodoroPage />} />
         <Route path="/gehirn" element={<SecondBrainPage />} />
         <Route path="/meetings" element={<MeetingsPage />} />
         <Route path="/ki-termine" element={isSupabaseConfigured ? <AiSchedulerPage /> : <Navigate to="/" replace />} />

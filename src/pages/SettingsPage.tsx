@@ -1061,7 +1061,6 @@ const NAV_META: Record<NavItemKey, { icon: React.ReactNode; label: string; featu
   tasks:       { icon: <ListTodo size={16} />, label: 'Alle Aufgaben' },
   calendar:    { icon: <CalendarDays size={16} />, label: 'Kalender', featureKey: 'calendar' },
   termine:     { icon: <CalendarClock size={16} />, label: 'Termine' },
-  pomodoro:    { icon: <Timer size={16} />, label: 'Pomodoro' },
   brain:       { icon: <Brain size={16} />, label: 'Gehirn' },
   eisenhower:  { icon: <Grid2x2 size={16} />, label: 'Eisenhower', featureKey: 'eisenhower' },
   worktime:    { icon: <Clock size={16} />, label: 'Arbeitszeit', featureKey: 'worktime' },

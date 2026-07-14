@@ -76,7 +76,7 @@ Create project:
 { "type": "create_board", "label": "Project: TITLE", "payload": { "title": "string", "description": "string or null", "color": "#6366f1" }}
 
 Navigate:
-{ "type": "navigate", "label": "Open PAGE", "payload": { "path": "/dashboard|/tasks|/calendar|/boards|/pomodoro|/ai-scheduler|/chat|/friends|/worktime|/eisenhower|/settings" }}
+{ "type": "navigate", "label": "Open PAGE", "payload": { "path": "/dashboard|/tasks|/calendar|/boards|/ai-scheduler|/chat|/friends|/worktime|/eisenhower|/settings" }}
 
 IMPORTANT RULES:
 - For screenshots or photos of task lists, calendars, tables, or to-do lists: extract EVERY recognizable entry as its own action. Leave nothing out.
@@ -125,7 +125,7 @@ Projekt erstellen:
 { "type": "create_board", "label": "Projekt: TITEL", "payload": { "title": "string", "description": "string oder null", "color": "#6366f1" }}
 
 Navigieren:
-{ "type": "navigate", "label": "Öffne SEITE", "payload": { "path": "/dashboard|/tasks|/calendar|/boards|/pomodoro|/ai-scheduler|/chat|/friends|/worktime|/eisenhower|/settings" }}
+{ "type": "navigate", "label": "Öffne SEITE", "payload": { "path": "/dashboard|/tasks|/calendar|/boards|/ai-scheduler|/chat|/friends|/worktime|/eisenhower|/settings" }}
 
 WICHTIGE REGELN:
 - Bei Screenshots oder Fotos von Aufgabenlisten, Kalendern, Tabellen oder To-Do-Listen: Extrahiere JEDEN erkennbaren Eintrag als eigene Action. Lasse nichts aus.

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CheckSquare, Clock, Flame, TrendingUp } from 'lucide-react'
+import { CheckSquare, Clock, TrendingUp } from 'lucide-react'
 import { useTasksStore } from '../../store/tasksStore'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
 import { useWorkTimeStore } from '../../store/workTimeStore'
@@ -33,16 +33,6 @@ export default function ProductivityStatsWidget() {
     ? (Date.now() - new Date(runningStartedAt).getTime()) / 60000
     : 0
   const workedMinutes = netMinutes(entry) + liveMinutes
-
-  // Pomodoro sessions
-  const pomodoroSessions = (() => {
-    try {
-      return parseInt(localStorage.getItem(`pomodoro_sessions_${today}`) ?? '0', 10)
-    } catch {
-      return 0
-    }
-  })()
-  const focusMinutes = pomodoroSessions * 25
 
   const circumference = 2 * Math.PI * 26
   const dashOffset = circumference * (1 - (totalToday > 0 ? taskProgress : 100) / 100)
@@ -94,16 +84,6 @@ export default function ProductivityStatsWidget() {
             </span>
             <span className="font-semibold tabular-nums text-gray-800 dark:text-racing-100">
               {completedToday} / {totalToday}
-            </span>
-          </div>
-
-          {/* Pomodoro Focus Sessions */}
-          <div className="flex items-center justify-between text-xs">
-            <span className="flex items-center gap-1.5 text-gray-500">
-              <Flame size={13} className="text-orange-500" /> Fokuszeit:
-            </span>
-            <span className="font-semibold tabular-nums text-gray-800 dark:text-racing-100">
-              {focusMinutes > 0 ? `${focusMinutes} Min` : '0 Min'}
             </span>
           </div>
 
