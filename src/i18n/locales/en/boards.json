@@ -116,7 +116,31 @@
     "minutes": "Minutes",
     "task": "Task",
     "noTask": "General",
-    "log": "Log"
+    "log": "Log",
+    "entries": "Time entries",
+    "note": "Note",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "settings": {
+    "title": "Project settings",
+    "open": "Settings",
+    "saving": "Saving…",
+    "defaultLogMinutes": "Default log duration",
+    "defaultLogHint": "Preset minutes when logging time",
+    "saveAsPreset": "Save as preset",
+    "presetName": "Preset name",
+    "savePreset": "Save",
+    "applyPreset": "Apply preset",
+    "apply": "Apply",
+    "tasks": "tasks",
+    "tabs": {
+      "general": "General",
+      "time": "Time & budget",
+      "dates": "Dates",
+      "presets": "Presets",
+      "milestones": "Milestones"
+    }
   },
   "todos": {
     "calendarHint": "Click a day to add a new task for that day.",

@@ -18,6 +18,8 @@ interface TaskTimeState {
   entries: TaskTimeEntry[]
   fetchByBoard: (boardId: string) => Promise<void>
   addEntry: (input: Omit<TaskTimeEntry, 'id' | 'createdAt'>) => Promise<void>
+  updateEntry: (id: string, updates: Partial<Pick<TaskTimeEntry, 'minutes' | 'date' | 'taskId' | 'note'>>) => Promise<void>
+  deleteEntry: (id: string) => Promise<void>
   getBoardSummary: (boardId: string, taskIds: string[]) => { totalMinutes: number; byTask: Record<string, number>; completionPct: number }
   getTaskMinutes: (taskId: string) => number
   getEstimateComparison: (tasks: { id: string; estimatedMinutes?: number }[]) => { estimated: number; actual: number }
@@ -68,6 +70,25 @@ export const useTaskTimeStore = create<TaskTimeState>()(
         const entry: TaskTimeEntry = { ...input, id: createId(), createdAt: new Date().toISOString() }
         set((s) => ({ entries: [entry, ...s.entries] }))
         await syncEntry(entry)
+      },
+
+      updateEntry: async (id, updates) => {
+        let updated: TaskTimeEntry | undefined
+        set((s) => ({
+          entries: s.entries.map((e) => {
+            if (e.id !== id) return e
+            updated = { ...e, ...updates, taskId: updates.taskId === '' ? undefined : updates.taskId ?? e.taskId }
+            return updated
+          }),
+        }))
+        if (updated) await syncEntry(updated)
+      },
+
+      deleteEntry: async (id) => {
+        set((s) => ({ entries: s.entries.filter((e) => e.id !== id) }))
+        if (isSupabaseConfigured) {
+          await supabase.from('task_time_entries').delete().eq('id', id)
+        }
       },
 
       getBoardSummary: (boardId, taskIds) => {

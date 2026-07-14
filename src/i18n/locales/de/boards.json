@@ -116,7 +116,31 @@
     "minutes": "Minuten",
     "task": "Aufgabe",
     "noTask": "Allgemein",
-    "log": "Erfassen"
+    "log": "Erfassen",
+    "entries": "Zeiteinträge",
+    "note": "Notiz",
+    "save": "Speichern",
+    "cancel": "Abbrechen"
+  },
+  "settings": {
+    "title": "Projekt-Einstellungen",
+    "open": "Einstellungen",
+    "saving": "Speichern…",
+    "defaultLogMinutes": "Standard-Erfassung",
+    "defaultLogHint": "Voreinstellung für Minuten beim Erfassen von Zeit",
+    "saveAsPreset": "Als Vorlage speichern",
+    "presetName": "Name der Vorlage",
+    "savePreset": "Speichern",
+    "applyPreset": "Vorlage anwenden",
+    "apply": "Anwenden",
+    "tasks": "Aufgaben",
+    "tabs": {
+      "general": "Allgemein",
+      "time": "Zeit & Budget",
+      "dates": "Termine",
+      "presets": "Vorlagen",
+      "milestones": "Meilensteine"
+    }
   },
   "todos": {
     "calendarHint": "Klicke auf einen Tag, um eine neue Aufgabe für diesen Tag hinzuzufügen.",

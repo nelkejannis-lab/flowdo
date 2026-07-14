@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { DndContext, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
-import { ArrowLeft, Building2, Check, ChevronDown, ChevronRight, ChevronLeft, Globe, MessageSquare, Pencil, Plus, UserPlus, Users, X, Trello, List, Calendar } from 'lucide-react'
+import { ArrowLeft, Building2, Check, ChevronDown, ChevronRight, ChevronLeft, Globe, MessageSquare, Plus, Settings, UserPlus, Users, X, Trello, List, Calendar } from 'lucide-react'
 import { useBoardsStore } from '../store/boardsStore'
 import { useBoardInvitesStore } from '../store/boardInvitesStore'
 import { useProjectTasksStore } from '../store/projectTasksStore'
@@ -11,7 +11,7 @@ import { useFriendsStore } from '../store/friendsStore'
 import { useAuthStore } from '../store/authStore'
 import { useCommentsStore } from '../store/commentsStore'
 import KanbanColumn from '../components/boards/KanbanColumn'
-import BoardFormModal from '../components/boards/BoardFormModal'
+import BoardSettingsModal from '../components/boards/BoardSettingsModal'
 import ProjectTaskFormModal from '../components/boards/ProjectTaskFormModal'
 import CommentSection from '../components/shared/CommentSection'
 import type { Task } from '../types'
@@ -57,7 +57,7 @@ export default function BoardDetailPage() {
   const [calendarDate, setCalendarDate] = useState(new Date())
   const [newTaskDate, setNewTaskDate] = useState<string | null>(null)
 
-  const [editingBoard, setEditingBoard] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [newTaskColumnId, setNewTaskColumnId] = useState<string | null>(null)
   const [todoInput, setTodoInput] = useState('')
@@ -325,11 +325,11 @@ export default function BoardDetailPage() {
           </div>
 
           <button
-            onClick={() => setEditingBoard(true)}
+            onClick={() => setShowSettings(true)}
             className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-sm hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800"
           >
-            <Pencil size={14} />
-            {t('detail.edit')}
+            <Settings size={14} />
+            {t('settings.open')}
           </button>
         </div>
       </div>
@@ -487,7 +487,7 @@ export default function BoardDetailPage() {
           )}
 
           {activeView === 'overview' && (
-            <ProjectTimeReport board={board} tasks={tasks} />
+            <ProjectTimeReport board={board} tasks={tasks} onOpenSettings={() => setShowSettings(true)} />
           )}
 
           {activeView === 'calendar' && (
@@ -658,7 +658,7 @@ export default function BoardDetailPage() {
         )
       })()}
 
-      {editingBoard && <BoardFormModal board={board} onClose={() => setEditingBoard(false)} />}
+      {showSettings && <BoardSettingsModal board={board} onClose={() => setShowSettings(false)} />}
       {editingTask && <ProjectTaskFormModal board={board} task={editingTask} onClose={() => setEditingTask(null)} />}
       {newTaskColumnId && (
         <ProjectTaskFormModal
