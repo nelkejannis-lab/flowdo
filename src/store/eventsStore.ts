@@ -61,7 +61,7 @@ interface EventsState {
   fetchAll: () => Promise<void>
   addEvent: (input: NewEventInput) => CalendarEvent
   updateEvent: (id: string, updates: Partial<CalendarEvent>) => void
-  deleteEvent: (id: string) => void
+  deleteEvent: (id: string) => Promise<void>
 }
 
 export const useEventsStore = create<EventsState>()(
@@ -72,24 +72,40 @@ export const useEventsStore = create<EventsState>()(
 
       fetchAll: async () => {
         const userId = await getUserId()
-        if (!userId) return
-
         const deleted = new Set([...get().deletedEventIds, ...pendingDeletes])
+
+        if (!userId) {
+          set((state) => ({
+            events: state.events.filter((e) => !deleted.has(e.id)),
+          }))
+          return
+        }
 
         const { data, error } = await supabase
           .from('calendar_events')
           .select('*')
           .eq('owner_id', userId)
           .order('date', { ascending: true })
-        if (error) return
+
+        if (error) {
+          console.error('[fetchAll events] failed:', error.message)
+          set((state) => ({
+            events: state.events.filter((e) => !deleted.has(e.id)),
+          }))
+          return
+        }
 
         const remote = ((data ?? []) as CalendarEventRow[]).map(toEvent)
         const remoteIds = new Set(remote.map((e) => e.id))
 
-        // Retry tombstoned deletes that are still present remotely
         for (const id of deleted) {
           if (remoteIds.has(id)) {
-            void supabase.from('calendar_events').delete().eq('id', id).eq('owner_id', userId)
+            const { error: delErr } = await supabase
+              .from('calendar_events')
+              .delete()
+              .eq('id', id)
+              .eq('owner_id', userId)
+            if (delErr) console.error('[fetchAll events] retry delete failed:', delErr.message)
           }
         }
 
@@ -97,7 +113,6 @@ export const useEventsStore = create<EventsState>()(
 
         set({
           events: visible,
-          // Keep tombstones only while the row might still exist server-side
           deletedEventIds: get().deletedEventIds.filter((id) => remoteIds.has(id)),
         })
       },
@@ -135,7 +150,7 @@ export const useEventsStore = create<EventsState>()(
         }
       },
 
-      deleteEvent: (id) => {
+      deleteEvent: async (id) => {
         pendingDeletes.add(id)
         set((state) => ({
           events: state.events.filter((e) => e.id !== id),
@@ -143,23 +158,32 @@ export const useEventsStore = create<EventsState>()(
             ? state.deletedEventIds
             : [...state.deletedEventIds, id],
         }))
-        void getUserId().then(async (userId) => {
+
+        try {
+          const userId = await getUserId()
           if (userId) {
-            const { error } = await supabase.from('calendar_events').delete().eq('id', id).eq('owner_id', userId)
+            const { error } = await supabase
+              .from('calendar_events')
+              .delete()
+              .eq('id', id)
+              .eq('owner_id', userId)
             if (error) {
               console.error('[deleteEvent] failed in Supabase:', error.message)
-              pendingDeletes.delete(id)
-              return
             }
           }
+        } finally {
           pendingDeletes.delete(id)
-          // Tombstone stays until fetchAll confirms the row is gone from remote
-        })
+        }
       },
     }),
     {
       name: 'flowdo-events',
-      partialize: (state) => ({ events: state.events, deletedEventIds: state.deletedEventIds }),
+      partialize: (state) => ({ deletedEventIds: state.deletedEventIds }),
+      merge: (persisted, current) => ({
+        ...current,
+        ...(persisted as Partial<EventsState>),
+        events: [],
+      }),
     }
   )
 )

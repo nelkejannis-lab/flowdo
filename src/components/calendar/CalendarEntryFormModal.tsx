@@ -12,7 +12,8 @@ import { useSettingsStore } from '../../store/settingsStore'
 import { useTeamsStore } from '../../store/teamsStore'
 import { isSupabaseConfigured } from '../../lib/supabase'
 import type { CalendarEntry, CalendarEntryType, CalendarEvent } from '../../types'
-import { parseCalendarEntryId } from '../../utils/calendarEntry'
+import { parseCalendarEntryId, seriesTag } from '../../utils/calendarEntry'
+import { createId } from '../../utils/id'
 import { todayISO } from '../../utils/date'
 
 type Kind = 'event' | CalendarEntryType
@@ -173,7 +174,9 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, defa
       return
     }
 
-    // Create recurring entries for ~1 year
+    // Create recurring entries for ~1 year (tagged as a series so delete removes all)
+    const seriesId = createId()
+    const descriptionWithSeries = (baseInput.description ?? '') + seriesTag(seriesId)
     const occurrences: string[] = []
     let current = date
     const horizon = addWeeks(date, 52)
@@ -182,7 +185,7 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, defa
       current = addWeeks(current, recurrenceWeeks)
     }
     for (const d of occurrences) {
-      const err = await addEntry({ ...baseInput, date: d })
+      const err = await addEntry({ ...baseInput, description: descriptionWithSeries, date: d })
       if (err) { setSaving(false); setError(err); return }
     }
     setSaving(false)
@@ -191,13 +194,13 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, defa
 
   const isOwner = !entry || entry.ownerId === currentUserId
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!isOwner) return
     if (event) {
-      deleteEvent(event.id)
+      await deleteEvent(event.id)
       onClose()
     } else if (entry) {
-      void deleteEntry(entry.id, entry.date)
+      await deleteEntry(entry.id, entry.date)
       useToastStore.getState().show({ message: t('entryDeleted'), duration: 3000 })
       onClose()
     }

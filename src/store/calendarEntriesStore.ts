@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { supabase } from '../lib/supabase'
 import type { CalendarEntry, CalendarEntryInvitee, CalendarEntryType } from '../types'
-import { occurrenceKey, parseCalendarEntryId } from '../utils/calendarEntry'
+import { extractSeriesId, occurrenceKey, parseCalendarEntryId } from '../utils/calendarEntry'
 
 interface CalendarEntryRow {
   id: string
@@ -119,8 +119,9 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()(
 
         for (const id of deleted) {
           if (remoteIds.has(id)) {
-            void supabase.from('calendar_entry_invites').delete().eq('entry_id', id)
-            void supabase.from('calendar_entries').delete().eq('id', id)
+            await supabase.from('calendar_entry_invites').delete().eq('entry_id', id)
+            const { error: delErr } = await supabase.from('calendar_entries').delete().eq('id', id)
+            if (delErr) console.error('[fetchEntries] retry delete failed:', delErr.message)
           }
         }
 
@@ -244,23 +245,36 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()(
           return
         }
 
-        pendingDeletes.add(dbId)
+        const entry = get().entries.find((e) => e.id === dbId)
+        const seriesId = extractSeriesId(entry?.description)
+        const idsToDelete = seriesId
+          ? get().entries
+              .filter((e) => extractSeriesId(e.description) === seriesId)
+              .map((e) => e.id)
+          : [dbId]
+        const deleteIds = [...new Set(idsToDelete)]
+
+        for (const delId of deleteIds) pendingDeletes.add(delId)
         set((state) => ({
-          entries: state.entries.filter((e) => e.id !== dbId),
-          deletedEntryIds: state.deletedEntryIds.includes(dbId)
-            ? state.deletedEntryIds
-            : [...state.deletedEntryIds, dbId],
-          hiddenOccurrences: state.hiddenOccurrences.filter((k) => !k.startsWith(`${dbId}:`)),
+          entries: state.entries.filter((e) => !deleteIds.includes(e.id)),
+          deletedEntryIds: [...new Set([...state.deletedEntryIds, ...deleteIds])],
+          hiddenOccurrences: state.hiddenOccurrences.filter(
+            (k) => !deleteIds.some((delId) => k.startsWith(`${delId}:`))
+          ),
         }))
 
-        await supabase.from('calendar_entry_invites').delete().eq('entry_id', dbId)
-        const { error } = await supabase.from('calendar_entries').delete().eq('id', dbId)
-        pendingDeletes.delete(dbId)
-
-        if (error) {
-          console.error('[deleteEntry] failed:', error.message)
-          await get().fetchEntries()
+        let hadError = false
+        for (const delId of deleteIds) {
+          await supabase.from('calendar_entry_invites').delete().eq('entry_id', delId)
+          const { error } = await supabase.from('calendar_entries').delete().eq('id', delId)
+          pendingDeletes.delete(delId)
+          if (error) {
+            hadError = true
+            console.error('[deleteEntry] failed:', error.message)
+          }
         }
+
+        if (hadError) await get().fetchEntries()
       },
 
       undoDelete: (_id) => { /* no-op: immediate delete */ },

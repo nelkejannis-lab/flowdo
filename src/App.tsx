@@ -7,6 +7,7 @@ import { useSettingsStore } from './store/settingsStore'
 import { useAuthStore } from './store/authStore'
 import { useTasksStore } from './store/tasksStore'
 import { useCalendarEntriesStore } from './store/calendarEntriesStore'
+import { useEventsStore } from './store/eventsStore'
 import { useNotifications } from './hooks/useNotifications'
 import { useCalendarReminders } from './hooks/useCalendarReminders'
 import { isSupabaseConfigured } from './lib/supabase'
@@ -60,18 +61,22 @@ export default function App() {
   const session = useAuthStore((s) => s.session)
   const subscribeToTasks = useTasksStore((s) => s.subscribeToTasks)
   const subscribeToEntries = useCalendarEntriesStore((s) => s.subscribeToEntries)
+  const fetchCalendarEntries = useCalendarEntriesStore((s) => s.fetchEntries)
+  const fetchEvents = useEventsStore((s) => s.fetchAll)
   useNotifications()
   useCalendarReminders()
 
   useEffect(() => {
     if (!isSupabaseConfigured || !session) return
+    void fetchEvents()
+    void fetchCalendarEntries()
     const unsubTasks = subscribeToTasks()
     const unsubEntries = subscribeToEntries()
     return () => {
       unsubTasks()
       unsubEntries()
     }
-  }, [session, subscribeToTasks, subscribeToEntries])
+  }, [session, subscribeToTasks, subscribeToEntries, fetchEvents, fetchCalendarEntries])
 
   const [showNewTask, setShowNewTask] = useState(false)
   const [showNewTermin, setShowNewTermin] = useState(false)
