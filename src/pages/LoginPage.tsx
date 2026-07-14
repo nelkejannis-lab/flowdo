@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Trans, useTranslation } from 'react-i18next'
 import { Eye, EyeOff, CalendarDays, CheckSquare, Clock, MessageCircle, ArrowRight, ChevronLeft } from 'lucide-react'
+import { useSettingsStore } from '../store/settingsStore'
 import { useAuthStore } from '../store/authStore'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -17,7 +18,9 @@ const FEATURES = [
 const inp = 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-[14px] text-white placeholder:text-white/30 backdrop-blur-md transition-all duration-300 focus:border-white/30 focus:bg-white/10 focus:outline-none focus:ring-4 focus:ring-white/5'
 
 export default function LoginPage() {
-  const { t } = useTranslation('auth')
+  const { t, i18n } = useTranslation('auth')
+  const language = useSettingsStore((s) => s.language)
+  const setLanguage = useSettingsStore((s) => s.setLanguage)
   const signIn              = useAuthStore((s) => s.signIn)
   const signUp              = useAuthStore((s) => s.signUp)
   const requestPasswordReset = useAuthStore((s) => s.requestPasswordReset)
@@ -251,6 +254,21 @@ export default function LoginPage() {
             transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
             className="absolute -bottom-[20%] -right-[10%] w-[60vw] h-[60vw] rounded-full bg-gradient-to-bl from-blue-600/20 to-cyan-600/10 blur-[100px]" 
           />
+        </div>
+
+        <div className="absolute right-4 top-4 z-20 flex gap-1 rounded-xl border border-white/10 bg-white/5 p-1 backdrop-blur-md">
+          {(['de', 'en'] as const).map((lng) => (
+            <button
+              key={lng}
+              type="button"
+              onClick={() => setLanguage(lng)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                language === lng ? 'bg-white text-black' : 'text-white/60 hover:text-white'
+              }`}
+            >
+              {lng === 'de' ? 'DE' : 'EN'}
+            </button>
+          ))}
         </div>
 
         {/* Noise overlay */}

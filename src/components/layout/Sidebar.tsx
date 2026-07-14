@@ -36,6 +36,7 @@ import {
   Brain,
   Mic,
   Pin,
+  Shield,
 } from 'lucide-react'
 import {
   DndContext,
@@ -60,6 +61,7 @@ import { useMessagesStore } from '../../store/messagesStore'
 import { useBoardsStore } from '../../store/boardsStore'
 import { useSettingsStore } from '../../store/settingsStore'
 import { useAuthStore } from '../../store/authStore'
+import { useOrganizationStore } from '../../store/organizationStore'
 import { useTaskSharesStore } from '../../store/taskSharesStore'
 import { useBoardInvitesStore } from '../../store/boardInvitesStore'
 import { useTeamInvitesStore } from '../../store/teamInvitesStore'
@@ -113,6 +115,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const setPinnedNavOrder = useSettingsStore((s) => s.setPinnedNavOrder)
   const profile = useAuthStore((s) => s.profile)
   const signOut = useAuthStore((s) => s.signOut)
+  const fetchOrg = useOrganizationStore((s) => s.fetch)
+  const canApproveAbsences = useOrganizationStore((s) => s.canApproveAbsences)
+  const myRole = useOrganizationStore((s) => s.myRole)
+  const showAdmin = profile?.is_admin || myRole === 'owner' || myRole === 'admin' || myRole === 'manager' || canApproveAbsences()
   const openSearch = useSearchStore((s) => s.open)
 
   useEffect(() => {
@@ -124,10 +130,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       fetchTeamIncoming()
       fetchConversations()
       checkBirthdays().then(() => fetchNotifications())
+      void fetchOrg()
     } else {
       fetchBoards()
     }
-  }, [fetchBoards, fetchFolders, fetchTaskIncoming, fetchBoardIncoming, fetchTeamIncoming, fetchConversations, fetchNotifications, checkBirthdays])
+  }, [fetchBoards, fetchFolders, fetchTaskIncoming, fetchBoardIncoming, fetchTeamIncoming, fetchConversations, fetchNotifications, checkBirthdays, fetchOrg])
 
   useEffect(() => {
     if (!isSupabaseConfigured) return
@@ -494,6 +501,20 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       </div>
 
       <div className="mt-auto flex flex-col gap-1 pt-4">
+        {isSupabaseConfigured && showAdmin && (
+          <NavLink
+            to="/admin"
+            onClick={onClose}
+            className={({ isActive }) =>
+              `flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                isActive ? 'bg-accent/10 text-accent' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
+              }`
+            }
+          >
+            <Shield size={16} />
+            {t('sidebar.admin')}
+          </NavLink>
+        )}
         {isSupabaseConfigured && profile && (
           <NavLink
             to="/einstellungen"

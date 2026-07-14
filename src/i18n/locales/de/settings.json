@@ -38,7 +38,8 @@
     "title": "Sprache",
     "description": "Wähle die Sprache der Benutzeroberfläche.",
     "german": "Deutsch",
-    "english": "Englisch"
+    "english": "Englisch",
+    "restartTour": "Einführungstour erneut starten"
   },
   "title": "Einstellungen",
   "tabs": {
@@ -47,7 +48,80 @@
     "funktionen": "Funktionen",
     "datenschutz": "Datenschutz",
     "tastenkuerzel": "Tastenkürzel",
-    "arbeitszeit": "Arbeitszeit"
+    "arbeitszeit": "Arbeitszeit",
+    "anleitung": "Anleitung"
+  },
+  "guide": {
+    "title": "Was kann Mooncrew?",
+    "intro": "Mooncrew vereint Aufgaben, Projekte, Kalender, Arbeitszeit und KI in einem Tool — hier findest du alle Bereiche auf einen Blick.",
+    "shortcutsTitle": "Tastenkürzel",
+    "shortcutsDesc": "Arbeite schneller mit Shortcuts für neue Aufgaben, Kalender, Suche und mehr.",
+    "shortcutsLink": "Alle Tastenkürzel anzeigen",
+    "privacyTitle": "Datenschutz & Sicherheit",
+    "privacyDesc": "Exportiere deine Daten, lies die Datenschutzerklärung oder lösche deinen Account jederzeit.",
+    "privacyLink": "Zu Datenschutz-Einstellungen",
+    "sections": {
+      "dashboard": {
+        "title": "Dashboard",
+        "desc": "Dein Tagesüberblick: Aufgaben, Termine, Wetter, Büro-Status und KI-Schnelleingabe.",
+        "tip": "Tippe „Termin morgen 14 Uhr mit Max“ oder „Aufgabe: Bericht schreiben bis Freitag“"
+      },
+      "tasks": {
+        "title": "Aufgaben & Inbox",
+        "desc": "Persönliche Aufgabenlisten, Smart Lists (Heute, Woche, Überfällig) und Schnellerfassung.",
+        "tip": "Drücke N für eine neue Aufgabe"
+      },
+      "projects": {
+        "title": "Projekte & Kanban",
+        "desc": "Team-Boards mit Spalten, Meilensteinen, Zeitbudget, Timer und Mehrfach-Zuweisung.",
+        "tip": "Starte den Timer direkt auf einer Karte — Zeit wird dem Projekt zugeordnet"
+      },
+      "calendar": {
+        "title": "Kalender",
+        "desc": "Monats-, Wochen- und Tagesansicht. Google, Outlook und iCal synchronisieren.",
+        "tip": "Team-Filter zeigt Urlaub und Abwesenheiten deiner Kollegen"
+      },
+      "worktime": {
+        "title": "Arbeitszeit",
+        "desc": "Stempeln, Wochenübersicht, Abwesenheiten. Eingabe: 8 = 8 Stunden, 8:30 = 8½ Stunden.",
+        "tip": "Quick-Buttons 4h / 6h / 8h / Soll beim Eingabefeld"
+      },
+      "ai": {
+        "title": "KI-Termine & Planer",
+        "desc": "Automatische Terminvorschläge, KI-Tagesplaner und Wochenreport.",
+        "tip": "Der Tagesplaner erstellt echte Aufgaben mit Startzeiten"
+      },
+      "pomodoro": {
+        "title": "Pomodoro",
+        "desc": "Fokus-Sessions mit Timer — Zeit wird optional auf Projekte gebucht.",
+        "tip": "Wähle ein Projekt vor dem Start für automatische Zeiterfassung"
+      },
+      "brain": {
+        "title": "Zweites Gehirn",
+        "desc": "Notizen, Ideen und Wissenssammlung — verknüpft mit Aufgaben und Projekten.",
+        "tip": ""
+      },
+      "eisenhower": {
+        "title": "Eisenhower-Matrix",
+        "desc": "Priorisiere nach Wichtigkeit und Dringlichkeit in vier Quadranten.",
+        "tip": ""
+      },
+      "team": {
+        "title": "Kollegen & Teams",
+        "desc": "Vernetze dich mit Kollegen, erstelle Teams und sieh wer abwesend ist.",
+        "tip": ""
+      },
+      "chat": {
+        "title": "Chat",
+        "desc": "Direktnachrichten mit Kollegen — in Echtzeit synchronisiert.",
+        "tip": ""
+      },
+      "meetings": {
+        "title": "Meetings",
+        "desc": "Meeting-Notizen aufnehmen und Protokolle verwalten.",
+        "tip": ""
+      }
+    }
   },
   "features": {
     "title": "Funktionen",

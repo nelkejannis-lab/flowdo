@@ -1,0 +1,36 @@
+{
+  "title": "Administration",
+  "createOrg": {
+    "title": "Create organization",
+    "desc": "Set up your company organization to manage 60+ team members.",
+    "placeholder": "Company name",
+    "submit": "Create organization",
+    "creating": "Creating…"
+  },
+  "stats": {
+    "members": "Members",
+    "teams": "Teams",
+    "projects": "Projects",
+    "pendingAbsences": "Pending requests"
+  },
+  "invite": {
+    "title": "Invite member",
+    "placeholder": "Search name or @username…",
+    "add": "Add"
+  },
+  "members": {
+    "title": "Members"
+  },
+  "roles": {
+    "owner": "Owner",
+    "admin": "Admin",
+    "manager": "Manager",
+    "member": "Member"
+  },
+  "reports": {
+    "title": "Team overview",
+    "trackedHours": "{{hours}} hours logged to projects",
+    "teamsCount": "{{count}} active teams",
+    "hint": "Detailed per-project reports are in project settings."
+  }
+}

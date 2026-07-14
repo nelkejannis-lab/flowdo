@@ -23,6 +23,7 @@
       "brain": "Brain",
       "meetings": "Meetings"
     },
+    "admin": "Administration",
     "pin": "Pin",
     "unpin": "Unpin",
     "groups": {

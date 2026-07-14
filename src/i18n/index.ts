@@ -21,6 +21,8 @@ import legalDe from './locales/de/legal.json'
 import meetingsDe from './locales/de/meetings.json'
 import brainDe from './locales/de/brain.json'
 import aiChatDe from './locales/de/aiChat.json'
+import adminDe from './locales/de/admin.json'
+import onboardingDe from './locales/de/onboarding.json'
 
 import commonEn from './locales/en/common.json'
 import layoutEn from './locales/en/layout.json'
@@ -40,6 +42,8 @@ import legalEn from './locales/en/legal.json'
 import meetingsEn from './locales/en/meetings.json'
 import brainEn from './locales/en/brain.json'
 import aiChatEn from './locales/en/aiChat.json'
+import adminEn from './locales/en/admin.json'
+import onboardingEn from './locales/en/onboarding.json'
 
 export const defaultNS = 'common'
 
@@ -64,6 +68,8 @@ export const resources = {
     meetings: meetingsDe,
     brain: brainDe,
     aiChat: aiChatDe,
+    admin: adminDe,
+    onboarding: onboardingDe,
   },
   en: {
     common: commonEn,
@@ -85,6 +91,8 @@ export const resources = {
     meetings: meetingsEn,
     brain: brainEn,
     aiChat: aiChatEn,
+    admin: adminEn,
+    onboarding: onboardingEn,
   },
 } as const
 

@@ -19,7 +19,11 @@ import { isSupabaseConfigured } from '../lib/supabase'
 import { useSearchParams } from 'react-router-dom'
 import { requestPermission, canNotify } from '../utils/notifications'
 import { SHORTCUTS } from '../hooks/useKeyboardShortcuts'
+import SettingsGuideTab from '../components/settings/SettingsGuideTab'
 import type { WorkProfile } from '../types'
+
+type SettingsTab = 'profil' | 'kalender' | 'funktionen' | 'datenschutz' | 'tastenkuerzel' | 'arbeitszeit' | 'anleitung'
+const VALID_TABS: SettingsTab[] = ['profil', 'kalender', 'funktionen', 'arbeitszeit', 'datenschutz', 'tastenkuerzel', 'anleitung']
 
 const FEATURE_ICONS: Record<FeatureKey, React.ReactNode> = {
   calendar: <CalendarDays size={18} />,
@@ -252,7 +256,10 @@ export default function SettingsPage() {
   const [showAddProfile, setShowAddProfile] = useState(false)
   const [newProfile, setNewProfile] = useState<Omit<WorkProfile, 'id'>>({ name: '', weeklyHours: 38.5, workDaysPerWeek: 5, defaultBreakMinutes: 45 })
 
-  const [activeTab, setActiveTab] = useState<'profil' | 'kalender' | 'funktionen' | 'datenschutz' | 'tastenkuerzel' | 'arbeitszeit'>(searchParams.get('tab') === 'kalender' ? 'kalender' : 'profil')
+  const tabParam = searchParams.get('tab')
+  const [activeTab, setActiveTab] = useState<SettingsTab>(
+    VALID_TABS.includes(tabParam as SettingsTab) ? (tabParam as SettingsTab) : 'profil'
+  )
   const connections = useCalendarConnectionsStore((s) => s.connections)
   const fetchConnections = useCalendarConnectionsStore((s) => s.fetch)
   const disconnectCalendar = useCalendarConnectionsStore((s) => s.disconnect)
@@ -376,7 +383,7 @@ export default function SettingsPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 overflow-x-auto rounded-lg border border-gray-200 p-1 dark:border-racing-700 sm:w-fit">
-        {(['profil', 'kalender', 'funktionen', 'arbeitszeit', 'datenschutz', 'tastenkuerzel'] as const).map((tab) => (
+        {(['profil', 'anleitung', 'kalender', 'funktionen', 'arbeitszeit', 'datenschutz', 'tastenkuerzel'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -723,6 +730,13 @@ export default function SettingsPage() {
             </button>
           ))}
         </div>
+        <button
+          type="button"
+          onClick={() => useSettingsStore.getState().resetOnboardingTour()}
+          className="mt-3 text-xs font-medium text-accent hover:underline"
+        >
+          {t('language.restartTour')}
+        </button>
       </div>
 
       <form
@@ -998,6 +1012,8 @@ export default function SettingsPage() {
           </div>
         </div>
       )}
+
+      {activeTab === 'anleitung' && <SettingsGuideTab />}
 
       {activeTab === 'tastenkuerzel' && (
         <div className="flex flex-col gap-4">

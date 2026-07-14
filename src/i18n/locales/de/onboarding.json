@@ -1,0 +1,38 @@
+{
+  "skip": "Überspringen",
+  "back": "Zurück",
+  "next": "Weiter",
+  "finish": "Los geht's!",
+  "steps": {
+    "welcome": {
+      "title": "Willkommen bei Mooncrew",
+      "desc": "Dein All-in-One Tool für Aufgaben, Projekte, Kalender und Arbeitszeit — für dich und dein Team.",
+      "example": ""
+    },
+    "capture": {
+      "title": "KI-Schnelleingabe",
+      "desc": "Auf dem Dashboard kannst du Aufgaben und Termine einfach eintippen oder diktieren — die KI erkennt Datum, Uhrzeit und Priorität.",
+      "example": "Termin morgen 14 Uhr Team-Meeting"
+    },
+    "calendar": {
+      "title": "Kalender verbinden",
+      "desc": "Verbinde Google, Outlook oder iCal in den Einstellungen — alle Termine an einem Ort.",
+      "example": ""
+    },
+    "projects": {
+      "title": "Projekte & Kanban",
+      "desc": "Erstelle Boards für dein Team, weise Aufgaben zu und tracke Zeit mit dem eingebauten Timer.",
+      "example": ""
+    },
+    "worktime": {
+      "title": "Arbeitszeit erfassen",
+      "desc": "Stemple ein/aus oder trage Stunden nachträglich ein. 8 = 8 Stunden, nicht 8 Minuten.",
+      "example": "8:30 oder 8,5 für 8½ Stunden"
+    },
+    "settings": {
+      "title": "Einstellungen & Anleitung",
+      "desc": "Wähle Deutsch oder Englisch, blende Features aus und lies die vollständige Anleitung unter Einstellungen → Anleitung.",
+      "example": ""
+    }
+  }
+}

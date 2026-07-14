@@ -83,7 +83,10 @@ interface WorkTimeState {
   workProfiles: WorkProfile[]
   activeProfileId?: string
   absencePeriods: AbsencePeriod[]
+  teamAbsences: AbsencePeriod[]
   fetchAll: () => Promise<void>
+  fetchTeamAbsences: () => Promise<void>
+  reviewAbsence: (id: string, approved: boolean) => Promise<string | null>
   clockIn: () => void
   clockOut: () => void
   startBreak: (type: string) => void
@@ -126,6 +129,28 @@ function eachDateInRange(start: string, end: string): string[] {
   return dates
 }
 
+function applyAbsenceToEntries(
+  entries: Record<string, WorkDayEntry>,
+  period: AbsencePeriod,
+  settings: WorkTimeSettings,
+  sync = true,
+) {
+  const dates = eachDateInRange(period.startDate, period.endDate)
+  for (const date of dates) {
+    if (period.type === 'sick') {
+      const entry = ensureEntry(entries, date, settings.defaultBreakMinutes)
+      const target = dayTargetForDate(date, settings)
+      entries[date] = { ...entry, sickDay: true, workedMinutes: target, breakMinutes: 0, startTime: undefined, endTime: undefined }
+      if (sync) void syncEntry(entries[date])
+    } else if (period.type === 'vacation') {
+      const entry = ensureEntry(entries, date, settings.defaultBreakMinutes)
+      const target = dayTargetForDate(date, settings)
+      entries[date] = { ...entry, workedMinutes: target, breakMinutes: 0 }
+      if (sync) void syncEntry(entries[date])
+    }
+  }
+}
+
 function dayTargetForDate(date: string, settings: WorkTimeSettings): number {
   const d = new Date(date + 'T12:00:00')
   const dow = d.getDay()
@@ -151,11 +176,8 @@ function makeAudit(
   }
 }
 
-async function syncEntry(entry: WorkDayEntry) {
+async function syncEntryForUser(userId: string, entry: WorkDayEntry) {
   if (!isSupabaseConfigured) return
-  const { data: userData } = await supabase.auth.getUser()
-  const userId = userData.user?.id
-  if (!userId) return
   await supabase.from('work_time_entries').upsert({
     user_id: userId,
     date: entry.date,
@@ -166,6 +188,36 @@ async function syncEntry(entry: WorkDayEntry) {
     sick_day: entry.sickDay ?? false,
     updated_at: new Date().toISOString(),
   })
+}
+
+async function applyApprovedAbsenceForUser(period: AbsencePeriod, targetUserId: string) {
+  const { data: settingsRow } = await supabase
+    .from('work_time_settings')
+    .select('weekly_hours, work_days_per_week, default_break_minutes, friday_hours, weekday_hours')
+    .eq('user_id', targetUserId)
+    .maybeSingle()
+  const settings: WorkTimeSettings = settingsRow
+    ? {
+        weeklyHours: Number(settingsRow.weekly_hours),
+        workDaysPerWeek: settingsRow.work_days_per_week,
+        defaultBreakMinutes: settingsRow.default_break_minutes,
+        fridayHours: settingsRow.friday_hours ?? undefined,
+        weekdayHours: settingsRow.weekday_hours ?? undefined,
+      }
+    : defaultSettings
+  const entries: Record<string, WorkDayEntry> = {}
+  applyAbsenceToEntries(entries, period, settings, false)
+  for (const entry of Object.values(entries)) {
+    await syncEntryForUser(targetUserId, entry)
+  }
+}
+
+async function syncEntry(entry: WorkDayEntry) {
+  if (!isSupabaseConfigured) return
+  const { data: userData } = await supabase.auth.getUser()
+  const userId = userData.user?.id
+  if (!userId) return
+  await syncEntryForUser(userId, entry)
 }
 
 async function syncSettings(
@@ -262,6 +314,7 @@ export const useWorkTimeStore = create<WorkTimeState>()(
       workProfiles: [GBM_PROFILE],
       activeProfileId: undefined,
       absencePeriods: [],
+      teamAbsences: [],
 
       fetchAll: async () => {
         if (!isSupabaseConfigured) return
@@ -289,7 +342,7 @@ export const useWorkTimeStore = create<WorkTimeState>()(
             .order('changed_at', { ascending: false }),
           supabase
             .from('absence_periods')
-            .select('id, type, start_date, end_date, note')
+            .select('id, type, start_date, end_date, note, status, reviewed_by, reviewed_at')
             .eq('user_id', userId)
             .order('start_date', { ascending: false }),
         ])
@@ -355,12 +408,18 @@ export const useWorkTimeStore = create<WorkTimeState>()(
         const manualCompDays = settingsRow?.manual_comp_days ?? get().manualCompDays
         const takenCompDays = settingsRow?.taken_comp_days ?? get().takenCompDays
 
-        const absencePeriods: AbsencePeriod[] = ((absenceResult.data ?? []) as { id: string; type: AbsenceType; start_date: string; end_date: string; note: string | null }[]).map((a) => ({
+        const absencePeriods: AbsencePeriod[] = ((absenceResult.data ?? []) as {
+          id: string; type: AbsenceType; start_date: string; end_date: string; note: string | null
+          status?: string; reviewed_by?: string | null; reviewed_at?: string | null
+        }[]).map((a) => ({
           id: a.id,
           type: a.type,
           startDate: a.start_date,
           endDate: a.end_date,
           note: a.note ?? undefined,
+          status: (a.status as AbsencePeriod['status']) ?? 'approved',
+          reviewedBy: a.reviewed_by ?? undefined,
+          reviewedAt: a.reviewed_at ?? undefined,
         }))
 
         set({
@@ -579,21 +638,12 @@ export const useWorkTimeStore = create<WorkTimeState>()(
       },
       addAbsencePeriod: (startDate, endDate, type, note) => {
         const state = get()
-        const period: AbsencePeriod = { id: createId(), type, startDate, endDate, note }
-        const dates = eachDateInRange(startDate, endDate)
+        const needsApproval = type === 'vacation' || type === 'overtime'
+        const status = needsApproval ? 'pending' : 'approved'
+        const period: AbsencePeriod = { id: createId(), type, startDate, endDate, note, status }
         const newEntries = { ...state.entries }
-        for (const date of dates) {
-          if (type === 'sick') {
-            const entry = ensureEntry(newEntries, date, state.settings.defaultBreakMinutes)
-            const target = dayTargetForDate(date, state.settings)
-            newEntries[date] = { ...entry, sickDay: true, workedMinutes: target, breakMinutes: 0, startTime: undefined, endTime: undefined }
-            void syncEntry(newEntries[date])
-          } else if (type === 'vacation') {
-            const entry = ensureEntry(newEntries, date, state.settings.defaultBreakMinutes)
-            const target = dayTargetForDate(date, state.settings)
-            newEntries[date] = { ...entry, workedMinutes: target, breakMinutes: 0 }
-            void syncEntry(newEntries[date])
-          }
+        if (status === 'approved') {
+          applyAbsenceToEntries(newEntries, period, state.settings)
         }
         set({ entries: newEntries, absencePeriods: [period, ...state.absencePeriods] })
         if (isSupabaseConfigured) {
@@ -607,9 +657,68 @@ export const useWorkTimeStore = create<WorkTimeState>()(
               start_date: period.startDate,
               end_date: period.endDate,
               note: period.note ?? null,
+              status,
             })
           })
         }
+      },
+      fetchTeamAbsences: async () => {
+        if (!isSupabaseConfigured) return
+        const { useOrganizationStore } = await import('./organizationStore')
+        if (!useOrganizationStore.getState().canApproveAbsences()) return
+        const memberIds = useOrganizationStore.getState().members.map((m) => m.userId)
+        if (memberIds.length === 0) return
+        const { data } = await supabase
+          .from('absence_periods')
+          .select('id, user_id, type, start_date, end_date, note, status, reviewed_by, reviewed_at, profile:profiles!absence_periods_user_id_fkey(display_name, username)')
+          .in('user_id', memberIds)
+          .order('start_date', { ascending: false })
+          .limit(50)
+        const teamAbsences: AbsencePeriod[] = (data ?? []).map((a: any) => ({
+          id: a.id,
+          userId: a.user_id,
+          type: a.type,
+          startDate: a.start_date,
+          endDate: a.end_date,
+          note: a.note ?? undefined,
+          status: a.status ?? 'approved',
+          reviewedBy: a.reviewed_by ?? undefined,
+          reviewedAt: a.reviewed_at ?? undefined,
+          profile: Array.isArray(a.profile) ? a.profile[0] : a.profile,
+        }))
+        set({ teamAbsences })
+      },
+      reviewAbsence: async (id, approved) => {
+        const status = approved ? 'approved' : 'rejected'
+        const { data: userData } = await supabase.auth.getUser()
+        const reviewerId = userData.user?.id
+        if (!reviewerId) return 'Not signed in'
+
+        const period = get().teamAbsences.find((a) => a.id === id) ?? get().absencePeriods.find((a) => a.id === id)
+        if (!period) return 'Not found'
+
+        const { error } = await supabase
+          .from('absence_periods')
+          .update({ status, reviewed_by: reviewerId, reviewed_at: new Date().toISOString() })
+          .eq('id', id)
+        if (error) return error.message
+
+        if (approved && period.userId) {
+          await applyApprovedAbsenceForUser({ ...period, status: 'approved' }, period.userId)
+        } else if (approved && !period.userId) {
+          const state = get()
+          const newEntries = { ...state.entries }
+          applyAbsenceToEntries(newEntries, { ...period, status: 'approved' }, state.settings)
+          set({ entries: newEntries })
+        }
+
+        const updateList = (list: AbsencePeriod[]) =>
+          list.map((a) => (a.id === id ? { ...a, status: status as AbsencePeriod['status'], reviewedBy: reviewerId, reviewedAt: new Date().toISOString() } : a))
+        set({
+          teamAbsences: updateList(get().teamAbsences),
+          absencePeriods: updateList(get().absencePeriods),
+        })
+        return null
       },
       incrementManualCompDays: () => {
         const manualCompDays = get().manualCompDays + 1

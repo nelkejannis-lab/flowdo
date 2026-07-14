@@ -94,7 +94,17 @@
       "overtime": "Overtime"
     },
     "notePlaceholder": "Note (optional)",
-    "save": "Save"
+    "save": "Save",
+    "pendingHint": "Vacation and overtime require manager approval.",
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "approvalsTitle": "Absence requests",
+    "noPending": "No pending requests",
+    "approve": "Approve",
+    "reject": "Reject"
   },
   "overview": {
     "totalOvertime": "Total overtime",

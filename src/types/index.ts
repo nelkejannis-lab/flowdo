@@ -172,13 +172,34 @@ export interface SocialStory {
 }
 
 export type AbsenceType = 'vacation' | 'sick' | 'overtime'
+export type AbsenceStatus = 'pending' | 'approved' | 'rejected'
 
 export interface AbsencePeriod {
   id: string
+  userId?: string
   type: AbsenceType
   startDate: string
   endDate: string
   note?: string
+  status?: AbsenceStatus
+  reviewedBy?: string
+  reviewedAt?: string
+  profile?: { display_name: string; username: string }
+}
+
+export type OrgRole = 'owner' | 'admin' | 'manager' | 'member'
+
+export interface Organization {
+  id: string
+  name: string
+  ownerId: string
+  createdAt: string
+}
+
+export interface OrganizationMember {
+  userId: string
+  role: OrgRole
+  profile: { id: string; display_name: string; username: string; avatar_color: string; job_title?: string | null }
 }
 
 export interface WorkDayEntry {

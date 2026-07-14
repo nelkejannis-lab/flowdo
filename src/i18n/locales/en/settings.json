@@ -38,7 +38,8 @@
     "title": "Language",
     "description": "Choose the language of the user interface.",
     "german": "German",
-    "english": "English"
+    "english": "English",
+    "restartTour": "Restart intro tour"
   },
   "title": "Settings",
   "tabs": {
@@ -47,7 +48,80 @@
     "funktionen": "Features",
     "datenschutz": "Privacy",
     "tastenkuerzel": "Shortcuts",
-    "arbeitszeit": "Work time"
+    "arbeitszeit": "Work time",
+    "anleitung": "Guide"
+  },
+  "guide": {
+    "title": "What can Mooncrew do?",
+    "intro": "Mooncrew combines tasks, projects, calendar, time tracking and AI in one tool — here's an overview of every area.",
+    "shortcutsTitle": "Keyboard shortcuts",
+    "shortcutsDesc": "Work faster with shortcuts for new tasks, calendar, search and more.",
+    "shortcutsLink": "Show all shortcuts",
+    "privacyTitle": "Privacy & security",
+    "privacyDesc": "Export your data, read the privacy policy or delete your account at any time.",
+    "privacyLink": "Go to privacy settings",
+    "sections": {
+      "dashboard": {
+        "title": "Dashboard",
+        "desc": "Your daily overview: tasks, appointments, weather, office status and AI quick capture.",
+        "tip": "Type \"Meeting tomorrow 2pm with Max\" or \"Task: write report by Friday\""
+      },
+      "tasks": {
+        "title": "Tasks & Inbox",
+        "desc": "Personal task lists, smart lists (Today, Week, Overdue) and quick capture.",
+        "tip": "Press N for a new task"
+      },
+      "projects": {
+        "title": "Projects & Kanban",
+        "desc": "Team boards with columns, milestones, time budget, timer and multi-assignee.",
+        "tip": "Start the timer on a card — time is logged to the project"
+      },
+      "calendar": {
+        "title": "Calendar",
+        "desc": "Month, week and day views. Sync Google, Outlook and iCal.",
+        "tip": "Team filter shows colleagues' vacation and absences"
+      },
+      "worktime": {
+        "title": "Work time",
+        "desc": "Clock in/out, week view, absences. Input: 8 = 8 hours, 8:30 = 8½ hours.",
+        "tip": "Quick buttons 4h / 6h / 8h / Target when focused on the field"
+      },
+      "ai": {
+        "title": "AI scheduling & planner",
+        "desc": "Automatic appointment suggestions, AI day planner and weekly report.",
+        "tip": "The day planner creates real tasks with start times"
+      },
+      "pomodoro": {
+        "title": "Pomodoro",
+        "desc": "Focus sessions with timer — time can be logged to projects.",
+        "tip": "Select a project before starting for automatic time tracking"
+      },
+      "brain": {
+        "title": "Second brain",
+        "desc": "Notes, ideas and knowledge base — linked to tasks and projects.",
+        "tip": ""
+      },
+      "eisenhower": {
+        "title": "Eisenhower matrix",
+        "desc": "Prioritize by importance and urgency in four quadrants.",
+        "tip": ""
+      },
+      "team": {
+        "title": "Colleagues & teams",
+        "desc": "Connect with colleagues, create teams and see who's away.",
+        "tip": ""
+      },
+      "chat": {
+        "title": "Chat",
+        "desc": "Direct messages with colleagues — synced in real time.",
+        "tip": ""
+      },
+      "meetings": {
+        "title": "Meetings",
+        "desc": "Record meeting notes and manage protocols.",
+        "tip": ""
+      }
+    }
   },
   "features": {
     "title": "Features",

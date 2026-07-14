@@ -120,6 +120,7 @@ interface SettingsState {
   notifyTasks: boolean
   appointmentReminderMinutes: number
   onboardingPermissionsDone: boolean
+  onboardingTourDone: boolean
   weatherCity: string
   weatherCoords: WeatherCoords
   weatherGpsAsked: boolean
@@ -137,6 +138,8 @@ interface SettingsState {
   setNotifyTasks: (v: boolean) => void
   setAppointmentReminderMinutes: (v: number) => void
   setOnboardingPermissionsDone: () => void
+  setOnboardingTourDone: () => void
+  resetOnboardingTour: () => void
   setNavOrder: (order: NavItemKey[]) => void
   toggleNavItem: (key: NavItemKey) => void
   togglePinnedNavItem: (key: NavItemKey) => void
@@ -173,6 +176,7 @@ export const useSettingsStore = create<SettingsState>()(
       notifyTasks: true,
       appointmentReminderMinutes: 15,
       onboardingPermissionsDone: false,
+      onboardingTourDone: false,
       weatherCity: DEFAULT_WEATHER_CITY,
       weatherCoords: { ...DEFAULT_WEATHER_COORDS },
       weatherGpsAsked: false,
@@ -196,6 +200,8 @@ export const useSettingsStore = create<SettingsState>()(
       setNotifyTasks: (v) => set({ notifyTasks: v }),
       setAppointmentReminderMinutes: (v) => set({ appointmentReminderMinutes: v }),
       setOnboardingPermissionsDone: () => set({ onboardingPermissionsDone: true }),
+      setOnboardingTourDone: () => set({ onboardingTourDone: true }),
+      resetOnboardingTour: () => set({ onboardingTourDone: false }),
       setNavOrder: (navOrder) => set({ navOrder }),
       toggleNavItem: (key) =>
         set((s) => ({
@@ -220,6 +226,10 @@ export const useSettingsStore = create<SettingsState>()(
       toggleHideCompletedTasks: () => set((s) => ({ hideCompletedTasks: !s.hideCompletedTasks })),
       importSettings: (settings) => {
         if (!settings) return
+        const current = useSettingsStore.getState()
+        if (settings.language && settings.language !== current.language) {
+          i18n.changeLanguage(settings.language)
+        }
         set((state) => ({
           ...state,
           mode: settings.mode ?? state.mode,
@@ -236,6 +246,7 @@ export const useSettingsStore = create<SettingsState>()(
           notifyTasks: settings.notifyTasks ?? state.notifyTasks,
           appointmentReminderMinutes: settings.appointmentReminderMinutes ?? state.appointmentReminderMinutes,
           onboardingPermissionsDone: settings.onboardingPermissionsDone ?? state.onboardingPermissionsDone,
+          onboardingTourDone: settings.onboardingTourDone ?? state.onboardingTourDone,
           weatherCity: settings.weatherCity ?? state.weatherCity,
           weatherCoords: settings.weatherCoords ?? state.weatherCoords,
           weatherGpsAsked: settings.weatherGpsAsked ?? state.weatherGpsAsked,
@@ -260,6 +271,7 @@ export const useSettingsStore = create<SettingsState>()(
           notifyTasks: true,
           appointmentReminderMinutes: 15,
           onboardingPermissionsDone: false,
+      onboardingTourDone: false,
           weatherCity: DEFAULT_WEATHER_CITY,
           weatherCoords: { ...DEFAULT_WEATHER_COORDS },
           weatherGpsAsked: false,
@@ -288,7 +300,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'flowdo-settings',
-      version: 11,
+      version: 12,
       migrate: (persisted, version) => {
         const legacy = persisted as LegacyState & Partial<SettingsState>
         if (version < 1) {
@@ -315,6 +327,7 @@ export const useSettingsStore = create<SettingsState>()(
           navVisibility: { ...DEFAULT_NAV_VISIBILITY, ...(legacy as any).navVisibility },
           colorLabels: { ...DEFAULT_COLOR_LABELS, ...(legacy as any).colorLabels },
           onboardingPermissionsDone: legacy.onboardingPermissionsDone ?? false,
+          onboardingTourDone: (legacy as any).onboardingTourDone ?? false,
           weatherCity: hasCustomCity ? city : DEFAULT_WEATHER_CITY,
           weatherCoords: (legacy as any).weatherCoords ?? { ...DEFAULT_WEATHER_COORDS },
           dashboardWidgetOrder: (legacy as any).dashboardWidgetOrder ?? [...DEFAULT_DASHBOARD_WIDGET_ORDER],
@@ -343,6 +356,7 @@ export function getSettingsPayload(state: any) {
     notifyTasks: state.notifyTasks,
     appointmentReminderMinutes: state.appointmentReminderMinutes,
     onboardingPermissionsDone: state.onboardingPermissionsDone,
+    onboardingTourDone: state.onboardingTourDone,
     weatherCity: state.weatherCity,
     weatherCoords: state.weatherCoords,
     weatherGpsAsked: state.weatherGpsAsked,

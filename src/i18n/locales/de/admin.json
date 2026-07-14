@@ -1,0 +1,36 @@
+{
+  "title": "Administration",
+  "createOrg": {
+    "title": "Organisation anlegen",
+    "desc": "Erstelle deine Firmen-Organisation, um bis zu 60+ Teammitglieder zu verwalten.",
+    "placeholder": "Firmenname",
+    "submit": "Organisation erstellen",
+    "creating": "Erstelle…"
+  },
+  "stats": {
+    "members": "Mitglieder",
+    "teams": "Teams",
+    "projects": "Projekte",
+    "pendingAbsences": "Offene Anträge"
+  },
+  "invite": {
+    "title": "Mitglied einladen",
+    "placeholder": "Name oder @Benutzername suchen…",
+    "add": "Hinzufügen"
+  },
+  "members": {
+    "title": "Mitglieder"
+  },
+  "roles": {
+    "owner": "Inhaber",
+    "admin": "Admin",
+    "manager": "Manager",
+    "member": "Mitglied"
+  },
+  "reports": {
+    "title": "Team-Übersicht",
+    "trackedHours": "{{hours}} Stunden auf Projekte gebucht",
+    "teamsCount": "{{count}} Teams aktiv",
+    "hint": "Detaillierte Reports pro Projekt findest du in den Projekt-Einstellungen."
+  }
+}

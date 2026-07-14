@@ -94,7 +94,17 @@
       "overtime": "Überstunden"
     },
     "notePlaceholder": "Notiz (optional)",
-    "save": "Eintragen"
+    "save": "Eintragen",
+    "pendingHint": "Urlaub und Überstunden müssen vom Manager genehmigt werden.",
+    "status": {
+      "pending": "Ausstehend",
+      "approved": "Genehmigt",
+      "rejected": "Abgelehnt"
+    },
+    "approvalsTitle": "Abwesenheitsanträge",
+    "noPending": "Keine offenen Anträge",
+    "approve": "Genehmigen",
+    "reject": "Ablehnen"
   },
   "overview": {
     "totalOvertime": "Überstunden gesamt",

@@ -7,6 +7,7 @@ import OvertimeOverview from '../components/worktime/OvertimeOverview'
 import WorkWeekView from '../components/worktime/WorkWeekView'
 import WorkMonthView from '../components/worktime/WorkMonthView'
 import AbsenceManager from '../components/worktime/AbsenceManager'
+import AbsenceApprovals from '../components/worktime/AbsenceApprovals'
 import Modal from '../components/layout/Modal'
 import { useWorkTimeStore } from '../store/workTimeStore'
 import { isSupabaseConfigured } from '../lib/supabase'
@@ -118,6 +119,7 @@ export default function ArbeitszeitPage() {
         <div className="lg:col-start-1 lg:row-start-2 flex flex-col gap-4">
           <StampLog />
           <AbsenceManager />
+          <AbsenceApprovals />
         </div>
       </div>
 

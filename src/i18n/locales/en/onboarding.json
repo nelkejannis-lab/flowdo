@@ -1,0 +1,38 @@
+{
+  "skip": "Skip",
+  "back": "Back",
+  "next": "Next",
+  "finish": "Let's go!",
+  "steps": {
+    "welcome": {
+      "title": "Welcome to Mooncrew",
+      "desc": "Your all-in-one tool for tasks, projects, calendar and time tracking — for you and your team.",
+      "example": ""
+    },
+    "capture": {
+      "title": "AI quick capture",
+      "desc": "On the dashboard, type or dictate tasks and appointments — AI detects date, time and priority.",
+      "example": "Meeting tomorrow 2pm team standup"
+    },
+    "calendar": {
+      "title": "Connect your calendar",
+      "desc": "Connect Google, Outlook or iCal in settings — all appointments in one place.",
+      "example": ""
+    },
+    "projects": {
+      "title": "Projects & Kanban",
+      "desc": "Create boards for your team, assign tasks and track time with the built-in timer.",
+      "example": ""
+    },
+    "worktime": {
+      "title": "Track work time",
+      "desc": "Clock in/out or enter hours retroactively. 8 = 8 hours, not 8 minutes.",
+      "example": "8:30 or 8.5 for 8½ hours"
+    },
+    "settings": {
+      "title": "Settings & guide",
+      "desc": "Choose German or English, hide features you don't need, and read the full guide under Settings → Guide.",
+      "example": ""
+    }
+  }
+}

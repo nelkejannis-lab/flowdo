@@ -33,6 +33,7 @@ import { SortableContext, sortableKeyboardCoordinates, useSortable, horizontalLi
 import { CSS } from '@dnd-kit/utilities'
 import { GripHorizontal } from 'lucide-react'
 import OnboardingPermissions from '../components/dashboard/OnboardingPermissions'
+import OnboardingWizard from '../components/onboarding/OnboardingWizard'
 import MorningReportModal from '../components/dashboard/MorningReportModal'
 import { useSettingsStore } from '../store/settingsStore'
 import { isDueThisWeek, isDueToday, isOverdue, todayISO, parseNaturalDate, parseTaskInput, parseAppointmentInput, isCompletedToday } from '../utils/date'
@@ -72,6 +73,7 @@ export default function Dashboard() {
   const dashboardVisibility = useSettingsStore((s) => s.dashboardVisibility)
   const toggleDashboardWidget = useSettingsStore((s) => s.toggleDashboardWidget)
   const onboardingPermissionsDone = useSettingsStore((s) => s.onboardingPermissionsDone)
+  const onboardingTourDone = useSettingsStore((s) => s.onboardingTourDone)
   const openQuickTaskModal = useQuickTaskModalStore((s) => s.open)
   const [showForm, setShowForm] = useState(false)
   const [showAiDayPlanner, setShowAiDayPlanner] = useState(false)
@@ -213,6 +215,7 @@ export default function Dashboard() {
           }}
         />
       )}
+      {!onboardingTourDone && <OnboardingWizard />}
       {!onboardingPermissionsDone && <OnboardingPermissions />}
       <div className="mb-6">
         <div className="mb-3 flex items-center justify-between">

@@ -13,6 +13,7 @@ export interface Profile {
   job_title?: string | null
   work_location?: string | null
   badge?: string | null
+  org_id?: string | null
   settings?: Record<string, any> | null
   created_at: string
 }
