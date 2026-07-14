@@ -1,5 +1,16 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
+let publicConfig = {}
+try {
+  publicConfig = ipcRenderer.sendSync('app:get-config-sync') || {}
+} catch {
+  // Web build — no Electron IPC
+}
+
+contextBridge.exposeInMainWorld('mooncrew', {
+  config: publicConfig,
+})
+
 contextBridge.exposeInMainWorld('electronUpdater', {
   onUpdateAvailable: (callback) => ipcRenderer.on('update-available', (_event, value) => callback(value)),
   onUpdateDownloaded: (callback) => ipcRenderer.on('update-downloaded', (_event, value) => callback(value)),

@@ -3,6 +3,12 @@
 declare const __APP_VERSION__: string
 
 interface Window {
+  mooncrew?: {
+    config?: {
+      supabaseUrl?: string
+      supabaseAnonKey?: string
+    }
+  }
   electronUpdater?: {
     onUpdateAvailable: (callback: (info: any) => void) => void
     onUpdateDownloaded: (callback: (info: any) => void) => void

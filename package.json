@@ -1,7 +1,7 @@
 {
   "name": "workorganizer",
   "private": true,
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "Mooncrew Work Organizer",
   "author": "Mooncrew",
   "type": "module",
@@ -30,7 +30,9 @@
     },
     "files": [
       "electron/**/*",
-      "dist-electron-app/**/*"
+      "dist-electron-app/**/*",
+      ".env",
+      ".env.local"
     ],
     "win": {
       "target": "nsis",

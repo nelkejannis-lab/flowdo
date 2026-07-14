@@ -7,6 +7,41 @@ const fs = require('fs')
 const isDev = !app.isPackaged
 const appIconPath = path.join(__dirname, '..', 'public', 'icons', 'icon-512.png')
 
+function parseEnvFile(filePath) {
+  const env = {}
+  try {
+    const raw = fs.readFileSync(filePath, 'utf-8')
+    for (const line of raw.split('\n')) {
+      const trimmed = line.trim()
+      if (!trimmed || trimmed.startsWith('#')) continue
+      const eq = trimmed.indexOf('=')
+      if (eq === -1) continue
+      env[trimmed.slice(0, eq).trim()] = trimmed.slice(eq + 1).trim()
+    }
+  } catch {
+    // missing file is fine
+  }
+  return env
+}
+
+function loadLocalEnv() {
+  return {
+    ...parseEnvFile(path.join(__dirname, '..', '.env')),
+    ...parseEnvFile(path.join(__dirname, '..', '.env.local')),
+  }
+}
+
+const localEnv = loadLocalEnv()
+
+// Renderer reads Supabase URL/anon key at build time via Vite. Packaged Electron builds
+// are often produced without .env present, so inject runtime config from the same files.
+ipcMain.on('app:get-config-sync', (event) => {
+  event.returnValue = {
+    supabaseUrl: localEnv.VITE_SUPABASE_URL || '',
+    supabaseAnonKey: localEnv.VITE_SUPABASE_ANON_KEY || '',
+  }
+})
+
 // Configure auto updater
 autoUpdater.autoDownload = false
 autoUpdater.autoInstallOnAppQuit = true
