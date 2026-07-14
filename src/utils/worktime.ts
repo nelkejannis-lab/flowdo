@@ -38,6 +38,37 @@ export function formatHM(minutes: number): string {
   return `${sign}${h}:${String(m).padStart(2, '0')} h`
 }
 
+/** Format net minutes as H:MM for worked-hours input fields. */
+export function formatWorkedHoursInput(netMinutes: number): string {
+  const abs = Math.max(0, Math.round(netMinutes))
+  const h = Math.floor(abs / 60)
+  const m = abs % 60
+  return `${h}:${String(m).padStart(2, '0')}`
+}
+
+/** Parse user input as net worked time: 8 → 8h, 8.5 → 8:30, 8:30 → 8:30. */
+export function parseWorkedHoursInput(text: string): number | null {
+  const s = text.trim()
+  if (!s) return null
+
+  const colonMatch = s.match(/^(\d{1,2}):(\d{1,2})$/)
+  if (colonMatch) {
+    const h = parseInt(colonMatch[1], 10)
+    const m = parseInt(colonMatch[2], 10)
+    if (m >= 60 || Number.isNaN(h) || Number.isNaN(m)) return null
+    return h * 60 + m
+  }
+
+  const normalized = s.replace(',', '.')
+  if (/^\d+(\.\d+)?$/.test(normalized)) {
+    const val = parseFloat(normalized)
+    if (Number.isNaN(val) || val < 0) return null
+    return Math.round(val * 60)
+  }
+
+  return null
+}
+
 export function formatHoursDecimal(minutes: number, digits = 1): string {
   const sign = minutes < 0 ? '-' : ''
   return `${sign}${(Math.abs(minutes) / 60).toFixed(digits)}`

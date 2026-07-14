@@ -65,7 +65,10 @@
       "target": "Soll",
       "diff": "Diff."
     },
-    "total": "Woche gesamt"
+    "total": "Woche gesamt",
+    "workedPlaceholder": "8:00",
+    "workedHint": "Stunden: 8, 8.5 oder 8:30",
+    "fillTarget": "Soll"
   },
   "weekdays": {
     "mon": "Mo",

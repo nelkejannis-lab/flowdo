@@ -65,7 +65,10 @@
       "target": "Target",
       "diff": "Diff."
     },
-    "total": "Week total"
+    "total": "Week total",
+    "workedPlaceholder": "8:00",
+    "workedHint": "Hours: 8, 8.5 or 8:30",
+    "fillTarget": "Target"
   },
   "weekdays": {
     "mon": "Mon",

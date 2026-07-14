@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Thermometer } from 'lucide-react'
 import { useWorkTimeStore } from '../../store/workTimeStore'
 import { toISODate } from '../../utils/date'
 import { dayTargetMinutes, formatHM, netMinutes } from '../../utils/worktime'
+import WorkedHoursInput, { netToWorkedMinutes } from './WorkedHoursInput'
 
 export default function WorkWeekView() {
   const { t, i18n } = useTranslation('worktime')
@@ -15,6 +16,10 @@ export default function WorkWeekView() {
   const settings = useWorkTimeStore((s) => s.settings)
   const setBreakMinutes = useWorkTimeStore((s) => s.setBreakMinutes)
   const setWorkedMinutes = useWorkTimeStore((s) => s.setWorkedMinutes)
+
+  function setNetWorkedMinutes(date: string, netMins: number, breakMins: number) {
+    setWorkedMinutes(date, netToWorkedMinutes(netMins, breakMins))
+  }
   const setDayTimes = useWorkTimeStore((s) => s.setDayTimes)
   const markSickDay = useWorkTimeStore((s) => s.markSickDay)
   const unmarkSickDay = useWorkTimeStore((s) => s.unmarkSickDay)
@@ -110,9 +115,12 @@ export default function WorkWeekView() {
                   </div>
                   <div>
                     <p className="text-[10px] text-gray-400 mb-0.5">{t('week.columns.worked')}</p>
-                    <input type="number" min={0} step={5} value={entry ? Math.round(net) : ''} placeholder="0"
-                      onChange={(e) => setWorkedMinutes(iso, Math.max(0, Number(e.target.value)))}
-                      className="w-full rounded border border-gray-200 bg-transparent px-1.5 py-1 text-sm focus:border-accent focus:outline-none dark:border-racing-700" />
+                    <WorkedHoursInput
+                      compact
+                      netMinutes={net}
+                      targetMinutes={target}
+                      onCommit={(mins) => setNetWorkedMinutes(iso, mins, entry?.breakMinutes ?? settings.defaultBreakMinutes)}
+                    />
                   </div>
                   <div>
                     <p className="text-[10px] text-gray-400 mb-0.5">{t('week.columns.break')} min</p>
@@ -219,14 +227,10 @@ export default function WorkWeekView() {
                 {isLive ? (
                   <span className="w-20 px-2 py-1 text-right text-sm font-medium text-accent animate-pulse">{formatHM(net)} ●</span>
                 ) : (
-                  <input
-                    type="number"
-                    min={0}
-                    step={5}
-                    value={entry ? Math.round(net) : ''}
-                    placeholder="0"
-                    onChange={(e) => setWorkedMinutes(iso, Math.max(0, Number(e.target.value)))}
-                    className="w-20 rounded-md border border-gray-200 bg-transparent px-2 py-1 text-right text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+                  <WorkedHoursInput
+                    netMinutes={net}
+                    targetMinutes={target}
+                    onCommit={(mins) => setNetWorkedMinutes(iso, mins, entry?.breakMinutes ?? settings.defaultBreakMinutes)}
                   />
                 )}
               </div>
