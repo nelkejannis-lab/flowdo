@@ -16,8 +16,8 @@ import type { AppRole, OrgRole } from '../types'
 import {
   APP_ROLE_LABELS,
   ORG_ROLE_LABELS,
-  canAccessAdmin,
-  canAssignGlobalRoles,
+  assignableOrgRoles,
+  canAccessOrgAdminPanel,
   canManageDepartments,
   canManageOrg,
   canManageTeams,
@@ -26,7 +26,6 @@ import {
 
 type AdminTab = 'overview' | 'members' | 'departments' | 'teams' | 'global'
 const ORG_ROLES: OrgRole[] = ['member', 'manager', 'admin', 'owner']
-const INVITE_ROLES: OrgRole[] = ['member', 'manager', 'admin']
 
 function RoleHint({ type, role, lang }: { type: 'app' | 'org'; role: string; lang: 'de' | 'en' }) {
   const labels = type === 'app' ? APP_ROLE_LABELS[role as AppRole] : ORG_ROLE_LABELS[role as OrgRole]
@@ -83,7 +82,8 @@ export default function AdminPage() {
   const [saved, setSaved] = useState<string | null>(null)
 
   const superAdmin = isSuperAdmin(profile)
-  const hasAccess = canAccessAdmin(profile, myRole)
+  const hasAccess = canAccessOrgAdminPanel(profile, myRole)
+  const inviteRoles = assignableOrgRoles(myRole)
 
   useEffect(() => {
     void fetchOrg()
@@ -166,16 +166,63 @@ export default function AdminPage() {
     )
   }
 
+  if (!organization && superAdmin) {
+    return (
+      <div className="mx-auto max-w-4xl p-4 sm:p-6">
+        <div className="mb-4">
+          <h1 className="text-2xl font-bold">{t('title')}</h1>
+          <p className="text-sm text-gray-500">
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+              {t('roles.appAdmin')}
+            </span>
+          </p>
+        </div>
+        <div className="mb-6 rounded-xl border border-accent/20 bg-accent/5 p-4">
+          <h2 className="text-sm font-semibold">{t('createOrg.title')}</h2>
+          <p className="mt-1 text-xs text-gray-500">{t('createOrg.desc')}</p>
+          <form onSubmit={handleCreateOrg} className="mt-3 flex gap-2">
+            <input value={orgName} onChange={(e) => setOrgName(e.target.value)} placeholder={t('createOrg.placeholder')}
+              className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-racing-700" required />
+            <button type="submit" disabled={busy} className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white">
+              {busy ? t('createOrg.creating') : t('createOrg.submit')}
+            </button>
+          </form>
+          {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+        </div>
+        <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+          <h2 className="mb-2 text-sm font-semibold">{t('global.title')}</h2>
+          <p className="mb-3 text-xs text-gray-500">{t('global.desc')}</p>
+          <input value={globalQuery} onChange={(e) => setGlobalQuery(e.target.value)} placeholder={t('global.searchPlaceholder')}
+            className="mb-3 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-racing-700" />
+          {globalResults.map((u) => (
+            <div key={u.id} className="mb-2 rounded-lg bg-gray-50 px-3 py-2 dark:bg-racing-800">
+              <p className="text-sm font-medium">{u.display_name} <span className="text-gray-400">@{u.username}</span></p>
+              <select defaultValue={u.app_role === 'admin' ? 'admin' : 'user'}
+                onChange={async (e) => {
+                  const err = await setAppRole(u.id, e.target.value as AppRole)
+                  if (err) setError(err)
+                }}
+                className="mt-1 rounded border border-gray-200 px-2 py-1 text-xs dark:border-racing-700">
+                <option value="user">{t('roles.appUser')}</option>
+                <option value="admin">{t('roles.appAdmin')}</option>
+              </select>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   if (!organization && !superAdmin) return <Navigate to="/" replace />
 
   const pendingAbsences = teamAbsences.filter((a) => a.status === 'pending').length
   const totalTrackedMinutes = timeEntries.reduce((sum, e) => sum + e.minutes, 0)
   const tabs: { id: AdminTab; label: string; icon: typeof Users; show?: boolean }[] = [
-    { id: 'overview', label: t('tabs.overview'), icon: BarChart3 },
-    { id: 'members', label: t('tabs.members'), icon: Users, show: !!organization },
+    { id: 'overview', label: t('tabs.overview'), icon: BarChart3, show: !!organization },
+    { id: 'members', label: t('tabs.members'), icon: Users, show: !!organization && canManageOrg(profile, myRole) },
     { id: 'departments', label: t('tabs.departments'), icon: Layers, show: !!organization && canManageDepartments(profile, myRole) },
     { id: 'teams', label: t('tabs.teams'), icon: Building2, show: !!organization && canManageTeams(profile, myRole) },
-    { id: 'global', label: t('tabs.global'), icon: Globe, show: canAssignGlobalRoles(profile) },
+    { id: 'global', label: t('tabs.global'), icon: Globe, show: superAdmin },
   ]
 
   return (
@@ -184,9 +231,17 @@ export default function AdminPage() {
         <h1 className="text-2xl font-bold">{t('title')}</h1>
         {organization && (
           <p className="text-sm text-gray-500">
-            {organization.name} · {t(`roles.${myRole ?? 'member'}`)}
-            {superAdmin && ` · ${t('roles.appAdmin')}`}
+            {organization.name}
+            {myRole && ` · ${t(`roles.${myRole}`)}`}
+            {superAdmin && (
+              <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                {t('roles.appAdmin')}
+              </span>
+            )}
           </p>
+        )}
+        {!organization && superAdmin && (
+          <p className="text-sm text-gray-500">{t('global.desc')}</p>
         )}
       </div>
 
@@ -239,7 +294,7 @@ export default function AdminPage() {
                 className="min-w-[200px] flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-racing-700" />
               <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value as OrgRole)}
                 className="rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-racing-700">
-                {INVITE_ROLES.map((r) => <option key={r} value={r}>{t(`roles.${r}`)}</option>)}
+                {inviteRoles.map((r) => <option key={r} value={r}>{t(`roles.${r}`)}</option>)}
               </select>
               <select value={inviteDept} onChange={(e) => setInviteDept(e.target.value)}
                 className="rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-racing-700">
@@ -280,7 +335,7 @@ export default function AdminPage() {
                       <div className="flex flex-col items-end gap-1">
                         <select value={m.role} onChange={(e) => void updateMemberRole(m.userId, e.target.value as OrgRole)}
                           className="rounded border border-gray-200 bg-transparent px-2 py-1 text-xs dark:border-racing-700">
-                          {INVITE_ROLES.map((r) => <option key={r} value={r}>{t(`roles.${r}`)}</option>)}
+                          {inviteRoles.map((r) => <option key={r} value={r}>{t(`roles.${r}`)}</option>)}
                         </select>
                         <RoleHint type="org" role={m.role} lang={lang} />
                         <select value={m.departmentId ?? ''} onChange={(e) => void handleAssignDept(m.userId, e.target.value)}
@@ -371,7 +426,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      {tab === 'global' && canAssignGlobalRoles(profile) && (
+      {tab === 'global' && superAdmin && (
         <div className="flex flex-col gap-4">
           <p className="text-sm text-gray-500">{t('global.desc')}</p>
           <input value={globalQuery} onChange={(e) => setGlobalQuery(e.target.value)} placeholder={t('global.searchPlaceholder')}

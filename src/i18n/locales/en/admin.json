@@ -5,7 +5,8 @@
     "members": "Members & roles",
     "departments": "Departments",
     "teams": "Teams",
-    "global": "Global roles"
+    "global": "Global roles",
+    "organisation": "Organization"
   },
   "createOrg": {
     "title": "Create organization",

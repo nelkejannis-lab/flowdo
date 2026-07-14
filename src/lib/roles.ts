@@ -11,9 +11,22 @@ export function isSuperAdmin(profile: Profile | null | undefined): boolean {
   return getAppRole(profile) === 'admin'
 }
 
-export function canAccessAdmin(profile: Profile | null | undefined, orgRole: OrgRole | null): boolean {
+/** Sidebar /admin — App-Admin, Org-Inhaber oder Org-Admin (keine Manager). */
+export function canAccessOrgAdminPanel(profile: Profile | null | undefined, orgRole: OrgRole | null): boolean {
   if (isSuperAdmin(profile)) return true
-  return orgRole === 'owner' || orgRole === 'admin' || orgRole === 'manager'
+  return orgRole === 'owner' || orgRole === 'admin'
+}
+
+/** @deprecated Use canAccessOrgAdminPanel */
+export function canAccessAdmin(profile: Profile | null | undefined, orgRole: OrgRole | null): boolean {
+  return canAccessOrgAdminPanel(profile, orgRole)
+}
+
+/** Org-Inhaber darf Org-Admin und Manager vergeben; Org-Admin nur Member/Manager. */
+export function assignableOrgRoles(myOrgRole: OrgRole | null): OrgRole[] {
+  if (myOrgRole === 'owner') return ['member', 'manager', 'admin']
+  if (myOrgRole === 'admin') return ['member', 'manager']
+  return []
 }
 
 export function canManageOrg(profile: Profile | null | undefined, orgRole: OrgRole | null): boolean {
@@ -50,8 +63,8 @@ export const APP_ROLE_LABELS: Record<AppRole, { de: string; en: string; descDe: 
   admin: {
     de: 'App-Admin',
     en: 'App Admin',
-    descDe: 'Höchste Stufe — kann alles, unabhängig von der Organisation. Kann globale und Organisationsrollen vergeben.',
-    descEn: 'Highest level — full access independent of organization. Can assign global and org roles.',
+    descDe: 'Höchste Stufe über allen Organisationen — kann globale Rollen vergeben und jede Organisation einsehen.',
+    descEn: 'Highest level above all organizations — can assign global roles and access any organization.',
   },
 }
 
@@ -59,14 +72,14 @@ export const ORG_ROLE_LABELS: Record<OrgRole, { de: string; en: string; descDe: 
   owner: {
     de: 'Inhaber',
     en: 'Owner',
-    descDe: 'Volle Kontrolle über die Organisation, Bereiche und Mitglieder.',
-    descEn: 'Full control over organization, departments and members.',
+    descDe: 'Höchste Rolle in der Organisation — volle Kontrolle, kann Org-Admins ernennen.',
+    descEn: 'Highest role in the organization — full control, can appoint org admins.',
   },
   admin: {
     de: 'Org-Admin',
     en: 'Org Admin',
-    descDe: 'Verwaltet Mitglieder, Bereiche, Teams und Einstellungen.',
-    descEn: 'Manages members, departments, teams and settings.',
+    descDe: 'Verwaltet nur die eigene Organisation (Mitglieder, Bereiche, Teams). Kein Zugriff auf globale Rollen.',
+    descEn: 'Manages only their own organization (members, departments, teams). No global role access.',
   },
   manager: {
     de: 'Manager',

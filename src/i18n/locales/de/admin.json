@@ -5,7 +5,8 @@
     "members": "Mitglieder & Rollen",
     "departments": "Bereiche",
     "teams": "Teams",
-    "global": "Globale Rollen"
+    "global": "Globale Rollen",
+    "organisation": "Organisation"
   },
   "createOrg": {
     "title": "Organisation anlegen",

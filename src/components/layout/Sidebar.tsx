@@ -62,7 +62,7 @@ import { useBoardsStore } from '../../store/boardsStore'
 import { useSettingsStore } from '../../store/settingsStore'
 import { useAuthStore } from '../../store/authStore'
 import { useOrganizationStore } from '../../store/organizationStore'
-import { canAccessAdmin, isSuperAdmin } from '../../lib/roles'
+import { canAccessOrgAdminPanel, isSuperAdmin } from '../../lib/roles'
 import { useTaskSharesStore } from '../../store/taskSharesStore'
 import { useBoardInvitesStore } from '../../store/boardInvitesStore'
 import { useTeamInvitesStore } from '../../store/teamInvitesStore'
@@ -118,7 +118,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const signOut = useAuthStore((s) => s.signOut)
   const fetchOrg = useOrganizationStore((s) => s.fetch)
   const myRole = useOrganizationStore((s) => s.myRole)
-  const showAdmin = profile && canAccessAdmin(profile, myRole)
+  const showAdmin = profile && canAccessOrgAdminPanel(profile, myRole)
   const openSearch = useSearchStore((s) => s.open)
 
   useEffect(() => {

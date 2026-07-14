@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import type { AppRole, Organization, OrganizationMember, OrgRole } from '../types'
 import { useAuthStore } from './authStore'
 import {
+  assignableOrgRoles,
   canApproveAbsences as checkApprove,
   canManageOrg as checkManageOrg,
   isSuperAdmin,
@@ -123,6 +124,9 @@ export const useOrganizationStore = create<OrgState>()((set, get) => ({
     const org = get().organization
     if (!org) return 'No organization'
     if (!get().canManage()) return 'Not allowed'
+    const profile = useAuthStore.getState().profile
+    const allowed = assignableOrgRoles(get().myRole)
+    if (!isSuperAdmin(profile) && !allowed.includes(role)) return 'Not allowed'
 
     const { error } = await supabase.from('organization_members').upsert({
       org_id: org.id,
@@ -145,7 +149,11 @@ export const useOrganizationStore = create<OrgState>()((set, get) => ({
 
   updateMemberRole: async (userId, role) => {
     const org = get().organization
-    if (!org || !get().canManage()) return 'Not allowed'
+    const profile = useAuthStore.getState().profile
+    const myRole = get().myRole
+    if (!org || !checkManageOrg(profile, myRole)) return 'Not allowed'
+    const allowed = assignableOrgRoles(myRole)
+    if (!isSuperAdmin(profile) && !allowed.includes(role)) return 'Not allowed'
     const { error } = await supabase
       .from('organization_members')
       .update({ role })
@@ -190,7 +198,12 @@ export const useOrganizationStore = create<OrgState>()((set, get) => ({
 
   setOrgRole: async (orgId, userId, role) => {
     const profile = useAuthStore.getState().profile
-    if (!isSuperAdmin(profile) && !get().canManage()) return 'Not allowed'
+    if (!isSuperAdmin(profile)) {
+      const org = get().organization
+      if (!org || org.id !== orgId || !get().canManage()) return 'Not allowed'
+      const allowed = assignableOrgRoles(get().myRole)
+      if (!allowed.includes(role) && role !== 'owner') return 'Not allowed'
+    }
     const { error } = await supabase.rpc('admin_set_org_role', {
       p_org_id: orgId,
       p_user_id: userId,
