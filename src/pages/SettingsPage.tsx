@@ -16,6 +16,7 @@ import { useCalendarConnectionsStore } from '../store/calendarConnectionsStore'
 import { useSettingsStore, type DashboardWidget, type FeatureKey, type NavItemKey, DEFAULT_NAV_ORDER } from '../store/settingsStore'
 import { useWorkTimeStore } from '../store/workTimeStore'
 import { isSupabaseConfigured } from '../lib/supabase'
+import { APP_ROLE_LABELS, isSuperAdmin } from '../lib/roles'
 import { useSearchParams } from 'react-router-dom'
 import { requestPermission, canNotify } from '../utils/notifications'
 import { SHORTCUTS } from '../hooks/useKeyboardShortcuts'
@@ -655,9 +656,9 @@ export default function SettingsPage() {
       <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
         <div className="mb-3 flex items-center gap-2">
           <h2 className="text-sm font-semibold">{t('profile.avatarTitle')}</h2>
-          {profile.id === '6e6370e8-4dfc-4226-b5d5-8bcb6b9273f1' && (
-            <span className="rounded-full bg-gradient-to-r from-amber-400 to-orange-400 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm">
-              👑 Owner
+          {isSuperAdmin(profile) && (
+            <span className="rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm">
+              {APP_ROLE_LABELS.admin[i18n.language === 'en' ? 'en' : 'de']}
             </span>
           )}
         </div>

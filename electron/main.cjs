@@ -113,6 +113,25 @@ function startStaticServer(rootDir) {
 }
 
 let staticServer = null
+let mainWindow = null
+
+function focusMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) return
+  if (mainWindow.isMinimized()) mainWindow.restore()
+  if (!mainWindow.isVisible()) mainWindow.show()
+  mainWindow.focus()
+}
+
+// Without this, a second shortcut click spawns another Electron process with no visible
+// window while the first instance keeps running in the background.
+const gotSingleInstanceLock = app.requestSingleInstanceLock()
+if (!gotSingleInstanceLock) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    focusMainWindow()
+  })
+}
 
 async function createWindow() {
   const win = new BrowserWindow({
@@ -120,6 +139,7 @@ async function createWindow() {
     height: 900,
     minWidth: 960,
     minHeight: 600,
+    show: false,
     backgroundColor: '#0b0f1a',
     autoHideMenuBar: true,
     icon: appIconPath,
@@ -128,6 +148,12 @@ async function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
     },
+  })
+  mainWindow = win
+
+  win.once('ready-to-show', () => {
+    win.show()
+    win.focus()
   })
 
   // Open external links (OAuth, etc.) in the system browser instead of inside the app window
@@ -197,7 +223,10 @@ ipcMain.handle('get-desktop-sources', async () => {
 })
 
 app.whenReady().then(() => {
-  createWindow()
+  createWindow().catch((err) => {
+    console.error('Failed to create window:', err)
+    app.exit(1)
+  })
   if (!isDev) {
     // Check for updates shortly after startup
     setTimeout(() => {

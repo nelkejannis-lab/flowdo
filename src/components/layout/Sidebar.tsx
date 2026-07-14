@@ -62,7 +62,7 @@ import { useBoardsStore } from '../../store/boardsStore'
 import { useSettingsStore } from '../../store/settingsStore'
 import { useAuthStore } from '../../store/authStore'
 import { useOrganizationStore } from '../../store/organizationStore'
-import { canAccessOrgAdminPanel, isSuperAdmin } from '../../lib/roles'
+import { APP_ROLE_LABELS, canAccessOrgAdminPanel, isSuperAdmin } from '../../lib/roles'
 import { useTaskSharesStore } from '../../store/taskSharesStore'
 import { useBoardInvitesStore } from '../../store/boardInvitesStore'
 import { useTeamInvitesStore } from '../../store/teamInvitesStore'
@@ -82,7 +82,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const { t } = useTranslation('layout')
+  const { t, i18n } = useTranslation('layout')
   const [showShortcuts, setShowShortcuts] = useState(false)
   const boards = useBoardsStore((s) => s.boards)
   const folders = useBoardsStore((s) => s.folders)
@@ -538,9 +538,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <p className="truncate text-sm font-medium">{profile.display_name}</p>
-                {profile.id === '6e6370e8-4dfc-4226-b5d5-8bcb6b9273f1' && (
-                  <span className="flex-shrink-0 rounded-full bg-gradient-to-r from-amber-400 to-orange-400 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white shadow-sm">
-                    👑 Owner
+                {isSuperAdmin(profile) && (
+                  <span className="flex-shrink-0 rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white shadow-sm">
+                    {APP_ROLE_LABELS.admin[i18n.language === 'en' ? 'en' : 'de']}
                   </span>
                 )}
               </div>
