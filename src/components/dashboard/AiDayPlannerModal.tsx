@@ -35,6 +35,7 @@ export default function AiDayPlannerModal({ onClose }: AiDayPlannerModalProps) {
   const myProjectTasks = useProjectTasksStore((s) => s.myTasks)
   const boards = useBoardsStore((s) => s.boards)
   const calendarEntries = useCalendarEntriesStore((s) => s.entries)
+  const hiddenOccurrences = useCalendarEntriesStore((s) => s.hiddenOccurrences)
   const appendDayPlanItems = useDayPlanStore((s) => s.appendItems)
 
   const [input, setInput] = useState('')
@@ -50,7 +51,7 @@ export default function AiDayPlannerModal({ onClose }: AiDayPlannerModalProps) {
     setLoading(true)
     setError(null)
     try {
-      const todaysEntries = expandRecurringEntries(calendarEntries, today, today).filter((e) =>
+      const todaysEntries = expandRecurringEntries(calendarEntries, today, today, new Set(hiddenOccurrences)).filter((e) =>
         e.endDate ? e.date <= today && e.endDate >= today : e.date === today
       )
       const todaysTasks = [...tasks, ...myProjectTasks].filter((t) => !t.completed && t.dueDate === today)

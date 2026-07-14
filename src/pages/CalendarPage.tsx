@@ -69,6 +69,7 @@ export default function CalendarPage() {
   const events = useEventsStore((s) => s.events)
   const fetchEvents = useEventsStore((s) => s.fetchAll)
   const entries = useCalendarEntriesStore((s) => s.entries)
+  const hiddenOccurrences = useCalendarEntriesStore((s) => s.hiddenOccurrences)
   const fetchEntries = useCalendarEntriesStore((s) => s.fetchEntries)
   const toggleEntryCompleted = useCalendarEntriesStore((s) => s.toggleCompleted)
   const rescheduleEntry = useCalendarEntriesStore((s) => s.rescheduleEntry)
@@ -151,7 +152,12 @@ export default function CalendarPage() {
     : currentDate,
     'yyyy-MM-dd'
   )
-  const expandedEntries = expandRecurringEntries(entries, rangeStart, rangeEnd)
+  const expandedEntries = expandRecurringEntries(
+    entries,
+    rangeStart,
+    rangeEnd,
+    new Set(hiddenOccurrences)
+  )
 
   const filteredEntries = mergeCalendarEntries(expandedEntries.filter((e) => {
     for (const [provider, prefix] of Object.entries(providerPrefixes)) {

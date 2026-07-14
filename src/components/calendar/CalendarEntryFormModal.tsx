@@ -12,6 +12,7 @@ import { useSettingsStore } from '../../store/settingsStore'
 import { useTeamsStore } from '../../store/teamsStore'
 import { isSupabaseConfigured } from '../../lib/supabase'
 import type { CalendarEntry, CalendarEntryType, CalendarEvent } from '../../types'
+import { parseCalendarEntryId } from '../../utils/calendarEntry'
 import { todayISO } from '../../utils/date'
 
 type Kind = 'event' | CalendarEntryType
@@ -156,7 +157,8 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, defa
     }
 
     if (entry) {
-      const err = await updateEntry(entry.id, { ...baseInput, date })
+      const { dbId } = parseCalendarEntryId(entry.id)
+      const err = await updateEntry(dbId, { ...baseInput, date })
       setSaving(false)
       if (err) { setError(err); return }
       onClose()
@@ -195,7 +197,7 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, defa
       deleteEvent(event.id)
       onClose()
     } else if (entry) {
-      void deleteEntry(entry.id)
+      void deleteEntry(entry.id, entry.date)
       useToastStore.getState().show({ message: t('entryDeleted'), duration: 3000 })
       onClose()
     }

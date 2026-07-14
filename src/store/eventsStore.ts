@@ -83,20 +83,23 @@ export const useEventsStore = create<EventsState>()(
           .order('date', { ascending: true })
         if (error) return
 
-        const remote = ((data ?? []) as CalendarEventRow[]).map(toEvent).filter((e) => !deleted.has(e.id))
+        const remote = ((data ?? []) as CalendarEventRow[]).map(toEvent)
         const remoteIds = new Set(remote.map((e) => e.id))
-        const localOnly = get().events.filter((e) => !remoteIds.has(e.id) && !deleted.has(e.id))
 
-        for (const event of localOnly) {
-          await syncEvent(event, userId)
+        // Retry tombstoned deletes that are still present remotely
+        for (const id of deleted) {
+          if (remoteIds.has(id)) {
+            void supabase.from('calendar_events').delete().eq('id', id).eq('owner_id', userId)
+          }
         }
 
-        // Retry any persisted deletes that haven't reached Supabase yet
-        for (const id of get().deletedEventIds) {
-          void supabase.from('calendar_events').delete().eq('id', id).eq('owner_id', userId)
-        }
+        const visible = remote.filter((e) => !deleted.has(e.id))
 
-        set({ events: [...localOnly, ...remote] })
+        set({
+          events: visible,
+          // Keep tombstones only while the row might still exist server-side
+          deletedEventIds: get().deletedEventIds.filter((id) => remoteIds.has(id)),
+        })
       },
 
       addEvent: (input) => {
@@ -136,7 +139,9 @@ export const useEventsStore = create<EventsState>()(
         pendingDeletes.add(id)
         set((state) => ({
           events: state.events.filter((e) => e.id !== id),
-          deletedEventIds: [...state.deletedEventIds, id],
+          deletedEventIds: state.deletedEventIds.includes(id)
+            ? state.deletedEventIds
+            : [...state.deletedEventIds, id],
         }))
         void getUserId().then(async (userId) => {
           if (userId) {
@@ -148,12 +153,14 @@ export const useEventsStore = create<EventsState>()(
             }
           }
           pendingDeletes.delete(id)
-          // Remove from persisted blacklist once Supabase confirmed
-          set((state) => ({ deletedEventIds: state.deletedEventIds.filter((x) => x !== id) }))
+          // Tombstone stays until fetchAll confirms the row is gone from remote
         })
       },
     }),
-    { name: 'flowdo-events' }
+    {
+      name: 'flowdo-events',
+      partialize: (state) => ({ events: state.events, deletedEventIds: state.deletedEventIds }),
+    }
   )
 )
 
