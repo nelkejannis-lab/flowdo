@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Navigate } from 'react-router-dom'
 import {
@@ -12,6 +12,7 @@ import { useWorkTimeStore } from '../store/workTimeStore'
 import { useBoardsStore } from '../store/boardsStore'
 import { useTaskTimeStore } from '../store/taskTimeStore'
 import AbsenceApprovals from '../components/worktime/AbsenceApprovals'
+import UserAvatar from '../components/shared/UserAvatar'
 import type { AppRole, OrgRole } from '../types'
 import {
   APP_ROLE_LABELS,
@@ -23,6 +24,8 @@ import {
   canManageTeams,
   isSuperAdmin,
 } from '../lib/roles'
+
+type InviteCandidate = { id: string; display_name: string; username: string; avatar_color?: string }
 
 type AdminTab = 'overview' | 'members' | 'departments' | 'teams' | 'global'
 const ORG_ROLES: OrgRole[] = ['member', 'manager', 'admin', 'owner']
@@ -68,7 +71,11 @@ export default function AdminPage() {
   const [tab, setTab] = useState<AdminTab>('overview')
   const [orgName, setOrgName] = useState('')
   const [inviteQuery, setInviteQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [searchResults, setSearchResults] = useState<InviteCandidate[]>([])
+  const [selectedInviteUser, setSelectedInviteUser] = useState<InviteCandidate | null>(null)
+  const [showInviteSuggestions, setShowInviteSuggestions] = useState(false)
+  const [inviteSearching, setInviteSearching] = useState(false)
+  const inviteSearchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [inviteRole, setInviteRole] = useState<OrgRole>('member')
   const [inviteDept, setInviteDept] = useState('')
   const [globalQuery, setGlobalQuery] = useState('')
@@ -98,10 +105,28 @@ export default function AdminPage() {
   }, [organization, fetchDepartments, fetchTeams, fetchTeamAbsences])
 
   useEffect(() => {
-    if (!inviteQuery.trim() || inviteQuery.length < 2) { setSearchResults([]); return }
-    const tmr = setTimeout(() => { void searchProfiles(inviteQuery).then(setSearchResults) }, 300)
-    return () => clearTimeout(tmr)
-  }, [inviteQuery, searchProfiles])
+    if (inviteSearchTimeout.current) clearTimeout(inviteSearchTimeout.current)
+    if (!inviteQuery.trim() || inviteQuery.length < 2) {
+      setSearchResults([])
+      setInviteSearching(false)
+      return
+    }
+    if (selectedInviteUser && inviteQuery === `${selectedInviteUser.display_name} (@${selectedInviteUser.username})`) {
+      setSearchResults([])
+      setInviteSearching(false)
+      return
+    }
+    setInviteSearching(true)
+    inviteSearchTimeout.current = setTimeout(() => {
+      void searchProfiles(inviteQuery, organization?.id).then((results) => {
+        setSearchResults(results)
+        setInviteSearching(false)
+      })
+    }, 300)
+    return () => {
+      if (inviteSearchTimeout.current) clearTimeout(inviteSearchTimeout.current)
+    }
+  }, [inviteQuery, searchProfiles, organization?.id, selectedInviteUser])
 
   useEffect(() => {
     if (!globalQuery.trim() || globalQuery.length < 2) { setGlobalResults([]); return }
@@ -121,11 +146,31 @@ export default function AdminPage() {
     setBusy(false)
   }
 
-  async function handleInvite(userId: string) {
+  function selectInviteCandidate(user: InviteCandidate) {
+    setSelectedInviteUser(user)
+    setInviteQuery(`${user.display_name} (@${user.username})`)
+    setSearchResults([])
+    setShowInviteSuggestions(false)
+  }
+
+  function handleInviteQueryChange(value: string) {
+    setInviteQuery(value)
+    if (selectedInviteUser && value !== `${selectedInviteUser.display_name} (@${selectedInviteUser.username})`) {
+      setSelectedInviteUser(null)
+    }
+  }
+
+  async function handleInvite(userId?: string) {
+    const targetId = userId ?? selectedInviteUser?.id
+    if (!targetId) return
     setError(null)
-    const err = await inviteMember(userId, inviteRole, inviteDept || undefined)
+    const err = await inviteMember(targetId, inviteRole, inviteDept || undefined)
     if (err) setError(err)
-    else { setInviteQuery(''); setSearchResults([]) }
+    else {
+      setInviteQuery('')
+      setSearchResults([])
+      setSelectedInviteUser(null)
+    }
   }
 
   async function handleAssignDept(userId: string, departmentId: string) {
@@ -289,9 +334,44 @@ export default function AdminPage() {
         <div className="flex flex-col gap-4">
           <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
             <div className="mb-3 flex items-center gap-2"><UserPlus size={16} className="text-accent" /><h2 className="text-sm font-semibold">{t('invite.title')}</h2></div>
-            <div className="flex flex-wrap gap-2">
-              <input value={inviteQuery} onChange={(e) => setInviteQuery(e.target.value)} placeholder={t('invite.placeholder')}
-                className="min-w-[200px] flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-racing-700" />
+            <div className="flex flex-wrap items-start gap-2">
+              <div className="relative min-w-[200px] flex-1">
+                <input
+                  value={inviteQuery}
+                  onChange={(e) => handleInviteQueryChange(e.target.value)}
+                  onFocus={() => setShowInviteSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowInviteSuggestions(false), 150)}
+                  placeholder={t('invite.placeholder')}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+                />
+                {showInviteSuggestions && inviteQuery.trim().length >= 2 && !selectedInviteUser && (
+                  <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-racing-700 dark:bg-racing-900">
+                    {inviteSearching ? (
+                      <p className="flex items-center gap-2 px-3 py-2 text-xs text-gray-400">
+                        <Loader2 size={12} className="animate-spin" /> {t('invite.searching')}
+                      </p>
+                    ) : searchResults.length === 0 ? (
+                      <p className="px-3 py-2 text-xs text-gray-400">{t('invite.noResults')}</p>
+                    ) : (
+                      searchResults.map((u) => (
+                        <button
+                          key={u.id}
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => selectInviteCandidate(u)}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-racing-800"
+                        >
+                          <UserAvatar name={u.display_name} color={u.avatar_color ?? '#4772FA'} />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-medium">{u.display_name}</p>
+                            <p className="truncate text-xs text-gray-400">@{u.username}</p>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
               <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value as OrgRole)}
                 className="rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-racing-700">
                 {inviteRoles.map((r) => <option key={r} value={r}>{t(`roles.${r}`)}</option>)}
@@ -301,17 +381,16 @@ export default function AdminPage() {
                 <option value="">{t('invite.department')}</option>
                 {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
+              <button
+                type="button"
+                onClick={() => void handleInvite()}
+                disabled={!selectedInviteUser}
+                className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-50"
+              >
+                <UserPlus size={14} />
+                {t('invite.add')}
+              </button>
             </div>
-            {searchResults.length > 0 && (
-              <ul className="mt-2 rounded-lg border border-gray-100 dark:border-racing-800">
-                {searchResults.map((u) => (
-                  <li key={u.id} className="flex items-center justify-between px-3 py-2 text-sm">
-                    <span>{u.display_name} <span className="text-gray-400">@{u.username}</span></span>
-                    <button type="button" onClick={() => handleInvite(u.id)} className="text-xs font-semibold text-accent">{t('invite.add')}</button>
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
           <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
             <h2 className="mb-3 text-sm font-semibold">{t('members.title')}</h2>

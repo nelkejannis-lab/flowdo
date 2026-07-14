@@ -19,7 +19,7 @@ interface OrgState {
   inviteMember: (userId: string, role?: OrgRole, departmentId?: string) => Promise<string | null>
   updateMemberRole: (userId: string, role: OrgRole) => Promise<string | null>
   removeMember: (userId: string) => Promise<string | null>
-  searchProfiles: (query: string) => Promise<{ id: string; display_name: string; username: string; app_role?: string; role_description?: string | null }[]>
+  searchProfiles: (query: string, orgId?: string) => Promise<{ id: string; display_name: string; username: string; app_role?: string; role_description?: string | null; avatar_color?: string }[]>
   setAppRole: (userId: string, role: AppRole) => Promise<string | null>
   setOrgRole: (orgId: string, userId: string, role: OrgRole) => Promise<string | null>
   canManage: () => boolean
@@ -178,15 +178,32 @@ export const useOrganizationStore = create<OrgState>()((set, get) => ({
     return null
   },
 
-  searchProfiles: async (query) => {
-    const q = query.trim()
-    if (q.length < 2) return []
-    const { data } = await supabase
+  searchProfiles: async (query, orgId) => {
+    const cleanQuery = query.trim().replace(/^@/, '')
+    if (cleanQuery.length < 2) return []
+
+    const userId = useAuthStore.getState().user?.id
+    const memberIds = new Set(get().members.map((m) => m.userId))
+
+    if (orgId && get().canManage()) {
+      const { data, error } = await supabase.rpc('search_profiles_for_invite', {
+        p_query: cleanQuery,
+        p_org_id: orgId,
+      })
+      if (!error && data) {
+        return (data as { id: string; display_name: string; username: string; app_role?: string; role_description?: string | null }[])
+      }
+    }
+
+    const { data, error } = await supabase
       .from('profiles')
-      .select('id, display_name, username, app_role, role_description')
-      .or(`username.ilike.%${q}%,display_name.ilike.%${q}%`)
+      .select('id, display_name, username, app_role, role_description, avatar_color')
+      .or(`username.ilike.%${cleanQuery}%,display_name.ilike.%${cleanQuery}%`)
       .limit(12)
-    return data ?? []
+
+    if (error || !data) return []
+
+    return data.filter((p) => p.id !== userId && !memberIds.has(p.id))
   },
 
   setAppRole: async (userId, role) => {

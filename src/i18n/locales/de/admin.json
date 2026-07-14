@@ -26,7 +26,9 @@
     "title": "Mitglied einladen",
     "placeholder": "Name oder @Benutzername suchen…",
     "add": "Hinzufügen",
-    "department": "Bereich (optional)"
+    "department": "Bereich (optional)",
+    "searching": "Suche…",
+    "noResults": "Keine Nutzer gefunden"
   },
   "members": {
     "title": "Mitglieder & Rollen",
