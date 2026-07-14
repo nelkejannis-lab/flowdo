@@ -1,13 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMeetingsStore } from '../store/meetingsStore'
 import LiveMeetingPanel from '../components/meetings/LiveMeetingPanel'
-import { Mic, Plus, Trash2, Calendar, FileText, CheckSquare, Pencil, Check, X, ChevronDown, ListChecks } from 'lucide-react'
+import { Mic, Plus, Trash2, Calendar, FileText, CheckSquare, Pencil, Check, X, ChevronDown, ListChecks, Search, Copy, Download, ArrowUpDown } from 'lucide-react'
 import { format } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
 import { translateMeeting } from '../lib/aiService'
 import { useTasksStore } from '../store/tasksStore'
 import TaskFormModal from '../components/tasks/TaskFormModal'
+import { countWords, copyMeetingMarkdown, downloadMeetingMarkdown } from '../utils/meetingExport'
+
+type MeetingSort = 'date-desc' | 'date-asc' | 'title'
 
 export default function MeetingsPage() {
   const { t, i18n } = useTranslation('meetings')
@@ -29,10 +32,35 @@ export default function MeetingsPage() {
   const [expandedActionItemId, setExpandedActionItemId] = useState<string | null>(null)
   const [addingSubtaskForId, setAddingSubtaskForId] = useState<string | null>(null)
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortBy, setSortBy] = useState<MeetingSort>('date-desc')
+  const [showTranscript, setShowTranscript] = useState(false)
+  const [copyFeedback, setCopyFeedback] = useState(false)
+  const [bulkTransferring, setBulkTransferring] = useState(false)
 
   useEffect(() => {
     fetchMeetings()
   }, [fetchMeetings])
+
+  const filteredMeetings = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    let result = meetings
+    if (q) {
+      result = result.filter(
+        (m) =>
+          m.title.toLowerCase().includes(q) ||
+          m.summary.toLowerCase().includes(q) ||
+          m.transcript.toLowerCase().includes(q) ||
+          (m.action_items ?? []).some((ai) => ai.task.toLowerCase().includes(q)),
+      )
+    }
+    return [...result].sort((a, b) => {
+      if (sortBy === 'title') return a.title.localeCompare(b.title, i18n.language)
+      const da = new Date(a.date).getTime()
+      const db = new Date(b.date).getTime()
+      return sortBy === 'date-desc' ? db - da : da - db
+    })
+  }, [meetings, searchQuery, sortBy, i18n.language])
 
   if (isLiveMode) {
     return (
@@ -55,6 +83,32 @@ export default function MeetingsPage() {
 
   const selectedMeeting = meetings.find(m => m.id === selectedMeetingId)
 
+  async function handleCopyMarkdown() {
+    if (!selectedMeeting) return
+    await copyMeetingMarkdown(selectedMeeting, i18n.language)
+    setCopyFeedback(true)
+    setTimeout(() => setCopyFeedback(false), 2000)
+  }
+
+  function handleBulkTransfer() {
+    if (!selectedMeeting) return
+    const openItems = (selectedMeeting.action_items ?? []).filter((ai) => !ai.done)
+    if (openItems.length === 0) return
+    setBulkTransferring(true)
+    for (const item of openItems) {
+      addTask({
+        title: item.task,
+        dueDate: item.dueDate,
+        description: item.assignee ? `@${item.assignee}` : undefined,
+      })
+    }
+    const updatedItems = (selectedMeeting.action_items ?? []).map((ai) =>
+      openItems.some((o) => o.id === ai.id) ? { ...ai, done: true } : ai,
+    )
+    updateMeeting(selectedMeeting.id, { action_items: updatedItems })
+    setBulkTransferring(false)
+  }
+
   return (
     <div className="flex h-full flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -69,7 +123,31 @@ export default function MeetingsPage() {
 
       <div className="flex flex-1 gap-6 min-h-0">
         {/* Left column: Meeting List */}
-        <div className="w-1/3 flex flex-col gap-3 overflow-y-auto pr-2">
+        <div className="w-1/3 flex flex-col gap-3 min-h-0">
+          <div className="flex flex-col gap-2 shrink-0">
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t('searchPlaceholder')}
+                className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm focus:border-accent focus:outline-none dark:border-racing-700 dark:bg-racing-900"
+              />
+            </div>
+            <label className="flex items-center gap-2 text-xs text-gray-500">
+              <ArrowUpDown size={12} />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as MeetingSort)}
+                className="flex-1 rounded-lg border border-gray-200 bg-transparent px-2 py-1 text-xs focus:border-accent focus:outline-none dark:border-racing-700"
+              >
+                <option value="date-desc">{t('sortDateDesc')}</option>
+                <option value="date-asc">{t('sortDateAsc')}</option>
+                <option value="title">{t('sortTitle')}</option>
+              </select>
+            </label>
+          </div>
+          <div className="flex flex-col gap-3 overflow-y-auto pr-2 flex-1 min-h-0">
           {loading && <p className="text-sm text-gray-500">{t('loadingMeetings')}</p>}
           {!loading && meetings.length === 0 && (
             <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center dark:border-racing-700 dark:bg-racing-800/50">
@@ -78,7 +156,10 @@ export default function MeetingsPage() {
               <p className="mt-1 text-xs text-gray-500">{t('noMeetingsDesc')}</p>
             </div>
           )}
-          {meetings.map((meeting) => (
+          {!loading && meetings.length > 0 && filteredMeetings.length === 0 && (
+            <p className="py-4 text-center text-sm text-gray-400">{t('noSearchResults')}</p>
+          )}
+          {filteredMeetings.map((meeting) => (
             <div 
               key={meeting.id}
               onClick={() => setSelectedMeetingId(meeting.id)}
@@ -107,7 +188,7 @@ export default function MeetingsPage() {
               </p>
               <div className="mt-3 flex gap-2">
                 <span className="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-racing-800 dark:text-gray-300">
-                  <FileText size={10} /> {(meeting.transcript.match(/ /g) || []).length} {t('wordsLabel')}
+                  <FileText size={10} /> {countWords(meeting.transcript)} {t('wordsLabel')}
                 </span>
                 <span className="inline-flex items-center gap-1 rounded bg-accent/10 px-2 py-0.5 text-[10px] font-bold text-accent">
                   <CheckSquare size={10} /> {meeting.action_items?.length || 0} Tasks
@@ -115,6 +196,7 @@ export default function MeetingsPage() {
               </div>
             </div>
           ))}
+          </div>
         </div>
 
         {/* Right column: Meeting Details */}
@@ -165,12 +247,37 @@ export default function MeetingsPage() {
                 <Calendar size={14} /> {format(new Date(selectedMeeting.date), 'dd. MMMM yyyy, HH:mm', { locale: dateLocale })}{t('uhr') ? ` ${t('uhr')}` : ''}
               </p>
 
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => void handleCopyMarkdown()}
+                  className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1 text-xs font-semibold text-gray-600 hover:border-accent hover:text-accent dark:border-racing-700 dark:text-gray-300"
+                >
+                  <Copy size={12} /> {copyFeedback ? t('copied') : t('copyMarkdown')}
+                </button>
+                <button
+                  onClick={() => downloadMeetingMarkdown(selectedMeeting, i18n.language)}
+                  className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1 text-xs font-semibold text-gray-600 hover:border-accent hover:text-accent dark:border-racing-700 dark:text-gray-300"
+                >
+                  <Download size={12} /> {t('downloadMarkdown')}
+                </button>
+              </div>
+
               <div className="mt-8">
                 <div className="flex items-center justify-between border-b border-gray-100 pb-2 mb-4 dark:border-racing-800">
                   <h3 className="flex items-center gap-2 font-semibold text-accent">
                     <CheckSquare size={18} /> {t('actionItemsTitle')}
                   </h3>
-                  {!addingActionItem && (
+                  <div className="flex items-center gap-2">
+                    {(selectedMeeting.action_items ?? []).some((ai) => !ai.done) && (
+                      <button
+                        onClick={handleBulkTransfer}
+                        disabled={bulkTransferring}
+                        className="flex items-center gap-1 text-xs font-semibold text-green-600 hover:text-green-700 disabled:opacity-50 transition-colors"
+                      >
+                        <ListChecks size={12} /> {t('transferAllToDashboard')}
+                      </button>
+                    )}
+                    {!addingActionItem && (
                     <button
                       onClick={() => {
                         setActionItemTaskDraft('')
@@ -182,6 +289,7 @@ export default function MeetingsPage() {
                       <Plus size={12} /> {t('addActionItem')}
                     </button>
                   )}
+                  </div>
                 </div>
                 <ul className="space-y-2">
                   {(selectedMeeting.action_items ?? []).map((item) => {
@@ -500,6 +608,28 @@ export default function MeetingsPage() {
                   </div>
                 )}
               </div>
+
+              {selectedMeeting.transcript.trim() && (
+                <div className="mt-8">
+                  <button
+                    onClick={() => setShowTranscript((v) => !v)}
+                    className="flex w-full items-center justify-between border-b border-gray-100 pb-2 mb-4 dark:border-racing-800"
+                  >
+                    <h3 className="flex items-center gap-2 font-semibold text-gray-500">
+                      <FileText size={18} className="text-gray-400" /> {t('transcriptTitle')}
+                      <span className="text-xs font-normal text-gray-400">
+                        ({countWords(selectedMeeting.transcript)} {t('wordsLabel')})
+                      </span>
+                    </h3>
+                    <ChevronDown size={16} className={`text-gray-400 transition-transform ${showTranscript ? '' : '-rotate-90'}`} />
+                  </button>
+                  {showTranscript && (
+                    <div className="max-h-64 overflow-y-auto rounded-lg bg-gray-50 p-4 text-sm leading-relaxed text-gray-700 dark:bg-racing-800 dark:text-gray-300">
+                      <p className="whitespace-pre-wrap">{selectedMeeting.transcript}</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex h-full items-center justify-center text-gray-400">

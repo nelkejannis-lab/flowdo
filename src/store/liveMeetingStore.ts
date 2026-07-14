@@ -23,6 +23,8 @@ interface LiveMeetingState {
   analysisCount: number
   aiQuality: MeetingAiQuality
   workerReady: boolean
+  recordingStartedAt: number | null
+  audioLevel: number
 
   startRecording: () => Promise<void>
   stopRecording: () => void
@@ -75,6 +77,8 @@ export const useLiveMeetingStore = create<LiveMeetingState>((set, get) => ({
   analysisCount: 0,
   aiQuality: getMeetingAiQuality(),
   workerReady: false,
+  recordingStartedAt: null,
+  audioLevel: 0,
 
   setAiQuality: (quality) => {
     setMeetingAiQuality(quality)
@@ -92,6 +96,7 @@ export const useLiveMeetingStore = create<LiveMeetingState>((set, get) => ({
         }))
       }
       recorder.onWorkerLoaded = () => set({ workerReady: true })
+      recorder.onAudioLevel = (level) => set({ audioLevel: level })
       recorder.onError = (err) => {
         set({ error: err })
         get().stopRecording()
@@ -114,6 +119,8 @@ export const useLiveMeetingStore = create<LiveMeetingState>((set, get) => ({
         analysisInterval: interval,
         error: null,
         aiQuality: getMeetingAiQuality(),
+        recordingStartedAt: Date.now(),
+        audioLevel: 0,
       })
     } catch (err: unknown) {
       set({ error: err instanceof Error ? err.message : 'Aufnahme fehlgeschlagen' })
@@ -125,7 +132,7 @@ export const useLiveMeetingStore = create<LiveMeetingState>((set, get) => ({
     if (recorder) recorder.stop()
     if (analysisInterval) clearInterval(analysisInterval)
 
-    set({ isRecording: false, recorder: null, analysisInterval: null, workerReady: false })
+    set({ isRecording: false, recorder: null, analysisInterval: null, workerReady: false, audioLevel: 0 })
     void get().triggerAnalysis(true)
   },
 
@@ -190,6 +197,8 @@ export const useLiveMeetingStore = create<LiveMeetingState>((set, get) => ({
       analysisCount: 0,
       workerReady: false,
       isSummarizing: false,
+      recordingStartedAt: null,
+      audioLevel: 0,
       aiQuality: getMeetingAiQuality(),
     })
   },

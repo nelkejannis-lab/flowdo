@@ -27,6 +27,16 @@
   "translateToEnglish": "Zusammenfassung ins Englische",
   "selectMeetingPrompt": "Wähle ein Meeting aus der Liste aus.",
   "uhr": "Uhr",
+  "searchPlaceholder": "Meetings durchsuchen…",
+  "sortDateDesc": "Neueste zuerst",
+  "sortDateAsc": "Älteste zuerst",
+  "sortTitle": "Nach Titel",
+  "noSearchResults": "Keine Treffer für diese Suche.",
+  "copyMarkdown": "Als Markdown kopieren",
+  "copied": "Kopiert!",
+  "downloadMarkdown": "Markdown herunterladen",
+  "transcriptTitle": "Transkript",
+  "transferAllToDashboard": "Alle offenen als Tasks",
   "live": {
     "subtitle": "Nimmt PC-Sound und Mikrofon auf. Transkription läuft lokal (kostenlos); nur Zusammenfassungen nutzen KI.",
     "namePlaceholder": "Meeting Name (optional)",
@@ -47,6 +57,7 @@
     "transcriptionReady": "Lokale Transkription aktiv",
     "updatingSummary": "Aktualisiere…",
     "analysisCount": "{{count}} KI-Updates",
-    "estimatedCost": "ca. {{cost}}"
+    "estimatedCost": "ca. {{cost}}",
+    "audioLevel": "Audio"
   }
 }

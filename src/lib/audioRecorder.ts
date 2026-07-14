@@ -8,6 +8,7 @@ export class AudioRecorder {
   public onTranscriptChunk?: (text: string) => void
   public onError?: (error: string) => void
   public onWorkerLoaded?: () => void
+  public onAudioLevel?: (level: number) => void
 
   async start() {
     try {
@@ -92,6 +93,12 @@ export class AudioRecorder {
         if (!this.isRecording) return
         
         const channelData = e.inputBuffer.getChannelData(0)
+        if (this.onAudioLevel) {
+          let sumSquares = 0
+          for (let i = 0; i < channelData.length; i++) sumSquares += channelData[i] * channelData[i]
+          const rms = Math.sqrt(sumSquares / channelData.length)
+          this.onAudioLevel(Math.min(1, rms * 8))
+        }
         audioDataBuffer.push(new Float32Array(channelData))
         samplesCount += channelData.length
         

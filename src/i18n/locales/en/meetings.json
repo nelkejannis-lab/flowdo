@@ -27,6 +27,16 @@
   "translateToEnglish": "Translate summary to English",
   "selectMeetingPrompt": "Select a meeting from the list.",
   "uhr": "",
+  "searchPlaceholder": "Search meetings…",
+  "sortDateDesc": "Newest first",
+  "sortDateAsc": "Oldest first",
+  "sortTitle": "By title",
+  "noSearchResults": "No matches for this search.",
+  "copyMarkdown": "Copy as Markdown",
+  "copied": "Copied!",
+  "downloadMarkdown": "Download Markdown",
+  "transcriptTitle": "Transcript",
+  "transferAllToDashboard": "All open as tasks",
   "live": {
     "subtitle": "Records PC sound and microphone. Transcription runs locally (free); only summaries use AI.",
     "namePlaceholder": "Meeting name (optional)",
@@ -47,6 +57,7 @@
     "transcriptionReady": "Local transcription active",
     "updatingSummary": "Updating…",
     "analysisCount": "{{count}} AI updates",
-    "estimatedCost": "est. {{cost}}"
+    "estimatedCost": "est. {{cost}}",
+    "audioLevel": "Audio"
   }
 }
