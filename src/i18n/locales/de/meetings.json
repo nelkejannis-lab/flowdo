@@ -24,11 +24,11 @@
   "transferToDashboard": "+ In Dashboard übertragen",
   "summaryTitle": "Zusammenfassung",
   "translating": "Übersetze...",
-  "translateToEnglish": "Ins Englische übersetzen",
+  "translateToEnglish": "Zusammenfassung ins Englische",
   "selectMeetingPrompt": "Wähle ein Meeting aus der Liste aus.",
   "uhr": "Uhr",
   "live": {
-    "subtitle": "Nimmt PC-Sound und Mikrofon auf und transkribiert in Echtzeit.",
+    "subtitle": "Nimmt PC-Sound und Mikrofon auf. Transkription läuft lokal (kostenlos); nur Zusammenfassungen nutzen KI.",
     "namePlaceholder": "Meeting Name (optional)",
     "startRecording": "Aufnahme starten",
     "stopRecording": "Aufnahme stoppen",
@@ -38,6 +38,15 @@
     "noTodosYet": "Noch keine To-Dos erkannt.",
     "due": "Fällig: {{date}}",
     "saveMeeting": "Meeting speichern",
-    "defaultTitle": "Meeting am {{date}}"
+    "defaultTitle": "Meeting am {{date}}",
+    "aiQuality": "KI-Modus",
+    "qualityEconomy": "Sparsam (empfohlen)",
+    "qualityBalanced": "Ausgewogen",
+    "qualityHigh": "Hohe Qualität",
+    "loadingWhisper": "Lokale Transkription wird geladen…",
+    "transcriptionReady": "Lokale Transkription aktiv",
+    "updatingSummary": "Aktualisiere…",
+    "analysisCount": "{{count}} KI-Updates",
+    "estimatedCost": "ca. {{cost}}"
   }
 }

@@ -24,11 +24,11 @@
   "transferToDashboard": "+ Transfer to Dashboard",
   "summaryTitle": "Summary",
   "translating": "Translating...",
-  "translateToEnglish": "Translate to English",
+  "translateToEnglish": "Translate summary to English",
   "selectMeetingPrompt": "Select a meeting from the list.",
   "uhr": "",
   "live": {
-    "subtitle": "Records PC sound and microphone and transcribes in real time.",
+    "subtitle": "Records PC sound and microphone. Transcription runs locally (free); only summaries use AI.",
     "namePlaceholder": "Meeting name (optional)",
     "startRecording": "Start recording",
     "stopRecording": "Stop recording",
@@ -38,6 +38,15 @@
     "noTodosYet": "No to-dos detected yet.",
     "due": "Due: {{date}}",
     "saveMeeting": "Save meeting",
-    "defaultTitle": "Meeting on {{date}}"
+    "defaultTitle": "Meeting on {{date}}",
+    "aiQuality": "AI mode",
+    "qualityEconomy": "Economy (recommended)",
+    "qualityBalanced": "Balanced",
+    "qualityHigh": "High quality",
+    "loadingWhisper": "Loading local transcription…",
+    "transcriptionReady": "Local transcription active",
+    "updatingSummary": "Updating…",
+    "analysisCount": "{{count}} AI updates",
+    "estimatedCost": "est. {{cost}}"
   }
 }

@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
-import { Check, Mic, Square, Loader2, Save, RefreshCw, Calendar } from 'lucide-react'
+import { useState } from 'react'
+import { Check, Mic, Square, Loader2, Save, Calendar } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useMeetingsStore } from '../../store/meetingsStore'
-import { useLiveMeetingStore } from '../../store/liveMeetingStore'
+import { useLiveMeetingStore, getLiveMeetingCostEstimate } from '../../store/liveMeetingStore'
+import type { MeetingAiQuality } from '../../lib/meetingAiConfig'
 
 export default function LiveMeetingPanel({ onSaveComplete }: { onSaveComplete: () => void }) {
   const { t, i18n } = useTranslation('meetings')
@@ -16,9 +17,15 @@ export default function LiveMeetingPanel({ onSaveComplete }: { onSaveComplete: (
     actionItems,
     isSummarizing,
     error,
+    analysisCount,
+    aiQuality,
+    workerReady,
     startRecording,
-    stopRecording
+    stopRecording,
+    setAiQuality,
   } = useLiveMeetingStore()
+
+  const costEstimate = getLiveMeetingCostEstimate()
 
   async function saveMeeting() {
     if (!summary && !transcript) return
@@ -46,6 +53,33 @@ export default function LiveMeetingPanel({ onSaveComplete }: { onSaveComplete: (
             {t('liveMeetingTitle')}
           </h2>
           <p className="text-xs text-gray-500 mb-3">{t('live.subtitle')}</p>
+
+          <div className="mb-3 flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-2 text-xs text-gray-500">
+              <span>{t('live.aiQuality')}</span>
+              <select
+                value={aiQuality}
+                onChange={(e) => setAiQuality(e.target.value as MeetingAiQuality)}
+                disabled={isRecording}
+                className="rounded-lg border border-gray-200 bg-transparent px-2 py-1 text-xs focus:border-accent focus:outline-none dark:border-racing-700 disabled:opacity-50"
+              >
+                <option value="economy">{t('live.qualityEconomy')}</option>
+                <option value="balanced">{t('live.qualityBalanced')}</option>
+                <option value="quality">{t('live.qualityHigh')}</option>
+              </select>
+            </label>
+            {isRecording && (
+              <span className="text-xs text-gray-400">
+                {workerReady ? t('live.transcriptionReady') : t('live.loadingWhisper')}
+              </span>
+            )}
+            {analysisCount > 0 && (
+              <span className="text-xs text-gray-400">
+                {t('live.analysisCount', { count: analysisCount })}
+                {costEstimate ? ` · ${t('live.estimatedCost', { cost: costEstimate })}` : ''}
+              </span>
+            )}
+          </div>
 
           <input
             type="text"
@@ -86,7 +120,12 @@ export default function LiveMeetingPanel({ onSaveComplete }: { onSaveComplete: (
                 <Check size={18} className="text-accent" />
                 <h3 className="font-semibold">{t('live.liveSummary')}</h3>
               </div>
-              {isSummarizing && <Loader2 size={16} className="animate-spin text-accent" />}
+              <div className="flex items-center gap-2">
+                {isSummarizing && (
+                  <span className="text-xs text-gray-400">{t('live.updatingSummary')}</span>
+                )}
+                {isSummarizing && <Loader2 size={16} className="animate-spin text-accent" />}
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto pr-2 text-sm">

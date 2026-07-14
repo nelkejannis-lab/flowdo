@@ -1,6 +1,14 @@
 import Anthropic from 'npm:@anthropic-ai/sdk@0.24.3'
 import { corsHeaders, jsonResponse, optionsResponse, requireUser } from '../_shared/auth.ts'
 
+const DEFAULT_MODEL = 'claude-sonnet-4-6'
+const DEFAULT_MAX_TOKENS = 4096
+
+const ALLOWED_MODELS = new Set([
+  'claude-sonnet-4-6',
+  'claude-haiku-4-5-20251001',
+])
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return optionsResponse()
 
@@ -8,7 +16,14 @@ Deno.serve(async (req) => {
   if ('error' in auth) return auth.error
 
   try {
-    const { messages, systemPrompt, imageBase64, imageMimeType } = await req.json()
+    const { messages, systemPrompt, imageBase64, imageMimeType, model, maxTokens } = await req.json()
+
+    const resolvedModel =
+      typeof model === 'string' && ALLOWED_MODELS.has(model) ? model : DEFAULT_MODEL
+    const resolvedMaxTokens =
+      typeof maxTokens === 'number' && maxTokens >= 256 && maxTokens <= 4096
+        ? Math.floor(maxTokens)
+        : DEFAULT_MAX_TOKENS
 
     const client = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY') })
 
@@ -33,8 +48,8 @@ Deno.serve(async (req) => {
     ]
 
     const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 4096,
+      model: resolvedModel,
+      max_tokens: resolvedMaxTokens,
       system: systemPrompt,
       messages: apiMessages,
     })
