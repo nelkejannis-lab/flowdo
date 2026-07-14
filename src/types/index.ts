@@ -47,6 +47,8 @@ export interface Task {
   startTime?: string // HH:MM, optional suggested/scheduled start time within dueDate
   estimatedMinutes?: number
   statusNote?: string // free-text status / progress note
+  snoozedUntil?: string
+  reminderAt?: string
 }
 
 export type EisenhowerQuadrant = 'do' | 'decide' | 'delegate' | 'delete'
@@ -75,6 +77,15 @@ export interface BoardFolder {
   createdAt: string
 }
 
+export interface BoardMilestone {
+  id: string
+  boardId: string
+  title: string
+  dueDate: string
+  completed: boolean
+  createdAt: string
+}
+
 export interface Board {
   id: string
   ownerId: string
@@ -91,6 +102,7 @@ export interface Board {
   members: ProjectMember[]
   attachments: Attachment[]
   createdAt: string
+  timeBudgetMinutes?: number
 }
 
 export interface SocialAccount {

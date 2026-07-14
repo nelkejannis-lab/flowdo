@@ -46,6 +46,8 @@ interface TaskRow {
   start_time: string | null
   estimated_minutes: number | null
   status_note: string | null
+  snoozed_until: string | null
+  reminder_at: string | null
 }
 
 function toTask(row: TaskRow): Task {
@@ -71,6 +73,8 @@ function toTask(row: TaskRow): Task {
     startTime: row.start_time ?? undefined,
     estimatedMinutes: row.estimated_minutes ?? undefined,
     statusNote: row.status_note ?? undefined,
+    snoozedUntil: row.snoozed_until ?? undefined,
+    reminderAt: row.reminder_at ?? undefined,
   }
 }
 
@@ -104,6 +108,8 @@ async function syncTask(task: Task, userId: string) {
     start_time: task.startTime ?? null,
     estimated_minutes: task.estimatedMinutes ?? null,
     status_note: task.statusNote ?? null,
+    snoozed_until: task.snoozedUntil ?? null,
+    reminder_at: task.reminderAt ?? null,
   })
 }
 
@@ -139,6 +145,7 @@ interface TasksState {
   removeAttachment: (taskId: string, attachmentId: string) => Promise<void>
   moveTaskToColumn: (taskId: string, boardId: string, columnId: string) => void
   subscribeToTasks: () => () => void
+  snoozeTask: (id: string, hours?: number) => void
 }
 
 export const useTasksStore = create<TasksState>()(
@@ -319,6 +326,11 @@ export const useTasksStore = create<TasksState>()(
 
       moveTaskToColumn: (taskId, boardId, columnId) => {
         get().updateTask(taskId, { boardId, columnId })
+      },
+
+      snoozeTask: (id, hours = 24) => {
+        const until = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString()
+        get().updateTask(id, { snoozedUntil: until })
       },
 
       subscribeToTasks: () => {

@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom'
 import { useSocialStore } from '../store/socialStore'
 import { differenceInCalendarDays, format, parseISO } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
-import { Plus, CalendarClock, Instagram, TrendingUp, Heart, Bookmark, Users, Loader2, Sliders, Check, X, Sparkles, Flame, Star, ArrowRight } from 'lucide-react'
+import { Plus, CalendarClock, Instagram, TrendingUp, Heart, Bookmark, Users, Loader2, Sliders, Check, X, Sparkles, Flame, Star, ArrowRight, BarChart3 } from 'lucide-react'
 import type { Task, CalendarEntry } from '../types'
 import { useAiSchedulerStore } from '../store/aiSchedulerStore'
+import { useFriendsStore } from '../store/friendsStore'
 import { useTranslation } from 'react-i18next'
 import { useTasksStore } from '../store/tasksStore'
 import { useBoardsStore } from '../store/boardsStore'
@@ -20,6 +21,7 @@ import TaskFormModal from '../components/tasks/TaskFormModal'
 import ProjectTaskFormModal from '../components/boards/ProjectTaskFormModal'
 import BoardCard from '../components/boards/BoardCard'
 import AiDayPlannerModal from '../components/dashboard/AiDayPlannerModal'
+import WeeklyReportModal from '../components/dashboard/WeeklyReportModal'
 import DailyAgendaPanel from '../components/calendar/DailyAgendaPanel'
 import DayPlanWidget from '../components/dashboard/DayPlanWidget'
 import WeatherWidget from '../components/dashboard/WeatherWidget'
@@ -33,7 +35,7 @@ import { GripHorizontal } from 'lucide-react'
 import OnboardingPermissions from '../components/dashboard/OnboardingPermissions'
 import MorningReportModal from '../components/dashboard/MorningReportModal'
 import { useSettingsStore } from '../store/settingsStore'
-import { isDueThisWeek, isDueToday, isOverdue, todayISO, parseNaturalDate, parseTaskInput, isCompletedToday } from '../utils/date'
+import { isDueThisWeek, isDueToday, isOverdue, todayISO, parseNaturalDate, parseTaskInput, parseAppointmentInput, isCompletedToday } from '../utils/date'
 import { useQuickTaskModalStore } from '../store/quickTaskModalStore'
 
 function isLikelyAppointment(input: string): boolean {
@@ -73,12 +75,22 @@ export default function Dashboard() {
   const openQuickTaskModal = useQuickTaskModalStore((s) => s.open)
   const [showForm, setShowForm] = useState(false)
   const [showAiDayPlanner, setShowAiDayPlanner] = useState(false)
+  const [showWeekReport, setShowWeekReport] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [editingEntry, setEditingEntry] = useState<CalendarEntry | undefined>()
   const [showEntryForm, setShowEntryForm] = useState(false)
   const [newTaskForToday, setNewTaskForToday] = useState(false)
   const [quickInput, setQuickInput] = useState('')
   const [parsingTask, setParsingTask] = useState(false)
+  const [quickEntryDefaults, setQuickEntryDefaults] = useState<{
+    title?: string
+    description?: string
+    date?: string
+    endDate?: string
+    startTime?: string
+    endTime?: string
+    invitedUserIds?: string[]
+  } | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [showEntries, setShowEntries] = useState(true)
   const [showWeekEntries, setShowWeekEntries] = useState(true)
@@ -234,6 +246,48 @@ export default function Dashboard() {
             setParsingTask(true)
             try {
               if (isLikelyAppointment(input)) {
+                let parsed
+                try {
+                  const friendsStore = useFriendsStore.getState()
+                  if (friendsStore.friends.length === 0) await friendsStore.fetchAll()
+                  const colleagues = useFriendsStore.getState().friends.map((f) => ({
+                    id: f.profile.id,
+                    name: f.profile.display_name,
+                  }))
+                  parsed = await useAiSchedulerStore.getState().parseAppointment(input, colleagues)
+                } catch (err) {
+                  console.error('AI appointment parsing failed, falling back to regex:', err)
+                  const fallback = parseAppointmentInput(input)
+                  parsed = {
+                    title: fallback.title,
+                    description: null,
+                    date: fallback.date ?? todayISO(),
+                    endDate: fallback.endDate ?? null,
+                    startTime: fallback.startTime ?? null,
+                    endTime: fallback.endTime ?? null,
+                    colleagueIds: [],
+                  }
+                }
+                if (!parsed) {
+                  parsed = {
+                    title: input,
+                    description: null,
+                    date: todayISO(),
+                    endDate: null,
+                    startTime: null,
+                    endTime: null,
+                    colleagueIds: [],
+                  }
+                }
+                setQuickEntryDefaults({
+                  title: parsed.title,
+                  description: parsed.description ?? undefined,
+                  date: parsed.date,
+                  endDate: parsed.endDate ?? undefined,
+                  startTime: parsed.startTime ?? undefined,
+                  endTime: parsed.endTime ?? undefined,
+                  invitedUserIds: parsed.colleagueIds,
+                })
                 setEditingEntry(undefined)
                 setShowEntryForm(true)
                 setQuickInput('')
@@ -278,6 +332,14 @@ export default function Dashboard() {
           </button>
           <button
             type="button"
+            onClick={() => setShowWeekReport(true)}
+            title={t('weekReport.title')}
+            className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-racing-700 dark:bg-racing-900"
+          >
+            <BarChart3 size={16} />
+          </button>
+          <button
+            type="button"
             onClick={() => setShowAiDayPlanner(true)}
             title={t('aiPlanner.title')}
             className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:brightness-110"
@@ -288,6 +350,7 @@ export default function Dashboard() {
       </div>
 
       {showAiDayPlanner && <AiDayPlannerModal onClose={() => setShowAiDayPlanner(false)} />}
+      {showWeekReport && <WeeklyReportModal onClose={() => setShowWeekReport(false)} />}
 
       {isEditing && (
         <div className="mb-6 rounded-xl border-2 border-dashed border-gray-200 dark:border-racing-800 p-4 bg-gray-50/50 dark:bg-racing-950/20 animate-in fade-in slide-in-from-top-2 duration-150">
@@ -425,9 +488,9 @@ export default function Dashboard() {
             entries={calendarEntries}
             onTaskClick={(task) => setEditingTask(task)}
             onEventClick={() => {}}
-            onEntryClick={(entry) => { setEditingEntry(entry); setShowEntryForm(true) }}
+            onEntryClick={(entry) => { setQuickEntryDefaults(null); setEditingEntry(entry); setShowEntryForm(true) }}
             onAddTask={() => setNewTaskForToday(true)}
-            onAddEntry={() => { setEditingEntry(undefined); setShowEntryForm(true) }}
+            onAddEntry={() => { setQuickEntryDefaults(null); setEditingEntry(undefined); setShowEntryForm(true) }}
           />
         </div>
       )}
@@ -748,8 +811,18 @@ export default function Dashboard() {
       {showEntryForm && (
         <CalendarEntryFormModal
           entry={editingEntry}
-          defaultDate={today}
-          onClose={() => { setShowEntryForm(false); setEditingEntry(undefined) }}
+          defaultDate={quickEntryDefaults?.date ?? today}
+          defaultEndDate={quickEntryDefaults?.endDate}
+          defaultStartTime={quickEntryDefaults?.startTime}
+          defaultEndTime={quickEntryDefaults?.endTime}
+          defaultTitle={quickEntryDefaults?.title}
+          defaultDescription={quickEntryDefaults?.description}
+          defaultInvitedUserIds={quickEntryDefaults?.invitedUserIds}
+          onClose={() => {
+            setShowEntryForm(false)
+            setEditingEntry(undefined)
+            setQuickEntryDefaults(null)
+          }}
         />
       )}
     </div>

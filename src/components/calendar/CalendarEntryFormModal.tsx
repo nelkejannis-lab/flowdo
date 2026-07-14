@@ -24,6 +24,10 @@ interface CalendarEntryFormModalProps {
   defaultDate?: string
   defaultStartTime?: string
   defaultEndDate?: string
+  defaultEndTime?: string
+  defaultTitle?: string
+  defaultDescription?: string
+  defaultInvitedUserIds?: string[]
   onClose: () => void
 }
 
@@ -49,7 +53,18 @@ function addWeeks(isoDate: string, weeks: number): string {
   return d.toISOString().slice(0, 10)
 }
 
-export default function CalendarEntryFormModal({ event, entry, defaultDate, defaultStartTime, defaultEndDate, onClose }: CalendarEntryFormModalProps) {
+export default function CalendarEntryFormModal({
+  event,
+  entry,
+  defaultDate,
+  defaultStartTime,
+  defaultEndDate,
+  defaultEndTime,
+  defaultTitle,
+  defaultDescription,
+  defaultInvitedUserIds,
+  onClose,
+}: CalendarEntryFormModalProps) {
   const { t } = useTranslation('calendar')
   const typeOptions: { kind: Kind; label: string; icon: typeof CalendarClock }[] = [
     { kind: 'termin', label: t('form.types.termin'), icon: typeIcons.termin },
@@ -76,15 +91,15 @@ export default function CalendarEntryFormModal({ event, entry, defaultDate, defa
   const initialKind: Kind = event ? 'event' : entry ? entry.type : 'termin'
 
   const [kind, setKind] = useState<Kind>(initialKind)
-  const [title, setTitle] = useState(editing?.title ?? '')
+  const [title, setTitle] = useState(editing?.title ?? defaultTitle ?? '')
   const [date, setDate] = useState(editing?.date ?? defaultDate ?? todayISO())
   const [endDate, setEndDate] = useState(editing?.endDate ?? defaultEndDate ?? '')
   const [startTime, setStartTime] = useState(entry?.startTime ?? defaultStartTime ?? '')
-  const [endTime, setEndTime] = useState(entry?.endTime ?? '')
-  const [description, setDescription] = useState(editing?.description ?? '')
+  const [endTime, setEndTime] = useState(entry?.endTime ?? defaultEndTime ?? '')
+  const [description, setDescription] = useState(editing?.description ?? defaultDescription ?? '')
   const [color, setColor] = useState(editing?.color ?? defaultColors.termin)
   const [invitedUserIds, setInvitedUserIds] = useState<string[]>(() => {
-    const existing = entry?.invitees.map((i) => i.id) ?? []
+    const existing = entry?.invitees.map((i) => i.id) ?? defaultInvitedUserIds ?? []
     if (!entry && currentUserId && !existing.includes(currentUserId)) return [currentUserId, ...existing]
     return existing
   })

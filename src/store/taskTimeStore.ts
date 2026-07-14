@@ -19,6 +19,8 @@ interface TaskTimeState {
   fetchByBoard: (boardId: string) => Promise<void>
   addEntry: (input: Omit<TaskTimeEntry, 'id' | 'createdAt'>) => Promise<void>
   getBoardSummary: (boardId: string, taskIds: string[]) => { totalMinutes: number; byTask: Record<string, number>; completionPct: number }
+  getTaskMinutes: (taskId: string) => number
+  getEstimateComparison: (tasks: { id: string; estimatedMinutes?: number }[]) => { estimated: number; actual: number }
 }
 
 async function syncEntry(entry: TaskTimeEntry) {
@@ -78,6 +80,19 @@ export const useTaskTimeStore = create<TaskTimeState>()(
         }
         const completionPct = taskIds.length === 0 ? 0 : Math.round((Object.keys(byTask).length / taskIds.length) * 100)
         return { totalMinutes, byTask, completionPct }
+      },
+
+      getTaskMinutes: (taskId) =>
+        get().entries.filter((e) => e.taskId === taskId).reduce((sum, e) => sum + e.minutes, 0),
+
+      getEstimateComparison: (tasks) => {
+        let estimated = 0
+        let actual = 0
+        for (const t of tasks) {
+          if (t.estimatedMinutes) estimated += t.estimatedMinutes
+          actual += get().getTaskMinutes(t.id)
+        }
+        return { estimated, actual }
       },
     }),
     { name: 'flowdo-task-time' }

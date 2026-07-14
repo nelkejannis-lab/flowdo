@@ -85,13 +85,34 @@
     "save": "Speichern",
     "create": "Erstellen",
     "template": "Vorlage",
-    "noTemplate": "Leeres Projekt"
+    "noTemplate": "Leeres Projekt",
+    "timeBudget": "Zeit-Budget (Stunden)",
+    "timeBudgetPlaceholder": "z. B. 40"
+  },
+  "health": {
+    "title": "Projekt-Status",
+    "good": "Läuft gut – fast fertig!",
+    "progress": "{{percent}}% der Aufgaben erledigt",
+    "overdue": "{{count}} überfällige Aufgaben",
+    "budget": "{{percent}}% des Zeit-Budgets genutzt"
+  },
+  "workload": {
+    "title": "Team-Auslastung",
+    "open": "{{count}} offen",
+    "estimated": "{{time}} geplant",
+    "logged": "{{time}} gebucht"
+  },
+  "milestones": {
+    "title": "Meilensteine",
+    "placeholder": "Meilenstein…",
+    "empty": "Noch keine Meilensteine"
   },
   "timeReport": {
     "title": "Zeit & Fortschritt",
     "totalTime": "Gesamtzeit",
     "progress": "Fortschritt",
     "openTasks": "Offen",
+    "estimatedVsActual": "Ist / Plan",
     "minutes": "Minuten",
     "task": "Aufgabe",
     "noTask": "Allgemein",

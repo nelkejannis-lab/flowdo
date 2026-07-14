@@ -49,6 +49,10 @@ export function isCompletedThisWeek(completedAt?: string): boolean {
   }
 }
 
+export function isSnoozed(task: { snoozedUntil?: string }): boolean {
+  return !!task.snoozedUntil && new Date(task.snoozedUntil) > new Date()
+}
+
 export function formatFriendlyDate(iso?: string): string {
   if (!iso) return ''
   const date = parseISO(iso)
@@ -136,6 +140,45 @@ export interface ParsedTaskInput {
   priority: 'low' | 'medium' | 'high'
   urgent: boolean
   important: boolean
+}
+
+export interface ParsedAppointmentInput {
+  title: string
+  date?: string
+  endDate?: string
+  startTime?: string
+  endTime?: string
+}
+
+export function parseAppointmentInput(text: string): ParsedAppointmentInput {
+  let cleaned = text
+
+  const endMatch = cleaned.match(/\bbis\s+(\d{1,2})[:.](\d{2})\b/i)
+  let endTime: string | undefined
+  if (endMatch) {
+    endTime = `${endMatch[1].padStart(2, '0')}:${endMatch[2]}`
+    cleaned = cleaned.replace(endMatch[0], '').trim()
+  }
+
+  const timeMatch = cleaned.match(/\b(?:um\s+)?(\d{1,2})[:.](\d{2})\b/)
+  let startTime: string | undefined
+  if (timeMatch) {
+    startTime = `${timeMatch[1].padStart(2, '0')}:${timeMatch[2]}`
+    cleaned = cleaned.replace(timeMatch[0], '').trim()
+  }
+
+  const parsedDate = parseNaturalDate(cleaned)
+  let date: string | undefined
+  if (parsedDate) {
+    date = parsedDate.date
+    cleaned = parsedDate.cleanedText
+  }
+
+  cleaned = cleaned
+    .replace(/^(termin|meeting|besprechung|call|zoom|teams)\s*(?:mit\s+|für\s+|am\s+|um\s+)?/i, '')
+    .trim()
+
+  return { title: cleaned || text, date, startTime, endTime }
 }
 
 export function parseTaskInput(text: string, boards: { id: string; title: string }[]): ParsedTaskInput {

@@ -5,6 +5,7 @@ import { useTasksStore } from '../store/tasksStore'
 import { useProjectTasksStore } from '../store/projectTasksStore'
 import { todayISO } from '../utils/date'
 import { usePomodoroStore, DURATIONS, type Phase } from '../store/pomodoroStore'
+import { logPomodoroToProjectTime } from '../store/taskTimerStore'
 
 const PHASE_COLORS: Record<Phase, string> = {
   focus: 'from-accent to-purple-600',
@@ -24,6 +25,7 @@ export default function PomodoroPage() {
     timeLeft,
     running,
     activeTaskId,
+    activeTaskType,
     sessions,
     setPhase,
     setTimeLeft,
@@ -78,6 +80,12 @@ export default function PomodoroPage() {
         setRunning(false)
         if (phase === 'focus') {
           incrementSessions()
+          if (activeTaskId && activeTaskType === 'project') {
+            const pt = projectTasks.find((tk) => tk.id === activeTaskId)
+            if (pt?.boardId) {
+              void logPomodoroToProjectTime(activeTaskId, pt.boardId, Math.round(DURATIONS.focus / 60))
+            }
+          }
           notify(t('focusDone'), t('takeBreak'))
         } else {
           notify(t('breakDone'), t('backToWork'))
@@ -88,7 +96,7 @@ export default function PomodoroPage() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [running, phase, today, setTimeLeft, setRunning, incrementSessions, t])
+  }, [running, phase, today, activeTaskId, activeTaskType, projectTasks, setTimeLeft, setRunning, incrementSessions, t])
 
   const mins = Math.floor(timeLeft / 60).toString().padStart(2, '0')
   const secs = (timeLeft % 60).toString().padStart(2, '0')

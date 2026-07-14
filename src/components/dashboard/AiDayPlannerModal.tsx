@@ -88,6 +88,25 @@ export default function AiDayPlannerModal({ onClose }: AiDayPlannerModalProps) {
         projectId: it.projectId ?? null,
       }))
       appendDayPlanItems(today, planItems)
+
+      const addPersonal = useTasksStore.getState().addTask
+      const addProject = useProjectTasksStore.getState().addTask
+      for (const it of selected) {
+        const base = {
+          title: it.title,
+          dueDate: today,
+          startTime: it.startTime ?? undefined,
+          estimatedMinutes: it.estimatedMinutes ?? undefined,
+          priority: it.priority,
+          urgent: it.urgent,
+          important: it.important,
+        }
+        if (it.projectId) {
+          void addProject({ ...base, boardId: it.projectId })
+        } else {
+          addPersonal(base)
+        }
+      }
       onClose()
     } finally {
       setImporting(false)

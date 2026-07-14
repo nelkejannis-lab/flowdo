@@ -15,6 +15,7 @@ interface NewBoardInput {
   externalLaunch?: string
   folderId?: string | null
   responsibleUserId?: string | null
+  timeBudgetMinutes?: number | null
 }
 
 interface BoardFolderRow {
@@ -52,6 +53,7 @@ interface BoardRow {
   attachments: Attachment[] | null
   folder_id: string | null
   responsible_user_id: string | null
+  time_budget_minutes: number | null
   responsible: { id: string; display_name: string; avatar_color: string } | { id: string; display_name: string; avatar_color: string }[] | null
 }
 
@@ -92,6 +94,7 @@ function toBoard(row: BoardRow): Board {
     members,
     attachments: row.attachments ?? [],
     createdAt: row.created_at,
+    timeBudgetMinutes: row.time_budget_minutes ?? undefined,
   }
 }
 
@@ -245,6 +248,7 @@ export const useBoardsStore = create<BoardsState>()(
                     externalLaunch: updates.externalLaunch !== undefined ? updates.externalLaunch : b.externalLaunch,
                     folderId: updates.folderId !== undefined ? (updates.folderId || undefined) : b.folderId,
                     responsibleUserId: updates.responsibleUserId !== undefined ? (updates.responsibleUserId || undefined) : b.responsibleUserId,
+                    timeBudgetMinutes: updates.timeBudgetMinutes !== undefined ? (updates.timeBudgetMinutes || undefined) : b.timeBudgetMinutes,
                   }
                 : b
             ),
@@ -263,6 +267,7 @@ export const useBoardsStore = create<BoardsState>()(
             ...(updates.externalLaunch !== undefined ? { external_launch: updates.externalLaunch ?? null } : {}),
             ...(updates.folderId !== undefined ? { folder_id: updates.folderId || null } : {}),
             ...(updates.responsibleUserId !== undefined ? { responsible_user_id: updates.responsibleUserId || null } : {}),
+            ...(updates.timeBudgetMinutes !== undefined ? { time_budget_minutes: updates.timeBudgetMinutes ?? null } : {}),
           })
           .eq('id', id)
 

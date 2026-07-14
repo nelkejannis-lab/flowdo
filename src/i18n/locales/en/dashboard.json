@@ -1,7 +1,7 @@
 {
   "title": "Dashboard",
   "addTask": "Add",
-  "quickAddPlaceholder": "Quickly add a task…",
+  "quickAddPlaceholder": "Quickly add a task or appointment…",
   "showAll": "Show all",
   "allProjects": "All projects",
   "calendar": "Calendar",
@@ -129,5 +129,13 @@
     "exactOnTarget": "Exactly on target",
     "stopwatchStart": "Start stopwatch",
     "stopwatchStop": "Stop stopwatch"
+  },
+  "weekReport": {
+    "title": "Weekly report",
+    "subtitle": "AI summary for {{week}}",
+    "generate": "Generate report",
+    "generating": "Generating…",
+    "regenerate": "Regenerate",
+    "error": "Could not generate report"
   }
 }

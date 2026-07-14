@@ -19,6 +19,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useQuickTaskModalStore } from './store/quickTaskModalStore'
 import { useWorkTimeStore } from './store/workTimeStore'
 import TaskTray from './components/layout/TaskTray'
+import TaskTimerBar from './components/tasks/TaskTimerBar'
 
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const TasksPage = lazy(() => import('./pages/Tasks'))
@@ -156,6 +157,7 @@ export default function App() {
       />
     )}
     <TaskTray />
+    <TaskTimerBar />
     <ErrorBoundary>
     <Suspense fallback={<PageLoader />}>
     <Routes>

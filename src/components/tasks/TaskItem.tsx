@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Check, ChevronDown, HelpCircle, ListChecks, MessageSquare, Moon, Repeat, Send, Play, Pause } from 'lucide-react'
+import { Check, ChevronDown, HelpCircle, ListChecks, MessageSquare, Moon, Repeat, Send, Play, Pause, Clock } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { Task } from '../../types'
 import { useTasksStore } from '../../store/tasksStore'
@@ -29,6 +29,7 @@ const friendlyDateKeys: Record<string, string> = {
 export default function TaskItem({ task, onClick, showBoard = true }: TaskItemProps) {
   const { t } = useTranslation('tasks')
   const toggleTaskCompleted = useTasksStore((s) => s.toggleTaskCompleted)
+  const snoozeTask = useTasksStore((s) => s.snoozeTask)
   const toggleProjectTaskCompleted = useProjectTasksStore((s) => s.toggleTaskCompleted)
   const toggleSubtask = useTasksStore((s) => s.toggleSubtask)
   const toggleProjectSubtask = useProjectTasksStore((s) => s.toggleSubtask)
@@ -95,6 +96,16 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
             ) : (
               <Play size={10} className="ml-0.5" />
             )}
+          </button>
+        )}
+
+        {!task.completed && !task.boardId && (
+          <button
+            onClick={(e) => { e.stopPropagation(); snoozeTask(task.id, 24) }}
+            className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-400 hover:bg-amber-100 hover:text-amber-600 dark:bg-racing-800"
+            title={t('item.snooze')}
+          >
+            <Clock size={10} />
           </button>
         )}
 

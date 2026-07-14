@@ -17,6 +17,7 @@ interface NewProjectTaskInput {
   boardId: string
   columnId?: string
   assignedTo?: string
+  assigneeIds?: string[]
   startTime?: string
   estimatedMinutes?: number
   statusNote?: string
@@ -50,7 +51,7 @@ function single<T>(value: T | T[]): T {
   return Array.isArray(value) ? value[0] : value
 }
 
-function toTask(row: ProjectTaskRow, dependsOn?: string[]): Task {
+function toTask(row: ProjectTaskRow, dependsOn?: string[], assigneeIds?: string[]): Task {
   return {
     id: row.id,
     title: row.title,
@@ -66,6 +67,7 @@ function toTask(row: ProjectTaskRow, dependsOn?: string[]): Task {
     columnId: row.column_id ?? undefined,
     ownerId: row.owner_id,
     assignedTo: row.assigned_to ?? undefined,
+    assigneeIds: assigneeIds ?? (row.assigned_to ? [row.assigned_to] : undefined),
     assignee: row.assignee ? single(row.assignee) : undefined,
     subtasks: row.subtasks ?? [],
     attachments: row.attachments ?? [],
@@ -87,6 +89,24 @@ async function fetchDependencyMap(taskIds: string[]): Promise<Record<string, str
     map[row.task_id] = [...(map[row.task_id] ?? []), row.depends_on_id]
   }
   return map
+}
+
+async function fetchAssigneesMap(taskIds: string[]): Promise<Record<string, string[]>> {
+  if (taskIds.length === 0 || !isSupabaseConfigured) return {}
+  const { data } = await supabase.from('task_assignees').select('task_id, user_id').in('task_id', taskIds)
+  const map: Record<string, string[]> = {}
+  for (const row of (data ?? []) as { task_id: string; user_id: string }[]) {
+    map[row.task_id] = [...(map[row.task_id] ?? []), row.user_id]
+  }
+  return map
+}
+
+async function syncAssignees(taskId: string, userIds: string[]) {
+  if (!isSupabaseConfigured) return
+  await supabase.from('task_assignees').delete().eq('task_id', taskId)
+  if (userIds.length > 0) {
+    await supabase.from('task_assignees').insert(userIds.map((userId) => ({ task_id: taskId, user_id: userId })))
+  }
 }
 
 interface ProjectTasksState {
@@ -136,8 +156,9 @@ export const useProjectTasksStore = create<ProjectTasksState>()(
         }
 
         const rows = (data ?? []) as unknown as ProjectTaskRow[]
-        const depMap = await fetchDependencyMap(rows.map((r) => r.id))
-        const tasks = rows.map((row) => toTask(row, depMap[row.id]))
+        const ids = rows.map((r) => r.id)
+        const [depMap, assigneeMap] = await Promise.all([fetchDependencyMap(ids), fetchAssigneesMap(ids)])
+        const tasks = rows.map((row) => toTask(row, depMap[row.id], assigneeMap[row.id]))
         set({ tasks, loading: false })
       },
 
@@ -147,6 +168,9 @@ export const useProjectTasksStore = create<ProjectTasksState>()(
         const userId = userData.user?.id
         if (!userId) return
 
+        const { data: assigneeRows } = await supabase.from('task_assignees').select('task_id').eq('user_id', userId)
+        const assigneeTaskIds = [...new Set((assigneeRows ?? []).map((r: { task_id: string }) => r.task_id))]
+
         const { data, error } = await supabase
           .from('tasks')
           .select(SELECT)
@@ -154,12 +178,29 @@ export const useProjectTasksStore = create<ProjectTasksState>()(
           .or(`owner_id.eq.${userId},assigned_to.eq.${userId}`)
           .order('due_date', { ascending: true })
 
+        let extraRows: ProjectTaskRow[] = []
+        if (assigneeTaskIds.length > 0) {
+          const { data: extra } = await supabase
+            .from('tasks')
+            .select(SELECT)
+            .in('id', assigneeTaskIds)
+          extraRows = (extra ?? []) as unknown as ProjectTaskRow[]
+        }
+
         if (error) {
           set({ error: error.message })
           return
         }
 
-        const myTasks = ((data ?? []) as unknown as ProjectTaskRow[]).map((row) => toTask(row))
+        const allRows = [...((data ?? []) as unknown as ProjectTaskRow[])]
+        const seen = new Set(allRows.map((r) => r.id))
+        for (const row of extraRows) {
+          if (!seen.has(row.id)) allRows.push(row)
+        }
+
+        const ids = allRows.map((r) => r.id)
+        const assigneeMap = await fetchAssigneesMap(ids)
+        const myTasks = allRows.map((row) => toTask(row, undefined, assigneeMap[row.id]))
         set({ myTasks })
       },
 
@@ -219,6 +260,12 @@ export const useProjectTasksStore = create<ProjectTasksState>()(
           .single()
 
         if (error || !data) return { error: error?.message ?? 'Fehler beim Erstellen' }
+        if (input.assigneeIds?.length) {
+          await syncAssignees(data.id, input.assigneeIds)
+          if (!input.assignedTo) {
+            await supabase.from('tasks').update({ assigned_to: input.assigneeIds[0] }).eq('id', data.id)
+          }
+        }
         await Promise.all([get().fetchTasks(input.boardId), get().fetchMyTasks()])
         return { id: data.id }
       },
@@ -252,7 +299,15 @@ export const useProjectTasksStore = create<ProjectTasksState>()(
 
         await supabase.from('tasks').update(payload).eq('id', id)
 
-        if (updates.assignedTo !== undefined) {
+        if (updates.assigneeIds !== undefined) {
+          await syncAssignees(id, updates.assigneeIds)
+          if (updates.assigneeIds.length > 0 && updates.assignedTo === undefined) {
+            payload.assigned_to = updates.assigneeIds[0]
+            await supabase.from('tasks').update({ assigned_to: updates.assigneeIds[0] }).eq('id', id)
+          }
+        }
+
+        if (updates.assignedTo !== undefined || updates.assigneeIds !== undefined) {
           const { data } = await supabase.from('tasks').select(SELECT).eq('id', id).single()
           if (data) {
             const refreshed = toTask(data as unknown as ProjectTaskRow)

@@ -117,7 +117,11 @@ export default function BoardDetailPage() {
 
   const visibleTasks =
     progressFilter === 'mine'
-      ? tasks.filter((t) => t.assignedTo === currentUserId || (!t.assignedTo && t.ownerId === currentUserId))
+      ? tasks.filter((t) =>
+          t.assignedTo === currentUserId
+          || t.assigneeIds?.includes(currentUserId ?? '')
+          || (!t.assignedTo && !t.assigneeIds?.length && t.ownerId === currentUserId)
+        )
       : tasks
 
   const total = visibleTasks.length

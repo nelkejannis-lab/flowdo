@@ -80,6 +80,7 @@ interface AiSchedulerState {
     text: string,
     context: DayPlanContext
   ) => Promise<PlannedTaskItem[]>
+  generateWeekReport: (context: WeekReportContext) => Promise<string>
 }
 
 export interface PlannedTaskItem {
@@ -96,6 +97,15 @@ export interface DayPlanContext {
   boards: { id: string; title: string }[]
   busyEntries: { title: string; startTime?: string; endTime?: string }[]
   existingTasks: { title: string; startTime?: string; estimatedMinutes?: number }[]
+}
+
+export interface WeekReportContext {
+  weekLabel: string
+  completed: string[]
+  open: number
+  overdue: string[]
+  loggedMinutes: number
+  boards: string[]
 }
 
 export const useAiSchedulerStore = create<AiSchedulerState>()(() => ({
@@ -376,5 +386,27 @@ Regeln:
       urgent: item.urgent ?? false,
       important: item.important ?? false,
     }))
+  },
+
+  generateWeekReport: async (context) => {
+    const systemPrompt = `Du erstellst einen kurzen, motivierenden Wochenbericht auf Deutsch für ein Produktivitäts-Tool.
+Woche: ${context.weekLabel}
+Erledigte Aufgaben (${context.completed.length}): ${context.completed.slice(0, 20).join(', ') || 'keine'}
+Offene Aufgaben: ${context.open}
+Überfällig: ${context.overdue.slice(0, 10).join(', ') || 'keine'}
+Geloggte Projektzeit diese Woche: ${context.loggedMinutes} Minuten
+Aktive Projekte: ${context.boards.join(', ') || 'keine'}
+
+Schreibe 3–5 Absätze: Zusammenfassung der Woche, Highlights, offene Punkte, konkreter Tipp für nächste Woche. Kein JSON, nur Fließtext.`
+
+    const { data, error } = await supabase.functions.invoke('ai-scheduler', {
+      body: { text: 'Wochenbericht', systemPrompt },
+    })
+
+    if (error || data?.error) {
+      throw new Error(error?.message || data?.error || 'KI-Verbindung fehlgeschlagen')
+    }
+
+    return (data?.content?.[0]?.text ?? '').trim() || 'Kein Bericht generiert.'
   },
 }))

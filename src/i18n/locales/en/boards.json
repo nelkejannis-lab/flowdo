@@ -85,13 +85,34 @@
     "save": "Save",
     "create": "Create",
     "template": "Template",
-    "noTemplate": "Empty project"
+    "noTemplate": "Empty project",
+    "timeBudget": "Time budget (hours)",
+    "timeBudgetPlaceholder": "e.g. 40"
+  },
+  "health": {
+    "title": "Project health",
+    "good": "On track – almost done!",
+    "progress": "{{percent}}% tasks completed",
+    "overdue": "{{count}} overdue tasks",
+    "budget": "{{percent}}% of time budget used"
+  },
+  "workload": {
+    "title": "Team workload",
+    "open": "{{count}} open",
+    "estimated": "{{time}} planned",
+    "logged": "{{time}} logged"
+  },
+  "milestones": {
+    "title": "Milestones",
+    "placeholder": "Milestone…",
+    "empty": "No milestones yet"
   },
   "timeReport": {
     "title": "Time & progress",
     "totalTime": "Total time",
     "progress": "Progress",
     "openTasks": "Open",
+    "estimatedVsActual": "Actual / planned",
     "minutes": "Minutes",
     "task": "Task",
     "noTask": "General",

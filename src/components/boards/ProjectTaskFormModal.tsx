@@ -50,6 +50,7 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
   const [dueDate, setDueDate] = useState(task?.dueDate ?? defaultDueDate ?? '')
   const [priority, setPriority] = useState<Priority>(task?.priority ?? 'medium')
   const [assignedTo, setAssignedTo] = useState(task?.assignedTo ?? '')
+  const [assigneeIds, setAssigneeIds] = useState<string[]>(task?.assigneeIds ?? (task?.assignedTo ? [task.assignedTo] : []))
   const [urgent, setUrgent] = useState(task?.urgent ?? false)
   const [important, setImportant] = useState(task?.important ?? false)
   const [startTime, setStartTime] = useState(task?.startTime ?? '')
@@ -88,7 +89,8 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
         priority,
         urgent,
         important,
-        assignedTo: assignedTo || undefined,
+        assignedTo: assigneeIds[0] || assignedTo || undefined,
+        assigneeIds: assigneeIds.length ? assigneeIds : undefined,
         startTime: startTime || undefined,
         estimatedMinutes: parsedEstimatedMinutes,
         statusNote: statusNote.trim() || undefined,
@@ -104,7 +106,8 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
         important,
         boardId: board.id,
         columnId: defaultColumnId ?? board.columns[0]?.id,
-        assignedTo: assignedTo || undefined,
+        assignedTo: assigneeIds[0] || assignedTo || undefined,
+        assigneeIds: assigneeIds.length ? assigneeIds : undefined,
         startTime: startTime || undefined,
         estimatedMinutes: parsedEstimatedMinutes,
         statusNote: statusNote.trim() || undefined,
@@ -447,18 +450,25 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
 
         <div>
           <label className="mb-1 block text-xs font-medium text-gray-500">{t('taskForm.assignedTo')}</label>
-          <select
-            value={assignedTo}
-            onChange={(e) => setAssignedTo(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
-          >
-            <option value="">{t('taskForm.noone')}</option>
-            {board.members.map((m) => (
-              <option key={m.userId} value={m.userId}>
-                {m.profile.display_name} (@{m.profile.username})
-              </option>
-            ))}
-          </select>
+          <div className="flex flex-wrap gap-2">
+            {board.members.map((m) => {
+              const active = assigneeIds.includes(m.userId)
+              return (
+                <button
+                  key={m.userId}
+                  type="button"
+                  onClick={() => setAssigneeIds((ids) =>
+                    active ? ids.filter((id) => id !== m.userId) : [...ids, m.userId]
+                  )}
+                  className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                    active ? 'bg-accent text-white' : 'bg-gray-100 text-gray-600 dark:bg-racing-800'
+                  }`}
+                >
+                  {m.profile.display_name}
+                </button>
+              )
+            })}
+          </div>
         </div>
 
         <div>

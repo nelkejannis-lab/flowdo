@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
-import { Check, ChevronDown, ListChecks, Lock, Play, Pause } from 'lucide-react'
+import { Check, ChevronDown, Clock, ListChecks, Lock, Play, Pause } from 'lucide-react'
 import type { Task } from '../../types'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
 import { formatFriendlyDate, isOverdue } from '../../utils/date'
 import PriorityBadge from '../tasks/PriorityBadge'
 import { usePomodoroStore } from '../../store/pomodoroStore'
+import { useTaskTimerStore } from '../../store/taskTimerStore'
 
 interface KanbanCardProps {
   task: Task
@@ -18,8 +19,10 @@ export default function KanbanCard({ task, onClick }: KanbanCardProps) {
   const toggleSubtask = useProjectTasksStore((s) => s.toggleSubtask)
   const blocked = useProjectTasksStore((s) => !task.completed && s.isBlocked(task.id))
   const pomodoro = usePomodoroStore()
+  const timer = useTaskTimerStore()
   const isPomodoroActive = pomodoro.activeTaskId === task.id
-  const isTimerRunning = pomodoro.running
+  const isTimerActive = timer.taskId === task.id
+  const isTimerRunning = timer.running && isTimerActive
   const [expanded, setExpanded] = useState(false)
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
@@ -53,11 +56,33 @@ export default function KanbanCard({ task, onClick }: KanbanCardProps) {
         >
           {task.completed && <Check size={10} />}
         </button>
+        {!task.completed && task.boardId && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              if (isTimerActive && timer.running) {
+                timer.pause()
+              } else if (isTimerActive) {
+                timer.resume()
+              } else {
+                timer.start(task.id, task.boardId!, task.title)
+              }
+            }}
+            className={`mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full transition-colors ${
+              isTimerActive
+                ? 'bg-cyan-500 text-white hover:bg-cyan-600'
+                : 'bg-gray-100 text-gray-400 hover:bg-gray-200 dark:bg-racing-800'
+            }`}
+            title="Zeit-Tracker"
+          >
+            {isTimerRunning ? <Pause size={8} /> : <Clock size={8} />}
+          </button>
+        )}
         {!task.completed && (
           <button
             onClick={(e) => {
               e.stopPropagation()
-              if (isPomodoroActive && isTimerRunning) {
+              if (isPomodoroActive && pomodoro.running) {
                 pomodoro.setRunning(false)
               } else {
                 pomodoro.setActiveTask(task.id, 'project')
@@ -65,13 +90,13 @@ export default function KanbanCard({ task, onClick }: KanbanCardProps) {
               }
             }}
             className={`mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full transition-colors ${
-              isPomodoroActive && isTimerRunning
+              isPomodoroActive && pomodoro.running
                 ? 'bg-emerald-500 text-white hover:bg-emerald-600'
                 : 'bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600 dark:bg-racing-800 dark:text-racing-300 dark:hover:bg-racing-700'
             }`}
-            title={isPomodoroActive && isTimerRunning ? 'Timer pausieren' : 'Fokus-Timer starten'}
+            title={isPomodoroActive && pomodoro.running ? 'Pomodoro pausieren' : 'Pomodoro starten'}
           >
-            {isPomodoroActive && isTimerRunning ? (
+            {isPomodoroActive && pomodoro.running ? (
               <Pause size={8} className="animate-pulse" />
             ) : (
               <Play size={8} className="ml-0.5" />

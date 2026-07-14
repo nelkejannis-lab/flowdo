@@ -36,6 +36,7 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
   const [externalLaunch, setExternalLaunch] = useState(board?.externalLaunch ?? '')
   const [folderId, setFolderId] = useState(board?.folderId ?? '')
   const [responsibleUserId, setResponsibleUserId] = useState(board?.responsibleUserId ?? '')
+  const [timeBudgetHours, setTimeBudgetHours] = useState(board?.timeBudgetMinutes ? String(Math.round(board.timeBudgetMinutes / 60)) : '')
   const [error, setError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [attachments, setAttachments] = useState<Attachment[]>(board?.attachments ?? [])
@@ -55,6 +56,7 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
         externalLaunch: externalLaunch || undefined,
         folderId: folderId || null,
         responsibleUserId: responsibleUserId || null,
+        timeBudgetMinutes: timeBudgetHours ? Number(timeBudgetHours) * 60 : null,
       })
     } else if (templateId) {
       await createFromTemplate(templateId, title.trim())
@@ -148,6 +150,18 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
               </select>
             </div>
           )}
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.timeBudget')}</label>
+          <input
+            type="number"
+            min={0}
+            step={1}
+            value={timeBudgetHours}
+            onChange={(e) => setTimeBudgetHours(e.target.value)}
+            placeholder={t('form.timeBudgetPlaceholder')}
+            className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+          />
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.color')}</label>

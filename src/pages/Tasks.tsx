@@ -17,7 +17,7 @@ import TaskList from '../components/tasks/TaskList'
 import TaskEisenhowerGrid from '../components/tasks/TaskEisenhowerGrid'
 import TaskFormModal from '../components/tasks/TaskFormModal'
 import PriorityBadge from '../components/tasks/PriorityBadge'
-import { formatFriendlyDate, isDueThisWeek, isDueToday, isOverdue, todayISO, parseTaskInput, isCompletedToday, isCompletedThisWeek } from '../utils/date'
+import { formatFriendlyDate, isDueThisWeek, isDueToday, isOverdue, todayISO, parseTaskInput, isCompletedToday, isCompletedThisWeek, isSnoozed } from '../utils/date'
 import { useAiSchedulerStore } from '../store/aiSchedulerStore'
 import { useQuickTaskModalStore } from '../store/quickTaskModalStore'
 
@@ -178,7 +178,7 @@ export default function TasksPage() {
     }
   }, [filterForPills, selectedProject])
 
-  let displayTasks = filtered
+  let displayTasks = filtered.filter((t) => !isSnoozed(t))
   if (searchQuery.trim()) {
     const q = searchQuery.toLowerCase().trim()
     displayTasks = displayTasks.filter(
