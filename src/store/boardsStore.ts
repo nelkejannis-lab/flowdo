@@ -487,7 +487,16 @@ export const useBoardsStore = create<BoardsState>()(
         }
       },
     }),
-    { name: 'flowdo-boards' }
+    {
+      name: 'flowdo-boards',
+      merge: (persisted, current) => ({
+        ...current,
+        ...(persisted as Partial<BoardsState>),
+        boards: (persisted as BoardsState)?.boards ?? current.boards,
+        folders: (persisted as BoardsState)?.folders ?? current.folders,
+        taskStats: (persisted as BoardsState)?.taskStats ?? current.taskStats,
+      }),
+    }
   )
 )
 

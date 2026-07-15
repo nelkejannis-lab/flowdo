@@ -363,7 +363,8 @@ export const useTasksStore = create<TasksState>()(
         const state = persisted as TasksState
         return {
           ...state,
-          tasks: (state.tasks ?? []).map((t) => ({ ...t, attachments: t.attachments ?? [] })),
+          tasks: (state.tasks ?? []).map((t) => ({ ...t, attachments: t.attachments ?? [], subtasks: t.subtasks ?? [], tags: t.tags ?? [] })),
+          taskOrder: state.taskOrder ?? [],
         }
       },
     }

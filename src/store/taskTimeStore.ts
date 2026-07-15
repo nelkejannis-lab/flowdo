@@ -125,6 +125,6 @@ export const useTaskTimeStore = create<TaskTimeState>()(
         return { estimated, actual }
       },
     }),
-    { name: 'flowdo-task-time' }
+    { name: 'flowdo-task-time', onRehydrateStorage: () => (state) => { if (state && !state.entries) state.entries = [] } }
   )
 )

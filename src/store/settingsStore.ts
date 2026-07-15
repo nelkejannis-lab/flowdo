@@ -330,7 +330,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'flowdo-settings',
-      version: 13,
+      version: 14,
       migrate: (persisted, version) => {
         const legacy = persisted as LegacyState & Partial<SettingsState>
         if (version < 1) {
@@ -367,10 +367,21 @@ export const useSettingsStore = create<SettingsState>()(
           weatherCity: hasCustomCity ? city : DEFAULT_WEATHER_CITY,
           weatherCoords: (legacy as any).weatherCoords ?? { ...DEFAULT_WEATHER_COORDS },
           dashboardWidgetOrder: (legacy as any).dashboardWidgetOrder ?? [...DEFAULT_DASHBOARD_WIDGET_ORDER],
+          dailyAgendaOrder: (legacy as any).dailyAgendaOrder ?? {},
+          hrEmail: (legacy as any).hrEmail ?? '',
+          blurVacationForOthers: (legacy as any).blurVacationForOthers ?? true,
+          blurOutOfOfficeForOthers: (legacy as any).blurOutOfOfficeForOthers ?? true,
+          calendarDepartmentFilter: (legacy as any).calendarDepartmentFilter ?? true,
+          requireTaskEstimate: (legacy as any).requireTaskEstimate ?? false,
         }
       },
       onRehydrateStorage: () => (state) => {
-        if (state?.language) i18n.changeLanguage(state.language)
+        if (!state) return
+        if (!state.navOrder?.length) state.navOrder = [...DEFAULT_NAV_ORDER]
+        if (!state.pinnedNavItems) state.pinnedNavItems = []
+        if (!state.dashboardWidgetOrder?.length) state.dashboardWidgetOrder = [...DEFAULT_DASHBOARD_WIDGET_ORDER]
+        if (!state.dailyAgendaOrder) state.dailyAgendaOrder = {}
+        if (state.language) i18n.changeLanguage(state.language)
       },
     }
   )

@@ -66,7 +66,7 @@ export default function AdminPage() {
   const createTeam = useTeamsStore((s) => s.create)
   const removeTeam = useTeamsStore((s) => s.remove)
   const fetchTeamAbsences = useWorkTimeStore((s) => s.fetchTeamAbsences)
-  const teamAbsences = useWorkTimeStore((s) => s.teamAbsences)
+  const teamAbsences = useWorkTimeStore((s) => s.teamAbsences ?? [])
   const boards = useBoardsStore((s) => s.boards)
   const timeEntries = useTaskTimeStore((s) => s.entries)
   const createLink = useOrgJoinStore((s) => s.createLink)
@@ -552,7 +552,7 @@ export default function AdminPage() {
                     <p className="text-sm font-semibold">{tm.name}</p>
                     <p className="text-xs text-gray-400">
                       {tm.departmentId ? departments.find((d) => d.id === tm.departmentId)?.name : t('teams.noDepartment')}
-                      · {tm.members.length} {t('stats.members').toLowerCase()}
+                      · {tm.members?.length ?? 0} {t('stats.members').toLowerCase()}
                     </p>
                   </div>
                   <button type="button" onClick={() => void removeTeam(tm.id)} className="text-red-400"><Trash2 size={16} /></button>

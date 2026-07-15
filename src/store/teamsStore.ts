@@ -53,7 +53,7 @@ export const useTeamsStore = create<TeamsState>()((set, get) => ({
         name: t.name,
         orgId: t.org_id ?? undefined,
         departmentId: t.department_id ?? undefined,
-        members: t.team_members.map((m) => single(m.profile)).filter(Boolean),
+        members: (t.team_members ?? []).map((m) => single(m.profile)).filter(Boolean),
       }))
       set({ teams, loading: false })
     } else {

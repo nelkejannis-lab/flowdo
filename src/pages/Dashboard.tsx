@@ -35,7 +35,7 @@ import { GripHorizontal } from 'lucide-react'
 import OnboardingPermissions from '../components/dashboard/OnboardingPermissions'
 import OnboardingWizard from '../components/onboarding/OnboardingWizard'
 import MorningReportModal from '../components/dashboard/MorningReportModal'
-import { useSettingsStore } from '../store/settingsStore'
+import { useSettingsStore, DEFAULT_DASHBOARD_WIDGET_ORDER } from '../store/settingsStore'
 import { isDueThisWeek, isDueToday, isOverdue, todayISO, parseNaturalDate, parseTaskInput, parseAppointmentInput, isCompletedToday } from '../utils/date'
 import { useQuickTaskModalStore } from '../store/quickTaskModalStore'
 
@@ -102,7 +102,7 @@ export default function Dashboard() {
     const dismissed = localStorage.getItem('morningReportDismissed')
     return hour >= 5 && hour < 12 && dismissed !== today
   })
-  const widgetOrder = useSettingsStore((s) => s.dashboardWidgetOrder)
+  const widgetOrder = useSettingsStore((s) => s.dashboardWidgetOrder ?? DEFAULT_DASHBOARD_WIDGET_ORDER)
   const setWidgetOrder = useSettingsStore((s) => s.setDashboardWidgetOrder)
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),

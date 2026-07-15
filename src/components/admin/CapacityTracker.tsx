@@ -8,8 +8,8 @@ import { formatHM } from '../../utils/worktime'
 
 export default function CapacityTracker() {
   const { t } = useTranslation('admin')
-  const members = useOrganizationStore((s) => s.members)
-  const timeEntries = useTaskTimeStore((s) => s.entries)
+  const members = useOrganizationStore((s) => s.members ?? [])
+  const timeEntries = useTaskTimeStore((s) => s.entries ?? [])
   const settings = useWorkTimeStore((s) => s.settings)
 
   const weeklyContractMinutes = Math.round(settings.weeklyHours * 60)

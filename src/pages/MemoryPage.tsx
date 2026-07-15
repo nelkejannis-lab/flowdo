@@ -9,7 +9,7 @@ const SOURCES: (MemorySource | 'all')[] = ['all', 'whatsapp', 'manual', 'meeting
 
 export default function MemoryPage() {
   const { t } = useTranslation('memory')
-  const items = useMemoryStore((s) => s.items)
+  const items = useMemoryStore((s) => s.items ?? [])
   const fetchAll = useMemoryStore((s) => s.fetchAll)
   const deleteMemory = useMemoryStore((s) => s.deleteMemory)
   const [filter, setFilter] = useState<MemorySource | 'all'>('all')

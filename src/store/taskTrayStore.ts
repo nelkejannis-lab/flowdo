@@ -35,6 +35,11 @@ export const useTaskTrayStore = create<TaskTrayState>()(
     {
       name: 'flowdo-task-tray',
       version: 1,
+      merge: (persisted, current) => ({
+        ...current,
+        ...(persisted as Partial<TaskTrayState>),
+        tasks: (persisted as TaskTrayState)?.tasks ?? current.tasks,
+      }),
     }
   )
 )

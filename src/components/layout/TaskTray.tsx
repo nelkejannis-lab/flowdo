@@ -8,7 +8,7 @@ import ProjectTaskFormModal from '../boards/ProjectTaskFormModal'
 
 export default function TaskTray() {
   const { t } = useTranslation('common')
-  const { tasks, remove } = useTaskTrayStore()
+  const { tasks = [], remove } = useTaskTrayStore()
   const boards = useBoardsStore((s) => s.boards)
 
   const [activeTask, setActiveTask] = useState<any | null>(null)

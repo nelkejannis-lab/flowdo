@@ -93,6 +93,6 @@ export const useMemoryStore = create<MemoryState>()(
         }
       },
     }),
-    { name: 'flowdo-memory' }
+    { name: 'flowdo-memory', onRehydrateStorage: () => (state) => { if (state && !state.items) state.items = [] } }
   )
 )

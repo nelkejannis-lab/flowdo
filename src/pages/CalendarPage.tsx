@@ -179,8 +179,8 @@ export default function CalendarPage() {
   useEffect(() => {
     if (!teamFilterId) { setTeamEntries([]); return }
     const team = teams.find((t) => t.id === teamFilterId)
-    if (!team || team.members.length === 0) { setTeamEntries([]); return }
-    const memberIds = team.members.map((m) => m.id)
+    if (!team || (team.members?.length ?? 0) === 0) { setTeamEntries([]); return }
+    const memberIds = (team.members ?? []).map((m) => m.id)
     supabase
       .from('calendar_entries')
       .select('*, owner:profiles!calendar_entries_owner_id_fkey(*)')
@@ -288,7 +288,7 @@ export default function CalendarPage() {
                     >
                       <Users size={14} className="flex-shrink-0 text-gray-400" />
                       {tm.name}
-                      <span className="ml-auto text-xs text-gray-400">{tm.members.length}</span>
+                      <span className="ml-auto text-xs text-gray-400">{tm.members?.length ?? 0}</span>
                     </button>
                   ))}
                 </div>

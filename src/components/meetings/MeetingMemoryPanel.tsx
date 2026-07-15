@@ -12,7 +12,7 @@ interface Props {
 
 export default function MeetingMemoryPanel({ meetingId, defaultSource = 'whatsapp', compact }: Props) {
   const { t } = useTranslation('memory')
-  const items = useMemoryStore((s) => s.items)
+  const items = useMemoryStore((s) => s.items ?? [])
   const fetchAll = useMemoryStore((s) => s.fetchAll)
   const addMemory = useMemoryStore((s) => s.addMemory)
   const deleteMemory = useMemoryStore((s) => s.deleteMemory)

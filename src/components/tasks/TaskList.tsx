@@ -78,7 +78,7 @@ export default function TaskList({ tasks, groupByDate = false, emptyMessage, fla
   const [visibleCount, setVisibleCount] = useState(20)
   const boards = useBoardsStore((s) => s.boards)
   const reorderTasks = useTasksStore((s) => s.reorderTasks)
-  const taskOrder = useTasksStore((s) => s.taskOrder)
+  const taskOrder = useTasksStore((s) => s.taskOrder ?? [])
   const editingBoard = editingTask?.boardId ? boards.find((b) => b.id === editingTask.boardId) : undefined
 
   const activeTasks = useMemo(() => {
