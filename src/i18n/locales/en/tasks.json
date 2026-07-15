@@ -83,7 +83,8 @@
     "creating": "Creating…",
     "sending": "Sending…",
     "send": "Send",
-    "add": "Add"
+    "add": "Add",
+    "estimateRequired": "Please enter an estimated duration (minutes)."
   },
   "toast": {
     "taskDeleted": "Task deleted",
@@ -105,12 +106,14 @@
       "week": "Due this week",
       "inbox": "Inbox",
       "completed": "Done",
-      "someday": "Someday"
+      "someday": "Someday",
+      "priority": "Priority list"
     },
     "tabs": {
       "tasks": "All Active",
       "today": "Today",
       "week": "Week",
+      "priority": "Priority",
       "someday": "Someday",
       "completed": "Done",
       "matrix": "Matrix"

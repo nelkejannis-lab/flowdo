@@ -28,7 +28,27 @@
     "add": "Add",
     "department": "Department (optional)",
     "searching": "Searching…",
-    "noResults": "No users found"
+    "noResults": "No users found",
+    "companyLink": "Company invite link",
+    "companyLinkDesc": "Share this link — new colleagues auto-join your organization.",
+    "generateLink": "Create link",
+    "copyLink": "Copy link",
+    "externalEmail": "Email invite (external)",
+    "externalEmailPlaceholder": "name@company.com",
+    "sendExternal": "Send invite"
+  },
+  "join": {
+    "title": "Join organization",
+    "signInFirst": "Sign in to join the team.",
+    "goToLogin": "Go to login",
+    "joining": "Joining organization…",
+    "success": "Successfully joined!",
+    "failed": "Join failed",
+    "cloudRequired": "Cloud sign-in required."
+  },
+  "capacity": {
+    "title": "Capacity (this week)",
+    "weekHint": "Contract: {{hours}}h/week"
   },
   "members": {
     "title": "Members & roles",

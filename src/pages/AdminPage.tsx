@@ -12,7 +12,9 @@ import { useWorkTimeStore } from '../store/workTimeStore'
 import { useBoardsStore } from '../store/boardsStore'
 import { useTaskTimeStore } from '../store/taskTimeStore'
 import AbsenceApprovals from '../components/worktime/AbsenceApprovals'
+import CapacityTracker from '../components/admin/CapacityTracker'
 import UserAvatar from '../components/shared/UserAvatar'
+import { useOrgJoinStore } from '../store/orgJoinStore'
 import type { AppRole, OrgRole } from '../types'
 import {
   APP_ROLE_LABELS,
@@ -67,6 +69,9 @@ export default function AdminPage() {
   const teamAbsences = useWorkTimeStore((s) => s.teamAbsences)
   const boards = useBoardsStore((s) => s.boards)
   const timeEntries = useTaskTimeStore((s) => s.entries)
+  const createLink = useOrgJoinStore((s) => s.createLink)
+  const fetchLinks = useOrgJoinStore((s) => s.fetchLinks)
+  const links = useOrgJoinStore((s) => s.links)
 
   const [tab, setTab] = useState<AdminTab>('overview')
   const [orgName, setOrgName] = useState('')
@@ -87,6 +92,8 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState<string | null>(null)
+  const [companyLink, setCompanyLink] = useState<string | null>(null)
+  const [externalEmail, setExternalEmail] = useState('')
 
   const superAdmin = isSuperAdmin(profile)
   const hasAccess = canAccessOrgAdminPanel(profile, myRole)
@@ -101,8 +108,9 @@ export default function AdminPage() {
       void fetchDepartments(organization.id)
       void fetchTeams(organization.id)
       void fetchTeamAbsences()
+      void fetchLinks(organization.id)
     }
-  }, [organization, fetchDepartments, fetchTeams, fetchTeamAbsences])
+  }, [organization, fetchDepartments, fetchTeams, fetchTeamAbsences, fetchLinks])
 
   useEffect(() => {
     if (inviteSearchTimeout.current) clearTimeout(inviteSearchTimeout.current)
@@ -321,6 +329,7 @@ export default function AdminPage() {
           </div>
           <div className="grid gap-4 lg:grid-cols-2">
             <AbsenceApprovals />
+            <CapacityTracker />
             <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
               <h2 className="mb-2 text-sm font-semibold">{t('reports.title')}</h2>
               <p className="text-xs text-gray-500">{t('reports.trackedHours', { hours: (totalTrackedMinutes / 60).toFixed(1) })}</p>
@@ -392,6 +401,55 @@ export default function AdminPage() {
               </button>
             </div>
           </div>
+
+          <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+            <h2 className="mb-1 text-sm font-semibold">{t('invite.companyLink')}</h2>
+            <p className="mb-3 text-xs text-gray-400">{t('invite.companyLinkDesc')}</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!organization) return
+                  const res = await createLink(organization.id, inviteRole)
+                  if (res) { setCompanyLink(res.url); await navigator.clipboard.writeText(res.url) }
+                }}
+                className="rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-white"
+              >
+                {t('invite.generateLink')}
+              </button>
+              {companyLink && (
+                <button type="button" onClick={() => void navigator.clipboard.writeText(companyLink)} className="rounded-lg border border-gray-200 px-3 py-2 text-xs dark:border-racing-700">
+                  {t('invite.copyLink')}
+                </button>
+              )}
+            </div>
+            {(companyLink || links[0]) && (
+              <p className="mt-2 break-all text-xs text-gray-500">{companyLink ?? `${window.location.origin}/join/${links[0]?.token}`}</p>
+            )}
+            <div className="mt-4 flex gap-2">
+              <input
+                type="email"
+                value={externalEmail}
+                onChange={(e) => setExternalEmail(e.target.value)}
+                placeholder={t('invite.externalEmailPlaceholder')}
+                className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-racing-700"
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!organization || !externalEmail.trim()) return
+                  const res = await createLink(organization.id, inviteRole)
+                  const url = res?.url ?? companyLink
+                  if (!url) return
+                  window.location.href = `mailto:${encodeURIComponent(externalEmail.trim())}?subject=${encodeURIComponent(t('invite.companyLink'))}&body=${encodeURIComponent(url)}`
+                }}
+                className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold dark:border-racing-700"
+              >
+                {t('invite.sendExternal')}
+              </button>
+            </div>
+          </div>
+
           <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
             <h2 className="mb-3 text-sm font-semibold">{t('members.title')}</h2>
             <ul className="flex flex-col gap-2">

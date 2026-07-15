@@ -177,5 +177,12 @@
     "delete": "Delete",
     "save": "Save",
     "add": "Add"
+  },
+  "evaluation": {
+    "title": "Project evaluation",
+    "estimated": "Estimated",
+    "actual": "Actual time",
+    "variance": "Variance",
+    "completion": "Progress"
   }
 }

@@ -1,0 +1,20 @@
+{
+  "pageTitle": "Memory",
+  "pageIntro": "Capture notes from WhatsApp, meetings, or quick thoughts — your personal knowledge inbox.",
+  "panelTitle": "Memory",
+  "sourceHint": "WhatsApp-style capture",
+  "placeholder": "Paste a message, note, or idea…",
+  "add": "Save",
+  "saved": "Saved!",
+  "empty": "No memories yet. Paste something above.",
+  "delete": "Delete",
+  "linkedBrain": "Linked to Brain",
+  "whatsappNote": "Forward WhatsApp messages here to keep them searchable.",
+  "sources": {
+    "all": "All",
+    "whatsapp": "WhatsApp",
+    "manual": "Manual",
+    "meeting": "Meeting",
+    "brain": "Brain"
+  }
+}

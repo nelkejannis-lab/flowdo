@@ -172,6 +172,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     { key: 'calendar', to: '/calendar', icon: <CalendarDays size={18} />, label: t('sidebar.nav.calendar'), visible: !!featureVisibility.calendar },
     { key: 'termine', to: '/termine', icon: <CalendarClock size={18} />, label: t('sidebar.nav.termine'), visible: true },
     { key: 'brain', to: '/gehirn', icon: <Brain size={18} />, label: t('sidebar.nav.brain'), visible: true },
+    { key: 'memory', to: '/memory', icon: <MessageCircle size={18} />, label: t('sidebar.nav.memory'), visible: true },
     { key: 'eisenhower', to: '/eisenhower', icon: <Grid2x2 size={18} />, label: t('sidebar.nav.eisenhower'), visible: !!featureVisibility.eisenhower },
     { key: 'worktime', to: '/arbeitszeit', icon: <Clock size={18} />, label: t('sidebar.nav.worktime'), visible: !!featureVisibility.worktime },
     { key: 'aiScheduler', to: '/ki-termine', icon: <Sparkles size={18} />, label: t('sidebar.nav.aiScheduler'), visible: isSupabaseConfigured && !!featureVisibility.aiScheduler },
@@ -198,7 +199,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   // still follows navOrder, so drag-to-reorder (within a group) keeps working.
   const NAV_GROUPS: { id: string; label: string | null; keys: NavItemKey[] }[] = [
     { id: 'home', label: null, keys: ['dashboard'] },
-    { id: 'tasks', label: t('sidebar.groups.tasks'), keys: ['inbox', 'tasks', 'brain', 'projekte'] },
+    { id: 'tasks', label: t('sidebar.groups.tasks'), keys: ['inbox', 'tasks', 'brain', 'memory', 'projekte'] },
     { id: 'planning', label: t('sidebar.groups.planning'), keys: ['calendar', 'termine', 'worktime', 'aiScheduler', 'meetings'] },
     { id: 'team', label: t('sidebar.groups.team'), keys: ['chat', 'friends', 'social'] },
   ]

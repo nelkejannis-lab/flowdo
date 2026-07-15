@@ -70,6 +70,15 @@ export const useTaskTimeStore = create<TaskTimeState>()(
         const entry: TaskTimeEntry = { ...input, id: createId(), createdAt: new Date().toISOString() }
         set((s) => ({ entries: [entry, ...s.entries] }))
         await syncEntry(entry)
+        if (input.taskId) {
+          const { useAiDurationStore, taskDurationKey } = await import('./aiDurationStore')
+          const { useProjectTasksStore } = await import('./projectTasksStore')
+          const task = useProjectTasksStore.getState().myTasks.find((t) => t.id === input.taskId)
+          if (task) {
+            const key = taskDurationKey(task)
+            useAiDurationStore.getState().recordActual(key, task.estimatedMinutes, input.minutes)
+          }
+        }
       },
 
       updateEntry: async (id, updates) => {

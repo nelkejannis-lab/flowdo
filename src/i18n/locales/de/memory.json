@@ -1,0 +1,20 @@
+{
+  "pageTitle": "Memory",
+  "pageIntro": "Notizen aus WhatsApp, Meetings oder spontane Gedanken — dein persönlicher Wissensspeicher.",
+  "panelTitle": "Memory",
+  "sourceHint": "WhatsApp-Style Erfassung",
+  "placeholder": "Nachricht, Notiz oder Idee einfügen…",
+  "add": "Speichern",
+  "saved": "Gespeichert!",
+  "empty": "Noch keine Einträge. Füge oben etwas ein.",
+  "delete": "Löschen",
+  "linkedBrain": "Mit Gehirn verknüpft",
+  "whatsappNote": "WhatsApp-Nachrichten hier einfügen, um sie durchsuchbar zu halten.",
+  "sources": {
+    "all": "Alle",
+    "whatsapp": "WhatsApp",
+    "manual": "Manuell",
+    "meeting": "Meeting",
+    "brain": "Gehirn"
+  }
+}

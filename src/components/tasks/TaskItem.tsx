@@ -17,6 +17,7 @@ interface TaskItemProps {
   task: Task
   onClick?: () => void
   showBoard?: boolean
+  priorityRank?: number
 }
 
 const friendlyDateKeys: Record<string, string> = {
@@ -25,7 +26,7 @@ const friendlyDateKeys: Record<string, string> = {
   'Gestern': 'item.dateYesterday',
 }
 
-export default function TaskItem({ task, onClick, showBoard = true }: TaskItemProps) {
+export default function TaskItem({ task, onClick, showBoard = true, priorityRank }: TaskItemProps) {
   const { t } = useTranslation('tasks')
   const toggleTaskCompleted = useTasksStore((s) => s.toggleTaskCompleted)
   const snoozeTask = useTasksStore((s) => s.snoozeTask)
@@ -55,6 +56,13 @@ export default function TaskItem({ task, onClick, showBoard = true }: TaskItemPr
   return (
     <div className="card-apple group relative transition-all duration-300 hover:shadow-apple-md hover:-translate-y-[1px] active:scale-[0.98]">
       <div className="flex items-start gap-3 px-3 py-3">
+        {/* Priority rank number */}
+        {priorityRank != null && !task.completed && (
+          <span className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-accent/10 text-xs font-bold tabular-nums text-accent">
+            {priorityRank}
+          </span>
+        )}
+
         {/* Complete toggle */}
         <button
           onClick={() => {

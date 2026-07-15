@@ -28,7 +28,27 @@
     "add": "Hinzufügen",
     "department": "Bereich (optional)",
     "searching": "Suche…",
-    "noResults": "Keine Nutzer gefunden"
+    "noResults": "Keine Nutzer gefunden",
+    "companyLink": "Firmen-Einladungslink",
+    "companyLinkDesc": "Teile diesen Link — neue Kollegen treten automatisch der Organisation bei.",
+    "generateLink": "Link erstellen",
+    "copyLink": "Link kopieren",
+    "externalEmail": "E-Mail-Einladung (extern)",
+    "externalEmailPlaceholder": "name@firma.de",
+    "sendExternal": "Einladung senden"
+  },
+  "join": {
+    "title": "Organisation beitreten",
+    "signInFirst": "Melde dich an, um dem Team beizutreten.",
+    "goToLogin": "Zur Anmeldung",
+    "joining": "Trete Organisation bei…",
+    "success": "Erfolgreich beigetreten!",
+    "failed": "Beitritt fehlgeschlagen",
+    "cloudRequired": "Cloud-Anmeldung erforderlich."
+  },
+  "capacity": {
+    "title": "Kapazität (diese Woche)",
+    "weekHint": "Vertrag: {{hours}}h/Woche"
   },
   "members": {
     "title": "Mitglieder & Rollen",

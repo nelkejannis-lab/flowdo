@@ -45,6 +45,58 @@ function shortPlaceName(s: PlaceSuggestion) {
   return s.display_name.split(', ').slice(0, 3).join(', ')
 }
 
+function HrEmailSettings() {
+  const hrEmail = useSettingsStore((s) => s.hrEmail)
+  const setHrEmail = useSettingsStore((s) => s.setHrEmail)
+  const [local, setLocal] = useState(hrEmail)
+  const [saved, setSaved] = useState(false)
+  useEffect(() => { setLocal(hrEmail) }, [hrEmail])
+  return (
+    <div className="flex gap-2">
+      <input
+        type="email"
+        value={local}
+        onChange={(e) => setLocal(e.target.value)}
+        placeholder="hr@firma.de"
+        className="flex-1 rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+      />
+      <button
+        onClick={() => { setHrEmail(local); setSaved(true); setTimeout(() => setSaved(false), 2000) }}
+        className="rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-white"
+      >
+        {saved ? '✓' : 'Save'}
+      </button>
+    </div>
+  )
+}
+
+function CalendarPrivacySettings() {
+  const blurVacation = useSettingsStore((s) => s.blurVacationForOthers)
+  const blurOoo = useSettingsStore((s) => s.blurOutOfOfficeForOthers)
+  const deptFilter = useSettingsStore((s) => s.calendarDepartmentFilter)
+  const requireEstimate = useSettingsStore((s) => s.requireTaskEstimate)
+  const setBlurVacation = useSettingsStore((s) => s.setBlurVacationForOthers)
+  const setBlurOoo = useSettingsStore((s) => s.setBlurOutOfOfficeForOthers)
+  const setDeptFilter = useSettingsStore((s) => s.setCalendarDepartmentFilter)
+  const setRequireEstimate = useSettingsStore((s) => s.setRequireTaskEstimate)
+  const toggles = [
+    { label: 'Urlaub für Kollegen ausblenden / Hide vacation', value: blurVacation, set: setBlurVacation },
+    { label: 'Außer Haus für Kollegen ausblenden / Hide out-of-office', value: blurOoo, set: setBlurOoo },
+    { label: 'Bereichsfilter im Kalender / Department filter', value: deptFilter, set: setDeptFilter },
+    { label: 'Geschätzte Zeit Pflicht bei Projektaufgaben / Require task estimate', value: requireEstimate, set: setRequireEstimate },
+  ]
+  return (
+    <div className="flex flex-col gap-2">
+      {toggles.map((t) => (
+        <label key={t.label} className="flex cursor-pointer items-center justify-between rounded-lg border border-gray-100 px-3 py-2 dark:border-racing-800">
+          <span className="text-xs text-gray-600 dark:text-racing-200">{t.label}</span>
+          <input type="checkbox" checked={t.value} onChange={(e) => t.set(e.target.checked)} className="h-4 w-4 accent-accent" />
+        </label>
+      ))}
+    </div>
+  )
+}
+
 function WeatherCitySettings() {
   const weatherCity = useSettingsStore((s) => s.weatherCity)
   const setWeatherCity = useSettingsStore((s) => s.setWeatherCity)
@@ -520,6 +572,11 @@ export default function SettingsPage() {
 
           {/* Dashboard Widgets */}
           <DashboardWidgetSection dashboardVisibility={dashboardVisibility} toggleDashboardWidget={toggleDashboardWidget} />
+
+          <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+            <h2 className="mb-3 text-sm font-semibold">Kalender & Projekte / Calendar & projects</h2>
+            <CalendarPrivacySettings />
+          </div>
 
           {/* Aufgaben */}
           <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
@@ -1024,6 +1081,12 @@ export default function SettingsPage() {
               )}
             </div>
           </div>
+
+          <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+            <h2 className="mb-1 text-sm font-semibold">HR / Krankmeldung</h2>
+            <p className="mb-3 text-xs text-gray-400">E-Mail der Personalabteilung für automatische Krankmeldungen und Arbeitszeitnachweise.</p>
+            <HrEmailSettings />
+          </div>
         </div>
       )}
 
@@ -1062,6 +1125,7 @@ const NAV_META: Record<NavItemKey, { icon: React.ReactNode; label: string; featu
   calendar:    { icon: <CalendarDays size={16} />, label: 'Kalender', featureKey: 'calendar' },
   termine:     { icon: <CalendarClock size={16} />, label: 'Termine' },
   brain:       { icon: <Brain size={16} />, label: 'Gehirn' },
+  memory:      { icon: <MessageCircle size={16} />, label: 'Memory' },
   eisenhower:  { icon: <Grid2x2 size={16} />, label: 'Eisenhower', featureKey: 'eisenhower' },
   worktime:    { icon: <Clock size={16} />, label: 'Arbeitszeit', featureKey: 'worktime' },
   aiScheduler: { icon: <Sparkles size={16} />, label: 'KI-Assistent', featureKey: 'aiScheduler', supabaseOnly: true },

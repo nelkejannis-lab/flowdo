@@ -15,7 +15,8 @@ interface CalendarConnectionsState {
   fetch: () => Promise<void>
   disconnect: (provider: string) => Promise<void>
   connectIcal: (url: string) => Promise<string | null>
-  sync: () => Promise<{ synced: string[]; errors: string[] }>
+  sync: () => Promise<{ synced: string[]; errors: string[]; cancelled?: number }>
+  pushEntryToTeams: (entry: { title: string; date: string; startTime?: string; endTime?: string; meetingLink?: string }) => Promise<string | null>
   startOAuth: (provider: 'google' | 'microsoft') => Promise<void>
 }
 
@@ -92,6 +93,23 @@ export const useCalendarConnectionsStore = create<CalendarConnectionsState>()((s
     })
     const result = await res.json()
     set({ syncing: false })
-    return result
+    return result as { synced: string[]; errors: string[]; cancelled?: number }
+  },
+
+  pushEntryToTeams: async (entry) => {
+    const msConn = useCalendarConnectionsStore.getState().connections.find((c) => c.provider === 'microsoft')
+    if (!msConn) return 'Microsoft/Teams not connected'
+    const { data: { session } } = await supabase.auth.getSession()
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
+    const res = await fetch(`${supabaseUrl}/functions/v1/calendar-sync`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session?.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ action: 'push', entry }),
+    })
+    const json = await res.json()
+    return json.error ?? null
   },
 }))

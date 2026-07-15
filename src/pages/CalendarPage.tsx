@@ -18,7 +18,7 @@ import { ChevronLeft, ChevronRight, Plus, Users, X, Plane, Home, ListTodo, Panel
 import { useFriendsStore } from '../store/friendsStore'
 import { useTeamsStore } from '../store/teamsStore'
 import { useCalendarConnectionsStore } from '../store/calendarConnectionsStore'
-import { supabase } from '../lib/supabase'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import MonthView from '../components/calendar/MonthView'
 import WeekView from '../components/calendar/WeekView'
 import DayView from '../components/calendar/DayView'
@@ -33,7 +33,8 @@ import { useTasksStore } from '../store/tasksStore'
 import { useProjectTasksStore } from '../store/projectTasksStore'
 import { useEventsStore } from '../store/eventsStore'
 import { useCalendarEntriesStore } from '../store/calendarEntriesStore'
-import { isSupabaseConfigured } from '../lib/supabase'
+import { useSettingsStore } from '../store/settingsStore'
+import { useAuthStore } from '../store/authStore'
 import { toISODate } from '../utils/date'
 import { mergeCalendarEntries } from '../utils/mergeEntries'
 import { expandRecurringEntries } from '../utils/recurrence'
@@ -105,6 +106,13 @@ export default function CalendarPage() {
   const teamFilterRef = useRef<HTMLDivElement>(null)
   const teams = useTeamsStore((s) => s.teams)
   const fetchTeams = useTeamsStore((s) => s.fetch)
+  const syncCalendars = useCalendarConnectionsStore((s) => s.sync)
+  const syncing = useCalendarConnectionsStore((s) => s.syncing)
+  const profile = useAuthStore((s) => s.profile)
+  const blurVacation = useSettingsStore((s) => s.blurVacationForOthers)
+  const blurOoo = useSettingsStore((s) => s.blurOutOfOfficeForOthers)
+  const calendarDepartmentFilter = useSettingsStore((s) => s.calendarDepartmentFilter)
+  const [showColleagueAbsences, setShowColleagueAbsences] = useState(false)
 
   useEffect(() => {
     if (isSupabaseConfigured) { fetchEntries(); fetchFriends(); fetchTeams(); fetchConnections(); fetchEvents(); fetchMyProjectTasks() }
@@ -371,12 +379,40 @@ export default function CalendarPage() {
                       </button>
                     )
                   })}
+                  <div className="border-t border-gray-100 px-4 py-2 dark:border-racing-800">
+                    <button
+                      type="button"
+                      disabled={syncing}
+                      onClick={() => void syncCalendars()}
+                      className="w-full rounded-lg bg-accent/10 px-3 py-2 text-xs font-medium text-accent hover:bg-accent/20 disabled:opacity-50"
+                    >
+                      {syncing ? t('externalCalendars.syncing') : t('externalCalendars.syncTeams')}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
           )}
-          {/* Abwesenheits-Filter */}
-          <div className="flex items-center gap-1 rounded-lg border border-gray-200 p-1 dark:border-racing-700">
+          {/* Privacy + Abwesenheits-Filter */}
+          <div className="flex flex-wrap items-center gap-1 rounded-lg border border-gray-200 p-1 dark:border-racing-700">
+            <button
+              onClick={() => setShowColleagueAbsences((v) => !v)}
+              className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${showColleagueAbsences ? 'bg-accent text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'}`}
+            >
+              {t('privacy.showColleagueAbsences')}
+            </button>
+            {calendarDepartmentFilter && teams.length > 0 && (
+              <select
+                value={teamFilterId ?? ''}
+                onChange={(e) => setTeamFilterId(e.target.value || null)}
+                className="rounded bg-transparent px-2 py-1 text-xs text-gray-500 focus:outline-none"
+              >
+                <option value="">{t('privacy.departmentFilter')}</option>
+                {teams.map((tm) => (
+                  <option key={tm.id} value={tm.id}>{tm.name}</option>
+                ))}
+              </select>
+            )}
             <button
               onClick={() => setAbsenceFilter(absenceFilter === 'reise' ? null : 'reise')}
               className={`flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium transition-colors ${absenceFilter === 'reise' ? 'bg-blue-500 text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'}`}
@@ -490,7 +526,7 @@ export default function CalendarPage() {
 
         {/* Below the calendar: absence overview + next-week todos to drag in */}
         <div className="grid gap-4 lg:grid-cols-2">
-          {isSupabaseConfigured && <TeamAvailabilitySidebar entries={filteredEntries} />}
+          {isSupabaseConfigured && <TeamAvailabilitySidebar entries={filteredEntries} blurVacation={blurVacation} blurOutOfOffice={blurOoo} showColleagueAbsences={showColleagueAbsences} currentUserId={profile?.id} />}
           <CalendarTodoPanel tasks={tasks} onTaskClick={(task) => setEditingTask(task)} />
         </div>
         {showUpcoming && <UpcomingPanel tasks={tasks} entries={entries} />}

@@ -38,6 +38,8 @@ const AdminPage = lazy(() => import('./pages/AdminPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const SecondBrainPage = lazy(() => import('./pages/SecondBrainPage'))
 const MeetingsPage = lazy(() => import('./pages/MeetingsPage'))
+const JoinOrgPage = lazy(() => import('./pages/JoinOrgPage'))
+const MemoryPage = lazy(() => import('./pages/MemoryPage'))
 const DatenschutzPage = lazy(() => import('./pages/legal/DatenschutzPage'))
 const ImpressumPage = lazy(() => import('./pages/legal/ImpressumPage'))
 const InstagramCallbackPage = lazy(() => import('./pages/InstagramCallbackPage'))
@@ -113,6 +115,14 @@ export default function App() {
     return unsubscribe
   }, [init])
 
+  if (location.pathname.startsWith('/join/')) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <JoinOrgPage />
+      </Suspense>
+    )
+  }
+
   if (location.pathname === '/datenschutz') {
     return (
       <Suspense fallback={<PageLoader />}>
@@ -124,6 +134,14 @@ export default function App() {
     return (
       <Suspense fallback={<PageLoader />}>
         <ImpressumPage />
+      </Suspense>
+    )
+  }
+
+  if (location.pathname.startsWith('/join/')) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <JoinOrgPage />
       </Suspense>
     )
   }
@@ -163,6 +181,7 @@ export default function App() {
     <Routes>
       <Route path="/datenschutz" element={<DatenschutzPage />} />
       <Route path="/impressum" element={<ImpressumPage />} />
+      <Route path="/join/:token" element={<JoinOrgPage />} />
       <Route element={<Layout />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/tasks" element={<TasksPage />} />
@@ -178,6 +197,7 @@ export default function App() {
         <Route path="/social/:accountId" element={isSupabaseConfigured ? <SocialAccountDetailPage /> : <Navigate to="/" replace />} />
         <Route path="/instagram-callback" element={<InstagramCallbackPage />} />
         <Route path="/gehirn" element={<SecondBrainPage />} />
+        <Route path="/memory" element={<MemoryPage />} />
         <Route path="/meetings" element={<MeetingsPage />} />
         <Route path="/ki-termine" element={isSupabaseConfigured ? <AiSchedulerPage /> : <Navigate to="/" replace />} />
         <Route path="/chat" element={isSupabaseConfigured ? <ChatPage /> : <Navigate to="/" replace />} />

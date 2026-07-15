@@ -17,6 +17,7 @@ export type NavItemKey =
   | 'calendar'
   | 'termine'
   | 'brain'
+  | 'memory'
   | 'eisenhower'
   | 'worktime'
   | 'aiScheduler'
@@ -34,6 +35,7 @@ export const DEFAULT_NAV_ORDER: NavItemKey[] = [
   'calendar',
   'termine',
   'brain',
+  'memory',
   'eisenhower',
   'worktime',
   'aiScheduler',
@@ -55,6 +57,7 @@ export const DEFAULT_NAV_VISIBILITY: Record<NavItemKey, boolean> = {
   calendar: true,
   termine: true,
   brain: true,
+  memory: true,
   eisenhower: true,
   worktime: true,
   aiScheduler: true,
@@ -122,6 +125,11 @@ interface SettingsState {
   weatherCoords: WeatherCoords
   weatherGpsAsked: boolean
   hideCompletedTasks: boolean
+  hrEmail: string
+  blurVacationForOthers: boolean
+  blurOutOfOfficeForOthers: boolean
+  calendarDepartmentFilter: boolean
+  requireTaskEstimate: boolean
   dashboardWidgetOrder: string[]
   dailyAgendaOrder: Record<string, string[]>
   setMode: (mode: Mode) => void
@@ -147,6 +155,11 @@ interface SettingsState {
   setDashboardWidgetOrder: (order: string[]) => void
   setDailyAgendaOrder: (date: string, order: string[]) => void
   toggleHideCompletedTasks: () => void
+  setHrEmail: (email: string) => void
+  setBlurVacationForOthers: (v: boolean) => void
+  setBlurOutOfOfficeForOthers: (v: boolean) => void
+  setCalendarDepartmentFilter: (v: boolean) => void
+  setRequireTaskEstimate: (v: boolean) => void
   importSettings: (settings: any) => void
   resetSettings: () => void
   syncNow: () => void
@@ -178,6 +191,11 @@ export const useSettingsStore = create<SettingsState>()(
       weatherCoords: { ...DEFAULT_WEATHER_COORDS },
       weatherGpsAsked: false,
       hideCompletedTasks: true,
+      hrEmail: '',
+      blurVacationForOthers: true,
+      blurOutOfOfficeForOthers: true,
+      calendarDepartmentFilter: true,
+      requireTaskEstimate: false,
       dashboardWidgetOrder: [...DEFAULT_DASHBOARD_WIDGET_ORDER],
       dailyAgendaOrder: {},
       setMode: (mode) => set({ mode }),
@@ -221,6 +239,11 @@ export const useSettingsStore = create<SettingsState>()(
       setWeatherGpsAsked: () => set({ weatherGpsAsked: true }),
       setDashboardWidgetOrder: (dashboardWidgetOrder) => set({ dashboardWidgetOrder }),
       toggleHideCompletedTasks: () => set((s) => ({ hideCompletedTasks: !s.hideCompletedTasks })),
+      setHrEmail: (hrEmail) => set({ hrEmail: hrEmail.trim() }),
+      setBlurVacationForOthers: (blurVacationForOthers) => set({ blurVacationForOthers }),
+      setBlurOutOfOfficeForOthers: (blurOutOfOfficeForOthers) => set({ blurOutOfOfficeForOthers }),
+      setCalendarDepartmentFilter: (calendarDepartmentFilter) => set({ calendarDepartmentFilter }),
+      setRequireTaskEstimate: (requireTaskEstimate) => set({ requireTaskEstimate }),
       importSettings: (settings) => {
         if (!settings) return
         const current = useSettingsStore.getState()
@@ -248,6 +271,11 @@ export const useSettingsStore = create<SettingsState>()(
           weatherCoords: settings.weatherCoords ?? state.weatherCoords,
           weatherGpsAsked: settings.weatherGpsAsked ?? state.weatherGpsAsked,
           hideCompletedTasks: settings.hideCompletedTasks ?? state.hideCompletedTasks,
+          hrEmail: settings.hrEmail ?? state.hrEmail,
+          blurVacationForOthers: settings.blurVacationForOthers ?? state.blurVacationForOthers,
+          blurOutOfOfficeForOthers: settings.blurOutOfOfficeForOthers ?? state.blurOutOfOfficeForOthers,
+          calendarDepartmentFilter: settings.calendarDepartmentFilter ?? state.calendarDepartmentFilter,
+          requireTaskEstimate: settings.requireTaskEstimate ?? state.requireTaskEstimate,
           dashboardWidgetOrder: settings.dashboardWidgetOrder ?? state.dashboardWidgetOrder,
           dailyAgendaOrder: settings.dailyAgendaOrder ?? state.dailyAgendaOrder,
         }))
@@ -273,6 +301,11 @@ export const useSettingsStore = create<SettingsState>()(
           weatherCoords: { ...DEFAULT_WEATHER_COORDS },
           weatherGpsAsked: false,
           hideCompletedTasks: true,
+          hrEmail: '',
+          blurVacationForOthers: true,
+          blurOutOfOfficeForOthers: true,
+          calendarDepartmentFilter: true,
+          requireTaskEstimate: false,
           dashboardWidgetOrder: [...DEFAULT_DASHBOARD_WIDGET_ORDER],
           dailyAgendaOrder: {},
         })
@@ -364,6 +397,11 @@ export function getSettingsPayload(state: any) {
     weatherCoords: state.weatherCoords,
     weatherGpsAsked: state.weatherGpsAsked,
     hideCompletedTasks: state.hideCompletedTasks,
+    hrEmail: state.hrEmail,
+    blurVacationForOthers: state.blurVacationForOthers,
+    blurOutOfOfficeForOthers: state.blurOutOfOfficeForOthers,
+    calendarDepartmentFilter: state.calendarDepartmentFilter,
+    requireTaskEstimate: state.requireTaskEstimate,
     dashboardWidgetOrder: state.dashboardWidgetOrder,
     dailyAgendaOrder: state.dailyAgendaOrder,
   }

@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useMeetingsStore } from '../store/meetingsStore'
 import LiveMeetingPanel from '../components/meetings/LiveMeetingPanel'
-import { Mic, Plus, Trash2, Calendar, FileText, CheckSquare, Pencil, Check, X, ChevronDown, ListChecks, Search, Copy, Download, ArrowUpDown } from 'lucide-react'
+import MeetingMemoryPanel from '../components/meetings/MeetingMemoryPanel'
+import { meetingShareUrl, buildMeetingInviteMailto } from '../lib/meetingShare'
+import { Mic, Plus, Trash2, Calendar, FileText, CheckSquare, Pencil, Check, X, ChevronDown, ListChecks, Search, Copy, Download, ArrowUpDown, Mail, Link2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
 import { translateMeeting } from '../lib/aiService'
@@ -37,10 +40,17 @@ export default function MeetingsPage() {
   const [showTranscript, setShowTranscript] = useState(false)
   const [copyFeedback, setCopyFeedback] = useState(false)
   const [bulkTransferring, setBulkTransferring] = useState(false)
+  const [inviteCopied, setInviteCopied] = useState(false)
+  const [searchParams] = useSearchParams()
 
   useEffect(() => {
     fetchMeetings()
   }, [fetchMeetings])
+
+  useEffect(() => {
+    const id = searchParams.get('meeting')
+    if (id) setSelectedMeetingId(id)
+  }, [searchParams])
 
   const filteredMeetings = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
@@ -109,9 +119,21 @@ export default function MeetingsPage() {
     setBulkTransferring(false)
   }
 
+  async function handleShareLink() {
+    if (!selectedMeeting) return
+    await navigator.clipboard.writeText(meetingShareUrl(selectedMeeting.id))
+    setInviteCopied(true)
+    setTimeout(() => setInviteCopied(false), 2000)
+  }
+
+  function handleInviteEmail() {
+    if (!selectedMeeting) return
+    window.location.href = buildMeetingInviteMailto(selectedMeeting, i18n.language === 'en' ? 'en' : 'de')
+  }
+
   return (
     <div className="flex h-full flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-semibold">{t('pageTitle')}</h1>
         <button
           onClick={() => setIsLiveMode(true)}
@@ -121,9 +143,9 @@ export default function MeetingsPage() {
         </button>
       </div>
 
-      <div className="flex flex-1 gap-6 min-h-0">
+      <div className="flex flex-1 flex-col gap-6 min-h-0 lg:flex-row">
         {/* Left column: Meeting List */}
-        <div className="w-1/3 flex flex-col gap-3 min-h-0">
+        <div className="flex w-full flex-col gap-3 min-h-0 lg:w-1/3 lg:max-w-sm">
           <div className="flex flex-col gap-2 shrink-0">
             <div className="relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -177,7 +199,7 @@ export default function MeetingsPage() {
                     deleteMeeting(meeting.id)
                     if (selectedMeetingId === meeting.id) setSelectedMeetingId(null)
                   }}
-                  className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-colors"
+                  className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-colors"
                 >
                   <Trash2 size={14} />
                 </button>
@@ -200,7 +222,7 @@ export default function MeetingsPage() {
         </div>
 
         {/* Right column: Meeting Details */}
-        <div className="flex-1 rounded-xl border border-gray-100 bg-white shadow-sm dark:border-racing-800 dark:bg-racing-900 overflow-y-auto">
+        <div className="flex-1 rounded-2xl border border-gray-100/80 bg-white shadow-sm dark:border-racing-800 dark:bg-racing-900 overflow-y-auto min-h-[280px]">
           {selectedMeeting ? (
             <div className="p-6">
               {editingTitle ? (
@@ -260,6 +282,22 @@ export default function MeetingsPage() {
                 >
                   <Download size={12} /> {t('downloadMarkdown')}
                 </button>
+                <button
+                  onClick={() => void handleShareLink()}
+                  className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1 text-xs font-semibold text-gray-600 hover:border-accent hover:text-accent dark:border-racing-700 dark:text-gray-300"
+                >
+                  <Link2 size={12} /> {inviteCopied ? t('copied') : t('inviteShareLink')}
+                </button>
+                <button
+                  onClick={handleInviteEmail}
+                  className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1 text-xs font-semibold text-gray-600 hover:border-accent hover:text-accent dark:border-racing-700 dark:text-gray-300"
+                >
+                  <Mail size={12} /> {t('inviteEmail')}
+                </button>
+              </div>
+
+              <div className="mt-6">
+                <MeetingMemoryPanel meetingId={selectedMeeting.id} compact />
               </div>
 
               <div className="mt-8">

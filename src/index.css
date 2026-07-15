@@ -8,158 +8,100 @@
   --sar: env(safe-area-inset-right, 0px);
   --sab: env(safe-area-inset-bottom, 0px);
   --sal: env(safe-area-inset-left, 0px);
-}
 
-:root {
-  /* Accent: near-black for light mode, overridden to near-white in dark */
-  --accent: 12 12 12;
-  --accent-light: 55 55 55;
+  /* Design tokens — premium neutral palette */
+  --accent: 28 28 30;
+  --accent-light: 72 72 74;
   --accent-dark: 0 0 0;
 
-  /* Neutral/* Light override (premium clean light mode) */
+  --surface-0: 245 245 247;
+  --surface-1: 255 255 255;
+  --surface-2: 255 255 255;
+  --surface-3: 242 242 247;
+  --surface-4: 229 229 234;
+  --ink: 28 28 30;
+  --ink-secondary: 99 99 102;
+  --ink-tertiary: 142 142 147;
+
+  --racing-50:  250 250 250;
+  --racing-100: 245 245 245;
+  --racing-200: 229 229 234;
+  --racing-300: 199 199 204;
+  --racing-400: 142 142 147;
+  --racing-500: 99 99 102;
+  --racing-600: 72 72 74;
+  --racing-700: 44 44 46;
+  --racing-800: 28 28 30;
+  --racing-900: 22 22 24;
+  --racing-950: 12 12 14;
+}
+
 html.light {
-  --surface-0: 248 249 250; /* Super clean light grey / off-white */
-  --surface-1: 255 255 255; /* Pure white sidebar / card background */
-  --surface-2: 255 255 255; /* Pure white card */
-  --surface-3: 241 243 245; /* Light gray input / hover */
-  --surface-4: 222 226 230; /* Substantial light border */
-  --ink:           33 37 41;  /* Dark text */
-  --ink-secondary: 73 80 87;  /* Muted dark text */
-  --ink-tertiary:  134 142 150; /* Muted caption text */
+  --surface-0: 245 245 247;
+  --surface-1: 255 255 255;
+  --surface-2: 255 255 255;
+  --surface-3: 242 242 247;
+  --surface-4: 229 229 234;
+  --ink: 28 28 30;
+  --ink-secondary: 99 99 102;
+  --ink-tertiary: 142 142 147;
 }
 
-/* Override tailwind background/border/text classes which have hardcoded white/dark colors */
-html.light .border-white\/5 {
-  border-color: rgba(0, 0, 0, 0.06) !important;
-}
-html.light .border-white\/10 {
-  border-color: rgba(0, 0, 0, 0.08) !important;
-}
-html.light .border-white\/15 {
-  border-color: rgba(0, 0, 0, 0.12) !important;
-}
-html.light .border-white\/20 {
-  border-color: rgba(0, 0, 0, 0.15) !important;
-}
-html.light .border-white\/25 {
-  border-color: rgba(0, 0, 0, 0.18) !important;
-}
-html.light .border-white\/30 {
-  border-color: rgba(0, 0, 0, 0.22) !important;
-}
-html.light .border-white\/50 {
-  border-color: rgba(0, 0, 0, 0.4) !important;
-}
-html.light .bg-white\/5 {
-  background-color: rgba(0, 0, 0, 0.04) !important;
-}
-html.light .bg-white\/8 {
-  background-color: rgba(0, 0, 0, 0.06) !important;
-}
-html.light .bg-white\/10 {
-  background-color: rgba(0, 0, 0, 0.08) !important;
-}
-html.light .bg-white\/20 {
-  background-color: rgba(0, 0, 0, 0.12) !important;
-}
-html.light .bg-white\/30 {
-  background-color: rgba(0, 0, 0, 0.16) !important;
-}
-html.light .text-white {
-  color: rgb(var(--ink)) !important;
-}
-html.light .text-white\/70 {
-  color: rgb(var(--ink-secondary)) !important;
-}
-html.light .text-white\/60 {
-  color: rgb(var(--ink-secondary)) !important;
-}
-html.light .text-white\/50 {
-  color: rgb(var(--ink-tertiary)) !important;
-}
-html.light .text-white\/40 {
-  color: rgb(var(--ink-tertiary)) !important;
-}
-html.light .text-white\/30 {
-  color: rgb(var(--ink-tertiary)) !important;
-}
-html.light .text-white\/20 {
-  color: rgb(var(--ink-tertiary)) !important;
-}
-html.light .text-white\/10 {
-  color: rgb(var(--ink-tertiary)) !important;
-}
-html.light .text-white\/15 {
-  color: rgb(var(--ink-tertiary)) !important;
-}
-html.light .bg-black\/20 {
-  background-color: rgba(0, 0, 0, 0.05) !important;
-}
-html.light .bg-zinc-950 {
-  background-color: rgb(var(--surface-1)) !important;
-}
-html.light .bg-zinc-950\/80 {
-  background-color: rgba(255, 255, 255, 0.8) !important;
-}
-html.light .bg-zinc-900 {
-  background-color: rgb(var(--surface-3)) !important;
-}
-html.light .bg-zinc-900\/50 {
-  background-color: rgba(0, 0, 0, 0.02) !important;
-}
-html.light .bg-zinc-900\/30 {
-  background-color: rgba(0, 0, 0, 0.01) !important;
-}
-html.light .border-zinc-800 {
-  border-color: rgb(var(--surface-4)) !important;
-}
-html.light .border-zinc-800\/80 {
-  border-color: rgb(var(--surface-4)) !important;
-}
-html.light .border-zinc-800\/50 {
-  border-color: rgb(var(--surface-4)) !important;
-}
-html.light .border-zinc-800\/40 {
-  border-color: rgb(var(--surface-4)) !important;
-}
-html.light .shadow-\[5px_0_30px_rgba\(0\,0\,0\,0\.5\)\] {
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05) !important;
-}
-html.light .shadow-apple-lg {
-  box-shadow: 0 10px 30px rgba(0,0,0,0.06), 0 2px 10px rgba(0,0,0,0.03) !important;
-}
-html.light .shadow-apple-md {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05), 0 1px 4px rgba(0,0,0,0.02) !important;
-}
-html.light .shadow-apple {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02) !important;
-}
-  --racing-50:  248 248 248;
-  --racing-100: 236 236 236;
-  --racing-200: 212 212 212;
-  --racing-300: 168 168 168;
-  --racing-400: 120 120 120;
-  --racing-500: 85 85 85;
-  --racing-600: 60 60 60;
-  --racing-700: 42 42 42;
-  --racing-800: 28 28 28;
-  --racing-900: 18 18 18;
-  --racing-950: 10 10 10;
-}
+/* Light mode: remap dark-first utility classes */
+html.light .border-white\/5 { border-color: rgba(0, 0, 0, 0.05) !important; }
+html.light .border-white\/10 { border-color: rgba(0, 0, 0, 0.07) !important; }
+html.light .border-white\/15 { border-color: rgba(0, 0, 0, 0.10) !important; }
+html.light .border-white\/20 { border-color: rgba(0, 0, 0, 0.12) !important; }
+html.light .border-white\/25 { border-color: rgba(0, 0, 0, 0.14) !important; }
+html.light .border-white\/30 { border-color: rgba(0, 0, 0, 0.18) !important; }
+html.light .border-white\/50 { border-color: rgba(0, 0, 0, 0.35) !important; }
+html.light .bg-white\/5 { background-color: rgba(0, 0, 0, 0.03) !important; }
+html.light .bg-white\/8 { background-color: rgba(0, 0, 0, 0.05) !important; }
+html.light .bg-white\/10 { background-color: rgba(0, 0, 0, 0.06) !important; }
+html.light .bg-white\/20 { background-color: rgba(0, 0, 0, 0.08) !important; }
+html.light .bg-white\/30 { background-color: rgba(0, 0, 0, 0.10) !important; }
+html.light .text-white { color: rgb(var(--ink)) !important; }
+html.light .text-white\/70,
+html.light .text-white\/60 { color: rgb(var(--ink-secondary)) !important; }
+html.light .text-white\/50,
+html.light .text-white\/40,
+html.light .text-white\/30,
+html.light .text-white\/20,
+html.light .text-white\/15,
+html.light .text-white\/10 { color: rgb(var(--ink-tertiary)) !important; }
+html.light .bg-black\/20 { background-color: rgba(0, 0, 0, 0.04) !important; }
+html.light .bg-zinc-950 { background-color: rgb(var(--surface-1)) !important; }
+html.light .bg-zinc-950\/80 { background-color: rgba(255, 255, 255, 0.85) !important; }
+html.light .bg-zinc-900 { background-color: rgb(var(--surface-3)) !important; }
+html.light .bg-zinc-900\/50 { background-color: rgba(0, 0, 0, 0.02) !important; }
+html.light .bg-zinc-900\/30 { background-color: rgba(0, 0, 0, 0.01) !important; }
+html.light .border-zinc-800,
+html.light .border-zinc-800\/80,
+html.light .border-zinc-800\/50,
+html.light .border-zinc-800\/40 { border-color: rgb(var(--surface-4)) !important; }
+html.light .shadow-\[5px_0_30px_rgba\(0\,0\,0\,0\.5\)\] { box-shadow: 1px 0 12px rgba(0, 0, 0, 0.04) !important; }
+html.light .shadow-apple-lg { box-shadow: 0 8px 32px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03) !important; }
+html.light .shadow-apple-md { box-shadow: 0 4px 16px rgba(0,0,0,0.05), 0 1px 4px rgba(0,0,0,0.02) !important; }
+html.light .shadow-apple { box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02) !important; }
 
-/* Dark mode: accent → near-white (white buttons on dark surfaces) */
 .dark {
-  --accent: 245 245 245;
+  --accent: 250 250 250;
   --accent-light: 255 255 255;
   --accent-dark: 210 210 210;
+  --surface-0: 12 12 14;
+  --surface-1: 22 22 24;
+  --surface-2: 28 28 30;
+  --surface-3: 44 44 46;
+  --surface-4: 58 58 60;
+  --ink: 250 250 250;
+  --ink-secondary: 174 174 178;
+  --ink-tertiary: 142 142 147;
 }
 
-/* Dark mode (no pink): white accent buttons need dark text */
 .dark:not(.pink) .bg-accent {
   color: rgb(15 15 15) !important;
 }
 
-/* Pink accent mode */
 .pink {
   --accent: 236 72 153;
   --accent-light: 244 114 182;
@@ -171,103 +113,100 @@ html.light .shadow-apple {
   --accent-dark: 219 39 119;
 }
 
+html {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 html, body, #root {
   height: 100%;
 }
 
 body {
   @apply text-gray-900 dark:text-white;
-  background: #f2f2f7;
+  background: rgb(var(--surface-0));
   font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-.dark body {
-  background: #111111;
+button, a, [role="button"], input, select, textarea, label {
+  touch-action: manipulation;
 }
 
-/* Apple-style scrollbars */
+/* Prevent iOS double-tap: hover styles only on devices with real hover */
+@media (hover: none) {
+  .group-hover\:opacity-100 { opacity: inherit; }
+  .group:hover .group-hover\:opacity-100 { opacity: 1; }
+}
+
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { @apply rounded-full; background: rgba(0,0,0,0.15); }
-.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
+::-webkit-scrollbar-thumb { @apply rounded-full; background: rgba(0,0,0,0.12); }
+.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.10); }
 
-/* Apple glass card */
 .glass-card {
-  background: rgba(255,255,255,0.85);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 0.5px solid rgba(255,255,255,0.6);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 0.5px solid rgba(0,0,0,0.06);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 .dark .glass-card {
-  background: rgba(44,44,46,0.85);
-  border: 0.5px solid rgba(255,255,255,0.08);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 1px 4px rgba(0,0,0,0.2);
+  background: rgba(28,28,30,0.88);
+  border: 0.5px solid rgba(255,255,255,0.06);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25);
 }
 
-/* Smooth transitions globally */
 *, *::before, *::after {
-  transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1); /* spring-gentle */
+  transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-/* Vibrancy Utility Classes */
 .vibrancy-sidebar {
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(40px) saturate(180%);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
-  border-right: 0.5px solid rgba(0, 0, 0, 0.05);
+  border-right: 0.5px solid rgba(0, 0, 0, 0.04);
 }
 .dark .vibrancy-sidebar {
-  background: rgba(28, 28, 30, 0.6);
-  border-right: 0.5px solid rgba(255, 255, 255, 0.05);
+  background: rgba(22, 22, 24, 0.72);
+  border-right: 0.5px solid rgba(255, 255, 255, 0.04);
 }
 
 .vibrancy-header {
-  background: rgba(242, 242, 247, 0.7);
+  background: rgba(245, 245, 247, 0.82);
   backdrop-filter: blur(30px) saturate(180%);
   -webkit-backdrop-filter: blur(30px) saturate(180%);
-  border-bottom: 0.5px solid rgba(0, 0, 0, 0.05);
+  border-bottom: 0.5px solid rgba(0, 0, 0, 0.04);
 }
 .dark .vibrancy-header {
-  background: rgba(28, 28, 30, 0.7);
-  border-bottom: 0.5px solid rgba(255, 255, 255, 0.05);
+  background: rgba(22, 22, 24, 0.82);
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.04);
 }
 
-/* Apple-style cards — replace border-based cards with shadow-based */
 .rounded-xl, .rounded-2xl {
   transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-/* Elevated card style */
 .card-apple {
-  background: rgba(255,255,255,0.95);
+  background: rgb(var(--surface-2));
   border-radius: 16px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 0 0 0.5px rgba(0,0,0,0.03);
   border: none;
 }
 .dark .card-apple {
-  background: rgba(44,44,46,0.95);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.3), 0 0 0 0.5px rgba(255,255,255,0.06);
+  background: rgb(var(--surface-2));
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 0 0 0.5px rgba(255,255,255,0.04);
 }
 
-/* Subtle page background */
 .page-bg {
-  background: linear-gradient(180deg, #f2f2f7 0%, #f5f5f7 100%);
-}
-.dark .page-bg {
-  background: linear-gradient(180deg, #1c1c1e 0%, #1a1a1c 100%);
+  background: rgb(var(--surface-0));
 }
 
-/* Apple-style input */
 input, textarea, select {
   @apply transition-all duration-200;
 }
 
-/* iOS Safari/Chrome auto-zoom into any focused field whose font-size is < 16px.
-   Force every form control to at least 16px on small screens so the viewport never
-   zooms when the on-screen keyboard opens. Visual size stays controlled via padding. */
 @media screen and (max-width: 640px) {
   input, textarea, select {
     font-size: 16px !important;
@@ -275,8 +214,8 @@ input, textarea, select {
 }
 
 input:focus, textarea:focus, select:focus {
-  box-shadow: 0 0 0 3px rgba(0,0,0,0.10);
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.08);
 }
 .dark input:focus, .dark textarea:focus, .dark select:focus {
-  box-shadow: 0 0 0 3px rgba(255,255,255,0.10);
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.08);
 }

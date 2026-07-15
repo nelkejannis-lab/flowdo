@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Archive, AtSign, Bell, Check, HelpCircle, Plus, Trello, X, Search, Loader2, SlidersHorizontal, Grid2x2 } from 'lucide-react'
+import { Archive, AtSign, Bell, Check, HelpCircle, Plus, Trello, X, Search, Loader2, SlidersHorizontal, Grid2x2, ListOrdered } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTasksStore } from '../store/tasksStore'
 import { useTaskSharesStore } from '../store/taskSharesStore'
@@ -27,6 +27,7 @@ const titleKeys: Record<string, string> = {
   inbox: 'page.titles.inbox',
   completed: 'page.titles.completed',
   someday: 'page.titles.someday',
+  priority: 'page.titles.priority',
 }
 
 export default function TasksPage() {
@@ -122,6 +123,9 @@ export default function TasksPage() {
   } else if (smartList === 'someday') {
     filtered = allTasks.filter((t) => !t.completed && t.someday)
     title = t(titleKeys.someday)
+  } else if (smartList === 'priority') {
+    filtered = allTasks.filter((t) => !t.completed && !t.boardId)
+    title = t(titleKeys.priority)
   }
 
   const filterForPills = useMemo(() => {
@@ -316,6 +320,17 @@ export default function TasksPage() {
             }`}
           >
             {t('page.tabs.week')}
+          </Link>
+          <Link
+            to="/tasks/priority"
+            className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+              smartList === 'priority'
+                ? 'border-accent text-accent'
+                : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-racing-200'
+            }`}
+          >
+            <ListOrdered size={14} />
+            {t('page.tabs.priority')}
           </Link>
           <Link
             to="/tasks/completed"
@@ -687,8 +702,10 @@ export default function TasksPage() {
 
           <TaskList
             tasks={displayTasks}
-            groupByDate={groupByDate}
+            groupByDate={groupByDate && smartList !== 'priority'}
             flat={smartList === 'completed'}
+            showPriorityNumbers={smartList === 'priority'}
+            useManualOrder={smartList === 'priority'}
             emptyMessage={smartList === 'completed' ? t('page.noCompletedTasks') : t('list.noTasks')}
           />
         </>

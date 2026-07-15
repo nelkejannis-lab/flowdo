@@ -4,14 +4,26 @@ import { useTranslation } from 'react-i18next'
 import type { CalendarEntry } from '../../types'
 import { todayISO } from '../../utils/date'
 import { entryTypeIcon } from '../../utils/calendarEntry'
+import { blurredEntryLabel } from '../../utils/calendarPrivacy'
 
 interface TeamAvailabilitySidebarProps {
   entries: CalendarEntry[]
+  blurVacation?: boolean
+  blurOutOfOffice?: boolean
+  showColleagueAbsences?: boolean
+  currentUserId?: string
 }
 
-export default function TeamAvailabilitySidebar({ entries }: TeamAvailabilitySidebarProps) {
+export default function TeamAvailabilitySidebar({
+  entries,
+  blurVacation = true,
+  blurOutOfOffice = true,
+  showColleagueAbsences = false,
+  currentUserId,
+}: TeamAvailabilitySidebarProps) {
   const { t, i18n } = useTranslation('calendar')
-  const dateLocale = i18n.language === 'en' ? enUS : de
+  const lang = i18n.language === 'en' ? 'en' : 'de'
+  const dateLocale = lang === 'en' ? enUS : de
   const entryTypeLabel: Record<CalendarEntry['type'], string> = {
     termin: t('entryTypes.termin'),
     reise: t('entryTypes.reise'),
@@ -24,18 +36,27 @@ export default function TeamAvailabilitySidebar({ entries }: TeamAvailabilitySid
     .filter((e) => (e.endDate ?? e.date) >= today)
     .sort((a, b) => a.date.localeCompare(b.date))
 
+  function isBlurred(entry: CalendarEntry): boolean {
+    if (showColleagueAbsences) return false
+    if (entry.ownerId === currentUserId) return false
+    if (entry.type === 'urlaub' && blurVacation) return true
+    if (entry.type === 'reise' && blurOutOfOffice) return true
+    return false
+  }
+
   return (
-    <aside className="w-full shrink-0 rounded-xl border border-gray-100 p-3 dark:border-racing-800 lg:w-64">
+    <aside className="w-full shrink-0 rounded-2xl border border-gray-100/80 p-3 dark:border-racing-800 lg:w-64">
       <h2 className="mb-2 text-sm font-semibold">{t('sidebar.title')}</h2>
       {relevant.length === 0 && <p className="text-xs text-gray-400">{t('sidebar.noneAway')}</p>}
       <div className="flex flex-col gap-2">
         {relevant.map((entry) => {
-          const name = entry.owner?.display_name ?? t('sidebar.unknown')
+          const blurred = isBlurred(entry)
+          const name = blurred ? blurredEntryLabel(entry.type, lang) : (entry.owner?.display_name ?? t('sidebar.unknown'))
           const isMultiDay = !!entry.endDate && entry.endDate > entry.date
           return (
             <div
               key={entry.id}
-              className="rounded-lg border border-gray-100 p-2 text-xs dark:border-racing-800"
+              className={`rounded-xl border border-gray-100 p-2 text-xs dark:border-racing-800 ${blurred ? 'opacity-70 blur-[2px] select-none' : ''}`}
             >
               <div className="flex items-center gap-1.5 font-medium">
                 <span
@@ -44,23 +65,20 @@ export default function TeamAvailabilitySidebar({ entries }: TeamAvailabilitySid
                 />
                 {name}
               </div>
-              <p className="mt-0.5 text-gray-500">
-                {entryTypeIcon[entry.type]} {entryTypeLabel[entry.type]}
-                {entry.title ? `: ${entry.title}` : ''}
-              </p>
-              <p className="mt-0.5 text-gray-400">
-                {isMultiDay
-                  ? `${format(parseISO(entry.date), 'd. MMM', { locale: dateLocale })} – ${format(parseISO(entry.endDate!), 'd. MMM', { locale: dateLocale })}`
-                  : format(parseISO(entry.date), 'd. MMM', { locale: dateLocale })}
-                {(entry.startTime || entry.endTime) && (
-                  <span>
-                    {', '}
-                    {entry.startTime ?? ''}
-                    {entry.endTime ? ` – ${entry.endTime}` : ''}
-                    {t('day.uhr') ? ` ${t('day.uhr')}` : ''}
-                  </span>
-                )}
-              </p>
+              {!blurred && (
+                <>
+                  <p className="mt-0.5 text-gray-500">
+                    {entryTypeIcon[entry.type]} {entryTypeLabel[entry.type]}
+                    {entry.title ? `: ${entry.title}` : ''}
+                  </p>
+                  <p className="mt-0.5 text-gray-400">
+                    {isMultiDay
+                      ? `${format(parseISO(entry.date), 'd. MMM', { locale: dateLocale })} – ${format(parseISO(entry.endDate!), 'd. MMM', { locale: dateLocale })}`
+                      : format(parseISO(entry.date), 'd. MMM', { locale: dateLocale })}
+                  </p>
+                </>
+              )}
+              {blurred && <p className="mt-1 text-[10px] text-gray-400">{t('privacy.blurredHint')}</p>}
             </div>
           )
         })}

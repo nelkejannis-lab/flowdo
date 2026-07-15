@@ -37,6 +37,9 @@
   "downloadMarkdown": "Download Markdown",
   "transcriptTitle": "Transcript",
   "transferAllToDashboard": "All open as tasks",
+  "inviteShareLink": "Share link",
+  "inviteEmail": "Invite by email",
+  "memorySection": "Memory",
   "live": {
     "subtitle": "Records PC sound and microphone. Transcription runs locally (free); only summaries use AI.",
     "namePlaceholder": "Meeting name (optional)",

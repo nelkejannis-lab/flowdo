@@ -45,7 +45,10 @@
     "netOnDay": "Net on this day",
     "changeLog": "Change log",
     "today": "Today",
-    "exportMonth": "Monthly report (CSV)"
+    "exportMonth": "Monthly report (CSV)",
+    "sendToHr": "Send to HR",
+    "homeoffice": "Home office",
+    "office": "Office"
   },
   "arbzg": {
     "maxDaily": "Maximum working time exceeded: more than 10 hrs (§3 ArbZG).",

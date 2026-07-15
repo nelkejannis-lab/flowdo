@@ -15,6 +15,11 @@ const GBM_PROFILE: WorkProfile = {
 import { todayISO } from '../utils/date'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { durationBetween } from '../utils/worktime'
+import { punchSourceWithLocation } from '../utils/punchLocation'
+import { openSickLeaveMail } from '../lib/hrNotify'
+import { useSettingsStore } from './settingsStore'
+import { useAuthStore } from './authStore'
+import { useOfficeStore } from './officeStore'
 
 const defaultSettings: WorkTimeSettings = {
   weeklyHours: 38.5,
@@ -451,7 +456,14 @@ export const useWorkTimeStore = create<WorkTimeState>()(
         const state = get()
         const entry = ensureEntry(state.entries, runningDate, state.settings.defaultBreakMinutes)
         const updated = { ...entry, startTime: entry.startTime ?? startTime }
-        const punch: WorkTimePunch = { id: createId(), punchedAt: runningStartedAt, kind: 'in', source: 'app' }
+
+        const officeLocation = useOfficeStore.getState().todayEntry?.location
+        const punch: WorkTimePunch = {
+          id: createId(),
+          punchedAt: runningStartedAt,
+          kind: 'in',
+          source: punchSourceWithLocation('app', officeLocation),
+        }
         set({
           isRunning: true,
           runningStartedAt,
@@ -632,6 +644,18 @@ export const useWorkTimeStore = create<WorkTimeState>()(
         set({ entries: { ...state.entries, [date]: updated }, auditLog: [audit, ...state.auditLog] })
         void syncEntry(updated)
         void syncAudit(audit)
+
+        const profile = useAuthStore.getState().profile
+        const appSettings = useSettingsStore.getState()
+        const employeeName = profile?.display_name || profile?.username || 'Mitarbeiter'
+        if (appSettings.hrEmail) {
+          openSickLeaveMail({
+            hrEmail: appSettings.hrEmail,
+            employeeName,
+            date,
+            language: appSettings.language,
+          })
+        }
       },
       unmarkSickDay: (date) => {
         const state = get()

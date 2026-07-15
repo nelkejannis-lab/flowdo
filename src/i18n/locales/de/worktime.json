@@ -45,7 +45,10 @@
     "netOnDay": "Netto an diesem Tag",
     "changeLog": "Änderungsprotokoll",
     "today": "Heute",
-    "exportMonth": "Monatsnachweis (CSV)"
+    "exportMonth": "Monatsnachweis (CSV)",
+    "sendToHr": "An HR senden",
+    "homeoffice": "Homeoffice",
+    "office": "Büro"
   },
   "arbzg": {
     "maxDaily": "Höchstarbeitszeit überschritten: mehr als 10 Std. (§3 ArbZG).",

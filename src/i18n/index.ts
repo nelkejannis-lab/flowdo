@@ -21,6 +21,7 @@ import brainDe from './locales/de/brain.json'
 import aiChatDe from './locales/de/aiChat.json'
 import adminDe from './locales/de/admin.json'
 import onboardingDe from './locales/de/onboarding.json'
+import memoryDe from './locales/de/memory.json'
 
 import commonEn from './locales/en/common.json'
 import layoutEn from './locales/en/layout.json'
@@ -42,6 +43,7 @@ import brainEn from './locales/en/brain.json'
 import aiChatEn from './locales/en/aiChat.json'
 import adminEn from './locales/en/admin.json'
 import onboardingEn from './locales/en/onboarding.json'
+import memoryEn from './locales/en/memory.json'
 
 export const defaultNS = 'common'
 
@@ -67,6 +69,7 @@ export const resources = {
     aiChat: aiChatDe,
     admin: adminDe,
     onboarding: onboardingDe,
+    memory: memoryDe,
   },
   en: {
     common: commonEn,
@@ -89,6 +92,7 @@ export const resources = {
     aiChat: aiChatEn,
     admin: adminEn,
     onboarding: onboardingEn,
+    memory: memoryEn,
   },
 } as const
 

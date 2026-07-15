@@ -485,12 +485,12 @@ ${textToSummarize}`
   }
 
   return (
-    <div className="flex flex-col gap-4 h-full min-h-[75vh]">
-      <h1 className="text-2xl font-semibold">{t('title')}</h1>
+    <div className="flex flex-col gap-4 h-full min-h-[60vh] sm:min-h-[75vh]">
+      <h1 className="text-xl font-semibold sm:text-2xl">{t('title')}</h1>
 
-      <div className="flex flex-1 gap-4 min-h-0">
+      <div className="flex flex-1 flex-col gap-4 min-h-0 lg:flex-row">
         {/* Left pane: search, tabs, list */}
-        <div className="flex w-80 flex-shrink-0 flex-col gap-3">
+        <div className="flex w-full flex-shrink-0 flex-col gap-3 lg:w-80">
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <input

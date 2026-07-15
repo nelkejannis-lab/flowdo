@@ -17,6 +17,7 @@ import { todayISO, parseNaturalDate } from '../../utils/date'
 import type { Attachment, Priority, Task } from '../../types'
 import { createId } from '../../utils/id'
 import { useTaskTrayStore } from '../../store/taskTrayStore'
+import { useSettingsStore } from '../../store/settingsStore'
 import { useAiSchedulerStore } from '../../store/aiSchedulerStore'
 
 const quadrants: { urgent: boolean; important: boolean; labelKey: string; activeClass: string }[] = [
@@ -72,6 +73,7 @@ export default function TaskFormModal({
   const removeAttachment = useTasksStore((s) => s.removeAttachment)
   const addProjectAttachment = useProjectTasksStore((s) => s.addAttachment)
   const removeProjectAttachment = useProjectTasksStore((s) => s.removeAttachment)
+  const requireTaskEstimate = useSettingsStore((s) => s.requireTaskEstimate)
   const tasks = useTasksStore((s) => s.tasks)
   const projectTasks = useProjectTasksStore((s) => s.myTasks)
 
@@ -186,6 +188,11 @@ export default function TaskFormModal({
     if (!title.trim()) return
 
     const parsedEstimatedMinutes = estimatedMinutes.trim() ? Number(estimatedMinutes) : undefined
+    const needsEstimate = requireTaskEstimate && (projectId || task?.boardId)
+    if (needsEstimate && (!parsedEstimatedMinutes || parsedEstimatedMinutes <= 0)) {
+      setSendError(t('form.estimateRequired'))
+      return
+    }
 
     if (task && projectId) {
       const board = boards.find((b) => b.id === projectId)

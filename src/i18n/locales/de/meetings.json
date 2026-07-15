@@ -37,6 +37,9 @@
   "downloadMarkdown": "Markdown herunterladen",
   "transcriptTitle": "Transkript",
   "transferAllToDashboard": "Alle offenen als Tasks",
+  "inviteShareLink": "Link teilen",
+  "inviteEmail": "Per E-Mail einladen",
+  "memorySection": "Memory",
   "live": {
     "subtitle": "Nimmt PC-Sound und Mikrofon auf. Transkription läuft lokal (kostenlos); nur Zusammenfassungen nutzen KI.",
     "namePlaceholder": "Meeting Name (optional)",

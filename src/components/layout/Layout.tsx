@@ -41,7 +41,7 @@ export default function Layout() {
             <AppUpdater />
             {/* Extra bottom padding on mobile so content clears the fixed bottom nav bar.
                 overflow-x-hidden stops any too-wide child from making the whole page slide sideways. */}
-            <div className="mx-auto h-full w-full max-w-7xl overflow-x-hidden p-4 pb-24 sm:p-6 sm:pb-6 lg:p-8 relative">
+            <div className="mx-auto h-full w-full max-w-7xl overflow-x-hidden p-4 pb-24 sm:p-6 sm:pb-6 lg:p-8 relative page-bg">
               <Outlet />
             </div>
           </main>

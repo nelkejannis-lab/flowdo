@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { de, enUS } from 'date-fns/locale'
 import { format, addDays, subDays, parseISO } from 'date-fns'
-import { LogIn, LogOut, Coffee, ShieldCheck, AlertTriangle, History, ChevronLeft, ChevronRight, CalendarDays, Download } from 'lucide-react'
+import { LogIn, LogOut, Coffee, ShieldCheck, AlertTriangle, History, ChevronLeft, ChevronRight, CalendarDays, Download, Mail } from 'lucide-react'
 import { useWorkTimeStore } from '../../store/workTimeStore'
 import { useAuthStore } from '../../store/authStore'
+import { useSettingsStore } from '../../store/settingsStore'
 import { todayISO, toISODate } from '../../utils/date'
 import {
   punchesForDay,
@@ -13,7 +14,9 @@ import {
   netMinutes,
   type ArbZgWarning,
 } from '../../utils/worktime'
+import { parsePunchLocation } from '../../utils/punchLocation'
 import { buildMonthlyTimesheetCsv, downloadCsv } from '../../utils/worktimeExport'
+import { buildStampedTimesheetText, openStampedDocumentMail } from '../../lib/stampedDocument'
 
 function warningLabel(t: (k: string) => string, w: ArbZgWarning): string {
   if (w.code === 'maxDaily') return t('arbzg.maxDaily')
@@ -29,6 +32,8 @@ export default function StampLog() {
   const entries = useWorkTimeStore((s) => s.entries)
   const settings = useWorkTimeStore((s) => s.settings)
   const profile = useAuthStore((s) => s.profile)
+  const hrEmail = useSettingsStore((s) => s.hrEmail)
+  const language = useSettingsStore((s) => s.language)
 
   const today = todayISO()
   const [selectedDate, setSelectedDate] = useState(today)
@@ -37,7 +42,6 @@ export default function StampLog() {
   const dayPunches = punchesForDay(punches, selectedDate)
   const dayEntry = entries[selectedDate]
 
-  // previous day's last "out" punch + selected day's first "in" for the rest-period check
   const sortedPunches = [...punches].sort((a, b) => a.punchedAt.localeCompare(b.punchedAt))
   const firstInDay = dayPunches.find((p) => p.kind === 'in')?.punchedAt
   const prevOut = sortedPunches
@@ -46,7 +50,6 @@ export default function StampLog() {
 
   const warnings = arbzgWarnings(dayEntry, prevOut, firstInDay)
   const dayAudit = auditLog.filter((a) => a.entryDate === selectedDate)
-
   const dayLabel = format(parseISO(selectedDate), 'EEEE, d. MMMM yyyy', { locale: dateLocale })
 
   function shiftDay(delta: number) {
@@ -54,14 +57,28 @@ export default function StampLog() {
   }
 
   function handleExport() {
-    const month = selectedDate.slice(0, 7) // yyyy-MM
+    const month = selectedDate.slice(0, 7)
     const name = profile?.display_name || profile?.username || 'Mitarbeiter'
     const csv = buildMonthlyTimesheetCsv(month, entries, punches, auditLog, settings, name)
     downloadCsv(`Arbeitszeitnachweis_${month}.csv`, csv)
   }
 
+  function handleSendStampedDoc() {
+    const month = selectedDate.slice(0, 7)
+    const name = profile?.display_name || profile?.username || 'Mitarbeiter'
+    const body = buildStampedTimesheetText({ month, employeeName: name, entries, punches, settings, language })
+    openStampedDocumentMail({ hrEmail, employeeName: name, month, body, language })
+  }
+
+  function punchLocationLabel(source: string): string | null {
+    const loc = parsePunchLocation(source)
+    if (loc === 'homeoffice') return t('stampLog.homeoffice')
+    if (loc === 'office') return t('stampLog.office')
+    return null
+  }
+
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-gray-100 bg-white p-5 dark:border-racing-800 dark:bg-racing-900">
+    <div className="flex flex-col gap-4 rounded-2xl border border-gray-100/80 bg-white p-5 dark:border-racing-800 dark:bg-racing-900">
       <div className="flex items-center gap-2">
         <ShieldCheck size={16} className="text-emerald-500" />
         <h3 className="text-sm font-semibold">{t('stampLog.title')}</h3>
@@ -70,14 +87,23 @@ export default function StampLog() {
         </span>
       </div>
 
-      <button
-        onClick={handleExport}
-        className="flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50 dark:border-racing-700 dark:text-racing-200 dark:hover:bg-racing-800"
-      >
-        <Download size={13} /> {t('stampLog.exportMonth')}
-      </button>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <button
+          onClick={handleExport}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50 dark:border-racing-700 dark:text-racing-200 dark:hover:bg-racing-800"
+        >
+          <Download size={13} /> {t('stampLog.exportMonth')}
+        </button>
+        {hrEmail && (
+          <button
+            onClick={handleSendStampedDoc}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-accent/30 bg-accent/5 px-3 py-2 text-xs font-semibold text-accent hover:bg-accent/10"
+          >
+            <Mail size={13} /> {t('stampLog.sendToHr')}
+          </button>
+        )}
+      </div>
 
-      {/* Day navigation */}
       <div className="flex items-center gap-2">
         <button
           onClick={() => shiftDay(-1)}
@@ -106,7 +132,6 @@ export default function StampLog() {
         )}
       </div>
 
-      {/* ArbZG warnings */}
       {warnings.length > 0 && (
         <div className="flex flex-col gap-1.5">
           {warnings.map((w, i) => (
@@ -125,32 +150,39 @@ export default function StampLog() {
         </div>
       )}
 
-      {/* Punch list */}
       <div>
         <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">{t('stampLog.punchesOnDay')}</p>
         {dayPunches.length === 0 ? (
           <p className="text-xs italic text-gray-400">{t('stampLog.noPunches')}</p>
         ) : (
           <ul className="flex flex-col gap-1.5">
-            {dayPunches.map((p) => (
-              <li key={p.id} className="flex items-center gap-2 text-sm">
-                {p.source === 'break' ? (
-                  <Coffee size={14} className="text-amber-500" />
-                ) : p.kind === 'in' ? (
-                  <LogIn size={14} className="text-emerald-500" />
-                ) : (
-                  <LogOut size={14} className="text-red-500" />
-                )}
-                <span className="font-medium">
-                  {p.source === 'break'
-                    ? t('stampLog.break')
-                    : p.kind === 'in'
-                      ? t('stampLog.clockIn')
-                      : t('stampLog.clockOut')}
-                </span>
-                <span className="ml-auto tabular-nums text-gray-500 dark:text-racing-300">{formatPunchTime(p.punchedAt)}</span>
-              </li>
-            ))}
+            {dayPunches.map((p) => {
+              const locLabel = p.kind === 'in' ? punchLocationLabel(p.source) : null
+              return (
+                <li key={p.id} className="flex flex-wrap items-center gap-2 text-sm">
+                  {p.source === 'break' ? (
+                    <Coffee size={14} className="text-amber-500" />
+                  ) : p.kind === 'in' ? (
+                    <LogIn size={14} className="text-emerald-500" />
+                  ) : (
+                    <LogOut size={14} className="text-red-500" />
+                  )}
+                  <span className="font-medium">
+                    {p.source === 'break'
+                      ? t('stampLog.break')
+                      : p.kind === 'in'
+                        ? t('stampLog.clockIn')
+                        : t('stampLog.clockOut')}
+                  </span>
+                  {locLabel && (
+                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500 dark:bg-racing-800">
+                      {locLabel}
+                    </span>
+                  )}
+                  <span className="ml-auto tabular-nums text-gray-500 dark:text-racing-300">{formatPunchTime(p.punchedAt)}</span>
+                </li>
+              )
+            })}
           </ul>
         )}
         {dayEntry && (
@@ -160,7 +192,6 @@ export default function StampLog() {
         )}
       </div>
 
-      {/* Audit trail */}
       {dayAudit.length > 0 && (
         <div>
           <p className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">

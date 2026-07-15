@@ -306,4 +306,7 @@ export interface CalendarEntry {
   recurrence?: 'daily' | 'weekly' | 'monthly' | 'yearly'
   completed?: boolean
   meetingLink?: string
+  visibility?: 'public' | 'department' | 'private'
+  externalId?: string
+  cancelled?: boolean
 }

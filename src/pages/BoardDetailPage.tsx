@@ -7,6 +7,7 @@ import { useBoardsStore } from '../store/boardsStore'
 import { useBoardInvitesStore } from '../store/boardInvitesStore'
 import { useProjectTasksStore } from '../store/projectTasksStore'
 import ProjectTimeReport from '../components/boards/ProjectTimeReport'
+import ProjectEvaluationPanel from '../components/boards/ProjectEvaluationPanel'
 import { useFriendsStore } from '../store/friendsStore'
 import { useAuthStore } from '../store/authStore'
 import { useCommentsStore } from '../store/commentsStore'
@@ -487,7 +488,10 @@ export default function BoardDetailPage() {
           )}
 
           {activeView === 'overview' && (
-            <ProjectTimeReport board={board} tasks={tasks} onOpenSettings={() => setShowSettings(true)} />
+            <>
+              <ProjectTimeReport board={board} tasks={tasks} onOpenSettings={() => setShowSettings(true)} />
+              <ProjectEvaluationPanel board={board} tasks={tasks} />
+            </>
           )}
 
           {activeView === 'calendar' && (

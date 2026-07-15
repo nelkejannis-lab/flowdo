@@ -25,8 +25,15 @@
     "button": "📅 Calendars",
     "toggleLabel": "Show/hide calendars",
     "google": "📅 Google Calendar",
-    "outlook": "📧 Outlook",
-    "ical": "☁️ iCal"
+    "outlook": "📧 Outlook / Teams",
+    "ical": "☁️ iCal",
+    "syncTeams": "Sync with Teams",
+    "syncing": "Syncing…"
+  },
+  "privacy": {
+    "showColleagueAbsences": "Show colleague absences",
+    "departmentFilter": "All departments",
+    "blurredHint": "Details hidden"
   },
   "entryTypes": {
     "termin": "Appointment",

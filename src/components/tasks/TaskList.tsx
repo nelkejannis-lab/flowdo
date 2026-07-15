@@ -33,6 +33,8 @@ interface TaskListProps {
   groupByDate?: boolean
   emptyMessage?: string
   flat?: boolean
+  showPriorityNumbers?: boolean
+  useManualOrder?: boolean
 }
 
 // Maps the German labels returned by dateGroupLabel()/dateGroupOrder to translation keys.
@@ -46,7 +48,7 @@ const dateGroupLabelKeys: Record<string, string> = {
   'Ohne Datum': 'dateGroups.noDate',
 }
 
-function SortableTaskItem({ task, onClick }: { task: Task; onClick: () => void }) {
+function SortableTaskItem({ task, onClick, priorityRank }: { task: Task; onClick: () => void; priorityRank?: number }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
   return (
@@ -60,13 +62,13 @@ function SortableTaskItem({ task, onClick }: { task: Task; onClick: () => void }
         <GripVertical size={16} />
       </div>
       <div className="flex-1 min-w-0">
-        <TaskItem task={task} onClick={onClick} />
+        <TaskItem task={task} onClick={onClick} priorityRank={priorityRank} />
       </div>
     </div>
   )
 }
 
-export default function TaskList({ tasks, groupByDate = false, emptyMessage, flat = false }: TaskListProps) {
+export default function TaskList({ tasks, groupByDate = false, emptyMessage, flat = false, showPriorityNumbers = false, useManualOrder = false }: TaskListProps) {
   const { t } = useTranslation('tasks')
   const resolvedEmptyMessage = emptyMessage ?? t('list.noTasks')
   const [editingTask, setEditingTask] = useState<Task | null>(null)
@@ -76,18 +78,17 @@ export default function TaskList({ tasks, groupByDate = false, emptyMessage, fla
   const [visibleCount, setVisibleCount] = useState(20)
   const boards = useBoardsStore((s) => s.boards)
   const reorderTasks = useTasksStore((s) => s.reorderTasks)
+  const taskOrder = useTasksStore((s) => s.taskOrder)
   const editingBoard = editingTask?.boardId ? boards.find((b) => b.id === editingTask.boardId) : undefined
 
-  // Always sort chronologically by due date (tasks without a due date sink to the end).
-  // The sort is stable, so tasks sharing a date (or lacking one) keep their relative
-  // order, which is how manual drag-reordering still has an effect.
-  const activeTasks = useMemo(
-    () =>
-      tasks
-        .filter((t) => !t.completed)
-        .sort((a, b) => (a.dueDate ?? '9999-12-31').localeCompare(b.dueDate ?? '9999-12-31')),
-    [tasks]
-  )
+  const activeTasks = useMemo(() => {
+    const open = tasks.filter((t) => !t.completed)
+    if (useManualOrder && taskOrder.length > 0) {
+      const orderMap = new Map(taskOrder.map((id, i) => [id, i]))
+      return [...open].sort((a, b) => (orderMap.get(a.id) ?? Infinity) - (orderMap.get(b.id) ?? Infinity))
+    }
+    return [...open].sort((a, b) => (a.dueDate ?? '9999-12-31').localeCompare(b.dueDate ?? '9999-12-31'))
+  }, [tasks, useManualOrder, taskOrder])
   const completedTasks = useMemo(
     () =>
       tasks
@@ -116,8 +117,8 @@ export default function TaskList({ tasks, groupByDate = false, emptyMessage, fla
   }, [activeTasks, groupByDate])
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 10 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
 
@@ -166,8 +167,8 @@ export default function TaskList({ tasks, groupByDate = false, emptyMessage, fla
               {dateGroupLabelKeys[label] ? t(dateGroupLabelKeys[label]) : label}
             </h3>
             <div className="flex flex-col gap-2">
-              {items.map((task) => (
-                <TaskItem key={task.id} task={task} onClick={() => setEditingTask(task)} />
+              {items.map((task, idx) => (
+                <TaskItem key={task.id} task={task} onClick={() => setEditingTask(task)} priorityRank={showPriorityNumbers ? idx + 1 : undefined} />
               ))}
             </div>
           </div>
@@ -176,8 +177,8 @@ export default function TaskList({ tasks, groupByDate = false, emptyMessage, fla
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={visibleActive.map((t) => t.id)} strategy={verticalListSortingStrategy}>
             <div className="flex flex-col gap-2">
-              {visibleActive.map((task) => (
-                <SortableTaskItem key={task.id} task={task} onClick={() => setEditingTask(task)} />
+              {visibleActive.map((task, idx) => (
+                <SortableTaskItem key={task.id} task={task} onClick={() => setEditingTask(task)} priorityRank={showPriorityNumbers ? idx + 1 : undefined} />
               ))}
             </div>
           </SortableContext>

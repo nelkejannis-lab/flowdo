@@ -9,6 +9,7 @@ import { useProjectTasksStore } from '../../store/projectTasksStore'
 import type { Attachment, Board, Priority, Task } from '../../types'
 import { createId } from '../../utils/id'
 import { useTaskTrayStore } from '../../store/taskTrayStore'
+import { useSettingsStore } from '../../store/settingsStore'
 
 const quadrants: { urgent: boolean; important: boolean; labelKey: string; activeClass: string }[] = [
   { urgent: true, important: true, labelKey: 'taskForm.quadrantUrgentImportant', activeClass: 'border-red-400 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
@@ -26,7 +27,7 @@ interface ProjectTaskFormModalProps {
 }
 
 export default function ProjectTaskFormModal({ board, task, defaultColumnId, defaultDueDate, onClose }: ProjectTaskFormModalProps) {
-  const { t } = useTranslation(['boards', 'common'])
+  const { t } = useTranslation(['boards', 'common', 'tasks'])
   const addTask = useProjectTasksStore((s) => s.addTask)
   const updateTask = useProjectTasksStore((s) => s.updateTask)
   const deleteTask = useProjectTasksStore((s) => s.deleteTask)
@@ -37,6 +38,7 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
   const removeAttachment = useProjectTasksStore((s) => s.removeAttachment)
   const addDependency = useProjectTasksStore((s) => s.addDependency)
   const removeDependency = useProjectTasksStore((s) => s.removeDependency)
+  const requireTaskEstimate = useSettingsStore((s) => s.requireTaskEstimate)
   const allBoardTasks = useProjectTasksStore((s) => s.tasks)
 
   const [isEditing, setIsEditing] = useState(!task)
@@ -80,6 +82,12 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
     setSaving(true)
     setError(null)
     const parsedEstimatedMinutes = estimatedMinutes.trim() ? Number(estimatedMinutes) : undefined
+
+    if (requireTaskEstimate && (!parsedEstimatedMinutes || parsedEstimatedMinutes <= 0)) {
+      setError(t('tasks:form.estimateRequired'))
+      setSaving(false)
+      return
+    }
 
     if (task) {
       await updateTask(task.id, {

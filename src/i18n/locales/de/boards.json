@@ -177,5 +177,12 @@
     "delete": "Löschen",
     "save": "Speichern",
     "add": "Hinzufügen"
+  },
+  "evaluation": {
+    "title": "Projektauswertung",
+    "estimated": "Geschätzt",
+    "actual": "Ist-Zeit",
+    "variance": "Abweichung",
+    "completion": "Fortschritt"
   }
 }

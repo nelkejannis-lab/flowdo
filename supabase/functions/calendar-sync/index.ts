@@ -60,6 +60,40 @@ Deno.serve(async (req: Request) => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return new Response('Unauthorized', { status: 401, headers: corsHeaders })
 
+  // Push local entry to Microsoft Teams/Outlook calendar
+  if (req.method === 'POST') {
+    const body = await req.json().catch(() => ({}))
+    if (body.action === 'push' && body.entry) {
+      const { data: conn } = await adminSupabase.from('calendar_connections').select('*').eq('user_id', user.id).eq('provider', 'microsoft').maybeSingle()
+      if (!conn?.access_token) {
+        return new Response(JSON.stringify({ error: 'Microsoft not connected' }), { headers: { ...corsHeaders, 'content-type': 'application/json' } })
+      }
+      let token = conn.access_token
+      if (conn.token_expires_at && new Date(conn.token_expires_at) < new Date() && conn.refresh_token) {
+        token = await refreshMicrosoftToken(conn.refresh_token) ?? token
+      }
+      const e = body.entry
+      const start = e.startTime ? `${e.date}T${e.startTime}:00` : `${e.date}T09:00:00`
+      const end = e.endTime ? `${e.date}T${e.endTime}:00` : `${e.date}T10:00:00`
+      const res = await fetch('https://graph.microsoft.com/v1.0/me/events', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject: e.title,
+          start: { dateTime: start, timeZone: 'Europe/Berlin' },
+          end: { dateTime: end, timeZone: 'Europe/Berlin' },
+          body: e.meetingLink ? { contentType: 'text', content: e.meetingLink } : undefined,
+          isOnlineMeeting: Boolean(e.meetingLink),
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.text()
+        return new Response(JSON.stringify({ error: err }), { headers: { ...corsHeaders, 'content-type': 'application/json' } })
+      }
+      return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'content-type': 'application/json' } })
+    }
+  }
+
   const { data: connections } = await adminSupabase
     .from('calendar_connections')
     .select('*')
@@ -156,24 +190,43 @@ Deno.serve(async (req: Request) => {
         }).filter((e) => e.date)
       }
 
-      // Upsert events as calendar_entries with color based on provider
+      // Track synced external keys for cancellation detection
+      const syncedKeys: string[] = []
       const color = conn.provider === 'google' ? '#4285F4' : conn.provider === 'microsoft' ? '#0078D4' : '#9B59B6'
+      const prefix = conn.provider === 'google' ? '[Google]' : conn.provider === 'microsoft' ? '[Outlook]' : '[iCal]'
       for (const event of events) {
         if (!event.date || !event.title) continue
+        const title = `${prefix} ${event.title}`
+        syncedKeys.push(`${title}|${event.date}`)
         await adminSupabase.from('calendar_entries').upsert({
           owner_id: user.id,
           type: 'termin',
-          title: `[${conn.provider === 'google' ? 'Google' : conn.provider === 'microsoft' ? 'Outlook' : 'iCal'}] ${event.title}`,
+          title,
           date: event.date,
           end_date: event.endDate ?? null,
           start_time: event.startTime ?? null,
           end_time: event.endTime ?? null,
           color,
-        }, { onConflict: 'owner_id,type,title,date', ignoreDuplicates: true })
+        }, { onConflict: 'owner_id,type,title,date', ignoreDuplicates: false })
+      }
+
+      // Remove imported entries that disappeared from external calendar (cancellations)
+      const { data: existingImported } = await adminSupabase
+        .from('calendar_entries')
+        .select('id, title, date')
+        .eq('owner_id', user.id)
+        .like('title', `${prefix}%`)
+      let cancelled = 0
+      for (const row of existingImported ?? []) {
+        const key = `${row.title}|${row.date}`
+        if (!syncedKeys.includes(key)) {
+          await adminSupabase.from('calendar_entries').delete().eq('id', row.id)
+          cancelled++
+        }
       }
 
       await adminSupabase.from('calendar_connections').update({ last_synced_at: new Date().toISOString() }).eq('id', conn.id)
-      synced.push(`${conn.provider}: ${events.length} Ereignisse`)
+      synced.push(`${conn.provider}: ${events.length} events${cancelled ? `, ${cancelled} removed` : ''}`)
     } catch (err) {
       errors.push(`${conn.provider}: ${err instanceof Error ? err.message : 'Fehler'}`)
     }
