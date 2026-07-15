@@ -19,6 +19,13 @@ export default defineConfig({
     watch: {
       ignored: ['**/dist-electron-app/**', '**/release/**'],
     },
+    fs: {
+      deny: ['**/dist-electron-app/**', '**/release/**'],
+    },
+  },
+  optimizeDeps: {
+    // Only scan the web entry — not dist-electron-app/index.html from electron:build.
+    entries: ['./index.html'],
   },
   plugins: [
     react(),
