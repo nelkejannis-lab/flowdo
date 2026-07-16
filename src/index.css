@@ -9,7 +9,7 @@
   --sab: env(safe-area-inset-bottom, 0px);
   --sal: env(safe-area-inset-left, 0px);
 
-  /* Design tokens — NOVAT purple palette */
+  /* Design tokens */
   --accent: 124 58 237;
   --accent-light: 184 92 246;
   --accent-dark: 79 70 229;
@@ -23,17 +23,17 @@
   --ink-secondary: 99 99 102;
   --ink-tertiary: 142 142 147;
 
-  --racing-50: 245 243 255;
-  --racing-100: 237 233 254;
-  --racing-200: 221 214 254;
-  --racing-300: 196 181 253;
-  --racing-400: 167 139 250;
-  --racing-500: 139 92 246;
-  --racing-600: 124 58 237;
-  --racing-700: 109 40 217;
-  --racing-800: 76 29 149;
-  --racing-900: 49 22 100;
-  --racing-950: 26 11 46;
+  --racing-50: 248 250 252;
+  --racing-100: 241 245 249;
+  --racing-200: 226 232 240;
+  --racing-300: 203 213 225;
+  --racing-400: 148 163 184;
+  --racing-500: 100 116 139;
+  --racing-600: 71 85 105;
+  --racing-700: 51 65 85;
+  --racing-800: 30 41 59;
+  --racing-900: 15 23 42;
+  --racing-950: 2 6 23;
 }
 
 html.light {
@@ -86,16 +86,16 @@ html.light .shadow-apple { box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgb
 
 .dark {
   --accent: 124 58 237;
-  --accent-light: 196 181 253;
-  --accent-dark: 79 70 229;
-  --surface-0: 11 7 32;
-  --surface-1: 16 10 46;
-  --surface-2: 26 18 66;
-  --surface-3: 40 28 88;
-  --surface-4: 65 49 118;
+  --accent-light: 167 139 250;
+  --accent-dark: 91 33 182;
+  --surface-0: 10 12 16;
+  --surface-1: 16 19 25;
+  --surface-2: 24 28 36;
+  --surface-3: 36 42 53;
+  --surface-4: 56 65 80;
   --ink: 255 255 255;
-  --ink-secondary: 216 206 255;
-  --ink-tertiary: 182 166 231;
+  --ink-secondary: 209 214 224;
+  --ink-tertiary: 148 163 184;
 }
 
 .dark:not(.pink) .bg-accent {
@@ -153,9 +153,9 @@ button, a, [role="button"], input, select, textarea, label {
   box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 .dark .glass-card {
-  background: rgba(22, 14, 52, 0.72);
-  border: 0.5px solid rgba(196,181,253,0.28);
-  box-shadow: 0 10px 40px rgba(31, 12, 73, 0.45);
+  background: rgba(17, 21, 28, 0.76);
+  border: 0.5px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 10px 36px rgba(2, 6, 23, 0.38);
 }
 
 *, *::before, *::after {
@@ -169,8 +169,8 @@ button, a, [role="button"], input, select, textarea, label {
   border-right: 0.5px solid rgba(0, 0, 0, 0.04);
 }
 .dark .vibrancy-sidebar {
-  background: rgba(18, 11, 46, 0.72);
-  border-right: 0.5px solid rgba(196,181,253,0.18);
+  background: rgba(14, 18, 24, 0.74);
+  border-right: 0.5px solid rgba(148, 163, 184, 0.16);
 }
 
 .vibrancy-header {
@@ -180,8 +180,8 @@ button, a, [role="button"], input, select, textarea, label {
   border-bottom: 0.5px solid rgba(0, 0, 0, 0.04);
 }
 .dark .vibrancy-header {
-  background: rgba(18, 11, 46, 0.78);
-  border-bottom: 0.5px solid rgba(196,181,253,0.16);
+  background: rgba(14, 18, 24, 0.8);
+  border-bottom: 0.5px solid rgba(148, 163, 184, 0.14);
 }
 
 .rounded-xl, .rounded-2xl {

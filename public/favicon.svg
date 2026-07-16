@@ -1,17 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="NOVAT favicon">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="NOVAT favicon">
   <defs>
-    <linearGradient id="novatGradA" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#B85CF6"/>
-      <stop offset="55%" stop-color="#7C3AED"/>
-      <stop offset="100%" stop-color="#4F46E5"/>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#090A13"/>
+      <stop offset="100%" stop-color="#12152A"/>
     </linearGradient>
-    <linearGradient id="novatGradB" x1="15%" y1="0%" x2="90%" y2="100%">
-      <stop offset="0%" stop-color="#C4B5FD"/>
-      <stop offset="100%" stop-color="#7C3AED"/>
+    <linearGradient id="novatGradA" x1="8%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#B88CFF"/>
+      <stop offset="55%" stop-color="#7C3AED"/>
+      <stop offset="100%" stop-color="#5B34D6"/>
+    </linearGradient>
+    <linearGradient id="novatGradB" x1="20%" y1="0%" x2="90%" y2="100%">
+      <stop offset="0%" stop-color="#D4C0FF"/>
+      <stop offset="100%" stop-color="#8A53F6"/>
     </linearGradient>
   </defs>
-  <rect x="12" y="10" width="30" height="56" rx="8" transform="rotate(-30 12 10)" fill="url(#novatGradB)" opacity="0.92"/>
-  <path d="M22 18h18l26 15v44l-18 11V44L22 29z" fill="url(#novatGradA)"/>
-  <path d="M22 29l18 10v22l-18-10z" fill="#4C1D95" opacity="0.75"/>
-  <path d="M48 44l18-11v44l-18 11z" fill="#A78BFA" opacity="0.55"/>
+  <rect x="8" y="8" width="112" height="112" rx="26" fill="url(#bg)"/>
+  <g transform="translate(16 16)">
+    <rect x="12" y="10" width="30" height="56" rx="8" transform="rotate(-30 12 10)" fill="url(#novatGradB)" opacity="0.95"/>
+    <path d="M22 18h18l26 15v44l-18 11V44L22 29z" fill="url(#novatGradA)"/>
+    <path d="M22 29l18 10v22l-18-10z" fill="#4B1EB0" opacity="0.72"/>
+    <path d="M48 44l18-11v44l-18 11z" fill="#C6AEFF" opacity="0.5"/>
+  </g>
 </svg>

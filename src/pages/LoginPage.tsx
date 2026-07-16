@@ -246,7 +246,7 @@ export default function LoginPage() {
               opacity: [0.1, 0.2, 0.1] 
             }}
             transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            className="absolute -top-[30%] -left-[10%] w-[70vw] h-[70vw] rounded-full bg-gradient-to-br from-violet-600/30 to-fuchsia-600/10 blur-[120px]" 
+            className="absolute -top-[30%] -left-[10%] w-[70vw] h-[70vw] rounded-full bg-gradient-to-br from-slate-600/25 via-slate-500/12 to-violet-500/10 blur-[120px]" 
           />
           <motion.div 
             animate={{ 
@@ -255,7 +255,7 @@ export default function LoginPage() {
               opacity: [0.1, 0.15, 0.1] 
             }}
             transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-            className="absolute -bottom-[20%] -right-[10%] w-[60vw] h-[60vw] rounded-full bg-gradient-to-bl from-blue-600/20 to-cyan-600/10 blur-[100px]" 
+            className="absolute -bottom-[20%] -right-[10%] w-[60vw] h-[60vw] rounded-full bg-gradient-to-bl from-slate-700/20 via-slate-500/12 to-violet-500/8 blur-[100px]" 
           />
         </div>
 

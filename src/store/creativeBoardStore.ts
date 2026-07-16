@@ -3,7 +3,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { createId } from '../utils/id'
 
 export type CreativeInviteRole = 'owner' | 'editor' | 'viewer'
-export type MoodboardItemType = 'note' | 'image' | 'link'
+export type MoodboardItemType = 'note' | 'image' | 'link' | 'video' | 'social' | 'website'
 
 export interface MoodboardItem {
   id: string
@@ -13,6 +13,9 @@ export interface MoodboardItem {
   textContent?: string
   imageUrl?: string
   linkUrl?: string
+  metadataTitle?: string
+  metadataThumbnail?: string
+  metadataHost?: string
   position: number
   createdAt: string
   updatedAt: string
@@ -80,6 +83,9 @@ export const useCreativeBoardStore = create<CreativeBoardState>()((set, get) => 
         textContent: r.text_content ?? undefined,
         imageUrl: r.image_url ?? undefined,
         linkUrl: r.link_url ?? undefined,
+        metadataTitle: r.metadata_title ?? undefined,
+        metadataThumbnail: r.metadata_thumbnail ?? undefined,
+        metadataHost: r.metadata_host ?? undefined,
         position: r.position ?? 0,
         createdAt: r.created_at,
         updatedAt: r.updated_at,
@@ -98,6 +104,9 @@ export const useCreativeBoardStore = create<CreativeBoardState>()((set, get) => 
       textContent: input.textContent,
       imageUrl: input.imageUrl,
       linkUrl: input.linkUrl,
+      metadataTitle: input.metadataTitle,
+      metadataThumbnail: input.metadataThumbnail,
+      metadataHost: input.metadataHost,
       position: input.position,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -111,6 +120,9 @@ export const useCreativeBoardStore = create<CreativeBoardState>()((set, get) => 
       text_content: item.textContent ?? null,
       image_url: item.imageUrl ?? null,
       link_url: item.linkUrl ?? null,
+      metadata_title: item.metadataTitle ?? null,
+      metadata_thumbnail: item.metadataThumbnail ?? null,
+      metadata_host: item.metadataHost ?? null,
       position: item.position,
     })
   },
@@ -128,6 +140,9 @@ export const useCreativeBoardStore = create<CreativeBoardState>()((set, get) => 
         text_content: updated.textContent ?? null,
         image_url: updated.imageUrl ?? null,
         link_url: updated.linkUrl ?? null,
+        metadata_title: updated.metadataTitle ?? null,
+        metadata_thumbnail: updated.metadataThumbnail ?? null,
+        metadata_host: updated.metadataHost ?? null,
         position: updated.position,
       })
       .eq('id', id)

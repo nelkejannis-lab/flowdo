@@ -15,6 +15,11 @@ import {
   List,
   Upload,
   ListChecks,
+  Link2,
+  Image as ImageIcon,
+  Video,
+  Globe,
+  Share2,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useBrainStore, NotePage, NoteColumn, NoteChecklistItem } from '../store/brainStore'
@@ -22,6 +27,43 @@ import { useBoardsStore } from '../store/boardsStore'
 import { createId } from '../utils/id'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { useCreativeBoardStore, type CreativeInviteRole } from '../store/creativeBoardStore'
+
+type MoodInputType = 'note' | 'image' | 'video' | 'social' | 'website'
+
+const SOCIAL_HOSTS = ['instagram.com', 'x.com', 'twitter.com', 'facebook.com', 'linkedin.com', 'tiktok.com', 'youtube.com', 'youtu.be']
+
+function parseUrl(value: string): URL | null {
+  const raw = value.trim()
+  if (!raw) return null
+  const normalized = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`
+  try {
+    const u = new URL(normalized)
+    if (!['http:', 'https:'].includes(u.protocol)) return null
+    return u
+  } catch {
+    return null
+  }
+}
+
+function detectMoodUrlType(url: URL): Exclude<MoodInputType, 'note' | 'image'> {
+  const host = url.hostname.toLowerCase()
+  const path = url.pathname.toLowerCase()
+  if (SOCIAL_HOSTS.some((h) => host === h || host.endsWith(`.${h}`))) return 'social'
+  if (host.includes('youtube.com') || host.includes('youtu.be') || host.includes('vimeo.com') || path.endsWith('.mp4') || path.endsWith('.webm')) return 'video'
+  return 'website'
+}
+
+function deriveMoodMetadata(title: string, url: URL, kind: Exclude<MoodInputType, 'note'>) {
+  const host = url.hostname.replace(/^www\./, '')
+  const fallbackTitle = title.trim() || `${host}${url.pathname !== '/' ? url.pathname : ''}`
+  let thumbnail = ''
+  if (kind === 'video' && (host.includes('youtube.com') || host.includes('youtu.be'))) {
+    const id = host.includes('youtu.be') ? url.pathname.split('/').filter(Boolean)[0] : url.searchParams.get('v')
+    if (id) thumbnail = `https://img.youtube.com/vi/${id}/hqdefault.jpg`
+  }
+  if (!thumbnail) thumbnail = `https://www.google.com/s2/favicons?sz=128&domain=${host}`
+  return { host, fallbackTitle, thumbnail }
+}
 
 export default function SecondBrainPage() {
   const { t } = useTranslation('brain')
@@ -66,12 +108,13 @@ export default function SecondBrainPage() {
   const [inviteRole, setInviteRole] = useState<CreativeInviteRole>('editor')
   const [inviteHits, setInviteHits] = useState<Array<{ id: string; display_name: string; username: string; avatar_color: string }>>([])
   const [moodTitle, setMoodTitle] = useState('')
-  const [moodType, setMoodType] = useState<'note' | 'image' | 'link'>('note')
+  const [moodType, setMoodType] = useState<MoodInputType>('note')
   const [moodValue, setMoodValue] = useState('')
   const [newColTitle, setNewColTitle] = useState('')
   const [editingColId, setEditingColId] = useState<string | null>(null)
   const [editingColTitle, setEditingColTitle] = useState('')
   const [justSaved, setJustSaved] = useState(false)
+  const [moodError, setMoodError] = useState<string | null>(null)
 
   // State inside note creation
   const [isCreating, setIsCreating] = useState(false)
@@ -438,13 +481,32 @@ ${textToSummarize}`
   }
 
   async function addMoodboardItem() {
+    setMoodError(null)
     if (!moodTitle.trim()) return
+    let normalizedUrl: URL | null = null
+    let resolvedType: MoodInputType = moodType
+    if (moodType !== 'note') {
+      normalizedUrl = parseUrl(moodValue)
+      if (!normalizedUrl) {
+        setMoodError(t('moodboardInvalidUrl'))
+        return
+      }
+      if (moodType === 'website') {
+        resolvedType = detectMoodUrlType(normalizedUrl)
+      }
+    }
+    const metadata = normalizedUrl && resolvedType !== 'note'
+      ? deriveMoodMetadata(moodTitle, normalizedUrl, resolvedType)
+      : null
     await addMoodItem({
       title: moodTitle.trim(),
-      type: moodType,
-      textContent: moodType === 'note' ? moodValue : undefined,
-      imageUrl: moodType === 'image' ? moodValue : undefined,
-      linkUrl: moodType === 'link' ? moodValue : undefined,
+      type: resolvedType,
+      textContent: resolvedType === 'note' ? moodValue : undefined,
+      imageUrl: resolvedType === 'image' && normalizedUrl ? normalizedUrl.toString() : undefined,
+      linkUrl: resolvedType !== 'note' && normalizedUrl ? normalizedUrl.toString() : undefined,
+      metadataHost: metadata?.host,
+      metadataTitle: metadata?.fallbackTitle,
+      metadataThumbnail: metadata?.thumbnail,
       position: moodItems.length,
     })
     setMoodTitle('')
@@ -873,14 +935,17 @@ ${textToSummarize}`
         <div className="rounded-2xl border border-gray-100 bg-white/70 p-4 dark:border-racing-850 dark:bg-racing-900/70">
           <div className="mb-3 flex flex-wrap gap-2">
             <input value={moodTitle} onChange={(e) => setMoodTitle(e.target.value)} placeholder={t('moodboardAdd')} className="min-w-[220px] flex-1 rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm dark:border-racing-700" />
-            <select value={moodType} onChange={(e) => setMoodType(e.target.value as 'note' | 'image' | 'link')} className="rounded-lg border border-gray-200 bg-transparent px-2 py-2 text-xs dark:border-racing-700">
+            <select value={moodType} onChange={(e) => setMoodType(e.target.value as MoodInputType)} className="rounded-lg border border-gray-200 bg-transparent px-2 py-2 text-xs dark:border-racing-700">
               <option value="note">{t('moodboardText')}</option>
               <option value="image">{t('moodboardImage')}</option>
-              <option value="link">{t('moodboardLink')}</option>
+              <option value="video">{t('moodboardVideo')}</option>
+              <option value="social">{t('moodboardSocial')}</option>
+              <option value="website">{t('moodboardWebsite')}</option>
             </select>
-            <input value={moodValue} onChange={(e) => setMoodValue(e.target.value)} placeholder={moodType === 'note' ? t('moodboardText') : moodType === 'image' ? t('moodboardImage') : t('moodboardLink')} className="min-w-[220px] flex-1 rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm dark:border-racing-700" />
+            <input value={moodValue} onChange={(e) => setMoodValue(e.target.value)} placeholder={moodType === 'note' ? t('moodboardText') : moodType === 'image' ? t('moodboardImage') : moodType === 'video' ? t('moodboardVideo') : moodType === 'social' ? t('moodboardSocial') : t('moodboardWebsite')} className="min-w-[220px] flex-1 rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm dark:border-racing-700" />
             <button onClick={() => void addMoodboardItem()} className="rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-white">{t('moodboardAdd')}</button>
           </div>
+          {moodError && <p className="mb-2 text-xs font-semibold text-red-500">{moodError}</p>}
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {moodItems.map((item) => (
               <div key={item.id} className="rounded-xl border border-gray-100 bg-white p-3 dark:border-racing-800 dark:bg-racing-900">
@@ -888,9 +953,25 @@ ${textToSummarize}`
                   <h4 className="text-sm font-semibold">{item.title}</h4>
                   <button onClick={() => void deleteMoodItem(item.id)} className="text-xs text-red-500">{t('editor.delete')}</button>
                 </div>
+                <div className="mb-2 flex items-center gap-1.5">
+                  <span className="rounded-full bg-black/[0.05] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide dark:bg-white/[0.07]">
+                    {item.type === 'note' ? <List size={11} /> : item.type === 'image' ? <ImageIcon size={11} /> : item.type === 'video' ? <Video size={11} /> : item.type === 'social' ? <Share2 size={11} /> : <Globe size={11} />}
+                  </span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                    {item.type === 'note' ? t('moodboardText') : item.type === 'image' ? t('moodboardImage') : item.type === 'video' ? t('moodboardVideo') : item.type === 'social' ? t('moodboardSocial') : t('moodboardWebsite')}
+                  </span>
+                </div>
                 {item.type === 'note' && <p className="text-xs text-gray-500 whitespace-pre-wrap">{item.textContent}</p>}
                 {item.type === 'image' && item.imageUrl && <img src={item.imageUrl} alt={item.title} className="max-h-40 w-full rounded-lg object-cover" />}
-                {item.type === 'link' && item.linkUrl && <a href={item.linkUrl} target="_blank" rel="noreferrer" className="text-xs text-accent underline break-all">{item.linkUrl}</a>}
+                {(item.type === 'link' || item.type === 'video' || item.type === 'social' || item.type === 'website') && item.linkUrl && (
+                  <a href={item.linkUrl} target="_blank" rel="noreferrer" className="block rounded-lg border border-gray-100 p-2 text-xs dark:border-racing-800">
+                    <div className="mb-1 flex items-center gap-2">
+                      {item.metadataThumbnail ? <img src={item.metadataThumbnail} alt="" className="h-5 w-5 rounded object-cover" /> : <Link2 size={13} />}
+                      <span className="truncate font-semibold">{item.metadataTitle || item.linkUrl}</span>
+                    </div>
+                    <span className="block truncate text-gray-400">{item.metadataHost || item.linkUrl}</span>
+                  </a>
+                )}
               </div>
             ))}
             {moodItems.length === 0 && <p className="text-sm text-gray-400">{t('noNotes')}</p>}
