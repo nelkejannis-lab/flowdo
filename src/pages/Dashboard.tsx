@@ -337,7 +337,7 @@ export default function Dashboard() {
       {!onboardingPermissionsDone && <OnboardingPermissions />}
 
       {/* Sticky Quick Add — always pinned to top of main scrollport for fast add */}
-      <div className="sticky top-0 z-30 -mx-4 mb-6 border-b border-black/[0.04] bg-[rgb(var(--surface-0)/0.82)] px-4 py-3 backdrop-blur-apple dark:border-white/[0.06] dark:bg-[rgb(var(--surface-0)/0.88)] sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+      <div className="sticky top-0 z-30 mb-6 bg-[rgb(var(--surface-0)/0.82)] py-3 backdrop-blur-apple dark:bg-[rgb(var(--surface-0)/0.88)]">
         <form
           onSubmit={async (e) => {
             e.preventDefault()
