@@ -132,6 +132,8 @@ interface SettingsState {
   requireTaskEstimate: boolean
   dashboardWidgetOrder: string[]
   dailyAgendaOrder: Record<string, string[]>
+  /** When true, full menu drawer is hidden — top bar + pins give primary nav */
+  menuCollapsed: boolean
   setMode: (mode: Mode) => void
   togglePinkAccent: () => void
   setLanguage: (language: Language) => void
@@ -149,6 +151,8 @@ interface SettingsState {
   toggleNavItem: (key: NavItemKey) => void
   togglePinnedNavItem: (key: NavItemKey) => void
   setPinnedNavOrder: (order: NavItemKey[]) => void
+  setMenuCollapsed: (v: boolean) => void
+  toggleMenuCollapsed: () => void
   setWeatherCity: (city: string) => void
   setWeatherCoords: (coords: WeatherCoords) => void
   setWeatherGpsAsked: () => void
@@ -198,8 +202,11 @@ export const useSettingsStore = create<SettingsState>()(
       requireTaskEstimate: false,
       dashboardWidgetOrder: [...DEFAULT_DASHBOARD_WIDGET_ORDER],
       dailyAgendaOrder: {},
+      menuCollapsed: true,
       setMode: (mode) => set({ mode }),
       togglePinkAccent: () => set((s) => ({ pinkAccent: !s.pinkAccent })),
+      setMenuCollapsed: (menuCollapsed) => set({ menuCollapsed }),
+      toggleMenuCollapsed: () => set((s) => ({ menuCollapsed: !s.menuCollapsed })),
       setLanguage: (language) => {
         i18n.changeLanguage(language)
         set({ language })
@@ -278,6 +285,7 @@ export const useSettingsStore = create<SettingsState>()(
           requireTaskEstimate: settings.requireTaskEstimate ?? state.requireTaskEstimate,
           dashboardWidgetOrder: settings.dashboardWidgetOrder ?? state.dashboardWidgetOrder,
           dailyAgendaOrder: settings.dailyAgendaOrder ?? state.dailyAgendaOrder,
+          menuCollapsed: settings.menuCollapsed ?? state.menuCollapsed,
         }))
       },
       resetSettings: () => {
@@ -308,6 +316,7 @@ export const useSettingsStore = create<SettingsState>()(
           requireTaskEstimate: false,
           dashboardWidgetOrder: [...DEFAULT_DASHBOARD_WIDGET_ORDER],
           dailyAgendaOrder: {},
+          menuCollapsed: true,
         })
       },
       syncNow: () => {
@@ -330,7 +339,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'flowdo-settings',
-      version: 15,
+      version: 16,
       migrate: (persisted, version) => {
         const legacy = persisted as LegacyState & Partial<SettingsState>
         if (version < 1) {
@@ -363,6 +372,7 @@ export const useSettingsStore = create<SettingsState>()(
           navOrder: mergedNavOrder,
           navVisibility,
           pinnedNavItems,
+          menuCollapsed: (legacy as any).menuCollapsed ?? true,
           colorLabels: { ...DEFAULT_COLOR_LABELS, ...(legacy as any).colorLabels },
           onboardingPermissionsDone: legacy.onboardingPermissionsDone ?? false,
           onboardingTourDone: (legacy as any).onboardingTourDone ?? false,
@@ -383,6 +393,7 @@ export const useSettingsStore = create<SettingsState>()(
         if (!state.pinnedNavItems) state.pinnedNavItems = []
         if (!state.dashboardWidgetOrder?.length) state.dashboardWidgetOrder = [...DEFAULT_DASHBOARD_WIDGET_ORDER]
         if (!state.dailyAgendaOrder) state.dailyAgendaOrder = {}
+        if (typeof state.menuCollapsed !== 'boolean') state.menuCollapsed = true
         if (state.language) i18n.changeLanguage(state.language)
       },
     }
@@ -417,6 +428,7 @@ export function getSettingsPayload(state: any) {
     requireTaskEstimate: state.requireTaskEstimate,
     dashboardWidgetOrder: state.dashboardWidgetOrder,
     dailyAgendaOrder: state.dailyAgendaOrder,
+    menuCollapsed: state.menuCollapsed,
   }
 }
 

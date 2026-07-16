@@ -36,6 +36,8 @@ export default {
         'apple': '0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)',
         'apple-md': '0 8px 24px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06)',
         'apple-lg': '0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.06)',
+        'bento': '0 10px 32px rgba(15, 23, 42, 0.05), 0 2px 6px rgba(15, 23, 42, 0.03)',
+        'bento-lg': '0 18px 48px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.04)',
       },
       backdropBlur: {
         'apple': '20px',

@@ -35,9 +35,13 @@ import { GripHorizontal } from 'lucide-react'
 import OnboardingPermissions from '../components/dashboard/OnboardingPermissions'
 import OnboardingWizard from '../components/onboarding/OnboardingWizard'
 import MorningReportModal from '../components/dashboard/MorningReportModal'
+import TodayHero from '../components/dashboard/TodayHero'
+import { DayCapacityWidget, WeekOverviewWidget } from '../components/dashboard/FocusWidgets'
 import { useSettingsStore, DEFAULT_DASHBOARD_WIDGET_ORDER } from '../store/settingsStore'
 import { isDueThisWeek, isDueToday, isOverdue, todayISO, parseNaturalDate, parseTaskInput, parseAppointmentInput, isCompletedToday } from '../utils/date'
 import { useQuickTaskModalStore } from '../store/quickTaskModalStore'
+import { useOfficeStore } from '../store/officeStore'
+import { dayTargetMinutes, formatHM, netMinutes } from '../utils/worktime'
 
 function isLikelyAppointment(input: string): boolean {
   const lower = input.toLowerCase()
@@ -60,6 +64,12 @@ export default function Dashboard() {
   const toggleProjectTaskCompleted = useProjectTasksStore((s) => s.toggleTaskCompleted)
   const workEntries = useWorkTimeStore((s) => s.entries)
   const fetchWorkTime = useWorkTimeStore((s) => s.fetchAll)
+  const workSettings = useWorkTimeStore((s) => s.settings)
+  const isRunning = useWorkTimeStore((s) => s.isRunning)
+  const runningStartedAt = useWorkTimeStore((s) => s.runningStartedAt)
+  const colleagueEntries = useOfficeStore((s) => s.colleagueEntries)
+  const todayOffice = useOfficeStore((s) => s.todayEntry)
+  const fetchOfficeToday = useOfficeStore((s) => s.fetchToday)
   const events = useEventsStore((s) => s.events)
   const fetchEvents = useEventsStore((s) => s.fetchAll)
   const calendarEntries = useCalendarEntriesStore((s) => s.entries)
@@ -121,6 +131,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchBoards()
+    fetchOfficeToday()
     if (isSupabaseConfigured) {
       fetchMyProjectTasks()
       fetchTasks()
@@ -129,7 +140,7 @@ export default function Dashboard() {
       fetchWorkTime()
       fetchSocialAccounts()
     }
-  }, [fetchBoards, fetchMyProjectTasks, fetchTasks, fetchEvents, fetchCalendarEntries, fetchWorkTime, fetchSocialAccounts])
+  }, [fetchBoards, fetchMyProjectTasks, fetchTasks, fetchEvents, fetchCalendarEntries, fetchWorkTime, fetchSocialAccounts, fetchOfficeToday])
 
   useEffect(() => {
     socialAccounts.forEach((a) => fetchSocialAccountData(a.id))
@@ -200,15 +211,53 @@ export default function Dashboard() {
     .sort((a, b) => (a.date < b.date ? -1 : 1))
     .slice(0, 3)
 
+  const todayOpenTasks = allTasks.filter((tk) => !tk.completed && (isDueToday(tk.dueDate) || isOverdue(tk.dueDate)))
+  const topPriorities = sortByEisenhower(
+    allTasks.filter((tk) => !tk.completed && tk.urgent && tk.important)
+  ).slice(0, 3)
+  const nextEvent = todayEntries[0]
+    ? { id: todayEntries[0].id, title: todayEntries[0].title, startTime: todayEntries[0].startTime ?? undefined, date: todayEntries[0].date }
+    : null
+
+  const todayWork = workEntries[today]
+  const liveMin = isRunning && runningStartedAt ? (Date.now() - new Date(runningStartedAt).getTime()) / 60000 : 0
+  const workedMin = netMinutes(todayWork) + liveMin
+  const targetMin = dayTargetMinutes(new Date(), workSettings)
+  const capacityPercent = targetMin > 0 ? Math.min(100, (workedMin / targetMin) * 100) : 0
+  const colleagues = colleagueEntries.map((c) => ({
+    id: c.userId,
+    name: c.displayName ?? '?',
+    avatarUrl: c.avatarUrl,
+  }))
+  const meetingMinutesToday = todayEntries.reduce((sum, e) => {
+    if (!e.startTime || !e.endTime) return sum + 30
+    const [sh, sm] = e.startTime.split(':').map(Number)
+    const [eh, em] = e.endTime.split(':').map(Number)
+    return sum + Math.max(0, eh * 60 + em - (sh * 60 + sm))
+  }, 0)
+  const workStatusLabel = todayOffice?.location === 'homeoffice'
+    ? t('officeWidget.homeoffice')
+    : todayOffice?.location === 'office'
+      ? t('officeWidget.office')
+      : isRunning
+        ? t('officeWidget.running')
+        : null
+  const dayLabel = format(new Date(), 'EEEE, d. MMMM', { locale: dateLocale })
+
   return (
     <div>
       <OfficePromptModal />
       {showMorningReport && (
         <MorningReportModal
-          todayTasks={allTasks.filter((t) => !t.completed && (isDueToday(t.dueDate) || isOverdue(t.dueDate)))}
+          todayTasks={todayOpenTasks}
           weekTasks={weekTasks}
           todayEntries={todayEntries}
           weekEntries={weekEntries}
+          capacityPercent={capacityPercent}
+          workedLabel={formatHM(workedMin)}
+          targetLabel={formatHM(targetMin)}
+          colleagues={colleagues}
+          onPlanDay={() => setShowAiDayPlanner(true)}
           onClose={() => {
             setShowMorningReport(false)
             localStorage.setItem('morningReportDismissed', new Date().toISOString().slice(0, 10))
@@ -217,12 +266,30 @@ export default function Dashboard() {
       )}
       {!onboardingTourDone && <OnboardingWizard />}
       {!onboardingPermissionsDone && <OnboardingPermissions />}
+
+      <TodayHero
+        dayLabel={dayLabel}
+        nextEvent={nextEvent}
+        priorities={topPriorities}
+        capacityPercent={capacityPercent}
+        workedLabel={formatHM(workedMin)}
+        targetLabel={formatHM(targetMin)}
+        workStatus={workStatusLabel}
+        colleagues={colleagues}
+        onPlanDay={() => setShowAiDayPlanner(true)}
+        onOpenBriefing={() => setShowMorningReport(true)}
+      />
+
       <div className="mb-6">
-        <div className="mb-3 flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">{t('title')}</h1>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="timeframe-pill is-active" aria-pressed="true">{t('focus.today')}</span>
+            <Link to="/tasks/week" className="timeframe-pill">{t('focus.thisWeek')}</Link>
+            <Link to="/calendar" className="timeframe-pill hidden sm:inline-flex">{t('focus.thisMonth')}</Link>
+          </div>
           <button
             onClick={() => setIsEditing(!isEditing)}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold shadow-sm transition-all duration-150 active:scale-95 ${
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold shadow-sm transition-all duration-150 active:scale-95 ${
               isEditing
                 ? 'bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600'
                 : 'bg-black/[0.04] text-gray-600 hover:bg-black/[0.08] dark:bg-white/[0.06] dark:text-racing-200 dark:hover:bg-white/[0.1]'
@@ -393,197 +460,94 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Widget grid — rendered after task sections via CSS order */}
-
-      {false && socialAccounts.length > 0 && (
-        <div className="mb-6">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {socialAccounts.slice(0, 3).map((account) => {
-              const mList = socialMetrics[account.id] ?? []
-              const latest = mList[mList.length - 1]
-              const prev = mList[mList.length - 2]
-              const follDelta = latest && prev && prev.followersCount != null && latest.followersCount != null
-                ? latest.followersCount - prev.followersCount : null
-              const fmt = (n?: number | null) => n == null ? '–' : n >= 1000 ? (n / 1000).toFixed(1) + 'K' : String(n)
-              const acctPosts = socialPosts[account.id] ?? []
-              const postLikes = acctPosts.reduce((s, p) => s + (p.likeCount ?? 0), 0)
-              const postSaves = acctPosts.reduce((s, p) => s + (p.saved ?? 0), 0)
-              const displayLikes = latest?.likes ?? (acctPosts.length ? postLikes : null)
-              const displaySaves = latest?.saves ?? (acctPosts.length ? postSaves : null)
-              return (
-                <Link key={account.id} to={`/social/${account.id}`}
-                  className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm hover:shadow-md transition-shadow dark:border-racing-800 dark:bg-racing-900"
-                >
-                  <div className="flex items-center gap-3">
-                    {account.profilePictureUrl
-                      ? <img src={account.profilePictureUrl} alt="" className="h-10 w-10 flex-shrink-0 rounded-full object-cover ring-2 ring-pink-200" />
-                      : <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 via-red-500 to-yellow-400 text-white"><Instagram size={16} /></span>
-                    }
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-bold text-sm">@{account.username}</p>
-                      {follDelta !== null && (
-                        <p className={`text-xs flex items-center gap-0.5 ${follDelta >= 0 ? 'text-green-500' : 'text-red-400'}`}>
-                          <TrendingUp size={11} />
-                          {follDelta >= 0 ? '+' : ''}{follDelta} Follower
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-4 gap-1">
-                    <div className="text-center">
-                      <p className="text-[9px] text-gray-400 flex items-center justify-center gap-0.5"><Users size={9} />Follower</p>
-                      <p className="text-xs font-bold">{fmt(latest?.followersCount)}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[9px] text-gray-400">Reach</p>
-                      <p className="text-xs font-bold">{fmt(latest?.reach)}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[9px] text-gray-400 flex items-center justify-center gap-0.5"><Heart size={9} />Likes</p>
-                      <p className="text-xs font-bold">{fmt(displayLikes)}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[9px] text-gray-400 flex items-center justify-center gap-0.5"><Bookmark size={9} />Saves</p>
-                      <p className="text-xs font-bold">{fmt(displaySaves)}</p>
-                    </div>
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {(dashboardVisibility.weather ?? true) && (
-        <div className={`mb-6 relative group rounded-xl transition-all ${isEditing ? 'border-2 border-dashed border-accent/40 bg-accent/5 p-3' : ''}`}>
-          {isEditing && (
-            <button
-              type="button"
-              onClick={() => toggleDashboardWidget('weather')}
-              className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all"
-              title={t('sections.removeWidget')}
-            >
-              <X size={12} />
-            </button>
-          )}
-          <div className="max-w-xs">
-            <WeatherWidget />
-          </div>
-        </div>
-      )}
-
-      {dashboardVisibility.todayTasks && (
-        <div className={`mb-6 relative group rounded-xl transition-all ${isEditing ? 'border-2 border-dashed border-accent/40 bg-accent/5 p-3' : ''}`}>
-          {isEditing && (
-            <button
-              type="button"
-              onClick={() => toggleDashboardWidget('todayTasks')}
-              className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all"
-              title={t('sections.removeWidget')}
-            >
-              <X size={12} />
-            </button>
-          )}
-          <DailyAgendaPanel
-            selectedDate={today}
-            tasks={allTasks}
-            events={events}
-            entries={calendarEntries}
-            onTaskClick={(task) => setEditingTask(task)}
-            onEventClick={() => {}}
-            onEntryClick={(entry) => { setQuickEntryDefaults(null); setEditingEntry(entry); setShowEntryForm(true) }}
-            onAddTask={() => setNewTaskForToday(true)}
-            onAddEntry={() => { setQuickEntryDefaults(null); setEditingEntry(undefined); setShowEntryForm(true) }}
-          />
-        </div>
-      )}
-
-      {dashboardVisibility.dayPlan && (
-        <div className={`mb-6 relative group rounded-xl transition-all ${isEditing ? 'border-2 border-dashed border-accent/40 bg-accent/5 p-3' : ''}`}>
-          {isEditing && (
-            <button
-              type="button"
-              onClick={() => toggleDashboardWidget('dayPlan')}
-              className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all"
-              title={t('sections.removeWidget')}
-            >
-              <X size={12} />
-            </button>
-          )}
-          <DayPlanWidget date={today} />
-        </div>
-      )}
-
-      {dashboardVisibility.topPriority && (() => {
-        const topPriorityTasks = allTasks.filter((tk) => !tk.completed && tk.urgent && tk.important).slice(0, 6)
-        return (
-          <div className={`mb-6 relative group rounded-xl p-3 transition-all ${isEditing ? 'border-2 border-dashed border-accent/40 bg-accent/5' : ''}`}>
-            {isEditing && (
-              <button
-                type="button"
-                onClick={() => toggleDashboardWidget('topPriority')}
-                className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all"
-                title={t('sections.removeWidget')}
-              >
-                <X size={12} />
-              </button>
-            )}
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="flex items-center gap-2 text-lg font-semibold">
-                <Flame size={16} className="text-red-500" />
-                {t('sections.topPriority')}
-              </h2>
-              <span className="rounded-full bg-red-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-red-500">
-                {t('sections.topPriorityBadge')}
-              </span>
+      {/* Focus Horizon main grid: agenda ~60% + focus ~40% */}
+      <div className="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-5">
+        <div className="flex flex-col gap-5 lg:col-span-3">
+          {(dashboardVisibility.weather ?? true) && (
+            <div className={`relative group rounded-2xl transition-all ${isEditing ? 'border-2 border-dashed border-accent/40 bg-accent/5 p-3' : ''}`}>
+              {isEditing && (
+                <button type="button" onClick={() => toggleDashboardWidget('weather')} className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md" title={t('sections.removeWidget')}>
+                  <X size={12} />
+                </button>
+              )}
+              <div className="max-w-xs"><WeatherWidget /></div>
             </div>
-            {topPriorityTasks.length === 0 ? (
-              <p className="text-sm text-gray-400">{t('sections.noTopPriority')}</p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {topPriorityTasks.map((tk) => {
-                  const board = tk.boardId ? boards.find((b) => b.id === tk.boardId) : undefined
-                  return (
-                    <div
-                      key={tk.id}
-                      className="flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 transition-colors hover:border-accent/30 dark:border-racing-800 dark:bg-racing-900"
-                    >
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          if (tk.boardId) toggleProjectTaskCompleted(tk.id)
-                          else toggleTaskCompleted(tk.id)
-                        }}
-                        className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 border-gray-300 hover:border-accent dark:border-racing-600"
-                      />
-                      <div className="min-w-0 flex-1 cursor-pointer" onClick={() => setEditingTask(tk)}>
-                        <p className="truncate text-sm font-medium">{tk.title}</p>
-                        <div className="mt-1 flex items-center gap-2 text-xs text-gray-400">
-                          <span className="flex items-center gap-1 text-red-500">
-                            <Flame size={10} /> {t('sections.urgent')}
-                          </span>
-                          <span className="flex items-center gap-1 text-amber-500">
-                            <Star size={10} /> {t('sections.important')}
-                          </span>
-                          {board && (
-                            <span className="rounded-full px-1.5 py-0.5 text-white" style={{ backgroundColor: board.color }}>
-                              {board.title}
-                            </span>
-                          )}
-                          {tk.dueDate && <span>{tk.dueDate}</span>}
+          )}
+          {dashboardVisibility.todayTasks && (
+            <div className={`bento-card relative group p-3 transition-all ${isEditing ? 'ring-2 ring-dashed ring-accent/40' : ''}`}>
+              {isEditing && (
+                <button type="button" onClick={() => toggleDashboardWidget('todayTasks')} className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md" title={t('sections.removeWidget')}>
+                  <X size={12} />
+                </button>
+              )}
+              <DailyAgendaPanel
+                selectedDate={today}
+                tasks={allTasks}
+                events={events}
+                entries={calendarEntries}
+                onTaskClick={(task) => setEditingTask(task)}
+                onEventClick={() => {}}
+                onEntryClick={(entry) => { setQuickEntryDefaults(null); setEditingEntry(entry); setShowEntryForm(true) }}
+                onAddTask={() => setNewTaskForToday(true)}
+                onAddEntry={() => { setQuickEntryDefaults(null); setEditingEntry(undefined); setShowEntryForm(true) }}
+              />
+            </div>
+          )}
+          {dashboardVisibility.dayPlan && (
+            <div className={`bento-card relative group p-3 transition-all ${isEditing ? 'ring-2 ring-dashed ring-accent/40' : ''}`}>
+              {isEditing && (
+                <button type="button" onClick={() => toggleDashboardWidget('dayPlan')} className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md" title={t('sections.removeWidget')}>
+                  <X size={12} />
+                </button>
+              )}
+              <DayPlanWidget date={today} />
+            </div>
+          )}
+        </div>
+        <div className="flex flex-col gap-5 lg:col-span-2">
+          <DayCapacityWidget openTaskCount={todayOpenTasks.length} meetingMinutes={meetingMinutesToday} />
+          <WeekOverviewWidget tasks={allTasks} entries={calendarEntries} />
+          {dashboardVisibility.topPriority && (() => {
+            const topPriorityTasks = allTasks.filter((tk) => !tk.completed && tk.urgent && tk.important).slice(0, 6)
+            return (
+              <div className={`bento-card relative group p-4 transition-all ${isEditing ? 'ring-2 ring-dashed ring-accent/40' : ''}`}>
+                {isEditing && (
+                  <button type="button" onClick={() => toggleDashboardWidget('topPriority')} className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md" title={t('sections.removeWidget')}>
+                    <X size={12} />
+                  </button>
+                )}
+                <div className="mb-3 flex items-center justify-between">
+                  <h2 className="flex items-center gap-2 text-sm font-semibold">
+                    <Flame size={16} className="text-red-500" />
+                    {t('sections.topPriority')}
+                  </h2>
+                </div>
+                {topPriorityTasks.length === 0 ? (
+                  <p className="text-sm text-gray-400">{t('sections.noTopPriority')}</p>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {topPriorityTasks.map((tk) => (
+                      <div key={tk.id} className="flex w-full items-center gap-3 rounded-2xl bg-black/[0.03] p-3 dark:bg-white/[0.04]">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (tk.boardId) toggleProjectTaskCompleted(tk.id)
+                            else toggleTaskCompleted(tk.id)
+                          }}
+                          className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 border-gray-300 hover:border-accent dark:border-racing-600"
+                        />
+                        <div className="min-w-0 flex-1 cursor-pointer" onClick={() => setEditingTask(tk)}>
+                          <p className="truncate text-sm font-medium">{tk.title}</p>
                         </div>
                       </div>
-                    </div>
-                  )
-                })}
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-            <Link to="/termine" className="mt-3 flex items-center gap-1 text-xs font-semibold text-accent hover:underline">
-              {t('sections.manageEisenhower')} <ArrowRight size={12} />
-            </Link>
-          </div>
-        )
-      })()}
+            )
+          })()}
+        </div>
+      </div>
 
       {dashboardVisibility.upcomingDeadlines !== false && (weekTasks.length > 0 || weekEntries.length > 0) && (
         <div className={`mb-6 relative group rounded-xl p-3 transition-all ${isEditing ? 'border-2 border-dashed border-accent/40 bg-accent/5' : ''}`}>

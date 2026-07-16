@@ -10,18 +10,18 @@
   --sal: env(safe-area-inset-left, 0px);
 
   /* Design tokens */
-  --accent: 124 58 237;
-  --accent-light: 184 92 246;
-  --accent-dark: 79 70 229;
+  --accent: 107 70 254;
+  --accent-light: 139 110 255;
+  --accent-dark: 79 45 214;
 
-  --surface-0: 245 245 247;
+  --surface-0: 248 249 253;
   --surface-1: 255 255 255;
   --surface-2: 255 255 255;
-  --surface-3: 242 242 247;
-  --surface-4: 229 229 234;
-  --ink: 28 28 30;
-  --ink-secondary: 99 99 102;
-  --ink-tertiary: 142 142 147;
+  --surface-3: 242 244 250;
+  --surface-4: 229 232 240;
+  --ink: 24 28 36;
+  --ink-secondary: 100 110 125;
+  --ink-tertiary: 148 157 170;
 
   --racing-50: 248 250 252;
   --racing-100: 241 245 249;
@@ -37,14 +37,15 @@
 }
 
 html.light {
-  --surface-0: 245 245 247;
+  /* Soft light bento surfaces — #F8F9FD canvas */
+  --surface-0: 248 249 253;
   --surface-1: 255 255 255;
   --surface-2: 255 255 255;
-  --surface-3: 242 242 247;
-  --surface-4: 229 229 234;
-  --ink: 28 28 30;
-  --ink-secondary: 99 99 102;
-  --ink-tertiary: 142 142 147;
+  --surface-3: 242 244 250;
+  --surface-4: 229 232 240;
+  --ink: 24 28 36;
+  --ink-secondary: 100 110 125;
+  --ink-tertiary: 148 157 170;
 }
 
 /* Light mode: remap dark-first utility classes */
@@ -85,16 +86,17 @@ html.light .shadow-apple-md { box-shadow: 0 4px 16px rgba(0,0,0,0.05), 0 1px 4px
 html.light .shadow-apple { box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02) !important; }
 
 .dark {
-  --accent: 124 58 237;
+  /* Neutral charcoal + restrained violet (#6B46FE family) */
+  --accent: 139 110 255;
   --accent-light: 167 139 250;
-  --accent-dark: 91 33 182;
-  --surface-0: 10 12 16;
-  --surface-1: 16 19 25;
-  --surface-2: 24 28 36;
-  --surface-3: 36 42 53;
-  --surface-4: 56 65 80;
-  --ink: 255 255 255;
-  --ink-secondary: 209 214 224;
+  --accent-dark: 107 70 254;
+  --surface-0: 14 16 20;
+  --surface-1: 22 25 32;
+  --surface-2: 28 32 40;
+  --surface-3: 40 46 58;
+  --surface-4: 58 66 80;
+  --ink: 248 250 252;
+  --ink-secondary: 203 213 225;
   --ink-tertiary: 148 163 184;
 }
 
@@ -189,14 +191,74 @@ button, a, [role="button"], input, select, textarea, label {
 }
 
 .card-apple {
-  background: rgb(var(--surface-2));
-  border-radius: 16px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 0 0 0.5px rgba(0,0,0,0.03);
-  border: none;
+  background: rgb(var(--surface-1));
+  border-radius: 24px;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.04);
 }
 .dark .card-apple {
   background: rgb(var(--surface-2));
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 0 0 0.5px rgba(255,255,255,0.04);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+/* Panze-inspired soft bento surface — primary card language app-wide */
+.bento-card {
+  background: rgb(var(--surface-1));
+  border-radius: 24px;
+  box-shadow: 0 10px 32px rgba(15, 23, 42, 0.05), 0 2px 6px rgba(15, 23, 42, 0.03);
+  border: 1px solid rgba(15, 23, 42, 0.04);
+}
+.dark .bento-card {
+  background: rgb(var(--surface-2));
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.bento-card-sm {
+  background: rgb(var(--surface-1));
+  border-radius: 18px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.03);
+  border: 1px solid rgba(15, 23, 42, 0.04);
+}
+.dark .bento-card-sm {
+  background: rgb(var(--surface-2));
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.24);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.timeframe-pill {
+  @apply rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all;
+  color: rgb(var(--ink-secondary));
+  background: transparent;
+}
+.timeframe-pill[aria-pressed="true"],
+.timeframe-pill.is-active {
+  background: rgb(var(--ink));
+  color: rgb(var(--surface-1));
+}
+.dark .timeframe-pill[aria-pressed="true"],
+.dark .timeframe-pill.is-active {
+  background: rgb(226 232 240);
+  color: rgb(15 23 42);
+}
+
+.segmented-bar {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+.segmented-bar > span {
+  height: 14px;
+  width: 6px;
+  border-radius: 3px;
+  background: rgba(148, 163, 184, 0.28);
+}
+.dark .segmented-bar > span {
+  background: rgba(148, 163, 184, 0.18);
+}
+.segmented-bar > span.is-filled {
+  background: rgb(var(--accent));
 }
 
 .page-bg {

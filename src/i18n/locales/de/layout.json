@@ -54,7 +54,13 @@
     }
   },
   "topbar": {
-    "openMenu": "Menü öffnen"
+    "openMenu": "Menü öffnen",
+    "closeMenu": "Menü schließen",
+    "showMenu": "Vollmenü einblenden",
+    "hideMenu": "Vollmenü ausblenden",
+    "pinnedNav": "Angepinnte Navigation",
+    "settings": "Einstellungen",
+    "iconRail": "Schnellnavigation"
   },
   "quickAdd": {
     "title": "Schnell hinzufügen",

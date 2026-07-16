@@ -78,9 +78,11 @@ const navItemClass = ({ isActive }: { isActive: boolean }) =>
 interface SidebarProps {
   isOpen: boolean
   onClose: () => void
+  /** When true, sidebar is a static left rail on desktop instead of overlay */
+  docked?: boolean
 }
 
-export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+export default function Sidebar({ isOpen, onClose, docked = false }: SidebarProps) {
   const { t, i18n } = useTranslation('layout')
   const [showShortcuts, setShowShortcuts] = useState(false)
   const boards = useBoardsStore((s) => s.boards ?? [])
@@ -285,20 +287,22 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   return (
     <>
-      {isOpen && (
+      {isOpen && !docked && (
         <div
           onClick={onClose}
-          className="fixed inset-0 z-40 bg-black/40 sm:hidden"
+          className="fixed inset-0 z-40 bg-black/35 backdrop-blur-[2px]"
           aria-hidden="true"
         />
       )}
       <aside
         style={{ paddingTop: 'max(16px, calc(16px + env(safe-area-inset-top)))', paddingBottom: 'max(16px, calc(16px + env(safe-area-inset-bottom)))' }}
-        className={`vibrancy-sidebar fixed inset-y-0 left-0 z-50 flex h-full w-64 flex-col overflow-y-auto px-3 transition-transform duration-300 sm:static sm:translate-x-0 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`vibrancy-sidebar z-50 flex h-full w-[272px] flex-col overflow-y-auto px-3 transition-transform duration-300 ${
+          docked
+            ? `relative flex-shrink-0 translate-x-0 border-r border-black/[0.04] dark:border-white/[0.06] ${isOpen ? '' : 'hidden'}`
+            : `fixed inset-y-0 left-0 shadow-bento-lg ${isOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none'}`
         }`}
       >
-      <div className="mb-6 flex items-center justify-between gap-1 px-2">
+      <div className="mb-5 flex items-center justify-between gap-1 px-2">
         <div className="flex min-w-0 items-center gap-1.5">
           <Logo />
           <span className="truncate text-base font-semibold sm:text-lg">{t('appName')}</span>
@@ -317,50 +321,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             title="Tastaturkurzbefehle / Keyboard Shortcuts"
             aria-label="Tastaturkurzbefehle / Keyboard Shortcuts"
           >
-            <Keyboard size={16} />
+            <Keyboard size={16} strokeWidth={1.6} />
           </button>
           <button
-            onClick={openSearch}
+            onClick={onClose}
             className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
-            aria-label={t('sidebar.search')}
-            title={t('sidebar.searchTitle')}
-          >
-            <Search size={16} />
-          </button>
-          {featureVisibility.chat && (
-            <NavLink
-              to="/chat"
-              onClick={onClose}
-              className="relative rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
-              aria-label={t('sidebar.chat')}
-            >
-              <MessageCircle size={16} />
-              {unreadMessages > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-white">
-                  {unreadMessages > 9 ? '9+' : unreadMessages}
-                </span>
-              )}
-            </NavLink>
-          )}
-          <NavLink
-            to="/tasks/inbox"
-            onClick={onClose}
-            className="relative rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
-            aria-label={t('sidebar.inbox')}
-          >
-            <Bell size={16} />
-            {notificationCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-                {notificationCount > 9 ? '9+' : notificationCount}
-              </span>
-            )}
-          </NavLink>
-          <button
-            onClick={onClose}
-            className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800 sm:hidden"
             aria-label={t('sidebar.closeMenu')}
           >
-            <X size={16} />
+            <X size={16} strokeWidth={1.6} />
           </button>
         </div>
       </div>
