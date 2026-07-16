@@ -72,7 +72,8 @@
     "retry": "Aktualisieren",
     "sandboxTitle": "Sandbox aktiv",
     "sandboxHint": "Falls die erste Nachricht blockiert wird, sende einmal den Sandbox-Befehl und danach den Account Link Code.",
-    "serverUnavailable": "NOVAT-Server ist nicht erreichbar. WhatsApp-Verknüpfung ist derzeit nicht verfügbar.",
+    "serverUnavailable": "Supabase ist nicht konfiguriert. WhatsApp-Verknüpfung ist derzeit nicht verfügbar.",
+    "fetchError": "Verbindung fehlgeschlagen. Prüfe Internet und ob du angemeldet bist.",
     "memoryHint": "Eingegangene WhatsApp-Nachrichten findest du auch unter",
     "memoryLink": "Memory in der Seitenleiste"
   },

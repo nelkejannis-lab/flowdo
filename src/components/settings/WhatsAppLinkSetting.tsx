@@ -21,6 +21,7 @@ export default function WhatsAppLinkSetting() {
 
   async function reload() {
     setLoading(true)
+    setMessage(null)
     const result = await apiGetWhatsAppLinkStatus()
     setState(result)
     setLoading(false)

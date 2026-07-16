@@ -1,4 +1,8 @@
-/** Public nova-server URL — safe in browser bundle (API gated by Supabase token). */
+/** Public nova config — safe in browser bundle. */
 export const NOVA_PUBLIC = {
   serverUrl: 'https://nova-server-rpbi.onrender.com',
-} as const
+  /** Display-only bot number shown in Settings → Verbindungen. */
+  whatsappBotNumber: null as string | null,
+  whatsappSandboxMode: false,
+  whatsappSandboxJoinCode: null as string | null,
+}

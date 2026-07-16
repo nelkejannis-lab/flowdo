@@ -9,6 +9,7 @@ export interface Profile {
   avatar_color: string
   avatar_url?: string | null
   birthday?: string | null
+  phone_number?: string | null
   is_admin?: boolean
   app_role?: 'user' | 'admin'
   role_description?: string | null

@@ -72,7 +72,8 @@
     "retry": "Refresh",
     "sandboxTitle": "Sandbox active",
     "sandboxHint": "If the first message is blocked, send the sandbox command once, then send the account link code.",
-    "serverUnavailable": "NOVAT server is unavailable. WhatsApp linking is not available right now.",
+    "serverUnavailable": "Supabase is not configured. WhatsApp linking is not available right now.",
+    "fetchError": "Connection failed. Check your internet and that you are signed in.",
     "memoryHint": "Incoming WhatsApp messages are also available under",
     "memoryLink": "Memory in the sidebar"
   },
