@@ -20,6 +20,10 @@ import {
   Video,
   Globe,
   Share2,
+  ChevronLeft,
+  ChevronDown,
+  ChevronUp,
+  UserPlus,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useBrainStore, NotePage, NoteColumn, NoteChecklistItem } from '../store/brainStore'
@@ -115,6 +119,7 @@ export default function SecondBrainPage() {
   const [editingColTitle, setEditingColTitle] = useState('')
   const [justSaved, setJustSaved] = useState(false)
   const [moodError, setMoodError] = useState<string | null>(null)
+  const [inviteOpen, setInviteOpen] = useState(false)
 
   // State inside note creation
   const [isCreating, setIsCreating] = useState(false)
@@ -125,6 +130,7 @@ export default function SecondBrainPage() {
   const [noteTags, setNoteTags] = useState('')
   const [notePeople, setNotePeople] = useState('')
   const [noteLinkedBoardId, setNoteLinkedBoardId] = useState('')
+  const editorOpen = isCreating || !!activePage
 
   // Speech Recognition & Recording states (for editing/creating notes)
   const [isTranscribing, setIsTranscribing] = useState(false)
@@ -513,44 +519,51 @@ ${textToSummarize}`
     setMoodValue('')
   }
 
+  function closeEditor() {
+    setActivePage(null)
+    setIsCreating(false)
+  }
+
   // Shared toolbar for the create/edit detail pane
   function Toolbar() {
+    const btnBase =
+      'flex min-h-11 items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold touch-manipulation'
     return (
-      <div className="flex flex-wrap items-center gap-1.5 border-b border-gray-100 dark:border-racing-800 pb-2">
+      <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 dark:border-racing-800 pb-3">
         <button
           type="button"
           onClick={insertBulletPoint}
-          className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white"
+          className={`${btnBase} bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white`}
           title={t('toolbar.insertBullet')}
         >
-          <List size={13} />
-          {t('toolbar.bulletLabel')}
+          <List size={16} />
+          <span className="hidden sm:inline">{t('toolbar.bulletLabel')}</span>
         </button>
         <button
           type="button"
           onClick={toggleTranscription}
-          className={`flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
+          className={`${btnBase} transition-all ${
             isTranscribing
               ? 'bg-red-500 text-white animate-pulse'
               : 'bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white'
           }`}
           title={isTranscribing ? t('toolbar.stopDictation') : t('toolbar.startDictation')}
         >
-          {isTranscribing ? <MicOff size={13} /> : <Mic size={13} />}
-          {isTranscribing ? t('toolbar.listening') : t('toolbar.dictate')}
+          {isTranscribing ? <MicOff size={16} /> : <Mic size={16} />}
+          <span className="hidden sm:inline">{isTranscribing ? t('toolbar.listening') : t('toolbar.dictate')}</span>
         </button>
         <button
           type="button"
           onClick={isRecordingAudio ? stopRecordingAudio : startRecordingAudio}
-          className={`flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
+          className={`${btnBase} transition-all ${
             isRecordingAudio
               ? 'bg-indigo-600 text-white animate-pulse'
               : 'bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white'
           }`}
           title={isRecordingAudio ? t('toolbar.stopRecording') : t('toolbar.recordVoiceNote')}
         >
-          <Volume2 size={13} />
-          {isRecordingAudio ? t('toolbar.stopRecording') : t('toolbar.recordAudio')}
+          <Volume2 size={16} />
+          <span className="hidden sm:inline">{isRecordingAudio ? t('toolbar.stopRecording') : t('toolbar.recordAudio')}</span>
         </button>
         <input
           type="file"
@@ -562,20 +575,20 @@ ${textToSummarize}`
         <button
           type="button"
           onClick={() => document.getElementById('audio-file-upload')?.click()}
-          className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white"
+          className={`${btnBase} bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white`}
           title={t('toolbar.uploadAudioFile')}
         >
-          <Upload size={13} />
-          {t('toolbar.uploadAudio')}
+          <Upload size={16} />
+          <span className="hidden sm:inline">{t('toolbar.uploadAudio')}</span>
         </button>
         <button
           type="button"
           disabled={aiLoading}
           onClick={generateAiSummary}
-          className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-accent text-white hover:bg-accent-dark disabled:opacity-50 ml-auto transition-colors"
+          className={`${btnBase} bg-accent text-white hover:bg-accent-dark disabled:opacity-50 sm:ml-auto transition-colors`}
           title={t('toolbar.generateSummary')}
         >
-          <Sparkles size={13} className={aiLoading ? 'animate-spin' : ''} />
+          <Sparkles size={16} className={aiLoading ? 'animate-spin' : ''} />
           {aiLoading ? t('toolbar.summarizing') : t('toolbar.summarize')}
         </button>
       </div>
@@ -592,7 +605,11 @@ ${textToSummarize}`
         </span>
         <audio src={audioUrl} controls className="w-full" />
         {onDelete && (
-          <button onClick={onDelete} className="text-[10px] text-red-500 hover:underline font-semibold self-start">
+          <button
+            type="button"
+            onClick={onDelete}
+            className="min-h-11 self-start rounded-lg px-2 text-sm text-red-500 font-semibold touch-manipulation"
+          >
             {t('audio.delete')}
           </button>
         )}
@@ -601,389 +618,598 @@ ${textToSummarize}`
   }
 
   return (
-    <div className="flex flex-col gap-4 h-full min-h-[60vh] sm:min-h-[75vh]">
-      <h1 className="text-xl font-semibold sm:text-2xl">{t('title')}</h1>
-      <div className="flex items-center gap-2">
-        <button onClick={() => setActiveSection('notes')} className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${activeSection === 'notes' ? 'bg-accent text-white' : 'bg-gray-100 dark:bg-racing-800'}`}>{t('notesTab')}</button>
-        <button onClick={() => setActiveSection('moodboard')} className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${activeSection === 'moodboard' ? 'bg-accent text-white' : 'bg-gray-100 dark:bg-racing-800'}`}>{t('moodboardTab')}</button>
-      </div>
-      <div className="rounded-xl border border-gray-100 bg-white/70 p-3 dark:border-racing-850 dark:bg-racing-900/70">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">{t('inviteTitle')}</p>
-        <div className="flex flex-wrap gap-2">
-          <input value={inviteQuery} onChange={(e) => void runInviteSearch(e.target.value)} placeholder={t('invitePlaceholder')} className="min-w-[220px] flex-1 rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm dark:border-racing-700" />
-          <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value as CreativeInviteRole)} className="rounded-lg border border-gray-200 bg-transparent px-2 py-2 text-xs dark:border-racing-700">
-            <option value="owner">{t('inviteRoleOwner')}</option>
-            <option value="editor">{t('inviteRoleEditor')}</option>
-            <option value="viewer">{t('inviteRoleViewer')}</option>
-          </select>
+    <div className="flex flex-col gap-3 sm:gap-4 h-full min-h-[60vh] sm:min-h-[75vh] pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      {/* Sticky header: title + section tabs */}
+      <div className="sticky top-0 z-20 -mx-4 px-4 pt-1 pb-3 sm:-mx-0 sm:px-0 bg-white/90 dark:bg-[rgb(var(--surface-0)/0.92)] backdrop-blur-md border-b border-gray-100/80 dark:border-racing-850/80 sm:border-0 sm:static sm:bg-transparent sm:backdrop-blur-none sm:pb-0 sm:pt-0">
+        <h1 className="text-xl font-semibold sm:text-2xl mb-3">{t('title')}</h1>
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2 sm:w-auto">
+          <button
+            type="button"
+            onClick={() => setActiveSection('notes')}
+            className={`min-h-11 rounded-xl px-4 text-sm font-semibold touch-manipulation transition-colors ${
+              activeSection === 'notes' ? 'bg-accent text-white' : 'bg-gray-100 dark:bg-racing-800'
+            }`}
+          >
+            {t('notesTab')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveSection('moodboard')}
+            className={`min-h-11 rounded-xl px-4 text-sm font-semibold touch-manipulation transition-colors ${
+              activeSection === 'moodboard' ? 'bg-accent text-white' : 'bg-gray-100 dark:bg-racing-800'
+            }`}
+          >
+            {t('moodboardTab')}
+          </button>
         </div>
-        {inviteHits.length > 0 && (
-          <div className="mt-2 flex flex-col gap-1">
-            {inviteHits.map((u) => (
-              <button key={u.id} onClick={() => void sendInvite(u.id)} className="flex items-center justify-between rounded-lg px-2 py-1.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-racing-800">
-                <span>{u.display_name} <span className="text-xs text-gray-400">@{u.username}</span></span>
-                <span className="text-xs font-semibold text-accent">{t('inviteSend')}</span>
-              </button>
-            ))}
-          </div>
-        )}
-        {incomingInvites.length > 0 && (
-          <div className="mt-3 border-t border-gray-100 pt-2 dark:border-racing-800">
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">{t('incomingInvites')}</p>
-            {incomingInvites.map((inv) => (
-              <div key={inv.id} className="mb-1 flex items-center justify-between rounded-lg bg-black/[0.03] px-2 py-1.5 text-xs dark:bg-white/[0.04]">
-                <span>{inv.fromUser?.display_name} ({inv.role})</span>
-                <div className="flex gap-1">
-                  <button onClick={() => void acceptInvite(inv.id)} className="rounded bg-emerald-500 px-2 py-0.5 text-white">{t('acceptInvite')}</button>
-                  <button onClick={() => void declineInvite(inv.id)} className="rounded bg-gray-200 px-2 py-0.5 dark:bg-racing-700">{t('declineInvite')}</button>
+      </div>
+
+      {/* Invite panel — collapsed by default on mobile */}
+      <div className="rounded-xl border border-gray-100 bg-white/70 dark:border-racing-850 dark:bg-racing-900/70 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setInviteOpen((v) => !v)}
+          className="flex w-full min-h-11 items-center justify-between gap-2 px-3 py-2.5 text-left touch-manipulation sm:cursor-default"
+          aria-expanded={inviteOpen}
+        >
+          <span className="flex items-center gap-2 text-sm font-semibold">
+            <UserPlus size={16} className="text-accent flex-shrink-0" />
+            {t('inviteToggle')}
+            {incomingInvites.length > 0 && (
+              <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-bold text-white">
+                {incomingInvites.length}
+              </span>
+            )}
+          </span>
+          {inviteOpen ? <ChevronUp size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
+        </button>
+        {(inviteOpen || incomingInvites.length > 0) && (
+          <div className="border-t border-gray-100 px-3 pb-3 pt-2 dark:border-racing-800">
+            {inviteOpen && (
+              <>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">{t('inviteTitle')}</p>
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  <input
+                    value={inviteQuery}
+                    onChange={(e) => void runInviteSearch(e.target.value)}
+                    placeholder={t('invitePlaceholder')}
+                    className="w-full min-h-11 flex-1 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700 sm:min-w-0"
+                    autoComplete="off"
+                    autoCorrect="off"
+                  />
+                  <select
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value as CreativeInviteRole)}
+                    className="w-full min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700 sm:w-auto"
+                  >
+                    <option value="owner">{t('inviteRoleOwner')}</option>
+                    <option value="editor">{t('inviteRoleEditor')}</option>
+                    <option value="viewer">{t('inviteRoleViewer')}</option>
+                  </select>
                 </div>
+                {inviteHits.length > 0 && (
+                  <div className="mt-2 flex flex-col gap-1">
+                    {inviteHits.map((u) => (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => void sendInvite(u.id)}
+                        className="flex min-h-11 items-center justify-between gap-2 rounded-xl px-3 py-2 text-left text-sm touch-manipulation hover:bg-gray-100 active:bg-gray-100 dark:hover:bg-racing-800"
+                      >
+                        <span className="min-w-0 truncate">
+                          {u.display_name}{' '}
+                          <span className="text-xs text-gray-400">@{u.username}</span>
+                        </span>
+                        <span className="flex-shrink-0 text-sm font-semibold text-accent">{t('inviteSend')}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+            {incomingInvites.length > 0 && (
+              <div className={`${inviteOpen ? 'mt-3 border-t border-gray-100 pt-2 dark:border-racing-800' : ''}`}>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">{t('incomingInvites')}</p>
+                {incomingInvites.map((inv) => (
+                  <div
+                    key={inv.id}
+                    className="mb-2 flex flex-col gap-2 rounded-xl bg-black/[0.03] px-3 py-2.5 dark:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <span className="text-sm break-words">
+                      {inv.fromUser?.display_name} ({inv.role})
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void acceptInvite(inv.id)}
+                        className="min-h-11 flex-1 rounded-xl bg-emerald-500 px-3 text-sm font-semibold text-white touch-manipulation sm:flex-none"
+                      >
+                        {t('acceptInvite')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void declineInvite(inv.id)}
+                        className="min-h-11 flex-1 rounded-xl bg-gray-200 px-3 text-sm font-semibold touch-manipulation dark:bg-racing-700 sm:flex-none"
+                      >
+                        {t('declineInvite')}
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         )}
       </div>
 
-      {activeSection === 'notes' && <div className="flex flex-1 flex-col gap-4 min-h-0 lg:flex-row">
-        {/* Left pane: search, tabs, list */}
-        <div className="flex w-full flex-shrink-0 flex-col gap-3 lg:w-80">
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t('searchPlaceholder')}
-                className="w-full rounded-xl border border-gray-200 bg-white dark:bg-racing-950/40 dark:border-racing-800 pl-9 pr-3 py-2 text-sm outline-none focus:border-accent transition-all"
-              />
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            </div>
-            <button
-              onClick={() => handleOpenCreate(activeTab !== 'all' ? activeTab : columns[0]?.id ?? '')}
-              disabled={columns.length === 0}
-              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-accent text-white hover:bg-accent-dark disabled:opacity-40"
-              title={t('newNote')}
-            >
-              <Plus size={16} />
-            </button>
-          </div>
-
-          <div className="flex items-center gap-1 overflow-x-auto pb-1">
-            <button
-              onClick={() => setActiveTab('all')}
-              className={`flex-shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-bold uppercase tracking-wide transition-colors ${
-                activeTab === 'all'
-                  ? 'bg-accent text-white'
-                  : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-racing-800'
-              }`}
-            >
-              {t('allTab')}
-            </button>
-            {columns.map((col) => (
+      {activeSection === 'notes' && (
+        <div className="flex flex-1 flex-col gap-4 min-h-0 lg:flex-row">
+          {/* Left pane: search, tabs, list — hidden on mobile when editor is open */}
+          <div className={`flex w-full flex-shrink-0 flex-col gap-3 lg:w-80 ${editorOpen ? 'hidden lg:flex' : 'flex'}`}>
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1 min-w-0">
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t('searchPlaceholder')}
+                  className="w-full min-h-11 rounded-xl border border-gray-200 bg-white dark:bg-racing-950/40 dark:border-racing-800 pl-10 pr-3 py-2.5 text-base outline-none focus:border-accent transition-all"
+                  autoComplete="off"
+                />
+                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
               <button
-                key={col.id}
-                onClick={() => setActiveTab(col.id)}
-                className={`flex-shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-bold uppercase tracking-wide transition-colors ${
-                  activeTab === col.id
+                type="button"
+                onClick={() => handleOpenCreate(activeTab !== 'all' ? activeTab : columns[0]?.id ?? '')}
+                disabled={columns.length === 0}
+                className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-accent text-white hover:bg-accent-dark disabled:opacity-40 touch-manipulation"
+                title={t('newNote')}
+                aria-label={t('newNote')}
+              >
+                <Plus size={20} />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
+              <button
+                type="button"
+                onClick={() => setActiveTab('all')}
+                className={`flex-shrink-0 min-h-11 rounded-xl px-3.5 text-xs font-bold uppercase tracking-wide transition-colors touch-manipulation ${
+                  activeTab === 'all'
                     ? 'bg-accent text-white'
                     : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-racing-800'
                 }`}
               >
-                {col.title}
+                {t('allTab')}
               </button>
-            ))}
-            <button
-              onClick={() => setShowAddColumn(true)}
-              title={t('addCategory')}
-              className="flex-shrink-0 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-accent dark:hover:bg-racing-800"
-            >
-              <FolderPlus size={14} />
-            </button>
+              {columns.map((col) => (
+                <button
+                  key={col.id}
+                  type="button"
+                  onClick={() => setActiveTab(col.id)}
+                  className={`flex-shrink-0 min-h-11 max-w-[10rem] truncate rounded-xl px-3.5 text-xs font-bold uppercase tracking-wide transition-colors touch-manipulation ${
+                    activeTab === col.id
+                      ? 'bg-accent text-white'
+                      : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-racing-800'
+                  }`}
+                >
+                  {col.title}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setShowAddColumn(true)}
+                title={t('addCategory')}
+                aria-label={t('addCategory')}
+                className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 hover:text-accent dark:hover:bg-racing-800 touch-manipulation"
+              >
+                <FolderPlus size={18} />
+              </button>
+            </div>
+
+            <div className="flex flex-1 flex-col gap-2 overflow-y-auto pr-1 overscroll-contain">
+              {filteredPages.map((page) => (
+                <button
+                  key={page.id}
+                  type="button"
+                  onClick={() => handleOpenPage(page)}
+                  className={`flex flex-col gap-1.5 rounded-xl border p-3.5 text-left transition-all duration-150 touch-manipulation active:scale-[0.99] ${
+                    activePage?.id === page.id
+                      ? 'border-accent bg-accent/5'
+                      : 'border-gray-100 bg-white hover:border-accent/30 dark:border-racing-850 dark:bg-racing-900'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <h4 className="font-semibold text-sm break-words line-clamp-2 min-w-0">{page.title}</h4>
+                    <span className="flex-shrink-0 text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-black/[0.04] dark:bg-white/[0.05] rounded-full px-2 py-1">
+                      {columnTitle(page.columnId)}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-400 dark:text-racing-300 line-clamp-2 leading-relaxed whitespace-pre-wrap">
+                    {page.content || '...'}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {page.audioBase64 && (
+                      <span className="flex items-center gap-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20 px-1.5 py-0.5 rounded-md">
+                        <Volume2 size={10} /> Audio
+                      </span>
+                    )}
+                    {page.summary && (
+                      <span className="flex items-center gap-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 px-1.5 py-0.5 rounded-md">
+                        <Sparkles size={10} /> {t('aiLabel')}
+                      </span>
+                    )}
+                    {page.checklist && page.checklist.length > 0 && (
+                      <span className="flex items-center gap-0.5 text-[10px] font-bold uppercase tracking-wider text-accent bg-accent/10 px-1.5 py-0.5 rounded-md">
+                        <ListChecks size={10} /> {page.checklist.filter((c) => c.done).length}/{page.checklist.length}
+                      </span>
+                    )}
+                    <span className="text-[10px] text-gray-400 ml-auto">
+                      {new Date(page.updatedAt).toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })}
+                    </span>
+                  </div>
+                </button>
+              ))}
+
+              {filteredPages.length === 0 && (
+                <div className="py-8 text-center text-sm text-gray-400 border border-dashed border-gray-200 dark:border-racing-800 rounded-xl select-none">
+                  {t('noNotes')}
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="flex flex-1 flex-col gap-2 overflow-y-auto pr-1">
-            {filteredPages.map((page) => (
+          {/* Right pane: detail editor — full-width sheet on mobile when open */}
+          <div
+            className={`flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-gray-100 dark:border-racing-850 bg-white/70 dark:bg-racing-900/70 p-4 sm:p-5 backdrop-blur-apple ${
+              editorOpen ? 'flex flex-col' : 'hidden lg:flex lg:flex-col'
+            }`}
+          >
+            {editorOpen && (
               <button
-                key={page.id}
-                onClick={() => handleOpenPage(page)}
-                className={`flex flex-col gap-1.5 rounded-xl border p-3 text-left transition-all duration-150 ${
-                  activePage?.id === page.id
-                    ? 'border-accent bg-accent/5'
-                    : 'border-gray-100 bg-white hover:border-accent/30 dark:border-racing-850 dark:bg-racing-900'
-                }`}
+                type="button"
+                onClick={closeEditor}
+                className="mb-3 flex min-h-11 w-full items-center gap-2 rounded-xl px-2 text-sm font-semibold text-accent touch-manipulation lg:hidden"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <h4 className="font-semibold text-sm break-words truncate">{page.title}</h4>
-                  <span className="flex-shrink-0 text-[9px] font-bold uppercase tracking-wider text-gray-400 bg-black/[0.04] dark:bg-white/[0.05] rounded-full px-1.5 py-0.5">
-                    {columnTitle(page.columnId)}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-400 dark:text-racing-300 line-clamp-2 leading-relaxed whitespace-pre-wrap">
-                  {page.content || '...'}
-                </p>
-                <div className="flex items-center gap-2">
-                  {page.audioBase64 && (
-                    <span className="flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-wider text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20 px-1.5 py-0.5 rounded-md">
-                      <Volume2 size={10} /> Audio
-                    </span>
-                  )}
-                  {page.summary && (
-                    <span className="flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 px-1.5 py-0.5 rounded-md">
-                      <Sparkles size={10} /> {t('aiLabel')}
-                    </span>
-                  )}
-                  {page.checklist && page.checklist.length > 0 && (
-                    <span className="flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-wider text-accent bg-accent/10 px-1.5 py-0.5 rounded-md">
-                      <ListChecks size={10} /> {page.checklist.filter((c) => c.done).length}/{page.checklist.length}
-                    </span>
-                  )}
-                  <span className="text-[9px] text-gray-400 ml-auto">
-                    {new Date(page.updatedAt).toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })}
-                  </span>
-                </div>
+                <ChevronLeft size={20} />
+                {t('backToList')}
               </button>
-            ))}
-
-            {filteredPages.length === 0 && (
-              <div className="py-8 text-center text-xs text-gray-400 border border-dashed border-gray-200 dark:border-racing-800 rounded-xl select-none">
-                {t('noNotes')}
+            )}
+            {isCreating ? (
+              <div className="flex flex-col gap-4">
+                <input
+                  autoFocus
+                  type="text"
+                  value={noteTitle}
+                  onChange={(e) => setNoteTitle(e.target.value)}
+                  placeholder={t('editor.titlePlaceholder')}
+                  className="w-full text-lg font-bold bg-transparent border-b border-gray-100 dark:border-racing-800 focus:border-accent focus:outline-none pb-1.5"
+                />
+                <Toolbar />
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 mb-1.5">{t('editor.categoryLabel')}</label>
+                  <select
+                    value={createColId}
+                    onChange={(e) => setCreateColId(e.target.value)}
+                    className="w-full min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base focus:border-accent focus:outline-none dark:border-racing-700 font-medium"
+                  >
+                    {columns.map((c) => (
+                      <option key={c.id} value={c.id}>{c.title}</option>
+                    ))}
+                  </select>
+                </div>
+                <textarea
+                  value={noteContent}
+                  onChange={(e) => setNoteContent(e.target.value)}
+                  placeholder={t('editor.contentPlaceholder')}
+                  rows={10}
+                  className="w-full rounded-xl border border-gray-200 bg-transparent px-3.5 py-3 text-base focus:border-accent focus:outline-none dark:border-racing-700 leading-relaxed"
+                />
+                <BrainChecklist
+                  items={noteChecklist}
+                  onAdd={(text) => setNoteChecklist((prev) => [...prev, { id: createId(), text, done: false }])}
+                  onToggle={(id) => setNoteChecklist((prev) => prev.map((it) => (it.id === id ? { ...it, done: !it.done } : it)))}
+                  onDelete={(id) => setNoteChecklist((prev) => prev.filter((it) => it.id !== id))}
+                />
+                <AudioPlayback />
+                {aiError && <p className="text-sm text-red-500">{aiError}</p>}
+                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end mt-1 pt-3 border-t border-gray-100 dark:border-racing-800 sticky bottom-0 bg-white/90 dark:bg-racing-900/90 backdrop-blur-sm pb-[max(0.25rem,env(safe-area-inset-bottom))] sm:static sm:bg-transparent sm:backdrop-blur-none sm:pb-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreating(false)}
+                    className="min-h-11 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold touch-manipulation hover:bg-gray-50 dark:border-racing-800 dark:hover:bg-racing-800"
+                  >
+                    {t('editor.discard')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveNewPage}
+                    className="min-h-11 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent-dark transition-all shadow-sm touch-manipulation"
+                  >
+                    {t('editor.saveAndCreate')}
+                  </button>
+                </div>
+              </div>
+            ) : activePage ? (
+              <div className="flex flex-col gap-4">
+                <input
+                  type="text"
+                  value={noteTitle}
+                  onChange={(e) => setNoteTitle(e.target.value)}
+                  placeholder={t('editor.titlePlaceholderEdit')}
+                  className="w-full text-lg font-bold bg-transparent border-b border-gray-100 dark:border-racing-800 focus:border-accent focus:outline-none pb-1.5"
+                />
+                <Toolbar />
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 mb-1.5">{t('editor.categoryLabel')}</label>
+                  <select
+                    value={activePage.columnId}
+                    onChange={(e) => {
+                      const colId = e.target.value
+                      updatePage(activePage.id, { columnId: colId })
+                      setActivePage((prev) => (prev ? { ...prev, columnId: colId } : null))
+                    }}
+                    className="w-full min-h-11 max-w-full sm:max-w-xs rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base focus:border-accent focus:outline-none dark:border-racing-700 font-medium"
+                  >
+                    {columns.map((c) => (
+                      <option key={c.id} value={c.id}>{c.title}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input
+                    value={noteTags}
+                    onChange={(e) => setNoteTags(e.target.value)}
+                    placeholder={t('editor.tagsPlaceholder')}
+                    className="min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700"
+                  />
+                  <input
+                    value={notePeople}
+                    onChange={(e) => setNotePeople(e.target.value)}
+                    placeholder={t('editor.peoplePlaceholder')}
+                    className="min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700"
+                  />
+                </div>
+                {boards.length > 0 && (
+                  <select
+                    value={noteLinkedBoardId}
+                    onChange={(e) => setNoteLinkedBoardId(e.target.value)}
+                    className="w-full min-h-11 max-w-full sm:max-w-xs rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700"
+                  >
+                    <option value="">{t('editor.linkProject')}</option>
+                    {boards.map((b) => (
+                      <option key={b.id} value={b.id}>{b.title}</option>
+                    ))}
+                  </select>
+                )}
+                <textarea
+                  value={noteContent}
+                  onChange={(e) => setNoteContent(e.target.value)}
+                  placeholder={t('editor.contentPlaceholder')}
+                  rows={10}
+                  className="w-full rounded-xl border border-gray-200 bg-transparent px-3.5 py-3 text-base focus:border-accent focus:outline-none dark:border-racing-700 leading-relaxed"
+                />
+                <BrainChecklist
+                  items={activePage.checklist ?? []}
+                  onAdd={(text) => {
+                    const updated = [...(activePage.checklist ?? []), { id: createId(), text, done: false }]
+                    updatePage(activePage.id, { checklist: updated })
+                    setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
+                  }}
+                  onToggle={(id) => {
+                    const updated = (activePage.checklist ?? []).map((it) => (it.id === id ? { ...it, done: !it.done } : it))
+                    updatePage(activePage.id, { checklist: updated })
+                    setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
+                  }}
+                  onDelete={(id) => {
+                    const updated = (activePage.checklist ?? []).filter((it) => it.id !== id)
+                    updatePage(activePage.id, { checklist: updated })
+                    setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
+                  }}
+                />
+                <AudioPlayback
+                  onDelete={() => {
+                    if (confirm(t('audio.confirmDelete'))) {
+                      setAudioUrl(null)
+                      updatePage(activePage.id, { audioBase64: undefined })
+                      setActivePage((prev) => (prev ? { ...prev, audioBase64: undefined } : null))
+                    }
+                  }}
+                />
+                {activePage.summary && (
+                  <div className="rounded-xl bg-emerald-50/50 dark:bg-racing-950/40 p-3.5 border border-emerald-100/50 dark:border-racing-850 flex flex-col gap-2">
+                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                      <Sparkles size={13} /> {t('editor.aiSummaryTitle')}
+                    </span>
+                    <div className="text-sm leading-relaxed text-gray-700 dark:text-racing-200 whitespace-pre-wrap border-l-2 border-emerald-400 pl-3">
+                      {activePage.summary}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm(t('editor.confirmDeleteSummary'))) {
+                          updatePage(activePage.id, { summary: undefined })
+                          setActivePage((prev) => (prev ? { ...prev, summary: undefined } : null))
+                        }
+                      }}
+                      className="min-h-11 self-start rounded-lg px-2 text-sm text-red-500 font-semibold touch-manipulation"
+                    >
+                      {t('editor.deleteSummary')}
+                    </button>
+                  </div>
+                )}
+                {aiError && <p className="text-sm text-red-500">{aiError}</p>}
+                <div className="flex justify-between items-center gap-2 mt-1 pt-3 border-t border-gray-100 dark:border-racing-800 sticky bottom-0 bg-white/90 dark:bg-racing-900/90 backdrop-blur-sm pb-[max(0.25rem,env(safe-area-inset-bottom))] sm:static sm:bg-transparent sm:backdrop-blur-none sm:pb-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm(t('editor.confirmDeleteNote'))) {
+                        deletePage(activePage.id)
+                        setActivePage(null)
+                      }
+                    }}
+                    className="min-h-11 rounded-xl px-3 text-sm font-semibold text-red-500 touch-manipulation"
+                  >
+                    {t('editor.delete')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSavePage}
+                    className="min-h-11 rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:bg-accent-dark transition-all shadow-sm touch-manipulation"
+                  >
+                    {justSaved ? t('editor.saved') : t('editor.save')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex h-full min-h-[40vh] flex-col items-center justify-center text-center text-gray-400">
+                <FileText size={32} className="mb-3 opacity-40" />
+                <p className="text-sm px-4">{t('editor.emptyState')}</p>
               </div>
             )}
           </div>
         </div>
+      )}
 
-        {/* Right pane: detail editor */}
-        <div className="flex-1 overflow-y-auto rounded-2xl border border-gray-100 dark:border-racing-850 bg-white/70 dark:bg-racing-900/70 p-5 backdrop-blur-apple">
-          {isCreating ? (
-            <div className="flex flex-col gap-4">
-              <input
-                autoFocus
-                type="text"
-                value={noteTitle}
-                onChange={(e) => setNoteTitle(e.target.value)}
-                placeholder={t('editor.titlePlaceholder')}
-                className="w-full text-lg font-bold bg-transparent border-b border-gray-100 dark:border-racing-800 focus:border-accent focus:outline-none pb-1.5"
-              />
-              <Toolbar />
-              <div>
-                <label className="block text-xs font-semibold text-gray-400 mb-1">{t('editor.categoryLabel')}</label>
-                <select
-                  value={createColId}
-                  onChange={(e) => setCreateColId(e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-xs focus:border-accent focus:outline-none dark:border-racing-700 font-medium"
-                >
-                  {columns.map((c) => (
-                    <option key={c.id} value={c.id}>{c.title}</option>
-                  ))}
-                </select>
-              </div>
-              <textarea
-                value={noteContent}
-                onChange={(e) => setNoteContent(e.target.value)}
-                placeholder={t('editor.contentPlaceholder')}
-                rows={10}
-                className="w-full rounded-xl border border-gray-200 bg-transparent px-3.5 py-2.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700 leading-relaxed"
-              />
-              <BrainChecklist
-                items={noteChecklist}
-                onAdd={(text) => setNoteChecklist((prev) => [...prev, { id: createId(), text, done: false }])}
-                onToggle={(id) => setNoteChecklist((prev) => prev.map((it) => (it.id === id ? { ...it, done: !it.done } : it)))}
-                onDelete={(id) => setNoteChecklist((prev) => prev.filter((it) => it.id !== id))}
-              />
-              <AudioPlayback />
-              {aiError && <p className="text-xs text-red-500">{aiError}</p>}
-              <div className="flex justify-end gap-2 mt-1 pt-3 border-t border-gray-100 dark:border-racing-800">
-                <button
-                  type="button"
-                  onClick={() => setIsCreating(false)}
-                  className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold hover:bg-gray-50 dark:border-racing-800 dark:hover:bg-racing-800"
-                >
-                  {t('editor.discard')}
-                </button>
-                <button
-                  onClick={handleSaveNewPage}
-                  className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark transition-all shadow-sm"
-                >
-                  {t('editor.saveAndCreate')}
-                </button>
-              </div>
-            </div>
-          ) : activePage ? (
-            <div className="flex flex-col gap-4">
-              <input
-                type="text"
-                value={noteTitle}
-                onChange={(e) => setNoteTitle(e.target.value)}
-                placeholder={t('editor.titlePlaceholderEdit')}
-                className="w-full text-lg font-bold bg-transparent border-b border-gray-100 dark:border-racing-800 focus:border-accent focus:outline-none pb-1.5"
-              />
-              <Toolbar />
-              <div>
-                <label className="block text-xs font-semibold text-gray-400 mb-1">{t('editor.categoryLabel')}</label>
-                <select
-                  value={activePage.columnId}
-                  onChange={(e) => {
-                    const colId = e.target.value
-                    updatePage(activePage.id, { columnId: colId })
-                    setActivePage((prev) => (prev ? { ...prev, columnId: colId } : null))
-                  }}
-                  className="w-full max-w-xs rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-xs focus:border-accent focus:outline-none dark:border-racing-700 font-medium"
-                >
-                  {columns.map((c) => (
-                    <option key={c.id} value={c.id}>{c.title}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <input value={noteTags} onChange={(e) => setNoteTags(e.target.value)} placeholder="Tags (kommagetrennt)"
-                  className="rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-xs dark:border-racing-700" />
-                <input value={notePeople} onChange={(e) => setNotePeople(e.target.value)} placeholder="Personen (kommagetrennt)"
-                  className="rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-xs dark:border-racing-700" />
-              </div>
-              {boards.length > 0 && (
-                <select value={noteLinkedBoardId} onChange={(e) => setNoteLinkedBoardId(e.target.value)}
-                  className="w-full max-w-xs rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-xs dark:border-racing-700">
-                  <option value="">Projekt verknüpfen…</option>
-                  {boards.map((b) => <option key={b.id} value={b.id}>{b.title}</option>)}
-                </select>
-              )}
-              <textarea
-                value={noteContent}
-                onChange={(e) => setNoteContent(e.target.value)}
-                placeholder={t('editor.contentPlaceholder')}
-                rows={10}
-                className="w-full rounded-xl border border-gray-200 bg-transparent px-3.5 py-2.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700 leading-relaxed"
-              />
-              <BrainChecklist
-                items={activePage.checklist ?? []}
-                onAdd={(text) => {
-                  const updated = [...(activePage.checklist ?? []), { id: createId(), text, done: false }]
-                  updatePage(activePage.id, { checklist: updated })
-                  setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
-                }}
-                onToggle={(id) => {
-                  const updated = (activePage.checklist ?? []).map((it) => (it.id === id ? { ...it, done: !it.done } : it))
-                  updatePage(activePage.id, { checklist: updated })
-                  setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
-                }}
-                onDelete={(id) => {
-                  const updated = (activePage.checklist ?? []).filter((it) => it.id !== id)
-                  updatePage(activePage.id, { checklist: updated })
-                  setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
-                }}
-              />
-              <AudioPlayback
-                onDelete={() => {
-                  if (confirm(t('audio.confirmDelete'))) {
-                    setAudioUrl(null)
-                    updatePage(activePage.id, { audioBase64: undefined })
-                    setActivePage((prev) => (prev ? { ...prev, audioBase64: undefined } : null))
-                  }
-                }}
-              />
-              {activePage.summary && (
-                <div className="rounded-xl bg-emerald-50/50 dark:bg-racing-950/40 p-3.5 border border-emerald-100/50 dark:border-racing-850 flex flex-col gap-2">
-                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                    <Sparkles size={13} /> {t('editor.aiSummaryTitle')}
-                  </span>
-                  <div className="text-xs leading-relaxed text-gray-700 dark:text-racing-200 whitespace-pre-wrap border-l-2 border-emerald-400 pl-3">
-                    {activePage.summary}
-                  </div>
-                  <button
-                    onClick={() => {
-                      if (confirm(t('editor.confirmDeleteSummary'))) {
-                        updatePage(activePage.id, { summary: undefined })
-                        setActivePage((prev) => (prev ? { ...prev, summary: undefined } : null))
-                      }
-                    }}
-                    className="text-[10px] text-red-500 hover:underline font-semibold self-start"
-                  >
-                    {t('editor.deleteSummary')}
-                  </button>
-                </div>
-              )}
-              {aiError && <p className="text-xs text-red-500">{aiError}</p>}
-              <div className="flex justify-between items-center mt-1 pt-3 border-t border-gray-100 dark:border-racing-800">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (confirm(t('editor.confirmDeleteNote'))) {
-                      deletePage(activePage.id)
-                      setActivePage(null)
-                    }
-                  }}
-                  className="text-sm font-semibold text-red-500 hover:underline"
-                >
-                  {t('editor.delete')}
-                </button>
-                <button
-                  onClick={handleSavePage}
-                  className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark transition-all shadow-sm"
-                >
-                  {justSaved ? t('editor.saved') : t('editor.save')}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex h-full min-h-[40vh] flex-col items-center justify-center text-center text-gray-400">
-              <FileText size={32} className="mb-3 opacity-40" />
-              <p className="text-sm">{t('editor.emptyState')}</p>
-            </div>
-          )}
-        </div>
-      </div>}
       {activeSection === 'moodboard' && (
-        <div className="rounded-2xl border border-gray-100 bg-white/70 p-4 dark:border-racing-850 dark:bg-racing-900/70">
-          <div className="mb-3 flex flex-wrap gap-2">
-            <input value={moodTitle} onChange={(e) => setMoodTitle(e.target.value)} placeholder={t('moodboardAdd')} className="min-w-[220px] flex-1 rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm dark:border-racing-700" />
-            <select value={moodType} onChange={(e) => setMoodType(e.target.value as MoodInputType)} className="rounded-lg border border-gray-200 bg-transparent px-2 py-2 text-xs dark:border-racing-700">
+        <div className="rounded-2xl border border-gray-100 bg-white/70 p-3 sm:p-4 dark:border-racing-850 dark:bg-racing-900/70">
+          <div className="mb-4 flex flex-col gap-2">
+            <input
+              value={moodTitle}
+              onChange={(e) => setMoodTitle(e.target.value)}
+              placeholder={t('moodboardTitlePlaceholder')}
+              className="w-full min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700"
+              autoComplete="off"
+            />
+            <select
+              value={moodType}
+              onChange={(e) => setMoodType(e.target.value as MoodInputType)}
+              className="w-full min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700 sm:max-w-xs"
+            >
               <option value="note">{t('moodboardText')}</option>
               <option value="image">{t('moodboardImage')}</option>
               <option value="video">{t('moodboardVideo')}</option>
               <option value="social">{t('moodboardSocial')}</option>
               <option value="website">{t('moodboardWebsite')}</option>
             </select>
-            <input value={moodValue} onChange={(e) => setMoodValue(e.target.value)} placeholder={moodType === 'note' ? t('moodboardText') : moodType === 'image' ? t('moodboardImage') : moodType === 'video' ? t('moodboardVideo') : moodType === 'social' ? t('moodboardSocial') : t('moodboardWebsite')} className="min-w-[220px] flex-1 rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm dark:border-racing-700" />
-            <button onClick={() => void addMoodboardItem()} className="rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-white">{t('moodboardAdd')}</button>
+            <input
+              value={moodValue}
+              onChange={(e) => setMoodValue(e.target.value)}
+              placeholder={
+                moodType === 'note'
+                  ? t('moodboardText')
+                  : moodType === 'image'
+                    ? t('moodboardImage')
+                    : moodType === 'video'
+                      ? t('moodboardVideo')
+                      : moodType === 'social'
+                        ? t('moodboardSocial')
+                        : t('moodboardWebsite')
+              }
+              className="w-full min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700"
+              autoComplete="off"
+              autoCapitalize="off"
+              autoCorrect="off"
+            />
+            <button
+              type="button"
+              onClick={() => void addMoodboardItem()}
+              className="min-h-11 w-full rounded-xl bg-accent px-4 text-sm font-semibold text-white touch-manipulation sm:w-auto sm:self-start"
+            >
+              {t('moodboardAdd')}
+            </button>
           </div>
-          {moodError && <p className="mb-2 text-xs font-semibold text-red-500">{moodError}</p>}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {moodError && <p className="mb-3 text-sm font-semibold text-red-500">{moodError}</p>}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {moodItems.map((item) => (
-              <div key={item.id} className="rounded-xl border border-gray-100 bg-white p-3 dark:border-racing-800 dark:bg-racing-900">
-                <div className="mb-2 flex items-center justify-between">
-                  <h4 className="text-sm font-semibold">{item.title}</h4>
-                  <button onClick={() => void deleteMoodItem(item.id)} className="text-xs text-red-500">{t('editor.delete')}</button>
+              <div
+                key={item.id}
+                className="rounded-xl border border-gray-100 bg-white p-3.5 dark:border-racing-800 dark:bg-racing-900 overflow-hidden"
+              >
+                <div className="mb-2 flex items-start justify-between gap-2">
+                  <h4 className="text-sm font-semibold break-words min-w-0 flex-1">{item.title}</h4>
+                  <button
+                    type="button"
+                    onClick={() => void deleteMoodItem(item.id)}
+                    className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-red-500 touch-manipulation hover:bg-red-50 dark:hover:bg-red-950/30"
+                    aria-label={t('editor.delete')}
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
                 <div className="mb-2 flex items-center gap-1.5">
-                  <span className="rounded-full bg-black/[0.05] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide dark:bg-white/[0.07]">
-                    {item.type === 'note' ? <List size={11} /> : item.type === 'image' ? <ImageIcon size={11} /> : item.type === 'video' ? <Video size={11} /> : item.type === 'social' ? <Share2 size={11} /> : <Globe size={11} />}
+                  <span className="rounded-full bg-black/[0.05] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide dark:bg-white/[0.07]">
+                    {item.type === 'note' ? (
+                      <List size={12} />
+                    ) : item.type === 'image' ? (
+                      <ImageIcon size={12} />
+                    ) : item.type === 'video' ? (
+                      <Video size={12} />
+                    ) : item.type === 'social' ? (
+                      <Share2 size={12} />
+                    ) : (
+                      <Globe size={12} />
+                    )}
                   </span>
                   <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                    {item.type === 'note' ? t('moodboardText') : item.type === 'image' ? t('moodboardImage') : item.type === 'video' ? t('moodboardVideo') : item.type === 'social' ? t('moodboardSocial') : t('moodboardWebsite')}
+                    {item.type === 'note'
+                      ? t('moodboardText')
+                      : item.type === 'image'
+                        ? t('moodboardImage')
+                        : item.type === 'video'
+                          ? t('moodboardVideo')
+                          : item.type === 'social'
+                            ? t('moodboardSocial')
+                            : t('moodboardWebsite')}
                   </span>
                 </div>
-                {item.type === 'note' && <p className="text-xs text-gray-500 whitespace-pre-wrap">{item.textContent}</p>}
-                {item.type === 'image' && item.imageUrl && <img src={item.imageUrl} alt={item.title} className="max-h-40 w-full rounded-lg object-cover" />}
-                {(item.type === 'link' || item.type === 'video' || item.type === 'social' || item.type === 'website') && item.linkUrl && (
-                  <a href={item.linkUrl} target="_blank" rel="noreferrer" className="block rounded-lg border border-gray-100 p-2 text-xs dark:border-racing-800">
-                    <div className="mb-1 flex items-center gap-2">
-                      {item.metadataThumbnail ? <img src={item.metadataThumbnail} alt="" className="h-5 w-5 rounded object-cover" /> : <Link2 size={13} />}
-                      <span className="truncate font-semibold">{item.metadataTitle || item.linkUrl}</span>
-                    </div>
-                    <span className="block truncate text-gray-400">{item.metadataHost || item.linkUrl}</span>
-                  </a>
+                {item.type === 'note' && (
+                  <p className="text-sm text-gray-500 whitespace-pre-wrap break-words">{item.textContent}</p>
                 )}
+                {item.type === 'image' && item.imageUrl && (
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    className="max-h-48 w-full rounded-lg object-cover"
+                    loading="lazy"
+                  />
+                )}
+                {(item.type === 'link' || item.type === 'video' || item.type === 'social' || item.type === 'website') &&
+                  item.linkUrl && (
+                    <a
+                      href={item.linkUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block rounded-xl border border-gray-100 p-3 text-sm dark:border-racing-800 touch-manipulation active:bg-gray-50 dark:active:bg-racing-800"
+                    >
+                      <div className="mb-1 flex items-center gap-2 min-w-0">
+                        {item.metadataThumbnail ? (
+                          <img src={item.metadataThumbnail} alt="" className="h-6 w-6 rounded object-cover flex-shrink-0" />
+                        ) : (
+                          <Link2 size={14} className="flex-shrink-0" />
+                        )}
+                        <span className="truncate font-semibold">{item.metadataTitle || item.linkUrl}</span>
+                      </div>
+                      <span className="block truncate text-gray-400 text-xs">{item.metadataHost || item.linkUrl}</span>
+                    </a>
+                  )}
               </div>
             ))}
-            {moodItems.length === 0 && <p className="text-sm text-gray-400">{t('noNotes')}</p>}
+            {moodItems.length === 0 && (
+              <p className="col-span-full text-sm text-gray-400 py-6 text-center">{t('moodboardEmpty')}</p>
+            )}
           </div>
         </div>
       )}
 
       {/* Spalte hinzufügen Popover */}
       {showAddColumn && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-sm p-4" onClick={() => setShowAddColumn(false)}>
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/45 backdrop-blur-sm p-0 sm:p-4"
+          onClick={() => setShowAddColumn(false)}
+        >
           <div
-            className="bg-white dark:bg-racing-900 border border-gray-100 dark:border-racing-850 rounded-2xl p-5 shadow-2xl max-w-sm w-full"
+            className="bg-white dark:bg-racing-900 border border-gray-100 dark:border-racing-850 rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl max-w-sm w-full pb-[max(1.25rem,env(safe-area-inset-bottom))]"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-base font-bold mb-3">{t('categoryModal.title')}</h3>
@@ -994,13 +1220,13 @@ ${textToSummarize}`
                 value={newColTitle}
                 onChange={(e) => setNewColTitle(e.target.value)}
                 placeholder={t('categoryModal.namePlaceholder')}
-                className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+                className="w-full min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base focus:border-accent focus:outline-none dark:border-racing-700"
               />
               {columns.length > 0 && (
-                <div className="flex flex-col gap-1.5 max-h-32 overflow-y-auto">
+                <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{t('categoryModal.existing')}</span>
                   {columns.map((col) => (
-                    <div key={col.id} className="flex items-center gap-1.5">
+                    <div key={col.id} className="flex items-center gap-1.5 min-h-11">
                       {editingColId === col.id ? (
                         <>
                           <input
@@ -1008,17 +1234,25 @@ ${textToSummarize}`
                             value={editingColTitle}
                             onChange={(e) => setEditingColTitle(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), saveRenameCol(col.id))}
-                            className="flex-1 bg-white dark:bg-racing-900 border border-gray-200 rounded px-1.5 py-0.5 text-sm outline-none focus:border-accent"
+                            className="flex-1 min-h-11 bg-white dark:bg-racing-900 border border-gray-200 rounded-xl px-3 py-2 text-base outline-none focus:border-accent"
                           />
-                          <button type="button" onClick={() => saveRenameCol(col.id)} className="text-emerald-500 hover:text-emerald-600 rounded p-0.5">
-                            <Check size={14} />
+                          <button
+                            type="button"
+                            onClick={() => saveRenameCol(col.id)}
+                            className="flex h-11 w-11 items-center justify-center text-emerald-500 hover:text-emerald-600 rounded-xl touch-manipulation"
+                          >
+                            <Check size={18} />
                           </button>
                         </>
                       ) : (
                         <>
-                          <span className="flex-1 truncate text-sm">{col.title}</span>
-                          <button type="button" onClick={() => startRenameCol(col)} className="text-gray-400 hover:text-gray-600 dark:hover:text-racing-100 rounded p-0.5">
-                            <Edit2 size={12} />
+                          <span className="flex-1 truncate text-sm px-1">{col.title}</span>
+                          <button
+                            type="button"
+                            onClick={() => startRenameCol(col)}
+                            className="flex h-11 w-11 items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-racing-100 rounded-xl touch-manipulation"
+                          >
+                            <Edit2 size={16} />
                           </button>
                           {columns.length > 1 && (
                             <button
@@ -1029,9 +1263,9 @@ ${textToSummarize}`
                                   if (activeTab === col.id) setActiveTab('all')
                                 }
                               }}
-                              className="text-gray-400 hover:text-red-500 rounded p-0.5"
+                              className="flex h-11 w-11 items-center justify-center text-gray-400 hover:text-red-500 rounded-xl touch-manipulation"
                             >
-                              <Trash2 size={12} />
+                              <Trash2 size={16} />
                             </button>
                           )}
                         </>
@@ -1040,15 +1274,18 @@ ${textToSummarize}`
                   ))}
                 </div>
               )}
-              <div className="flex justify-end gap-2 text-xs font-semibold">
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end text-sm font-semibold">
                 <button
                   type="button"
                   onClick={() => setShowAddColumn(false)}
-                  className="rounded-lg border border-gray-200 px-3 py-2 hover:bg-gray-50 dark:border-racing-800 dark:hover:bg-racing-800"
+                  className="min-h-11 rounded-xl border border-gray-200 px-4 touch-manipulation hover:bg-gray-50 dark:border-racing-800 dark:hover:bg-racing-800"
                 >
                   {t('categoryModal.close')}
                 </button>
-                <button type="submit" className="rounded-lg bg-accent text-white px-3 py-2 hover:bg-accent-dark">
+                <button
+                  type="submit"
+                  className="min-h-11 rounded-xl bg-accent text-white px-4 touch-manipulation hover:bg-accent-dark"
+                >
                   {t('categoryModal.create')}
                 </button>
               </div>
@@ -1086,29 +1323,32 @@ function BrainChecklist({
       <span className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-racing-300">
         <ListChecks size={13} /> {t('checklist.title')}
       </span>
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-0.5">
         {items.map((item) => (
-          <div key={item.id} className="group flex items-center gap-2 py-0.5">
+          <div key={item.id} className="group flex items-center gap-2 min-h-11 py-1">
             <button
               type="button"
               onClick={() => onToggle(item.id)}
-              className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+              className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors touch-manipulation ${
                 item.done ? 'border-accent bg-accent text-white' : 'border-gray-300 dark:border-racing-600'
               }`}
+              aria-checked={item.done}
+              role="checkbox"
             >
-              {item.done && <Check size={10} />}
+              {item.done && <Check size={14} />}
             </button>
-            <span className={`flex-1 text-sm ${item.done ? 'text-gray-400 line-through' : ''}`}>{item.text}</span>
+            <span className={`flex-1 text-base ${item.done ? 'text-gray-400 line-through' : ''}`}>{item.text}</span>
             <button
               type="button"
               onClick={() => onDelete(item.id)}
-              className="text-gray-300 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
+              className="flex h-11 w-11 flex-shrink-0 items-center justify-center text-gray-400 opacity-100 transition-opacity hover:text-red-500 sm:opacity-0 sm:group-hover:opacity-100 touch-manipulation"
+              aria-label={t('editor.delete')}
             >
-              <Trash2 size={12} />
+              <Trash2 size={16} />
             </button>
           </div>
         ))}
-        {items.length === 0 && <p className="text-xs italic text-gray-400">{t('checklist.empty')}</p>}
+        {items.length === 0 && <p className="text-sm italic text-gray-400">{t('checklist.empty')}</p>}
       </div>
       <div className="mt-2 flex items-center gap-2">
         <input
@@ -1121,10 +1361,15 @@ function BrainChecklist({
               commit()
             }
           }}
-          className="flex-1 rounded-lg border border-gray-200 bg-transparent px-2 py-1.5 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+          className="flex-1 min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base focus:border-accent focus:outline-none dark:border-racing-700"
         />
-        <button type="button" onClick={commit} className="rounded-lg bg-accent p-1.5 text-white hover:bg-accent-dark">
-          <Plus size={14} />
+        <button
+          type="button"
+          onClick={commit}
+          className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-accent text-white hover:bg-accent-dark touch-manipulation"
+          aria-label={t('checklist.addPlaceholder')}
+        >
+          <Plus size={18} />
         </button>
       </div>
     </div>
