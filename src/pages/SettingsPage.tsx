@@ -1212,7 +1212,6 @@ function SidebarOrderSection({ navOrder, setNavOrder, navVisibility, toggleNavIt
 function getDashWidgets(t: (key: string) => string): { key: DashboardWidget; icon: React.ReactNode; label: string; desc: string }[] {
   return [
     { key: 'stats',            icon: <BarChart2 size={16} />,   label: t('dashboardWidgets.items.stats.label'),     desc: t('dashboardWidgets.items.stats.desc') },
-    { key: 'todayTasks',       icon: <CheckSquare size={16} />, label: t('dashboardWidgets.items.todayTasks.label'),  desc: t('dashboardWidgets.items.todayTasks.desc') },
     { key: 'topPriority',      icon: <TrendingUp size={16} />,  label: t('dashboardWidgets.items.topPriority.label'), desc: t('dashboardWidgets.items.topPriority.desc') },
     { key: 'dayPlan',          icon: <Timer size={16} />,       label: t('dashboardWidgets.items.dayPlan.label'),       desc: t('dashboardWidgets.items.dayPlan.desc') },
     { key: 'upcomingDeadlines',icon: <Clock size={16} />,       label: t('dashboardWidgets.items.upcomingDeadlines.label'), desc: t('dashboardWidgets.items.upcomingDeadlines.desc') },

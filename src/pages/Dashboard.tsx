@@ -22,7 +22,6 @@ import ProjectTaskFormModal from '../components/boards/ProjectTaskFormModal'
 import BoardCard from '../components/boards/BoardCard'
 import AiDayPlannerModal from '../components/dashboard/AiDayPlannerModal'
 import WeeklyReportModal from '../components/dashboard/WeeklyReportModal'
-import DailyAgendaPanel from '../components/calendar/DailyAgendaPanel'
 import DayPlanWidget from '../components/dashboard/DayPlanWidget'
 import WeatherWidget from '../components/dashboard/WeatherWidget'
 import CalendarEntryFormModal from '../components/calendar/CalendarEntryFormModal'
@@ -464,34 +463,14 @@ export default function Dashboard() {
         doneStats={doneStats}
         onPlanDay={() => setShowAiDayPlanner(true)}
         onOpenBriefing={() => setShowMorningReport(true)}
+        onAddTask={() => setNewTaskForToday(true)}
+        onAddEntry={() => { setQuickEntryDefaults(null); setEditingEntry(undefined); setShowEntryForm(true) }}
         onToggleTodo={(tk) => {
           if (tk.boardId) toggleProjectTaskCompleted(tk.id)
           else toggleTaskCompleted(tk.id)
         }}
         onOpenTodo={(tk) => setEditingTask(tk as typeof allTasks[number])}
       />
-
-      {/* Tagesübersicht — full page width, above Woche im Fokus */}
-      {dashboardVisibility.todayTasks && (
-        <div className={`mb-6 relative group transition-all ${isEditing ? 'rounded-2xl ring-2 ring-dashed ring-accent/40 p-3' : ''}`}>
-          {isEditing && (
-            <button type="button" onClick={() => toggleDashboardWidget('todayTasks')} className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md" title={t('sections.removeWidget')}>
-              <X size={12} />
-            </button>
-          )}
-          <DailyAgendaPanel
-            selectedDate={today}
-            tasks={allTasks}
-            events={events}
-            entries={calendarEntries}
-            onTaskClick={(task) => setEditingTask(task)}
-            onEventClick={() => {}}
-            onEntryClick={(entry) => { setQuickEntryDefaults(null); setEditingEntry(entry); setShowEntryForm(true) }}
-            onAddTask={() => setNewTaskForToday(true)}
-            onAddEntry={() => { setQuickEntryDefaults(null); setEditingEntry(undefined); setShowEntryForm(true) }}
-          />
-        </div>
-      )}
 
       <div className="mb-6">
         <WeeklyInsightCard
@@ -534,7 +513,6 @@ export default function Dashboard() {
               { key: 'stats',            label: t('sections.widgetLabels.stats') },
               { key: 'workoffice',       label: t('sections.widgetLabels.workoffice') },
               { key: 'weather',          label: t('sections.widgetLabels.weather') },
-              { key: 'todayTasks',       label: t('sections.widgetLabels.todayTasks') },
               { key: 'dayPlan',          label: t('sections.widgetLabels.dayPlan') },
               { key: 'topPriority',      label: t('sections.widgetLabels.topPriority') },
               { key: 'upcomingDeadlines',label: t('sections.widgetLabels.upcomingDeadlines') },

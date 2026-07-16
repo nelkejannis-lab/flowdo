@@ -13,6 +13,7 @@ import {
   Users,
   Clock,
   ListTodo,
+  Plus,
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
@@ -74,6 +75,8 @@ interface Props {
   doneStats: DoneStats
   onPlanDay?: () => void
   onOpenBriefing?: () => void
+  onAddTask?: () => void
+  onAddEntry?: () => void
   onToggleTodo?: (task: TodayTodo) => void
   onOpenTodo?: (task: TodayTodo) => void
 }
@@ -92,10 +95,13 @@ export default function TodayHero({
   doneStats,
   onPlanDay,
   onOpenBriefing,
+  onAddTask,
+  onAddEntry,
   onToggleTodo,
   onOpenTodo,
 }: Props) {
   const { t, i18n } = useTranslation('dashboard')
+  const { t: tc } = useTranslation('calendar')
   const dateLocale = i18n.language === 'en' ? enUS : de
   const capped = Math.min(100, Math.max(0, capacityPercent))
   const free = Math.max(0, 100 - capped)
@@ -138,6 +144,26 @@ export default function TodayHero({
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {onAddTask && (
+            <button
+              type="button"
+              onClick={onAddTask}
+              className="inline-flex items-center gap-1 rounded-full bg-accent px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm shadow-accent/20 transition hover:brightness-110 active:scale-95"
+            >
+              <Plus size={13} />
+              {tc('agenda.taskButton')}
+            </button>
+          )}
+          {onAddEntry && (
+            <button
+              type="button"
+              onClick={onAddEntry}
+              className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-95 dark:border-racing-700 dark:bg-racing-800 dark:text-racing-100"
+            >
+              <Plus size={13} />
+              {tc('agenda.entryButton')}
+            </button>
+          )}
           {onOpenBriefing && (
             <button
               type="button"
