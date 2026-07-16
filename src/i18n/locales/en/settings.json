@@ -208,7 +208,7 @@
       },
       "calendar": {
         "title": "Calendar",
-        "desc": "Month, week and day views. Sync Google, Outlook and iCal.",
+        "desc": "Month, week and day views. Sync Outlook and Apple/iCloud.",
         "tip": "Team filter shows colleagues' vacation and absences"
       },
       "worktime": {
@@ -296,17 +296,20 @@
     "notConnected": "Not connected",
     "disconnect": "Disconnect",
     "connect": "Connect",
-    "icloud": "iCloud / iCal / Other (URL)",
-    "icloudPlaceholder": "Paste an ICS or Webcal link",
+    "icloud": "Apple / iCloud Calendar",
+    "icloudPlaceholder": "Paste ICS or Webcal links for Work and Personal",
     "urlPlaceholder": "https://... or webcal://...",
     "add": "Add",
-    "icloudHint": "iCloud: Settings → Calendar → Share Calendar → Copy link",
+    "saveFeeds": "Save feeds",
+    "saving": "Saving…",
+    "feedActive": "active",
+    "icloudHint": "iPhone: Calendar → calendar name → Share → Copy Link (webcal:// or HTTPS). Separate Work and Personal — NOVAT syncs both.",
     "lastSynced": "Last synced: {{date}}",
     "never": "Never",
     "syncing": "Syncing…",
     "syncNow": "Sync now",
     "syncedPrefix": "Synced",
-    "fewConnections": "💡 Connect Google or Outlook using the \"Connect\" button above. iCloud works instantly via calendar link (no setup needed).",
+    "fewConnections": "Connect Outlook above, or add Apple/iCloud feeds (Work + Personal) via calendar link.",
     "oauthErrors": {
       "access_denied": "Access denied — please grant Outlook permission.",
       "invalid_grant": "Login expired — please reconnect Outlook.",

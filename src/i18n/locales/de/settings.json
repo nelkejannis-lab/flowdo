@@ -208,7 +208,7 @@
       },
       "calendar": {
         "title": "Kalender",
-        "desc": "Monats-, Wochen- und Tagesansicht. Google, Outlook und iCal synchronisieren.",
+        "desc": "Monats-, Wochen- und Tagesansicht. Outlook und Apple/iCloud synchronisieren.",
         "tip": "Team-Filter zeigt Urlaub und Abwesenheiten deiner Kollegen"
       },
       "worktime": {
@@ -296,17 +296,20 @@
     "notConnected": "Nicht verbunden",
     "disconnect": "Trennen",
     "connect": "Verbinden",
-    "icloud": "iCloud / iCal / Andere (URL)",
-    "icloudPlaceholder": "ICS- oder Webcal-Link einfügen",
+    "icloud": "Apple / iCloud Kalender",
+    "icloudPlaceholder": "ICS- oder Webcal-Links für Arbeit und Privat einfügen",
     "urlPlaceholder": "https://... oder webcal://...",
     "add": "Hinzufügen",
-    "icloudHint": "iCloud: Einstellungen → Kalender → Kalender freigeben → Link kopieren",
+    "saveFeeds": "Feeds speichern",
+    "saving": "Speichern…",
+    "feedActive": "aktiv",
+    "icloudHint": "iPhone: Kalender → Kalendername → Teilen → Link kopieren (webcal:// oder HTTPS). Arbeit und Privat getrennt — Sync übernimmt NOVAT.",
     "lastSynced": "Zuletzt synchronisiert: {{date}}",
     "never": "Noch nie",
     "syncing": "Synchronisiere…",
     "syncNow": "Jetzt synchronisieren",
     "syncedPrefix": "Synchronisiert",
-    "fewConnections": "💡 Verbinde Google oder Outlook über den jeweiligen „Verbinden\"-Button oben. iCloud geht sofort per Kalender-Link (kein Setup nötig).",
+    "fewConnections": "Verbinde Outlook oben, oder füge Apple/iCloud-Feeds (Arbeit + Privat) per Kalender-Link hinzu.",
     "oauthErrors": {
       "access_denied": "Zugriff verweigert — bitte Outlook-Berechtigung erteilen.",
       "invalid_grant": "Anmeldung abgelaufen — bitte Outlook erneut verbinden.",

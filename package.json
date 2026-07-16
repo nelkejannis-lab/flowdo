@@ -1,8 +1,8 @@
 {
   "name": "workorganizer",
   "private": true,
-  "version": "1.0.24",
-  "description": "NOVAT Work Organizer",
+  "version": "1.0.25",
+  "description": "NOVAT Work Organizer (formerly Mooncrew)",
   "author": "NOVAT",
   "type": "module",
   "main": "electron/main.cjs",

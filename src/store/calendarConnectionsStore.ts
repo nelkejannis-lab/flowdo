@@ -1,4 +1,11 @@
 import { create } from 'zustand'
+import {
+  encodeAppleCalendarFeeds,
+  isValidCalendarUrl,
+  listEnabledAppleFeedUrls,
+  parseAppleCalendarFeeds,
+  type AppleCalendarFeed,
+} from '../lib/appleCalendarFeeds'
 import { friendlyCalendarErrors, friendlyUserError } from '../lib/friendlyErrors'
 import { supabase } from '../lib/supabase'
 
@@ -8,6 +15,7 @@ export interface CalendarConnection {
   email: string | null
   displayName: string | null
   lastSyncedAt: string | null
+  icalUrl?: string | null
 }
 
 export interface TeamsPushEntry {
@@ -28,6 +36,8 @@ interface CalendarConnectionsState {
   fetch: () => Promise<void>
   disconnect: (provider: string) => Promise<void>
   connectIcal: (url: string) => Promise<string | null>
+  saveAppleCalendarFeeds: (feeds: AppleCalendarFeed[]) => Promise<string | null>
+  getAppleCalendarFeeds: () => AppleCalendarFeed[]
   sync: () => Promise<{ synced: string[]; errors: string[]; cancelled?: number }>
   pushEntryToTeams: (entry: TeamsPushEntry) => Promise<TeamsPushResult>
   updateEntryOnTeams: (entry: TeamsPushEntry) => Promise<TeamsPushResult>
@@ -78,7 +88,7 @@ export const useCalendarConnectionsStore = create<CalendarConnectionsState>()((s
   fetch: async () => {
     const { data } = await supabase
       .from('calendar_connections')
-      .select('id, provider, email, display_name, last_synced_at')
+      .select('id, provider, email, display_name, last_synced_at, ical_url')
       .order('created_at', { ascending: true })
 
     if (data) {
@@ -89,6 +99,7 @@ export const useCalendarConnectionsStore = create<CalendarConnectionsState>()((s
           email: c.email,
           displayName: c.display_name,
           lastSyncedAt: c.last_synced_at,
+          icalUrl: c.ical_url,
         })),
       })
     }
@@ -99,33 +110,58 @@ export const useCalendarConnectionsStore = create<CalendarConnectionsState>()((s
     set((s) => ({ connections: s.connections.filter((c) => c.provider !== provider) }))
   },
 
-  connectIcal: async (url) => {
+  getAppleCalendarFeeds: () => {
+    const ical = get().connections.find((c) => c.provider === 'ical')
+    return parseAppleCalendarFeeds(ical?.icalUrl)
+  },
+
+  saveAppleCalendarFeeds: async (feeds) => {
     const { data: userData } = await supabase.auth.getUser()
     const userId = userData.user?.id
     if (!userId) return friendlyUserError('not authenticated', 'Nicht angemeldet.', 'Not signed in.')
 
-    if (!url.startsWith('http') && !url.startsWith('webcal')) {
-      return friendlyUserError('invalid url', 'Ungültige Kalender-URL.', 'Invalid calendar URL.')
+    const enabled = listEnabledAppleFeedUrls(encodeAppleCalendarFeeds(feeds))
+    for (const f of feeds) {
+      if (f.url.trim() && !isValidCalendarUrl(f.url)) {
+        return friendlyUserError('invalid url', 'Ungültige Kalender-URL.', 'Invalid calendar URL.')
+      }
+    }
+    if (enabled.length === 0) {
+      await supabase.from('calendar_connections').delete().eq('provider', 'ical').eq('user_id', userId)
+      set((s) => ({ connections: s.connections.filter((c) => c.provider !== 'ical') }))
+      return null
     }
 
-    const normalizedUrl = url.replace(/^webcal:\/\//, 'https://')
-
+    const encoded = encodeAppleCalendarFeeds(feeds)
     const { error } = await supabase.from('calendar_connections').upsert({
       user_id: userId,
       provider: 'ical',
-      ical_url: normalizedUrl,
-      display_name: 'iCal / iCloud',
+      ical_url: encoded,
+      display_name: 'Apple / iCloud',
     }, { onConflict: 'user_id,provider' })
 
-    if (error) return friendlyUserError(error.message, 'Kalender konnte nicht hinzugefügt werden.')
+    if (error) return friendlyUserError(error.message, 'Kalender konnte nicht gespeichert werden.')
 
     set((s) => ({
       connections: [
         ...s.connections.filter((c) => c.provider !== 'ical'),
-        { id: 'ical', provider: 'ical', email: null, displayName: 'iCal / iCloud', lastSyncedAt: null },
+        {
+          id: 'ical',
+          provider: 'ical',
+          email: null,
+          displayName: 'Apple / iCloud',
+          lastSyncedAt: null,
+          icalUrl: encoded,
+        },
       ],
     }))
     return null
+  },
+
+  connectIcal: async (url) => {
+    const feeds = parseAppleCalendarFeeds(null)
+    feeds[0] = { ...feeds[0], url, enabled: true }
+    return get().saveAppleCalendarFeeds(feeds)
   },
 
   startOAuth: async (provider) => {

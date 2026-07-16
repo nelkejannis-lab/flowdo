@@ -325,17 +325,21 @@ export default function SettingsPage() {
   const connections = useCalendarConnectionsStore((s) => s.connections)
   const fetchConnections = useCalendarConnectionsStore((s) => s.fetch)
   const disconnectCalendar = useCalendarConnectionsStore((s) => s.disconnect)
-  const connectIcal = useCalendarConnectionsStore((s) => s.connectIcal)
+  const saveAppleCalendarFeeds = useCalendarConnectionsStore((s) => s.saveAppleCalendarFeeds)
+  const getAppleCalendarFeeds = useCalendarConnectionsStore((s) => s.getAppleCalendarFeeds)
   const startOAuth = useCalendarConnectionsStore((s) => s.startOAuth)
   const syncCalendars = useCalendarConnectionsStore((s) => s.sync)
   const syncing = useCalendarConnectionsStore((s) => s.syncing)
-  const [icalUrl, setIcalUrl] = useState('')
+  const [appleFeeds, setAppleFeeds] = useState(() => getAppleCalendarFeeds())
+  const [appleSaving, setAppleSaving] = useState(false)
   const [icalError, setIcalError] = useState<string | null>(null)
   const [syncResult, setSyncResult] = useState<string | null>(null)
   const connectedParam = searchParams.get('connected')
   const errorParam = searchParams.get('error')
 
-  useEffect(() => { fetchConnections() }, [fetchConnections])
+  useEffect(() => {
+    void fetchConnections().then(() => setAppleFeeds(getAppleCalendarFeeds()))
+  }, [fetchConnections, getAppleCalendarFeeds])
   useEffect(() => {
     if (connectedParam) setSyncResult(`✓ ${connectedParam === 'google' ? 'Google Calendar' : 'Outlook'} ${t('calendar.connectedSuffix')}`)
     if (errorParam) {
@@ -506,41 +510,79 @@ export default function SettingsPage() {
                 )
               })()}
 
-              {/* iCloud / iCal */}
+              {/* Apple / iCloud (Arbeit + Privat feeds) */}
               {(() => {
                 const conn = connections.find((c) => c.provider === 'ical')
+                const hasFeeds = appleFeeds.some((f) => f.url.trim())
                 return (
                   <div className="rounded-lg border border-gray-100 p-3 dark:border-racing-800">
                     <div className="flex items-center gap-3">
                       <span className="text-xl">☁️</span>
                       <div className="flex-1">
                         <p className="text-sm font-medium">{t('calendar.icloud')}</p>
-                        {conn ? <p className="text-xs text-emerald-500">✓ {t('calendar.connected')}</p>
-                               : <p className="text-xs text-gray-400">{t('calendar.icloudPlaceholder')}</p>}
+                        {conn || hasFeeds
+                          ? <p className="text-xs text-emerald-500">✓ {t('calendar.connected')}</p>
+                          : <p className="text-xs text-gray-400">{t('calendar.icloudPlaceholder')}</p>}
                       </div>
-                      {conn && <button onClick={() => disconnectCalendar('ical')} className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-500 hover:border-red-300 hover:text-red-500 dark:border-racing-700"><X size={12} /> {t('calendar.disconnect')}</button>}
-                    </div>
-                    {!conn && (
-                      <div className="mt-2 flex gap-2">
-                        <input
-                          value={icalUrl}
-                          onChange={(e) => setIcalUrl(e.target.value)}
-                          placeholder={t('calendar.urlPlaceholder')}
-                          className="flex-1 rounded-lg border border-gray-200 bg-transparent px-3 py-1.5 text-xs focus:border-accent focus:outline-none dark:border-racing-700"
-                        />
+                      {conn && (
                         <button
                           onClick={async () => {
-                            setIcalError(null)
-                            const err = await connectIcal(icalUrl)
-                            if (err) setIcalError(err)
-                            else setIcalUrl('')
+                            await disconnectCalendar('ical')
+                            setAppleFeeds(getAppleCalendarFeeds())
                           }}
-                          className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark"
+                          className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-500 hover:border-red-300 hover:text-red-500 dark:border-racing-700"
                         >
-                          {t('calendar.add')}
+                          <X size={12} /> {t('calendar.disconnect')}
                         </button>
-                      </div>
-                    )}
+                      )}
+                    </div>
+                    <div className="mt-2 flex flex-col gap-2">
+                      {appleFeeds.map((feed, i) => (
+                        <div key={feed.id} className="flex flex-col gap-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs font-medium text-gray-600 dark:text-racing-300">{feed.label}</span>
+                            <label className="flex items-center gap-1 text-[10px] text-gray-400">
+                              <input
+                                type="checkbox"
+                                checked={feed.enabled}
+                                onChange={(e) => {
+                                  setAppleFeeds((prev) =>
+                                    prev.map((f, j) => (j === i ? { ...f, enabled: e.target.checked } : f)),
+                                  )
+                                }}
+                                className="accent-[rgb(var(--accent))]"
+                              />
+                              {t('calendar.feedActive')}
+                            </label>
+                          </div>
+                          <input
+                            value={feed.url}
+                            onChange={(e) => {
+                              setAppleFeeds((prev) =>
+                                prev.map((f, j) => (j === i ? { ...f, url: e.target.value } : f)),
+                              )
+                            }}
+                            placeholder={t('calendar.urlPlaceholder')}
+                            className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-1.5 text-xs focus:border-accent focus:outline-none dark:border-racing-700"
+                          />
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        disabled={appleSaving}
+                        onClick={async () => {
+                          setIcalError(null)
+                          setAppleSaving(true)
+                          const err = await saveAppleCalendarFeeds(appleFeeds)
+                          setAppleSaving(false)
+                          if (err) setIcalError(err)
+                          else setAppleFeeds(getAppleCalendarFeeds())
+                        }}
+                        className="self-start rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
+                      >
+                        {appleSaving ? t('calendar.saving') : t('calendar.saveFeeds')}
+                      </button>
+                    </div>
                     {icalError && <p className="mt-1 text-xs text-red-500">{icalError}</p>}
                     <p className="mt-2 text-xs text-gray-400">
                       {t('calendar.icloudHint')}

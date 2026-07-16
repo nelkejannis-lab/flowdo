@@ -1,0 +1,35 @@
+---
+description: Product is NOVAT only (formerly Mooncrew) — Nova/Life OS are dead
+alwaysApply: true
+---
+
+# NOVAT is the only product
+
+## Product lineage (memorize this)
+- **NOVAT** = the product formerly called **Mooncrew** (same app, rebranded).
+- **Nova** / **Life OS** = **dead** as product names. Do not ship, brand, or treat them as the product.
+- Do **not** confuse **Nova** with **NOVAT** — they are not the same thing.
+
+## User-facing name
+- Always **NOVAT** in UI, titles, EXE, docs headlines, PWA name.
+- Internal code paths may still say `flowdo`, `workorganizer`, `mooncrew` (compat), `novaApi` — fine.
+- Never user-facing: Nova, NOVA, Life OS, LifeOS, Mooncrew (as current brand), Flowdo (as product name).
+
+## Shipping target (default always)
+- **Repo:** `C:\Users\Anwender\flowdo-review`
+- **GitHub:** `nelkejannis-lab/flowdo`
+- **Production:** https://novat.app
+- Implement features, fixes, deploys, EXE builds, and releases **here** unless the user explicitly names another repo.
+
+## life-os / "Nova" repos
+- Do **not** implement in `life-os` / `life-os-review` unless the user **explicitly** asks.
+- Work done there must be **ported into NOVAT** or ignored going forward — never continue shipping Nova/Life OS.
+
+## Wrong vs right
+```
+❌ life-os-review / "Nova" / life-os-three-rho
+✅ flowdo-review / NOVAT / novat.app
+
+❌ productName: "Nova" or "Mooncrew"
+✅ productName: "NOVAT" (formerly Mooncrew)
+```

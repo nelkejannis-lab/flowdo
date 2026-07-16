@@ -27,6 +27,28 @@ interface PushEntry {
   externalId?: string
 }
 
+/** Plain URL or JSON { feeds: [{ id, label, url, enabled }] } from NOVAT Apple Calendar settings. */
+function parseIcalFeeds(raw: string): { id: string; label: string; url: string }[] {
+  const trimmed = (raw || '').trim()
+  if (!trimmed) return []
+  if (trimmed.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(trimmed) as { feeds?: { id?: string; label?: string; url?: string; enabled?: boolean }[] }
+      if (!Array.isArray(parsed.feeds)) return []
+      return parsed.feeds
+        .filter((f) => f && f.enabled !== false && typeof f.url === 'string' && f.url.trim())
+        .map((f, i) => ({
+          id: f.id || `feed-${i}`,
+          label: f.label || (f.id === 'private' ? 'Privat' : 'Arbeit'),
+          url: f.url!.trim().replace(/^webcal:\/\//i, 'https://'),
+        }))
+    } catch {
+      return []
+    }
+  }
+  return [{ id: 'work', label: 'Arbeit', url: trimmed.replace(/^webcal:\/\//i, 'https://') }]
+}
+
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -349,32 +371,46 @@ Deno.serve(async (req: Request) => {
       }
 
       if (provider === 'ical' && conn.ical_url) {
-        const res = await fetch(conn.ical_url)
-        const icsText = await res.text()
-        const eventBlocks = icsText.split('BEGIN:VEVENT').slice(1)
-        events = eventBlocks.map((block: string, idx: number) => {
-          const get = (key: string) => block.match(new RegExp(`${key}[^:]*:([^\\r\\n]+)`))?.[1] ?? ''
-          const dtstart = get('DTSTART')
-          const dtend = get('DTEND')
-          const summary = get('SUMMARY')
-          const uid = get('UID') || `ical-${idx}-${dtstart}-${summary}`
-          const parseDate = (dt: string) =>
-            dt.includes('T') ? dt.slice(0, 10) : dt.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3')
-          const parseTime = (dt: string) => (dt.includes('T') ? dt.slice(11, 16) : undefined)
-          return {
-            externalId: uid,
-            title: summary || 'Ohne Titel',
-            date: parseDate(dtstart),
-            endDate: dtend ? parseDate(dtend) : undefined,
-            startTime: parseTime(dtstart),
-            endTime: dtend ? parseTime(dtend) : undefined,
+        const feeds = parseIcalFeeds(conn.ical_url as string)
+        for (const feed of feeds) {
+          try {
+            const res = await fetch(feed.url)
+            if (!res.ok) {
+              errors.push(`apple/${feed.id}: HTTP ${res.status}`)
+              continue
+            }
+            const icsText = await res.text()
+            const eventBlocks = icsText.split('BEGIN:VEVENT').slice(1)
+            const feedEvents = eventBlocks.map((block: string, idx: number) => {
+              const get = (key: string) => block.match(new RegExp(`${key}[^:]*:([^\\r\\n]+)`))?.[1] ?? ''
+              const dtstart = get('DTSTART')
+              const dtend = get('DTEND')
+              const summary = get('SUMMARY')
+              const uid = get('UID') || `ical-${feed.id}-${idx}-${dtstart}-${summary}`
+              const parseDate = (dt: string) =>
+                dt.includes('T') ? dt.slice(0, 10) : dt.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3')
+              const parseTime = (dt: string) => (dt.includes('T') ? dt.slice(11, 16) : undefined)
+              const tag = feed.label ? `[Apple ${feed.label}]` : '[Apple]'
+              return {
+                externalId: `${feed.id}:${uid}`,
+                title: `${tag} ${summary || 'Ohne Titel'}`,
+                date: parseDate(dtstart),
+                endDate: dtend ? parseDate(dtend) : undefined,
+                startTime: parseTime(dtstart),
+                endTime: dtend ? parseTime(dtend) : undefined,
+              }
+            }).filter((e: SyncEvent) => Boolean(e.date))
+            events.push(...feedEvents)
+          } catch (feedErr) {
+            errors.push(`apple/${feed.id}: ${feedErr instanceof Error ? feedErr.message : 'Fehler'}`)
           }
-        }).filter((e: SyncEvent) => Boolean(e.date))
+        }
       }
 
       const syncedExternalIds = new Set<string>()
-      const color = provider === 'google' ? '#4285F4' : provider === 'microsoft' ? '#0078D4' : '#9B59B6'
-      const prefix = provider === 'google' ? '[Google]' : provider === 'microsoft' ? '[Outlook]' : '[iCal]'
+      const color = provider === 'google' ? '#4285F4' : provider === 'microsoft' ? '#0078D4' : '#AF52DE'
+      // Apple titles already include [Apple …] from feed parse; keep [iCal] for legacy rows
+      const prefix = provider === 'google' ? '[Google]' : provider === 'microsoft' ? '[Outlook]' : '[Apple]'
 
       for (const event of events) {
         if (!event.date || !event.title || !event.externalId) continue
@@ -391,9 +427,18 @@ Deno.serve(async (req: Request) => {
         const payload = {
           owner_id: user.id,
           type: 'termin' as const,
-          title: existing?.title?.startsWith(prefix) || !existing
-            ? `${prefix} ${event.title}`
-            : existing.title,
+          title: (() => {
+            if (provider === 'ical') {
+              // Feed parse already embeds [Apple …] in the title
+              if (existing?.title && !String(existing.title).startsWith('[Apple') && !String(existing.title).startsWith('[iCal')) {
+                return existing.title
+              }
+              return event.title
+            }
+            return existing?.title?.startsWith(prefix) || !existing
+              ? `${prefix} ${event.title}`
+              : existing.title
+          })(),
           date: event.date,
           end_date: event.endDate ?? null,
           start_time: event.startTime ?? null,
@@ -406,7 +451,7 @@ Deno.serve(async (req: Request) => {
         if (existing?.id) {
           await adminSupabase.from('calendar_entries').update(payload).eq('id', existing.id)
         } else {
-          const legacyTitle = `${prefix} ${event.title}`
+          const legacyTitle = event.title
           const { data: legacy } = await adminSupabase
             .from('calendar_entries')
             .select('id')
@@ -430,11 +475,17 @@ Deno.serve(async (req: Request) => {
         .select('id, title, external_id')
         .eq('owner_id', user.id)
         .eq('external_provider', provider)
-        .like('title', `${prefix}%`)
 
       let cancelled = 0
       for (const row of existingImported ?? []) {
         const extId = row.external_id as string | null
+        const title = String(row.title ?? '')
+        // Only auto-remove imported Apple/iCal or prefixed Google/Outlook rows
+        const isImported =
+          provider === 'ical'
+            ? title.startsWith('[Apple') || title.startsWith('[iCal')
+            : title.startsWith(prefix)
+        if (!isImported) continue
         if (!extId || !syncedExternalIds.has(extId)) {
           await adminSupabase.from('calendar_entries').delete().eq('id', row.id)
           cancelled++
