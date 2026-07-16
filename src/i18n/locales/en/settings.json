@@ -23,15 +23,42 @@
     "title": "Dashboard widgets",
     "description": "Choose which sections are visible on the dashboard.",
     "items": {
-      "stats": { "label": "Statistics", "desc": "Tasks & projects" },
-      "todayTasks": { "label": "Today's overview", "desc": "Today's tasks and appointments" },
-      "topPriority": { "label": "Top priority", "desc": "Urgent & important tasks (Eisenhower Q1)" },
-      "dayPlan": { "label": "Day plan", "desc": "Timeline with items from the AI day planner" },
-      "upcomingDeadlines": { "label": "Deadlines", "desc": "Upcoming project deadlines" },
-      "nextEvents": { "label": "Events", "desc": "Upcoming events" },
-      "projectsOverview": { "label": "Projects overview", "desc": "All active projects" },
-      "workoffice": { "label": "Office & colleagues", "desc": "Who's in the office, who's working from where?" },
-      "weather": { "label": "Weather", "desc": "Current weather via GPS location" }
+      "stats": {
+        "label": "Statistics",
+        "desc": "Tasks & projects"
+      },
+      "todayTasks": {
+        "label": "Today's overview",
+        "desc": "Today's tasks and appointments"
+      },
+      "topPriority": {
+        "label": "Top priority",
+        "desc": "Urgent & important tasks (Eisenhower Q1)"
+      },
+      "dayPlan": {
+        "label": "Day plan",
+        "desc": "Timeline with items from the AI day planner"
+      },
+      "upcomingDeadlines": {
+        "label": "Deadlines",
+        "desc": "Upcoming project deadlines"
+      },
+      "nextEvents": {
+        "label": "Events",
+        "desc": "Upcoming events"
+      },
+      "projectsOverview": {
+        "label": "Projects overview",
+        "desc": "All active projects"
+      },
+      "workoffice": {
+        "label": "Office & colleagues",
+        "desc": "Who's in the office, who's working from where?"
+      },
+      "weather": {
+        "label": "Weather",
+        "desc": "Current weather via GPS location"
+      }
     }
   },
   "language": {
@@ -63,7 +90,7 @@
     "modeCode": "Via WhatsApp code",
     "modePhone": "Via phone number",
     "step1Title": "Step 1 · Unlock WhatsApp",
-    "step1Hint": "Send the unlock command to the NOVAT bot once and wait for Twilio’s confirmation. Without this, messages won’t arrive in sandbox mode.",
+    "step1Hint": "First open exactly this WhatsApp number and send the join command. Wait for Twilio's reply — only then will OTP or the NOVAT code work.",
     "step1Done": "Got confirmation",
     "step1Required": "Tip: only check “Got confirmation” after Twilio replies — then continue to step 2.",
     "step1RequiredPhone": "Finish step 1 first, otherwise NOVAT can’t send you a WhatsApp code.",
@@ -72,14 +99,14 @@
     "botNumberLabel": "Bot number",
     "openWhatsApp": "Open in WhatsApp",
     "openWhatsAppJoin": "Open WhatsApp (join …)",
-    "joinMissing": "The join command is missing. Find it in Twilio Console → Messaging → Try WhatsApp → Sandbox (e.g. “join yellow-tiger”). Enter it here:",
+    "joinMissing": "The join command is not set on the server yet. Copy it from Twilio Console → Messaging → Try it out → WhatsApp → Sandbox (e.g. join yellow-tiger) and enter it here:",
     "joinPlaceholder": "join your-keyword",
     "joinSaveLocal": "Save for me",
     "joinSaveAdmin": "Save for everyone (Admin)",
     "joinSavedLocal": "Join command saved — open WhatsApp next.",
     "joinSavedAdmin": "Join command stored for all users.",
     "joinInvalid": "Enter a valid join command (e.g. join yellow-tiger).",
-    "sandboxExpiry": "Unlock lasts about 72 hours; then repeat step 1.",
+    "sandboxExpiry": "Unlock lasts about 72 hours. Then send “join …” once more.",
     "waitingLink": "Waiting for your code on WhatsApp… status refreshes automatically.",
     "codeLabel": "Account link code",
     "sendHint": "Send exactly this code via WhatsApp to {{bot}}.",
@@ -108,7 +135,20 @@
     "serverUnavailable": "Supabase is not configured. WhatsApp linking is not available right now.",
     "fetchError": "Connection failed. Check your internet and that you are signed in.",
     "memoryHint": "Incoming WhatsApp messages are also available under",
-    "memoryLink": "Memory in the sidebar"
+    "memoryLink": "Memory in the sidebar",
+    "exactNumberTitle": "Number (required)",
+    "exactNumberHint": "Only this chat counts: +1 415 523 8886 (Twilio Sandbox). Other numbers will not work.",
+    "copyNumber": "Copy number",
+    "copiedNumber": "Number copied.",
+    "exactJoinTitle": "Send exactly this text (copy & paste)",
+    "exactJoinHint": "Send exactly this text to {{bot}}. Then wait for Twilio to confirm.",
+    "openWhatsAppPrefill": "Open WhatsApp (text prefilled)",
+    "joinMissingAdmin": "Admin: after entering it, tap “Save for everyone” so all users get the one-tap link. Without the correct join phrase Twilio will not unlock the number.",
+    "verifyTitle": "How to verify the join succeeded",
+    "verify1": "1. In the chat with +1 415 523 8886 you see a Twilio confirmation (not the yellow Sandbox warning).",
+    "verify2": "2. The “is not connected to a Sandbox” warning must stop appearing.",
+    "verify3": "3. Only then do step 2 (NOVAT code) or phone OTP — before that Twilio blocks delivery.",
+    "otpBlockedUntilJoin": "Important: OTP and bot replies only work after a successful join. The app cannot bypass Twilio's sandbox limit."
   },
   "guide": {
     "title": "What can NOVAT do?",
