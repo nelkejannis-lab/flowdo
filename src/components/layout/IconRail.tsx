@@ -5,21 +5,48 @@ import {
   LayoutDashboard,
   ListTodo,
   CalendarDays,
+  CalendarClock,
   Trello,
+  Clock,
+  Sparkles,
+  Inbox,
+  Users,
+  Instagram,
+  Brain,
+  Mic,
+  MessageCircle,
   Settings,
   ChevronRight,
   ChevronLeft,
   Ellipsis,
+  Grid2x2,
+  CheckCircle2,
 } from 'lucide-react'
 import { useSettingsStore, type NavItemKey } from '../../store/settingsStore'
-import { PRIMARY_NAV_KEYS, NAV_PATHS } from './navConfig'
+import { isSupabaseConfigured } from '../../lib/supabase'
+import { NAV_PATHS } from './navConfig'
 
 const RAIL_ICONS: Partial<Record<NavItemKey, React.ReactNode>> = {
   dashboard: <LayoutDashboard size={20} strokeWidth={1.5} />,
+  week: <CheckCircle2 size={20} strokeWidth={1.5} />,
+  inbox: <Inbox size={20} strokeWidth={1.5} />,
   tasks: <ListTodo size={20} strokeWidth={1.5} />,
   calendar: <CalendarDays size={20} strokeWidth={1.5} />,
+  termine: <CalendarClock size={20} strokeWidth={1.5} />,
+  brain: <Brain size={20} strokeWidth={1.5} />,
+  memory: <MessageCircle size={20} strokeWidth={1.5} />,
+  eisenhower: <Grid2x2 size={20} strokeWidth={1.5} />,
+  worktime: <Clock size={20} strokeWidth={1.5} />,
+  aiScheduler: <Sparkles size={20} strokeWidth={1.5} />,
+  chat: <MessageCircle size={20} strokeWidth={1.5} />,
+  friends: <Users size={20} strokeWidth={1.5} />,
+  social: <Instagram size={20} strokeWidth={1.5} />,
+  meetings: <Mic size={20} strokeWidth={1.5} />,
   projekte: <Trello size={20} strokeWidth={1.5} />,
 }
+
+const DEFAULT_RAIL: NavItemKey[] = ['dashboard', 'tasks', 'calendar', 'termine', 'projekte', 'worktime', 'meetings']
+const MAX_RAIL_ITEMS = 10
 
 interface IconRailProps {
   menuOpen: boolean
@@ -27,8 +54,32 @@ interface IconRailProps {
   onOpenMenu: () => void
 }
 
+function isKeyVisible(
+  key: NavItemKey,
+  featureVisibility: ReturnType<typeof useSettingsStore.getState>['featureVisibility'],
+  navVisibility: ReturnType<typeof useSettingsStore.getState>['navVisibility']
+): boolean {
+  if (key === 'dashboard') return true
+  if (key === 'aiScheduler' || key === 'chat' || key === 'friends' || key === 'social') {
+    if (!isSupabaseConfigured) return false
+  }
+  if (key === 'calendar' && !featureVisibility.calendar) return false
+  if (key === 'worktime' && !featureVisibility.worktime) return false
+  if (key === 'eisenhower' && !featureVisibility.eisenhower) return false
+  if (key === 'aiScheduler' && !featureVisibility.aiScheduler) return false
+  if (key === 'chat' && !featureVisibility.chat) return false
+  if (key === 'friends' && !featureVisibility.friends) return false
+  if (key === 'social' && !featureVisibility.social) return false
+  return navVisibility?.[key] ?? true
+}
+
+/**
+ * Slim desktop nav chrome — always visible on sm+.
+ * Collapse only hides the labelled Sidebar; this rail (with pins) stays.
+ */
 export default function IconRail({ menuOpen, onToggleMenu, onOpenMenu }: IconRailProps) {
   const { t } = useTranslation('layout')
+  const pinnedNavItems = useSettingsStore((s) => s.pinnedNavItems ?? [])
   const featureVisibility = useSettingsStore((s) => s.featureVisibility)
   const navVisibility = useSettingsStore((s) => s.navVisibility)
   const [moreOpen, setMoreOpen] = useState(false)
@@ -54,11 +105,14 @@ export default function IconRail({ menuOpen, onToggleMenu, onOpenMenu }: IconRai
     if (menuOpen) setMoreOpen(false)
   }, [menuOpen])
 
-  const keys = PRIMARY_NAV_KEYS.filter((key) => {
-    if (key === 'dashboard') return true
-    if (key === 'calendar' && !featureVisibility.calendar) return false
-    return navVisibility?.[key] ?? true
-  })
+  // Prefer user pins; fall back to a sensible default rail. Never empty.
+  const keys = (() => {
+    const fromPins = pinnedNavItems.filter((k) => k !== 'dashboard' && RAIL_ICONS[k])
+    const base = fromPins.length > 0 ? (['dashboard', ...fromPins] as NavItemKey[]) : DEFAULT_RAIL
+    return base
+      .filter((key) => RAIL_ICONS[key] && isKeyVisible(key, featureVisibility, navVisibility))
+      .slice(0, MAX_RAIL_ITEMS)
+  })()
 
   const railBtn = ({ isActive }: { isActive: boolean }) =>
     `group relative flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200 ${
@@ -69,10 +123,10 @@ export default function IconRail({ menuOpen, onToggleMenu, onOpenMenu }: IconRai
 
   return (
     <aside
-      className="relative hidden h-full w-[60px] flex-shrink-0 flex-col items-center gap-0.5 border-r border-black/[0.04] bg-white/90 py-3 dark:border-white/[0.06] dark:bg-racing-900/80 sm:flex"
+      className="relative z-20 hidden h-full w-[60px] flex-shrink-0 flex-col items-center gap-0.5 border-r border-black/[0.04] bg-white/90 py-3 dark:border-white/[0.06] dark:bg-racing-900/80 sm:flex"
       aria-label={t('topbar.iconRail')}
+      data-menu-collapsed={!menuOpen ? 'true' : 'false'}
     >
-      {/* Explicit expand / collapse — primary affordance */}
       <button
         type="button"
         onClick={onToggleMenu}
@@ -89,7 +143,7 @@ export default function IconRail({ menuOpen, onToggleMenu, onOpenMenu }: IconRai
         {menuOpen ? <ChevronLeft size={22} strokeWidth={2} /> : <ChevronRight size={22} strokeWidth={2.2} />}
       </button>
 
-      <nav className="flex flex-1 flex-col items-center gap-0.5 overflow-y-auto">
+      <nav className="flex flex-1 flex-col items-center gap-0.5 overflow-y-auto" aria-label={t('topbar.pinnedNav')}>
         {keys.map((key) => {
           const path = NAV_PATHS[key]
           const icon = RAIL_ICONS[key]
@@ -119,7 +173,6 @@ export default function IconRail({ menuOpen, onToggleMenu, onOpenMenu }: IconRai
           <button
             type="button"
             onClick={() => {
-              // "Mehr" always expands the full labelled menu — primary discovery path
               setMoreOpen(false)
               onOpenMenu()
             }}
@@ -172,7 +225,6 @@ export default function IconRail({ menuOpen, onToggleMenu, onOpenMenu }: IconRai
         )}
       </NavLink>
 
-      {/* Edge chevron tab — visible when collapsed so expand is obvious */}
       {!menuOpen && (
         <button
           type="button"

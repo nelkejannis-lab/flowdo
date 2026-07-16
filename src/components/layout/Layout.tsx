@@ -13,10 +13,11 @@ import AppUpdater from './AppUpdater'
 import { useSettingsStore } from '../../store/settingsStore'
 
 /**
- * Shell roles (Linear / Notion pattern):
- * - IconRail: few primary destinations + "Mehr"
- * - Sidebar: full labelled menu (docked on desktop when expanded, overlay otherwise)
- * - TopBar: brand, optional non-primary pins, search/utilities
+ * Shell roles:
+ * - IconRail (desktop): always mounted — slim pin/icon chrome + expand control.
+ *   Collapse must NEVER unmount this; it is the collapsed navigation.
+ * - Sidebar: full labelled menu only (docked when expanded, overlay on mobile).
+ * - TopBar: brand, pin strip, search/utilities + expand/collapse.
  * - MobileBottomNav: four primaries + quick-add
  */
 export default function Layout() {
@@ -38,9 +39,9 @@ export default function Layout() {
     return () => mq.removeEventListener('change', onChange)
   }, [])
 
-  // Docked full menu on desktop when user prefers it expanded (persisted).
-  const docked = desktop && !menuCollapsed
-  const sidebarOpen = docked || mobileOpen
+  // Expanded = labelled sidebar docked. Collapsed = IconRail + TopBar pins only.
+  const labelledMenuOpen = desktop && !menuCollapsed
+  const sidebarOpen = labelledMenuOpen || mobileOpen
 
   const openMenu = useCallback(() => {
     if (desktop) {
@@ -52,6 +53,7 @@ export default function Layout() {
 
   const closeMenu = useCallback(() => {
     if (desktop) {
+      // Only hide the labelled panel — IconRail / TopBar pins stay mounted.
       setMenuCollapsed(true)
     } else {
       setMobileOpen(false)
@@ -71,11 +73,12 @@ export default function Layout() {
       <OfflineBanner />
       <div className="flex h-screen w-full overflow-hidden">
         <GlobalSearch />
-        <IconRail menuOpen={docked} onToggleMenu={toggleMenu} onOpenMenu={openMenu} />
+        {/* Always render on desktop; collapse toggles Sidebar only */}
+        <IconRail menuOpen={labelledMenuOpen} onToggleMenu={toggleMenu} onOpenMenu={openMenu} />
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <TopBar menuOpen={sidebarOpen} onToggleMenu={toggleMenu} />
           <div className="relative flex min-h-0 flex-1 overflow-hidden">
-            <Sidebar isOpen={sidebarOpen} onClose={closeMenu} docked={docked} />
+            <Sidebar isOpen={sidebarOpen} onClose={closeMenu} docked={labelledMenuOpen} />
             <main className="relative flex-1 overflow-y-auto">
               <AppUpdater />
               {/* overflow-x-clip (not hidden) so position:sticky children can stick to main's scrollport */}

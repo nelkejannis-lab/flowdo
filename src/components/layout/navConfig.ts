@@ -1,6 +1,6 @@
 import type { NavItemKey } from '../../store/settingsStore'
 
-/** Core destinations always shown in the icon rail (Linear-style primary nav). */
+/** Core destinations used by mobile bottom nav / defaults. */
 export const PRIMARY_NAV_KEYS: NavItemKey[] = ['dashboard', 'tasks', 'calendar', 'projekte']
 
 export const NAV_PATHS: Record<NavItemKey, { to: string; exact?: boolean }> = {
@@ -22,5 +22,5 @@ export const NAV_PATHS: Record<NavItemKey, { to: string; exact?: boolean }> = {
   projekte: { to: '/projekte', exact: true },
 }
 
-/** Max extra pin shortcuts in the top bar (must not duplicate primary rail). */
-export const MAX_TOPBAR_PINS = 4
+/** Max pin shortcuts in the top bar pin strip (visible when menu is collapsed). */
+export const MAX_TOPBAR_PINS = 8

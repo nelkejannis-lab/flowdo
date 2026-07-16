@@ -34,7 +34,7 @@ import { useBoardInvitesStore } from '../../store/boardInvitesStore'
 import { useTeamInvitesStore } from '../../store/teamInvitesStore'
 import { useNotificationsStore } from '../../store/notificationsStore'
 import { isSupabaseConfigured } from '../../lib/supabase'
-import { PRIMARY_NAV_KEYS, NAV_PATHS, MAX_TOPBAR_PINS } from './navConfig'
+import { NAV_PATHS, MAX_TOPBAR_PINS } from './navConfig'
 
 const NAV_ICONS: Record<NavItemKey, React.ReactNode> = {
   dashboard: <LayoutDashboard size={18} strokeWidth={1.6} />,
@@ -77,10 +77,9 @@ export default function TopBar({ menuOpen, onToggleMenu }: TopBarProps) {
   const unreadNotifications = useNotificationsStore((s) => s.unreadCount)
   const notificationCount = taskIncoming.length + boardIncoming.length + teamIncoming.length + unreadNotifications
 
-  // Pins that aren't already in the icon rail — avoids duplicate primary nav.
-  const primarySet = new Set(PRIMARY_NAV_KEYS)
+  // Pin strip stays visible when the labelled menu is collapsed — never strip pins on collapse.
   const pinKeys = pinnedNavItems
-    .filter((k) => k !== 'dashboard' && !primarySet.has(k))
+    .filter((k) => k !== 'dashboard')
     .filter((k) => {
       if (k === 'calendar' && !featureVisibility.calendar) return false
       if (k === 'worktime' && !featureVisibility.worktime) return false
@@ -148,10 +147,10 @@ export default function TopBar({ menuOpen, onToggleMenu }: TopBarProps) {
         </NavLink>
       </div>
 
-      {/* Center: non-primary pin shortcuts only */}
+      {/* Center pin strip — stays when labelled sidebar collapses */}
       {pinKeys.length > 0 && (
         <nav
-          className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 md:flex"
+          className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 sm:flex"
           aria-label={t('topbar.pinnedNav')}
         >
           {pinKeys.map((key) => {
