@@ -13,3 +13,8 @@ supabase/.temp
 
 .vercel
 .env*
+
+# Local release scratch
+release-check/
+release-verify/
+
