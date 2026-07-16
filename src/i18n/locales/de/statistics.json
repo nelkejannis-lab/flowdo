@@ -1,0 +1,53 @@
+{
+  "page": {
+    "title": "Statistiken",
+    "intro": "Unternehmens-KPIs zu Aufgaben, Fokus und Arbeitszeit."
+  },
+  "tabs": {
+    "today": "Heute",
+    "week": "Woche",
+    "month": "Monat"
+  },
+  "kpi": {
+    "openTasks": "Offene Aufgaben",
+    "dueInPeriod": "Davon im Zeitraum: {{count}}",
+    "completedInPeriod": "Erledigt im Zeitraum",
+    "completedFocus": "Davon fokussiert: {{count}}",
+    "focusStreak": "Fokus-Streak",
+    "focusStreakHint": "Tage mit erledigten Fokusaufgaben",
+    "meetings": "Meetings",
+    "calendarMinutes": "Kalender-Minuten",
+    "taskTimeMinutes": "Task-Zeit"
+  },
+  "charts": {
+    "eisenhowerTitle": "Eisenhower-Verteilung",
+    "eisenhowerSub": "Wie erledigte Fokusaufgaben auf die Quadranten fallen.",
+    "tasks": "Tasks",
+    "completedFocus": "Fokus-Abschlüsse",
+    "workMinutes": "Arbeitszeit (Netto)",
+    "calendarMinutes": "Kalender/Meetings",
+    "taskTimeMinutes": "Erfasste Task-Zeit",
+    "sparklinesNotEnoughData": "Für den Zeitraum „Heute“ gibt es zu wenig Punkte."
+  },
+  "eisen": {
+    "do": "Tun (Do)",
+    "decide": "Entscheiden (Decide)",
+    "delegate": "Delegieren (Delegate)",
+    "delete": "Löschen (Delete)"
+  },
+  "sections": {
+    "projectProgress": "Projekt-Fortschritt",
+    "projectProgressHint": "Gesamt: {{pct}}% abgeschlossen",
+    "meetings": "Meetings & Zeit",
+    "meetingsSub": "Im Zeitraum: {{count}} Meetings"
+  },
+  "manager": {
+    "title": "Manager-Bereich",
+    "description": "Kapazitätsblick und Tools für Abwesenheiten / Team-Management."
+  },
+  "empty": {
+    "title": "Noch keine Daten",
+    "body": "Für diesen Zeitraum konnten keine Statistiken gefunden werden. Erfass Aufgaben, Arbeitszeit, Kalender-Einträge und Task-Tracking.",
+    "projectProgress": "Keine Projektfortschritte vorhanden."
+  }
+}

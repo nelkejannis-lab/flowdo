@@ -19,6 +19,7 @@ export type FeatureKey = 'calendar' | 'eisenhower' | 'worktime' | 'aiScheduler' 
 
 export type NavItemKey =
   | 'dashboard'
+  | 'statistiken'
   | 'week'
   | 'inbox'
   | 'tasks'
@@ -37,6 +38,7 @@ export type NavItemKey =
 
 export const DEFAULT_NAV_ORDER: NavItemKey[] = [
   'dashboard',
+  'statistiken',
   'week',
   'inbox',
   'tasks',
@@ -59,6 +61,7 @@ export const NAV_ALWAYS_VISIBLE: NavItemKey[] = ['dashboard', 'calendar']
 
 export const DEFAULT_NAV_VISIBILITY: Record<NavItemKey, boolean> = {
   dashboard: true,
+  statistiken: true,
   week: true,
   inbox: true,
   tasks: true,

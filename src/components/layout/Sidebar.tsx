@@ -38,6 +38,7 @@ import {
   Mic,
   Pin,
   Shield,
+  BarChart3,
 } from 'lucide-react'
 import {
   DndContext,
@@ -170,6 +171,7 @@ export default function Sidebar({ isOpen, onClose, docked = false }: SidebarProp
   type NavDef = { key: NavItemKey; to: string; icon: React.ReactNode; label: React.ReactNode; visible: boolean; exact?: boolean }
   const allNavItems: NavDef[] = [
     { key: 'dashboard', to: '/', icon: <LayoutDashboard size={18} />, label: t('sidebar.nav.dashboard'), visible: true, exact: true },
+    { key: 'statistiken', to: '/statistiken', icon: <BarChart3 size={18} />, label: t('sidebar.nav.statistiken'), visible: true },
     { key: 'week', to: '/tasks/week', icon: <CheckCircle2 size={18} />, label: t('sidebar.nav.thisWeek'), visible: true },
     { key: 'inbox', to: '/tasks/inbox', icon: <Inbox size={18} />, label: t('sidebar.nav.inbox'), visible: true },
     { key: 'tasks', to: '/tasks', icon: <ListTodo size={18} />, label: t('sidebar.nav.allTasks'), visible: true, exact: true },
@@ -204,7 +206,7 @@ export default function Sidebar({ isOpen, onClose, docked = false }: SidebarProp
   const NAV_GROUPS: { id: string; label: string | null; keys: NavItemKey[] }[] = [
     { id: 'home', label: null, keys: ['dashboard'] },
     { id: 'tasks', label: t('sidebar.groups.tasks'), keys: ['inbox', 'tasks', 'brain', 'memory', 'projekte'] },
-    { id: 'planning', label: t('sidebar.groups.planning'), keys: ['calendar', 'termine', 'worktime', 'aiScheduler', 'meetings'] },
+    { id: 'planning', label: t('sidebar.groups.planning'), keys: ['calendar', 'termine', 'worktime', 'statistiken', 'aiScheduler', 'meetings'] },
     { id: 'team', label: t('sidebar.groups.team'), keys: ['chat', 'friends', 'social'] },
   ]
   const visibleNavItems = sortedNavItems.filter((item) => item.visible)

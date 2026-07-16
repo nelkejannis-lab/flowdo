@@ -1,0 +1,53 @@
+{
+  "page": {
+    "title": "Statistics",
+    "intro": "Company KPIs for tasks, focus and work time."
+  },
+  "tabs": {
+    "today": "Today",
+    "week": "Week",
+    "month": "Month"
+  },
+  "kpi": {
+    "openTasks": "Open tasks",
+    "dueInPeriod": "Due in period: {{count}}",
+    "completedInPeriod": "Completed in period",
+    "completedFocus": "Focus-completed: {{count}}",
+    "focusStreak": "Focus streak",
+    "focusStreakHint": "Days with completed focus tasks",
+    "meetings": "Meetings",
+    "calendarMinutes": "Calendar minutes",
+    "taskTimeMinutes": "Task time"
+  },
+  "charts": {
+    "eisenhowerTitle": "Eisenhower distribution",
+    "eisenhowerSub": "How completed focus tasks map to the quadrants.",
+    "tasks": "Tasks",
+    "completedFocus": "Focus completions",
+    "workMinutes": "Work time (net)",
+    "calendarMinutes": "Calendar/meetings",
+    "taskTimeMinutes": "Tracked task time",
+    "sparklinesNotEnoughData": "Not enough points for „Today“."
+  },
+  "eisen": {
+    "do": "Do",
+    "decide": "Decide",
+    "delegate": "Delegate",
+    "delete": "Delete"
+  },
+  "sections": {
+    "projectProgress": "Project progress",
+    "projectProgressHint": "Overall: {{pct}}% completed",
+    "meetings": "Meetings & time",
+    "meetingsSub": "In period: {{count}} meetings"
+  },
+  "manager": {
+    "title": "Manager area",
+    "description": "Capacity view and tools for absences / team management."
+  },
+  "empty": {
+    "title": "No data yet",
+    "body": "No statistics were found for this period. Track tasks, work time, calendar entries and task time.",
+    "projectProgress": "No project progress available."
+  }
+}

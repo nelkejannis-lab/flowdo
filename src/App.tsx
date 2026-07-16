@@ -39,6 +39,7 @@ const AdminPage = lazy(() => import('./pages/AdminPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const SecondBrainPage = lazy(() => import('./pages/SecondBrainPage'))
 const MeetingsPage = lazy(() => import('./pages/MeetingsPage'))
+const StatistikenPage = lazy(() => import('./pages/StatistikenPage'))
 const JoinOrgPage = lazy(() => import('./pages/JoinOrgPage'))
 const MemoryPage = lazy(() => import('./pages/MemoryPage'))
 const DatenschutzPage = lazy(() => import('./pages/legal/DatenschutzPage'))
@@ -198,6 +199,8 @@ export default function App() {
         <Route path="/creative-board" element={<SecondBrainPage />} />
         <Route path="/memory" element={<MemoryPage />} />
         <Route path="/meetings" element={<MeetingsPage />} />
+        <Route path="/statistiken" element={<StatistikenPage />} />
+        <Route path="/analytics" element={<Navigate to="/statistiken" replace />} />
         <Route path="/ki-termine" element={isSupabaseConfigured ? <AiSchedulerPage /> : <Navigate to="/" replace />} />
         <Route path="/chat" element={isSupabaseConfigured ? <ChatPage /> : <Navigate to="/" replace />} />
         <Route path="/admin" element={isSupabaseConfigured ? <AdminPage /> : <Navigate to="/" replace />} />

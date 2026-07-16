@@ -20,6 +20,7 @@ export const NAV_PATHS: Record<NavItemKey, { to: string; exact?: boolean }> = {
   social: { to: '/social' },
   meetings: { to: '/meetings' },
   projekte: { to: '/projekte', exact: true },
+  statistiken: { to: '/statistiken' },
 }
 
 /** Max pin shortcuts in the top bar pin strip (visible when menu is collapsed). */

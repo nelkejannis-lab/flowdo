@@ -21,6 +21,7 @@ import {
   Grid2x2,
   CheckCircle2,
   PanelLeft,
+  BarChart3,
 } from 'lucide-react'
 import { useSettingsStore, type NavItemKey } from '../../store/settingsStore'
 import { isSupabaseConfigured } from '../../lib/supabase'
@@ -43,9 +44,10 @@ const RAIL_ICONS: Partial<Record<NavItemKey, React.ReactNode>> = {
   social: <Instagram size={20} strokeWidth={1.5} />,
   meetings: <Mic size={20} strokeWidth={1.5} />,
   projekte: <Trello size={20} strokeWidth={1.5} />,
+  statistiken: <BarChart3 size={20} strokeWidth={1.5} />,
 }
 
-const DEFAULT_RAIL: NavItemKey[] = ['dashboard', 'tasks', 'calendar', 'termine', 'projekte', 'worktime', 'meetings']
+const DEFAULT_RAIL: NavItemKey[] = ['dashboard', 'statistiken', 'tasks', 'calendar', 'termine', 'projekte', 'worktime', 'meetings']
 const MAX_RAIL_ITEMS = 10
 
 interface IconRailProps {

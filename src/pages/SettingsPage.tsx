@@ -1156,6 +1156,7 @@ const NAV_META: Record<NavItemKey, { icon: React.ReactNode; label: string; featu
   social:      { icon: <Instagram size={16} />, label: 'Social Media', featureKey: 'social', supabaseOnly: true },
   meetings:    { icon: <Mic size={16} />, label: 'Meetings' },
   projekte:    { icon: <Trello size={16} />, label: 'Projekte' },
+  statistiken: { icon: <BarChart3 size={16} />, label: 'Statistiken' },
 }
 
 // Reuse icons from outer scope
