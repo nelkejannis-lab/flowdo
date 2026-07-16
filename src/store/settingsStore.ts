@@ -330,7 +330,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'flowdo-settings',
-      version: 14,
+      version: 15,
       migrate: (persisted, version) => {
         const legacy = persisted as LegacyState & Partial<SettingsState>
         if (version < 1) {
@@ -352,6 +352,8 @@ export const useSettingsStore = create<SettingsState>()(
         const mergedNavOrder = existingNavOrder.length > 0 ? [...existingNavOrder, ...missingNavItems] : [...DEFAULT_NAV_ORDER]
         const navVisibility = { ...DEFAULT_NAV_VISIBILITY, ...(legacy as any).navVisibility }
         delete (navVisibility as Record<string, boolean>).pomodoro
+        // Memory (WhatsApp capture inbox) should stay discoverable in the sidebar
+        if (version < 15) navVisibility.memory = true
         const pinnedNavItems = stripPomodoro(((legacy as any).pinnedNavItems ?? []) as NavItemKey[])
         return {
           ...legacy,

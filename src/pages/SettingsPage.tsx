@@ -21,10 +21,11 @@ import { useSearchParams } from 'react-router-dom'
 import { requestPermission, canNotify } from '../utils/notifications'
 import { SHORTCUTS } from '../hooks/useKeyboardShortcuts'
 import SettingsGuideTab from '../components/settings/SettingsGuideTab'
+import WhatsAppLinkSetting from '../components/settings/WhatsAppLinkSetting'
 import type { WorkProfile } from '../types'
 
-type SettingsTab = 'profil' | 'kalender' | 'funktionen' | 'datenschutz' | 'tastenkuerzel' | 'arbeitszeit' | 'anleitung'
-const VALID_TABS: SettingsTab[] = ['profil', 'kalender', 'funktionen', 'arbeitszeit', 'datenschutz', 'tastenkuerzel', 'anleitung']
+type SettingsTab = 'profil' | 'whatsapp' | 'kalender' | 'funktionen' | 'datenschutz' | 'tastenkuerzel' | 'arbeitszeit' | 'anleitung'
+const VALID_TABS: SettingsTab[] = ['profil', 'whatsapp', 'kalender', 'funktionen', 'arbeitszeit', 'datenschutz', 'tastenkuerzel', 'anleitung']
 
 const FEATURE_ICONS: Record<FeatureKey, React.ReactNode> = {
   calendar: <CalendarDays size={18} />,
@@ -439,7 +440,7 @@ export default function SettingsPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 overflow-x-auto rounded-lg border border-gray-200 p-1 dark:border-racing-700 sm:w-fit">
-        {(['profil', 'anleitung', 'kalender', 'funktionen', 'arbeitszeit', 'datenschutz', 'tastenkuerzel'] as const).map((tab) => (
+        {(['profil', 'whatsapp', 'anleitung', 'kalender', 'funktionen', 'arbeitszeit', 'datenschutz', 'tastenkuerzel'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -449,6 +450,19 @@ export default function SettingsPage() {
           </button>
         ))}
       </div>
+
+      {activeTab === 'whatsapp' && (
+        <div className="flex flex-col gap-4">
+          <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+            <div className="mb-4 flex items-center gap-2">
+              <MessageCircle size={18} className="text-accent" />
+              <h2 className="text-sm font-semibold">{t('whatsapp.title')}</h2>
+            </div>
+            <p className="mb-4 text-xs text-gray-400">{t('whatsapp.description')}</p>
+            <WhatsAppLinkSetting />
+          </div>
+        </div>
+      )}
 
       {activeTab === 'kalender' && (
         <div className="flex flex-col gap-4">
