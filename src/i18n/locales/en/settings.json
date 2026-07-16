@@ -21,7 +21,7 @@
   },
   "dashboardWidgets": {
     "title": "Dashboard widgets",
-    "description": "Which sections are visible — order and fine-tuning also via “Customize dashboard” on the dashboard.",
+    "description": "Which sections are visible — order also via “Customize dashboard”.",
     "items": {
       "todayHero": {
         "label": "Your day",

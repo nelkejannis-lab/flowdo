@@ -48,7 +48,12 @@
       "topPriority": "Höchste Priorität",
       "upcomingDeadlines": "Deadlines & Sektion Diese Woche",
       "nextEvents": "Nächste Ereignisse",
-      "projectsOverview": "Projektübersicht"
+      "projectsOverview": "Projektübersicht",
+      "todayHero": "Dein Tag",
+      "weekFocus": "Woche im Fokus",
+      "dayCapacity": "Tageskapazität",
+      "weekOverview": "Wochenüberblick",
+      "dueThisWeek": "Diese Woche fällig"
     }
   },
   "morningReport": {
@@ -269,5 +274,33 @@
     "generating": "Wird erstellt…",
     "regenerate": "Neu generieren",
     "error": "Bericht konnte nicht erstellt werden"
+  },
+  "customize": {
+    "open": "Dashboard anpassen",
+    "done": "Fertig",
+    "title": "Layout anpassen",
+    "subtitle": "Abschnitte ein-/ausblenden und per Drag oder ↑↓ neu ordnen.",
+    "hintSticky": "Quick Add bleibt immer oben sichtbar.",
+    "reset": "Zurücksetzen",
+    "drag": "Ziehen zum Sortieren",
+    "moveUp": "Nach oben",
+    "moveDown": "Nach unten",
+    "show": "Einblenden",
+    "hide": "Ausblenden",
+    "sections": {
+      "todayHero": "Dein Tag",
+      "weekFocus": "Woche im Fokus",
+      "weather": "Wetter",
+      "dayPlan": "Tagesplan",
+      "topPriority": "Höchste Priorität",
+      "dayCapacity": "Tageskapazität",
+      "weekOverview": "Wochenüberblick",
+      "dueThisWeek": "Diese Woche fällig",
+      "workoffice": "Büro & Kollegen",
+      "stats": "Statistiken",
+      "upcomingDeadlines": "Anstehende Deadlines",
+      "nextEvents": "Nächste Events",
+      "projectsOverview": "Projektübersicht"
+    }
   }
 }

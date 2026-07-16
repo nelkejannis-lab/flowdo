@@ -48,7 +48,12 @@
       "topPriority": "Top priority",
       "upcomingDeadlines": "Deadlines & this week section",
       "nextEvents": "Upcoming events",
-      "projectsOverview": "Projects overview"
+      "projectsOverview": "Projects overview",
+      "todayHero": "Your day",
+      "weekFocus": "Week in focus",
+      "dayCapacity": "Day capacity",
+      "weekOverview": "Week overview",
+      "dueThisWeek": "Due this week"
     }
   },
   "morningReport": {
@@ -269,5 +274,33 @@
     "generating": "Generating…",
     "regenerate": "Regenerate",
     "error": "Could not generate report"
+  },
+  "customize": {
+    "open": "Customize dashboard",
+    "done": "Done",
+    "title": "Customize layout",
+    "subtitle": "Show/hide sections and reorder with drag or ↑↓.",
+    "hintSticky": "Quick Add stays pinned at the top.",
+    "reset": "Reset",
+    "drag": "Drag to reorder",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "show": "Show",
+    "hide": "Hide",
+    "sections": {
+      "todayHero": "Your day",
+      "weekFocus": "Week in focus",
+      "weather": "Weather",
+      "dayPlan": "Day plan",
+      "topPriority": "Top priority",
+      "dayCapacity": "Day capacity",
+      "weekOverview": "Week overview",
+      "dueThisWeek": "Due this week",
+      "workoffice": "Office & colleagues",
+      "stats": "Statistics",
+      "upcomingDeadlines": "Upcoming deadlines",
+      "nextEvents": "Upcoming events",
+      "projectsOverview": "Projects overview"
+    }
   }
 }

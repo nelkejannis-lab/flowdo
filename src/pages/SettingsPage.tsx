@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { BarChart2, Bell, Brain, CalendarClock, CalendarDays, CheckSquare, Clock, Cloud, Download, Eye, EyeOff, FolderKanban, Grid2x2, GripVertical, Instagram, Loader2, MapPin, MessageCircle, Plus, RefreshCw, Sparkles, Timer, Trash2, Trello, TrendingUp, Upload, Users, X, LayoutDashboard, CheckCircle2, Inbox, ListTodo, Mic } from 'lucide-react'
+import { BarChart2, BarChart3, Bell, Brain, CalendarClock, CalendarDays, CheckSquare, Clock, Cloud, Download, Eye, EyeOff, FolderKanban, Grid2x2, GripVertical, Instagram, Loader2, MapPin, MessageCircle, Plus, RefreshCw, Sparkles, Timer, Trash2, Trello, TrendingUp, Upload, Users, X, LayoutDashboard, CheckCircle2, Inbox, ListTodo, Mic } from 'lucide-react'
 import {
   DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent,
 } from '@dnd-kit/core'
@@ -338,7 +338,11 @@ export default function SettingsPage() {
   useEffect(() => { fetchConnections() }, [fetchConnections])
   useEffect(() => {
     if (connectedParam) setSyncResult(`✓ ${connectedParam === 'google' ? 'Google Calendar' : 'Outlook'} ${t('calendar.connectedSuffix')}`)
-    if (errorParam) setSyncResult(`${t('calendar.errorPrefix')}: ${decodeURIComponent(errorParam)}`)
+    if (errorParam) {
+      const code = decodeURIComponent(errorParam)
+      const mapped = t(`calendar.oauthErrors.${code}`, { defaultValue: '' })
+      setSyncResult(`${t('calendar.errorPrefix')}: ${mapped || code}`)
+    }
   }, [connectedParam, errorParam, t])
 
   useEffect(() => {
@@ -471,7 +475,8 @@ export default function SettingsPage() {
 
           <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
             <h2 className="mb-1 text-sm font-semibold">{t('calendar.title')}</h2>
-            <p className="mb-4 text-xs text-gray-400">{t('calendar.description')}</p>
+            <p className="mb-1 text-xs text-gray-400">{t('calendar.description')}</p>
+            <p className="mb-4 text-xs text-gray-400">{t('calendar.azureHint')}</p>
 
             {syncResult && (
               <p className={`mb-3 rounded-lg px-3 py-2 text-xs font-medium ${syncResult.startsWith(t('calendar.errorPrefix')) ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
@@ -1151,6 +1156,7 @@ const NAV_META: Record<NavItemKey, { icon: React.ReactNode; label: string; featu
   social:      { icon: <Instagram size={16} />, label: 'Social Media', featureKey: 'social', supabaseOnly: true },
   meetings:    { icon: <Mic size={16} />, label: 'Meetings' },
   projekte:    { icon: <Trello size={16} />, label: 'Projekte' },
+  statistiken: { icon: <BarChart3 size={16} />, label: 'Statistiken' },
 }
 
 // Reuse icons from outer scope
@@ -1211,6 +1217,11 @@ function SidebarOrderSection({ navOrder, setNavOrder, navVisibility, toggleNavIt
 // ── Dashboard widgets ─────────────────────────────────────────────────────
 function getDashWidgets(t: (key: string) => string): { key: DashboardWidget; icon: React.ReactNode; label: string; desc: string }[] {
   return [
+    { key: 'todayHero',        icon: <LayoutDashboard size={16} />, label: t('dashboardWidgets.items.todayHero.label'), desc: t('dashboardWidgets.items.todayHero.desc') },
+    { key: 'weekFocus',        icon: <TrendingUp size={16} />,  label: t('dashboardWidgets.items.weekFocus.label'), desc: t('dashboardWidgets.items.weekFocus.desc') },
+    { key: 'dayCapacity',      icon: <Timer size={16} />,       label: t('dashboardWidgets.items.dayCapacity.label'), desc: t('dashboardWidgets.items.dayCapacity.desc') },
+    { key: 'weekOverview',     icon: <CalendarDays size={16} />,label: t('dashboardWidgets.items.weekOverview.label'), desc: t('dashboardWidgets.items.weekOverview.desc') },
+    { key: 'dueThisWeek',      icon: <CheckSquare size={16} />, label: t('dashboardWidgets.items.dueThisWeek.label'), desc: t('dashboardWidgets.items.dueThisWeek.desc') },
     { key: 'stats',            icon: <BarChart2 size={16} />,   label: t('dashboardWidgets.items.stats.label'),     desc: t('dashboardWidgets.items.stats.desc') },
     { key: 'topPriority',      icon: <TrendingUp size={16} />,  label: t('dashboardWidgets.items.topPriority.label'), desc: t('dashboardWidgets.items.topPriority.desc') },
     { key: 'dayPlan',          icon: <Timer size={16} />,       label: t('dashboardWidgets.items.dayPlan.label'),       desc: t('dashboardWidgets.items.dayPlan.desc') },

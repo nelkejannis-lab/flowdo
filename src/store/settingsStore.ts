@@ -4,6 +4,14 @@ import i18n from '../i18n'
 import { NAMED_COLORS } from './eventsStore'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from './authStore'
+import {
+  DEFAULT_DASHBOARD_SECTION_ORDER,
+  normalizeDashboardSectionOrder,
+  type DashboardSectionId,
+} from '../lib/dashboardLayout'
+
+export type { DashboardSectionId }
+export { DEFAULT_DASHBOARD_SECTION_ORDER }
 
 export type Mode = 'light' | 'dark'
 export type Language = 'de' | 'en'
@@ -26,9 +34,11 @@ export type NavItemKey =
   | 'social'
   | 'meetings'
   | 'projekte'
+  | 'statistiken'
 
 export const DEFAULT_NAV_ORDER: NavItemKey[] = [
   'dashboard',
+  'statistiken',
   'week',
   'inbox',
   'tasks',
@@ -66,6 +76,7 @@ export const DEFAULT_NAV_VISIBILITY: Record<NavItemKey, boolean> = {
   social: true,
   meetings: true,
   projekte: true,
+  statistiken: true,
 }
 
 export const DEFAULT_FEATURE_VISIBILITY: Record<FeatureKey, boolean> = {
@@ -79,7 +90,10 @@ export const DEFAULT_FEATURE_VISIBILITY: Record<FeatureKey, boolean> = {
   weather: true,
 }
 
-export type DashboardWidget = 'stats' | 'todayTasks' | 'upcomingDeadlines' | 'nextEvents' | 'projectsOverview' | 'workoffice' | 'topPriority' | 'dayPlan' | 'weather'
+export type DashboardWidget =
+  | 'stats' | 'todayTasks' | 'upcomingDeadlines' | 'nextEvents' | 'projectsOverview'
+  | 'workoffice' | 'topPriority' | 'dayPlan' | 'weather'
+  | 'todayHero' | 'weekFocus' | 'dayCapacity' | 'weekOverview' | 'dueThisWeek'
 
 export const DEFAULT_DASHBOARD_VISIBILITY: Record<DashboardWidget, boolean> = {
   stats: true,
@@ -91,6 +105,11 @@ export const DEFAULT_DASHBOARD_VISIBILITY: Record<DashboardWidget, boolean> = {
   topPriority: true,
   dayPlan: true,
   weather: true,
+  todayHero: true,
+  weekFocus: true,
+  dayCapacity: true,
+  weekOverview: true,
+  dueThisWeek: true,
 }
 
 export const DEFAULT_DASHBOARD_WIDGET_ORDER = ['workoffice', 'stats_week', 'stats_projects']
@@ -131,6 +150,7 @@ interface SettingsState {
   calendarDepartmentFilter: boolean
   requireTaskEstimate: boolean
   dashboardWidgetOrder: string[]
+  dashboardSectionOrder: DashboardSectionId[]
   dailyAgendaOrder: Record<string, string[]>
   /** When true, full menu drawer is hidden — top bar + pins give primary nav */
   menuCollapsed: boolean
@@ -157,6 +177,9 @@ interface SettingsState {
   setWeatherCoords: (coords: WeatherCoords) => void
   setWeatherGpsAsked: () => void
   setDashboardWidgetOrder: (order: string[]) => void
+  setDashboardSectionOrder: (order: DashboardSectionId[]) => void
+  moveDashboardSection: (id: DashboardSectionId, direction: -1 | 1) => void
+  resetDashboardLayout: () => void
   setDailyAgendaOrder: (date: string, order: string[]) => void
   toggleHideCompletedTasks: () => void
   setHrEmail: (email: string) => void
@@ -201,6 +224,7 @@ export const useSettingsStore = create<SettingsState>()(
       calendarDepartmentFilter: true,
       requireTaskEstimate: false,
       dashboardWidgetOrder: [...DEFAULT_DASHBOARD_WIDGET_ORDER],
+      dashboardSectionOrder: [...DEFAULT_DASHBOARD_SECTION_ORDER],
       dailyAgendaOrder: {},
       menuCollapsed: true,
       setMode: (mode) => set({ mode }),
@@ -245,6 +269,25 @@ export const useSettingsStore = create<SettingsState>()(
       setWeatherCoords: (coords) => set({ weatherCoords: coords }),
       setWeatherGpsAsked: () => set({ weatherGpsAsked: true }),
       setDashboardWidgetOrder: (dashboardWidgetOrder) => set({ dashboardWidgetOrder }),
+      setDashboardSectionOrder: (order) =>
+        set({ dashboardSectionOrder: normalizeDashboardSectionOrder(order) }),
+      moveDashboardSection: (id, direction) =>
+        set((s) => {
+          const order = normalizeDashboardSectionOrder(s.dashboardSectionOrder)
+          const idx = order.indexOf(id)
+          if (idx < 0) return s
+          const next = idx + direction
+          if (next < 0 || next >= order.length) return s
+          const swapped = [...order]
+          ;[swapped[idx], swapped[next]] = [swapped[next], swapped[idx]]
+          return { dashboardSectionOrder: swapped }
+        }),
+      resetDashboardLayout: () =>
+        set({
+          dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY },
+          dashboardSectionOrder: [...DEFAULT_DASHBOARD_SECTION_ORDER],
+          dashboardWidgetOrder: [...DEFAULT_DASHBOARD_WIDGET_ORDER],
+        }),
       toggleHideCompletedTasks: () => set((s) => ({ hideCompletedTasks: !s.hideCompletedTasks })),
       setHrEmail: (hrEmail) => set({ hrEmail: hrEmail.trim() }),
       setBlurVacationForOthers: (blurVacationForOthers) => set({ blurVacationForOthers }),
@@ -263,7 +306,7 @@ export const useSettingsStore = create<SettingsState>()(
           pinkAccent: settings.pinkAccent ?? state.pinkAccent,
           language: settings.language ?? state.language,
           featureVisibility: { ...state.featureVisibility, ...settings.featureVisibility },
-          dashboardVisibility: { ...state.dashboardVisibility, ...settings.dashboardVisibility },
+          dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY, ...state.dashboardVisibility, ...settings.dashboardVisibility },
           colorLabels: { ...state.colorLabels, ...settings.colorLabels },
           navOrder: settings.navOrder ?? state.navOrder,
           navVisibility: { ...state.navVisibility, ...settings.navVisibility },
@@ -284,6 +327,9 @@ export const useSettingsStore = create<SettingsState>()(
           calendarDepartmentFilter: settings.calendarDepartmentFilter ?? state.calendarDepartmentFilter,
           requireTaskEstimate: settings.requireTaskEstimate ?? state.requireTaskEstimate,
           dashboardWidgetOrder: settings.dashboardWidgetOrder ?? state.dashboardWidgetOrder,
+          dashboardSectionOrder: normalizeDashboardSectionOrder(
+            settings.dashboardSectionOrder ?? state.dashboardSectionOrder,
+          ),
           dailyAgendaOrder: settings.dailyAgendaOrder ?? state.dailyAgendaOrder,
           menuCollapsed: settings.menuCollapsed ?? state.menuCollapsed,
         }))
@@ -315,6 +361,7 @@ export const useSettingsStore = create<SettingsState>()(
           calendarDepartmentFilter: true,
           requireTaskEstimate: false,
           dashboardWidgetOrder: [...DEFAULT_DASHBOARD_WIDGET_ORDER],
+          dashboardSectionOrder: [...DEFAULT_DASHBOARD_SECTION_ORDER],
           dailyAgendaOrder: {},
           menuCollapsed: true,
         })
@@ -339,7 +386,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'flowdo-settings',
-      version: 16,
+      version: 17,
       migrate: (persisted, version) => {
         const legacy = persisted as LegacyState & Partial<SettingsState>
         if (version < 1) {
@@ -379,6 +426,7 @@ export const useSettingsStore = create<SettingsState>()(
           weatherCity: hasCustomCity ? city : DEFAULT_WEATHER_CITY,
           weatherCoords: (legacy as any).weatherCoords ?? { ...DEFAULT_WEATHER_COORDS },
           dashboardWidgetOrder: (legacy as any).dashboardWidgetOrder ?? [...DEFAULT_DASHBOARD_WIDGET_ORDER],
+          dashboardSectionOrder: normalizeDashboardSectionOrder((legacy as any).dashboardSectionOrder),
           dailyAgendaOrder: (legacy as any).dailyAgendaOrder ?? {},
           hrEmail: (legacy as any).hrEmail ?? '',
           blurVacationForOthers: (legacy as any).blurVacationForOthers ?? true,
@@ -392,6 +440,8 @@ export const useSettingsStore = create<SettingsState>()(
         if (!state.navOrder?.length) state.navOrder = [...DEFAULT_NAV_ORDER]
         if (!state.pinnedNavItems) state.pinnedNavItems = []
         if (!state.dashboardWidgetOrder?.length) state.dashboardWidgetOrder = [...DEFAULT_DASHBOARD_WIDGET_ORDER]
+        state.dashboardSectionOrder = normalizeDashboardSectionOrder(state.dashboardSectionOrder)
+        state.dashboardVisibility = { ...DEFAULT_DASHBOARD_VISIBILITY, ...state.dashboardVisibility }
         if (!state.dailyAgendaOrder) state.dailyAgendaOrder = {}
         if (typeof state.menuCollapsed !== 'boolean') state.menuCollapsed = true
         if (state.language) i18n.changeLanguage(state.language)
@@ -427,6 +477,7 @@ export function getSettingsPayload(state: any) {
     calendarDepartmentFilter: state.calendarDepartmentFilter,
     requireTaskEstimate: state.requireTaskEstimate,
     dashboardWidgetOrder: state.dashboardWidgetOrder,
+    dashboardSectionOrder: normalizeDashboardSectionOrder(state.dashboardSectionOrder),
     dailyAgendaOrder: state.dailyAgendaOrder,
     menuCollapsed: state.menuCollapsed,
   }

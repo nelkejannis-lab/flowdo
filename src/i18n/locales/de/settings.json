@@ -21,7 +21,7 @@
   },
   "dashboardWidgets": {
     "title": "Dashboard-Widgets",
-    "description": "Welche Bereiche sichtbar sind — Reihenfolge und Feintuning auch über „Dashboard anpassen“ auf dem Dashboard.",
+    "description": "Welche Bereiche sichtbar sind — Reihenfolge auch über „Dashboard anpassen“.",
     "items": {
       "todayHero": {
         "label": "Dein Tag",
