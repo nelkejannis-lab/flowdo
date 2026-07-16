@@ -1,5 +1,6 @@
 import { useAuthStore } from '../store/authStore'
 import { NOVA_PUBLIC } from '../config/novaPublic'
+import { friendlyUserError } from './friendlyErrors'
 import { isSupabaseConfigured, supabase } from './supabase'
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -11,16 +12,7 @@ export function novaApiAvailable() {
 }
 
 export function friendlyNetworkError(err: unknown, fallbackDe: string, fallbackEn?: string): string {
-  const raw = err instanceof Error ? err.message : String(err ?? '')
-  const isDe =
-    typeof navigator !== 'undefined' && navigator.language.toLowerCase().startsWith('de')
-  if (/failed to fetch|networkerror|load failed|network request failed/i.test(raw)) {
-    return isDe
-      ? 'Verbindung fehlgeschlagen. Prüfe Internet und ob du angemeldet bist.'
-      : (fallbackEn ?? 'Connection failed. Check your internet and that you are signed in.')
-  }
-  if (raw.trim()) return raw
-  return isDe ? fallbackDe : (fallbackEn ?? fallbackDe)
+  return friendlyUserError(err, fallbackDe, fallbackEn)
 }
 
 export interface WhatsAppLinkStatusResult {
@@ -141,11 +133,14 @@ export function composeWhatsAppConnectText(options: {
   return [join, code].filter(Boolean).join('\n')
 }
 
-/** Normalize join phrase to always start with "join ". */
+/** Normalize join phrase to always start with "join ". Rejects bare "join". */
 export function normalizeSandboxJoin(code: string | null | undefined): string | null {
   const raw = String(code || '').trim()
   if (!raw) return null
-  return /^join\s+/i.test(raw) ? raw.replace(/^join\s+/i, 'join ') : `join ${raw}`
+  const withJoin = /^join\s+/i.test(raw) ? raw.replace(/^join\s+/i, 'join ') : `join ${raw}`
+  // Twilio needs "join <keyword>" — bare "join" triggers "Failed to join sandbox".
+  if (!/^join\s+\S+/i.test(withJoin)) return null
+  return withJoin
 }
 
 export function getLocalSandboxJoinOverride(): string | null {
@@ -281,11 +276,11 @@ export async function apiGenerateWhatsAppLinkCode(): Promise<WhatsAppLinkStatusR
         lastError = error.message
         continue
       }
-      return { linked: false, error: error.message }
+      return { linked: false, error: friendlyUserError(error.message) }
     }
     return {
       linked: false,
-      error: lastError || 'Code konnte nicht erzeugt werden. Bitte erneut versuchen.',
+      error: friendlyUserError(lastError || 'Code konnte nicht erzeugt werden. Bitte erneut versuchen.'),
     }
   } catch (err: unknown) {
     return {
@@ -308,7 +303,7 @@ export async function apiUnlinkWhatsAppNumber(): Promise<{ ok?: boolean; error?:
       .from('profiles')
       .update({ phone_number: null })
       .eq('id', userId)
-    if (profileError) return { error: profileError.message }
+    if (profileError) return { error: friendlyUserError(profileError.message, 'Verknüpfung konnte nicht gelöst werden.') }
 
     await supabase
       .from('whatsapp_link_codes')
@@ -345,9 +340,15 @@ export async function apiStartWhatsAppPhoneLink(
       sandboxJoinCode?: string | null
     }
     if (!res.ok) {
+      const mapped = friendlyUserError(
+        data.error || `Fehler ${res.status}`,
+        'Bestätigungscode konnte nicht gesendet werden.',
+      )
+      const needsJoin =
+        !!data.needsSandboxJoin || /freigeschaltet|join-Befehl|63015|Sandbox/i.test(mapped + (data.error || ''))
       return {
-        error: data.error || `Fehler ${res.status}`,
-        needsSandboxJoin: data.needsSandboxJoin,
+        error: mapped,
+        needsSandboxJoin: needsJoin,
         sandboxJoinCode: normalizeSandboxJoin(data.sandboxJoinCode),
       }
     }
@@ -373,7 +374,9 @@ export async function apiVerifyWhatsAppPhoneLink(
       body: JSON.stringify({ code }),
     })
     const data = (await res.json().catch(() => ({}))) as { ok?: boolean; phone?: string; error?: string }
-    if (!res.ok) return { error: data.error || `Fehler ${res.status}` }
+    if (!res.ok) {
+      return { error: friendlyUserError(data.error || `Fehler ${res.status}`, 'Code konnte nicht bestätigt werden.') }
+    }
     return { ok: true, phone: data.phone }
   } catch (err: unknown) {
     return { error: friendlyNetworkError(err, 'Code konnte nicht bestätigt werden.') }
@@ -400,7 +403,11 @@ export async function apiSetSandboxJoinCode(
       sandboxJoinCode?: string
       error?: string
     }
-    if (!res.ok) return { error: data.error || `Fehler ${res.status}` }
+    if (!res.ok) {
+      return {
+        error: friendlyUserError(data.error || `Fehler ${res.status}`, 'Join-Code konnte nicht gespeichert werden.'),
+      }
+    }
     clearWhatsAppConnectInfoCache()
     return { ok: true, sandboxJoinCode: normalizeSandboxJoin(data.sandboxJoinCode) || undefined }
   } catch (err: unknown) {

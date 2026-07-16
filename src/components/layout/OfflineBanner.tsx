@@ -14,7 +14,7 @@ export default function OfflineBanner() {
   return (
     <div className="flex items-center gap-2 bg-orange-500 px-4 py-2 text-sm font-medium text-white">
       <WifiOff size={16} />
-      <span>Keine Internetverbindung – Änderungen werden lokal gespeichert / No internet connection – changes saved locally</span>
+      <span>Keine Internetverbindung — Änderungen werden lokal gespeichert.</span>
     </div>
   )
 }

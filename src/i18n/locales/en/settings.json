@@ -21,8 +21,28 @@
   },
   "dashboardWidgets": {
     "title": "Dashboard widgets",
-    "description": "Choose which sections are visible on the dashboard.",
+    "description": "Which sections are visible — order and fine-tuning also via “Customize dashboard” on the dashboard.",
     "items": {
+      "todayHero": {
+        "label": "Your day",
+        "desc": "Hero with to-dos, capacity and quick actions"
+      },
+      "weekFocus": {
+        "label": "Week in focus",
+        "desc": "Week progress and wins"
+      },
+      "dayCapacity": {
+        "label": "Day capacity",
+        "desc": "Work time, meetings & task load"
+      },
+      "weekOverview": {
+        "label": "Week overview",
+        "desc": "Tasks & events per day"
+      },
+      "dueThisWeek": {
+        "label": "Due this week",
+        "desc": "Tasks and appointments for the current week"
+      },
       "stats": {
         "label": "Statistics",
         "desc": "Tasks & projects"
@@ -87,13 +107,13 @@
     "notLinked": "Not linked yet{{bot}}",
     "justLinked": "Done — WhatsApp is linked ({{phone}}).",
     "connectIntro": "Two ways: send a code in WhatsApp (recommended) or confirm your number in the app.",
-    "joinFirstBannerTitle": "Join the Twilio sandbox first — or WhatsApp stays blocked",
-    "joinFirstBannerBody": "Send the join command to {{bot}} and wait for Twilio’s confirmation. Without a join (error 63015 / “not connected to a Sandbox”), NOVAT cannot send OTP or bot messages to your number — the app cannot bypass that limit.",
-    "joinFirstBannerMissing": "The server has no join command yet. Enter the code from the Twilio Console below (or admin: “Save for everyone” / Render TWILIO_SANDBOX_JOIN_CODE).",
+    "joinFirstBannerTitle": "Unlock WhatsApp first — or the bot stays silent",
+    "joinFirstBannerBody": "Send the join command to {{bot}} and wait for confirmation. Without this step NOVAT cannot send codes or bot messages to your number.",
+    "joinFirstBannerMissing": "The join command is still missing. Enter the code from the Twilio Console below (admin: “Save for everyone”).",
     "modeCode": "Via WhatsApp code",
     "modePhone": "Via phone number",
     "step1Title": "Step 1 · Unlock WhatsApp",
-    "step1Hint": "First open exactly this WhatsApp number and send the join command. Wait for Twilio's reply — only then will OTP or the NOVAT code work.",
+    "step1Hint": "Open exactly this WhatsApp number, send the join command, wait for confirmation — only then will OTP or the NOVAT code work.",
     "step1Done": "Got confirmation",
     "step1Required": "Tip: only check “Got confirmation” after Twilio replies — then continue to step 2.",
     "step1RequiredPhone": "Finish step 1 first, otherwise NOVAT can’t send you a WhatsApp code.",
@@ -102,7 +122,8 @@
     "botNumberLabel": "Bot number",
     "openWhatsApp": "Open in WhatsApp",
     "openWhatsAppJoin": "Open WhatsApp (join …)",
-    "joinMissing": "The join command is not set on the server yet. Copy it from Twilio Console → Messaging → Try it out → WhatsApp → Sandbox (e.g. join yellow-tiger) and enter it here:",
+    "joinMissing": "The join command is not set on the server yet. Copy it from Twilio Console → Messaging → Try it out → WhatsApp → Sandbox and enter it here. Sending just “join” without the keyword will fail.",
+    "joinFailedHint": "“Failed to join” = wrong keyword. Send exactly the shown command to +1 415 523 8886 — not just “join” and not a docs example.",
     "joinPlaceholder": "join your-keyword",
     "joinSaveLocal": "Save for me",
     "joinSaveAdmin": "Save for everyone (Admin)",
@@ -152,10 +173,13 @@
     "openWhatsAppPrefill": "Open WhatsApp (text prefilled)",
     "joinMissingAdmin": "Admin: after entering it, tap “Save for everyone” so all users get the one-tap link. Without the correct join phrase Twilio will not unlock the number.",
     "verifyTitle": "How to verify the join succeeded",
-    "verify1": "1. In the chat with +1 415 523 8886 you see a Twilio confirmation (not the yellow Sandbox warning).",
-    "verify2": "2. The “is not connected to a Sandbox” warning must stop appearing.",
-    "verify3": "3. Only then do step 2 (NOVAT code) or phone OTP — before that Twilio blocks delivery.",
-    "otpBlockedUntilJoin": "Important: OTP and bot replies only work after a successful join. The app cannot bypass Twilio's sandbox limit."
+    "verify1": "1. In the chat with +1 415 523 8886 you see a confirmation (no yellow warning).",
+    "verify2": "2. If unlock failed, send the join command again to exactly this number.",
+    "verify3": "3. Only then do step 2 (NOVAT code) or phone OTP.",
+    "otpBlockedUntilJoin": "Important: codes and bot replies only work after a successful unlock — that must happen on your phone.",
+    "doNowTitle": "Do this on your phone",
+    "doNowNumber": "To this number:",
+    "doNowMessage": "Send exactly this text:"
   },
   "guide": {
     "title": "What can NOVAT do?",
@@ -282,7 +306,17 @@
     "syncing": "Syncing…",
     "syncNow": "Sync now",
     "syncedPrefix": "Synced",
-    "fewConnections": "💡 Connect Google or Outlook using the \"Connect\" button above. iCloud works instantly via calendar link (no setup needed)."
+    "fewConnections": "💡 Connect Google or Outlook using the \"Connect\" button above. iCloud works instantly via calendar link (no setup needed).",
+    "oauthErrors": {
+      "access_denied": "Access denied — please grant Outlook permission.",
+      "invalid_grant": "Login expired — please reconnect Outlook.",
+      "consent_required": "Consent required — please reconnect Outlook and confirm permissions.",
+      "interaction_required": "Sign-in required again — please reconnect Outlook.",
+      "missing_params": "OAuth incomplete — please reconnect.",
+      "invalid_state": "Security error (invalid state) — please reconnect.",
+      "unknown_provider": "Unknown calendar provider."
+    },
+    "azureHint": "The Azure app needs Microsoft Graph delegated permission \"Calendars.ReadWrite\" plus \"offline_access\"."
   },
   "profile": {
     "avatarTitle": "Profile picture",

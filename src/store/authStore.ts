@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { Session, User } from '@supabase/supabase-js'
+import { friendlyUserError } from '../lib/friendlyErrors'
 import { supabase } from '../lib/supabase'
 
 export interface Profile {
@@ -131,7 +132,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         },
       },
     })
-    if (error) return error.message
+    if (error) return friendlyUserError(error.message)
     if (data.user) {
       const updates: ProfileUpdate = {}
       if (birthday) updates.birthday = birthday
@@ -145,7 +146,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   signIn: async (email, password) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    return error?.message ?? null
+    return error ? friendlyUserError(error.message) : null
   },
 
   signOut: async () => {
@@ -170,7 +171,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     }
 
     const { error } = await supabase.from('profiles').update(updates).eq('id', userId)
-    if (error) return error.message
+    if (error) return friendlyUserError(error.message)
 
     await get().fetchProfile()
     return null
@@ -178,14 +179,14 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   updatePassword: async (newPassword) => {
     const { error } = await supabase.auth.updateUser({ password: newPassword })
-    return error?.message ?? null
+    return error ? friendlyUserError(error.message) : null
   },
 
   requestPasswordReset: async (email) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: window.location.origin,
     })
-    return error?.message ?? null
+    return error ? friendlyUserError(error.message) : null
   },
 
   exportUserData: async () => {
@@ -216,12 +217,12 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   setBadgeForUser: async (userId, badge) => {
     const { error } = await supabase.rpc('admin_set_badge', { p_user_id: userId, p_badge: badge })
-    return error?.message ?? null
+    return error ? friendlyUserError(error.message) : null
   },
 
   deleteAccount: async () => {
     const { error } = await supabase.rpc('delete_my_account')
-    if (error) return error.message
+    if (error) return friendlyUserError(error.message)
     set({ session: null, user: null, profile: null })
     return null
   },

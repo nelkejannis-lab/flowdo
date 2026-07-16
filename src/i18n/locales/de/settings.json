@@ -21,8 +21,28 @@
   },
   "dashboardWidgets": {
     "title": "Dashboard-Widgets",
-    "description": "Wähle aus, welche Bereiche auf dem Dashboard sichtbar sind.",
+    "description": "Welche Bereiche sichtbar sind — Reihenfolge und Feintuning auch über „Dashboard anpassen“ auf dem Dashboard.",
     "items": {
+      "todayHero": {
+        "label": "Dein Tag",
+        "desc": "Hero mit To-dos, Kapazität und Kurzaktionen"
+      },
+      "weekFocus": {
+        "label": "Woche im Fokus",
+        "desc": "Wochenfortschritt und Wins"
+      },
+      "dayCapacity": {
+        "label": "Tageskapazität",
+        "desc": "Arbeitszeit, Meetings & Aufgabenlast"
+      },
+      "weekOverview": {
+        "label": "Wochenüberblick",
+        "desc": "Aufgaben & Termine pro Tag"
+      },
+      "dueThisWeek": {
+        "label": "Diese Woche fällig",
+        "desc": "Aufgaben und Termine der laufenden Woche"
+      },
       "stats": {
         "label": "Statistiken",
         "desc": "Aufgaben & Projekte"
@@ -86,18 +106,19 @@
     "linked": "Verknüpft: {{phone}}",
     "notLinked": "Noch nicht verknüpft{{bot}}",
     "connectIntro": "Zwei Wege: Code in WhatsApp senden (empfohlen) oder Nummer in der App bestätigen.",
-    "joinFirstBannerTitle": "Zuerst Twilio-Sandbox joinen — sonst bleibt WhatsApp blockiert",
-    "joinFirstBannerBody": "Sende den join-Befehl an {{bot}} und warte auf die Twilio-Bestätigung. Ohne Join (Fehler 63015 / „not connected to a Sandbox“) kann NOVAT keine OTP- oder Bot-Nachrichten an deine Nummer schicken — das lässt sich in der App nicht umgehen.",
-    "joinFirstBannerMissing": "Der Server hat noch keinen join-Befehl hinterlegt. Unten den Code aus der Twilio Console eintragen (oder Admin: „Für alle speichern“ / Render TWILIO_SANDBOX_JOIN_CODE).",
+    "joinFirstBannerTitle": "Zuerst WhatsApp freischalten — sonst bleibt der Bot stumm",
+    "joinFirstBannerBody": "Sende den join-Befehl an {{bot}} und warte auf die Bestätigung. Ohne diesen Schritt kann NOVAT keine Codes oder Bot-Nachrichten an deine Nummer schicken.",
+    "joinFirstBannerMissing": "Der Join-Befehl fehlt noch. Unten den Code aus der Twilio Console eintragen (Admin: „Für alle speichern“).",
     "step1Title": "Schritt 1 · WhatsApp freischalten",
-    "step1Hint": "Zuerst genau diese Nummer in WhatsApp öffnen und den join-Befehl senden. Warte auf die Twilio-Antwort — erst danach funktioniert OTP oder der NOVAT-Code.",
+    "step1Hint": "Öffne genau diese Nummer in WhatsApp, sende den join-Befehl, warte auf die Bestätigung — erst danach funktioniert OTP oder der NOVAT-Code.",
     "step1Done": "Bestätigung erhalten",
     "step2Title": "Schritt 2 · NOVAT-Code senden",
     "step2Hint": "Code erstellen, in WhatsApp öffnen und absenden — NOVAT verknüpft deine Nummer automatisch. Status aktualisiert sich, sobald du zurückkommst.",
     "botNumberLabel": "Bot-Nummer",
     "openWhatsApp": "In WhatsApp öffnen",
     "openWhatsAppJoin": "WhatsApp öffnen (join …)",
-    "joinMissing": "Der join-Befehl fehlt noch auf dem Server. In der Twilio Console unter Messaging → Try it out → WhatsApp → Sandbox den Befehl kopieren (z. B. join yellow-tiger) und hier eintragen:",
+    "joinMissing": "Der join-Befehl fehlt noch auf dem Server. In der Twilio Console unter Messaging → Try it out → WhatsApp → Sandbox den Befehl kopieren und hier eintragen. Nur „join“ ohne Schlüsselwort schlägt fehl.",
+    "joinFailedHint": "„Failed to join“ = falsches Schlüsselwort. Sende genau den angezeigten Befehl an +1 415 523 8886 — nicht nur „join“ und keinen Beispiel-Text aus Docs.",
     "sandboxExpiry": "Die Freischaltung gilt etwa 72 Stunden. Danach „join …“ einmal wiederholen.",
     "waitingLink": "Warte auf deinen Code in WhatsApp… Status aktualisiert sich automatisch.",
     "codeLabel": "Account Link Code",
@@ -152,10 +173,13 @@
     "openWhatsAppPrefill": "WhatsApp öffnen (Text vorausgefüllt)",
     "joinMissingAdmin": "Admin: Nach dem Eintragen „Für alle speichern“ — dann sehen alle Nutzer den One-Tap-Link. Ohne den richtigen join-Befehl kann Twilio die Nummer nicht freischalten.",
     "verifyTitle": "So prüfst du, ob der Join geklappt hat",
-    "verify1": "1. Im Chat mit +1 415 523 8886 eine Bestätigung von Twilio sehen (nicht die gelbe Sandbox-Warnung).",
-    "verify2": "2. Die Warnung „is not connected to a Sandbox“ darf danach nicht mehr kommen.",
-    "verify3": "3. Erst dann Schritt 2 (NOVAT-Code) oder Handynummer-OTP — vorher blockiert Twilio den Versand.",
-    "otpBlockedUntilJoin": "Wichtig: OTP und Bot-Antworten funktionieren erst nach erfolgreichem Join. Die App kann das Twilio-Sandbox-Limit nicht umgehen."
+    "verify1": "1. Im Chat mit +1 415 523 8886 eine Bestätigung sehen (kein gelber Warnhinweis mehr).",
+    "verify2": "2. Wenn die Freischaltung fehlt, erneut den join-Befehl an genau diese Nummer senden.",
+    "verify3": "3. Erst dann Schritt 2 (NOVAT-Code) oder Handynummer-OTP.",
+    "otpBlockedUntilJoin": "Wichtig: Codes und Bot-Antworten funktionieren erst nach erfolgreicher Freischaltung — das muss am Handy passieren.",
+    "doNowTitle": "Jetzt am Handy",
+    "doNowNumber": "An diese Nummer:",
+    "doNowMessage": "Genau diesen Text senden:"
   },
   "guide": {
     "title": "Was kann NOVAT?",
@@ -282,7 +306,17 @@
     "syncing": "Synchronisiere…",
     "syncNow": "Jetzt synchronisieren",
     "syncedPrefix": "Synchronisiert",
-    "fewConnections": "💡 Verbinde Google oder Outlook über den jeweiligen „Verbinden\"-Button oben. iCloud geht sofort per Kalender-Link (kein Setup nötig)."
+    "fewConnections": "💡 Verbinde Google oder Outlook über den jeweiligen „Verbinden\"-Button oben. iCloud geht sofort per Kalender-Link (kein Setup nötig).",
+    "oauthErrors": {
+      "access_denied": "Zugriff verweigert — bitte Outlook-Berechtigung erteilen.",
+      "invalid_grant": "Anmeldung abgelaufen — bitte Outlook erneut verbinden.",
+      "consent_required": "Zustimmung erforderlich — bitte Outlook erneut verbinden und Berechtigungen bestätigen.",
+      "interaction_required": "Erneute Anmeldung nötig — bitte Outlook erneut verbinden.",
+      "missing_params": "OAuth unvollständig — bitte erneut verbinden.",
+      "invalid_state": "Sicherheitsfehler (ungültiger State) — bitte erneut verbinden.",
+      "unknown_provider": "Unbekannter Kalender-Anbieter."
+    },
+    "azureHint": "Azure-App braucht die Microsoft-Graph-Berechtigung „Calendars.ReadWrite“ (delegiert) plus „offline_access“."
   },
   "profile": {
     "avatarTitle": "Profilbild",
