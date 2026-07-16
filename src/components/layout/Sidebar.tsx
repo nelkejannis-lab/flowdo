@@ -23,8 +23,10 @@ import {
   Instagram,
   Settings,
   X,
+  PanelLeftClose,
   Folder,
   ChevronDown,
+  ChevronLeft,
   Bell,
   MessageCircle,
   Search,
@@ -69,9 +71,9 @@ import { useNotificationsStore } from '../../store/notificationsStore'
 import { isSupabaseConfigured } from '../../lib/supabase'
 
 const navItemClass = ({ isActive }: { isActive: boolean }) =>
-  `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+  `relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
     isActive
-      ? 'bg-accent/10 text-accent shadow-sm'
+      ? 'bg-accent/10 text-accent before:absolute before:left-0 before:top-1/2 before:h-4 before:w-[3px] before:-translate-y-1/2 before:rounded-r-full before:bg-accent'
       : 'text-gray-600 hover:bg-black/[0.04] dark:text-racing-100 dark:hover:bg-white/[0.06]'
   }`
 
@@ -290,16 +292,20 @@ export default function Sidebar({ isOpen, onClose, docked = false }: SidebarProp
       {isOpen && !docked && (
         <div
           onClick={onClose}
-          className="fixed inset-0 z-40 bg-black/35 backdrop-blur-[2px]"
+          className="fixed inset-0 z-40 bg-black/35 backdrop-blur-[2px] sm:left-[60px]"
           aria-hidden="true"
         />
       )}
       <aside
         style={{ paddingTop: 'max(16px, calc(16px + env(safe-area-inset-top)))', paddingBottom: 'max(16px, calc(16px + env(safe-area-inset-bottom)))' }}
-        className={`vibrancy-sidebar z-50 flex h-full w-[272px] flex-col overflow-y-auto px-3 transition-transform duration-300 ${
+        className={`vibrancy-sidebar z-50 flex h-full flex-col overflow-y-auto px-3 ${
           docked
-            ? `relative flex-shrink-0 translate-x-0 border-r border-black/[0.04] dark:border-white/[0.06] ${isOpen ? '' : 'hidden'}`
-            : `fixed inset-y-0 left-0 shadow-bento-lg ${isOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none'}`
+            ? `relative flex-shrink-0 border-r border-black/[0.04] transition-[width,opacity,transform] duration-300 ease-out dark:border-white/[0.06] ${
+                isOpen ? 'w-[272px] translate-x-0 opacity-100' : 'pointer-events-none w-0 -translate-x-2 overflow-hidden opacity-0'
+              }`
+            : `fixed inset-y-0 left-0 w-[272px] shadow-bento-lg transition-transform duration-300 ease-out sm:left-[60px] ${
+                isOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none'
+              }`
         }`}
       >
       <div className="mb-5 flex items-center justify-between gap-1 px-2">
@@ -325,10 +331,20 @@ export default function Sidebar({ isOpen, onClose, docked = false }: SidebarProp
           </button>
           <button
             onClick={onClose}
-            className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
-            aria-label={t('sidebar.closeMenu')}
+            className={`flex items-center gap-1 rounded-lg px-1.5 py-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800 ${
+              docked ? 'text-accent hover:bg-accent/10 hover:text-accent' : ''
+            }`}
+            aria-label={docked ? t('topbar.collapseMenu') : t('sidebar.closeMenu')}
+            title={docked ? t('topbar.collapseMenu') : t('sidebar.closeMenu')}
           >
-            <X size={16} strokeWidth={1.6} />
+            {docked ? (
+              <>
+                <PanelLeftClose size={16} strokeWidth={1.7} />
+                <ChevronLeft size={14} strokeWidth={2} className="hidden sm:inline" />
+              </>
+            ) : (
+              <X size={16} strokeWidth={1.6} />
+            )}
           </button>
         </div>
       </div>
@@ -610,9 +626,9 @@ function SortableNavItem({ id, to, exact, onClose, children, draggable = true, p
   const { t } = useTranslation('layout')
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, disabled: !draggable })
   const navItemClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+    `relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
       isActive
-        ? 'bg-accent/10 text-accent shadow-sm'
+        ? 'bg-accent/10 text-accent before:absolute before:left-0 before:top-1/2 before:h-4 before:w-[3px] before:-translate-y-1/2 before:rounded-r-full before:bg-accent'
         : 'text-gray-600 hover:bg-black/[0.04] dark:text-racing-100 dark:hover:bg-white/[0.06]'
     }`
 

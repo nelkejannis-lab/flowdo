@@ -58,9 +58,15 @@
     "closeMenu": "Menü schließen",
     "showMenu": "Vollmenü einblenden",
     "hideMenu": "Vollmenü ausblenden",
-    "pinnedNav": "Angepinnte Navigation",
+    "expandMenu": "Menü aufklappen",
+    "collapseMenu": "Menü einklappen",
+    "expandShort": "Aufklappen",
+    "collapseShort": "Einklappen",
+    "more": "Mehr",
+    "moreExpand": "Mehr — Menü aufklappen",
+    "pinnedNav": "Angepinnte Shortcuts",
     "settings": "Einstellungen",
-    "iconRail": "Schnellnavigation"
+    "iconRail": "Hauptnavigation"
   },
   "quickAdd": {
     "title": "Schnell hinzufügen",

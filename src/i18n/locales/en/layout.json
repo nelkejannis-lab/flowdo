@@ -58,9 +58,15 @@
     "closeMenu": "Close menu",
     "showMenu": "Show full menu",
     "hideMenu": "Hide full menu",
-    "pinnedNav": "Pinned navigation",
+    "expandMenu": "Expand menu",
+    "collapseMenu": "Collapse menu",
+    "expandShort": "Expand",
+    "collapseShort": "Collapse",
+    "more": "More",
+    "moreExpand": "More — expand menu",
+    "pinnedNav": "Pinned shortcuts",
     "settings": "Settings",
-    "iconRail": "Quick navigation"
+    "iconRail": "Primary navigation"
   },
   "quickAdd": {
     "title": "Quick add",

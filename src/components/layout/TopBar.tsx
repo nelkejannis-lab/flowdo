@@ -2,8 +2,6 @@ import { NavLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Menu,
-  PanelLeftClose,
-  PanelLeft,
   Search,
   Bell,
   MessageCircle,
@@ -22,6 +20,9 @@ import {
   Instagram,
   Brain,
   Mic,
+  ChevronRight,
+  ChevronLeft,
+  PanelLeft,
 } from 'lucide-react'
 import Logo from './Logo'
 import { useSearchStore } from '../../store/searchStore'
@@ -33,6 +34,7 @@ import { useBoardInvitesStore } from '../../store/boardInvitesStore'
 import { useTeamInvitesStore } from '../../store/teamInvitesStore'
 import { useNotificationsStore } from '../../store/notificationsStore'
 import { isSupabaseConfigured } from '../../lib/supabase'
+import { PRIMARY_NAV_KEYS, NAV_PATHS, MAX_TOPBAR_PINS } from './navConfig'
 
 const NAV_ICONS: Record<NavItemKey, React.ReactNode> = {
   dashboard: <LayoutDashboard size={18} strokeWidth={1.6} />,
@@ -53,24 +55,8 @@ const NAV_ICONS: Record<NavItemKey, React.ReactNode> = {
   projekte: <Trello size={18} strokeWidth={1.6} />,
 }
 
-const NAV_PATHS: Record<NavItemKey, { to: string; exact?: boolean }> = {
-  dashboard: { to: '/', exact: true },
-  week: { to: '/tasks/week' },
-  inbox: { to: '/tasks/inbox' },
-  tasks: { to: '/tasks', exact: true },
-  calendar: { to: '/calendar' },
-  termine: { to: '/termine' },
-  brain: { to: '/creative-board' },
-  memory: { to: '/memory' },
-  eisenhower: { to: '/eisenhower' },
-  worktime: { to: '/arbeitszeit' },
-  aiScheduler: { to: '/ki-termine' },
-  chat: { to: '/chat' },
-  friends: { to: '/friends' },
-  social: { to: '/social' },
-  meetings: { to: '/meetings' },
-  projekte: { to: '/projekte', exact: true },
-}
+const isMac =
+  typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent)
 
 interface TopBarProps {
   menuOpen: boolean
@@ -83,8 +69,7 @@ export default function TopBar({ menuOpen, onToggleMenu }: TopBarProps) {
   const unreadMessages = useMessagesStore((s) => s.unreadTotal)
   const featureVisibility = useSettingsStore((s) => s.featureVisibility)
   const pinnedNavItems = useSettingsStore((s) => s.pinnedNavItems ?? [])
-  const menuCollapsed = useSettingsStore((s) => s.menuCollapsed)
-  const toggleMenuCollapsed = useSettingsStore((s) => s.toggleMenuCollapsed)
+  const navVisibility = useSettingsStore((s) => s.navVisibility)
   const profile = useAuthStore((s) => s.profile)
   const taskIncoming = useTaskSharesStore((s) => s.incoming ?? [])
   const boardIncoming = useBoardInvitesStore((s) => s.incoming ?? [])
@@ -92,89 +77,131 @@ export default function TopBar({ menuOpen, onToggleMenu }: TopBarProps) {
   const unreadNotifications = useNotificationsStore((s) => s.unreadCount)
   const notificationCount = taskIncoming.length + boardIncoming.length + teamIncoming.length + unreadNotifications
 
-  const pinKeys = (pinnedNavItems.length > 0 ? pinnedNavItems : (['tasks', 'calendar', 'projekte'] as NavItemKey[]))
-    .filter((k) => k !== 'dashboard')
-    .slice(0, 8)
+  // Pins that aren't already in the icon rail — avoids duplicate primary nav.
+  const primarySet = new Set(PRIMARY_NAV_KEYS)
+  const pinKeys = pinnedNavItems
+    .filter((k) => k !== 'dashboard' && !primarySet.has(k))
+    .filter((k) => {
+      if (k === 'calendar' && !featureVisibility.calendar) return false
+      if (k === 'worktime' && !featureVisibility.worktime) return false
+      if (k === 'eisenhower' && !featureVisibility.eisenhower) return false
+      if (k === 'aiScheduler' && !featureVisibility.aiScheduler) return false
+      if (k === 'chat' && !featureVisibility.chat) return false
+      if (k === 'friends' && !featureVisibility.friends) return false
+      if (k === 'social' && !featureVisibility.social) return false
+      if ((k === 'aiScheduler' || k === 'chat' || k === 'friends' || k === 'social') && !isSupabaseConfigured) {
+        return false
+      }
+      return navVisibility?.[k] ?? true
+    })
+    .slice(0, MAX_TOPBAR_PINS)
 
   const utilBtn =
     'relative flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 transition-colors hover:bg-black/[0.05] hover:text-gray-800 dark:text-racing-300 dark:hover:bg-white/[0.06] dark:hover:text-white'
+
+  const pinBtn = ({ isActive }: { isActive: boolean }) =>
+    `relative flex h-9 w-9 items-center justify-center rounded-xl transition-colors ${
+      isActive
+        ? 'bg-accent/12 text-accent'
+        : 'text-gray-500 hover:bg-black/[0.05] hover:text-gray-800 dark:text-racing-300 dark:hover:bg-white/[0.06] dark:hover:text-white'
+    }`
 
   return (
     <header
       className="vibrancy-header relative z-30 flex h-14 flex-shrink-0 items-center gap-3 px-3 sm:px-4"
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
-      {/* Left: menu + brand */}
+      {/* Left: expand/collapse + brand */}
       <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
         <button
           type="button"
           onClick={onToggleMenu}
-          className={utilBtn}
+          className={`${utilBtn} sm:hidden`}
           aria-label={menuOpen ? t('topbar.closeMenu') : t('topbar.openMenu')}
           title={menuOpen ? t('topbar.closeMenu') : t('topbar.openMenu')}
+          aria-expanded={menuOpen}
         >
           <Menu size={20} strokeWidth={1.6} />
         </button>
         <button
           type="button"
-          onClick={toggleMenuCollapsed}
-          className={`${utilBtn} hidden sm:flex`}
-          aria-label={menuCollapsed ? t('topbar.showMenu') : t('topbar.hideMenu')}
-          title={menuCollapsed ? t('topbar.showMenu') : t('topbar.hideMenu')}
+          onClick={onToggleMenu}
+          className={`hidden items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-sm font-medium transition-colors sm:flex ${
+            menuOpen
+              ? 'bg-accent/10 text-accent hover:bg-accent/15'
+              : 'bg-black/[0.04] text-gray-600 hover:bg-black/[0.07] hover:text-gray-900 dark:bg-white/[0.06] dark:text-racing-200 dark:hover:bg-white/[0.1] dark:hover:text-white'
+          }`}
+          aria-label={menuOpen ? t('topbar.collapseMenu') : t('topbar.expandMenu')}
+          title={menuOpen ? t('topbar.collapseMenu') : t('topbar.expandMenu')}
+          aria-expanded={menuOpen}
         >
-          {menuCollapsed ? <PanelLeft size={18} strokeWidth={1.6} /> : <PanelLeftClose size={18} strokeWidth={1.6} />}
+          <PanelLeft size={16} strokeWidth={1.7} />
+          <span className="hidden lg:inline">{menuOpen ? t('topbar.collapseShort') : t('topbar.expandShort')}</span>
+          {menuOpen ? <ChevronLeft size={14} strokeWidth={2} /> : <ChevronRight size={14} strokeWidth={2} />}
         </button>
-        <NavLink to="/" className="flex min-w-0 items-center gap-2 rounded-xl px-1.5 py-1 hover:bg-black/[0.03] dark:hover:bg-white/[0.04]">
+        <NavLink
+          to="/"
+          className="flex min-w-0 items-center gap-2 rounded-xl px-1.5 py-1 hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
+        >
           <Logo />
           <span className="hidden truncate text-[15px] font-semibold tracking-tight sm:inline">{t('appName')}</span>
         </NavLink>
       </div>
 
-      {/* Center: pinned symbols */}
-      <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 md:flex" aria-label={t('topbar.pinnedNav')}>
-        <NavLink
-          to="/"
-          end
-          className={({ isActive }) =>
-            `flex h-9 w-9 items-center justify-center rounded-xl transition-colors ${
-              isActive
-                ? 'bg-accent/12 text-accent'
-                : 'text-gray-500 hover:bg-black/[0.05] hover:text-gray-800 dark:text-racing-300 dark:hover:bg-white/[0.06] dark:hover:text-white'
-            }`
-          }
-          title={t('sidebar.nav.dashboard')}
+      {/* Center: non-primary pin shortcuts only */}
+      {pinKeys.length > 0 && (
+        <nav
+          className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 md:flex"
+          aria-label={t('topbar.pinnedNav')}
         >
-          {NAV_ICONS.dashboard}
-        </NavLink>
-        {pinKeys.map((key) => {
-          const path = NAV_PATHS[key] ?? NAV_PATHS.dashboard
-          const label =
-            key === 'projekte'
-              ? t('sidebar.projects.all')
-              : t(`sidebar.nav.${key}` as 'sidebar.nav.tasks', { defaultValue: key })
-          return (
-            <NavLink
-              key={key}
-              to={path.to}
-              end={path.exact}
-              className={({ isActive }) =>
-                `flex h-9 w-9 items-center justify-center rounded-xl transition-colors ${
-                  isActive
-                    ? 'bg-accent/12 text-accent'
-                    : 'text-gray-500 hover:bg-black/[0.05] hover:text-gray-800 dark:text-racing-300 dark:hover:bg-white/[0.06] dark:hover:text-white'
-                }`
-              }
-              title={label}
-            >
-              {NAV_ICONS[key] ?? NAV_ICONS.dashboard}
-            </NavLink>
-          )
-        })}
-      </nav>
+          {pinKeys.map((key) => {
+            const path = NAV_PATHS[key] ?? NAV_PATHS.dashboard
+            const label =
+              key === 'projekte'
+                ? t('sidebar.projects.all')
+                : t(`sidebar.nav.${key}` as 'sidebar.nav.tasks', { defaultValue: key })
+            return (
+              <NavLink
+                key={key}
+                to={path.to}
+                end={path.exact}
+                className={pinBtn}
+                title={label}
+                aria-label={label}
+              >
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <span
+                        className="absolute bottom-0.5 left-1/2 h-0.5 w-3.5 -translate-x-1/2 rounded-full bg-accent"
+                        aria-hidden
+                      />
+                    )}
+                    {NAV_ICONS[key] ?? NAV_ICONS.dashboard}
+                  </>
+                )}
+              </NavLink>
+            )
+          })}
+        </nav>
+      )}
 
-      {/* Right: utilities */}
+      {/* Right: utilities — Cmd/Ctrl+K remains primary search */}
       <div className="ml-auto flex items-center gap-0.5 sm:gap-1">
-        <button type="button" onClick={openSearch} className={utilBtn} aria-label={t('sidebar.search')} title={t('sidebar.searchTitle')}>
+        <button
+          type="button"
+          onClick={openSearch}
+          className="hidden h-9 items-center gap-2 rounded-xl border border-black/[0.06] bg-black/[0.03] px-3 text-sm text-gray-500 transition-colors hover:bg-black/[0.05] hover:text-gray-800 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-racing-300 dark:hover:bg-white/[0.07] dark:hover:text-white md:flex"
+          aria-label={t('sidebar.search')}
+          title={t('sidebar.searchTitle')}
+        >
+          <Search size={15} strokeWidth={1.6} />
+          <span className="max-w-[120px] truncate lg:max-w-none">{t('sidebar.search')}</span>
+          <kbd className="ml-1 hidden rounded-md border border-black/[0.08] bg-white/80 px-1.5 py-0.5 font-mono text-[10px] font-medium text-gray-400 dark:border-white/[0.1] dark:bg-racing-800 dark:text-racing-400 lg:inline">
+            {isMac ? '⌘K' : 'Ctrl+K'}
+          </kbd>
+        </button>
+        <button type="button" onClick={openSearch} className={`${utilBtn} md:hidden`} aria-label={t('sidebar.search')} title={t('sidebar.searchTitle')}>
           <Search size={18} strokeWidth={1.6} />
         </button>
         <NavLink to="/tasks/inbox" className={utilBtn} aria-label={t('sidebar.inbox')}>
@@ -219,7 +246,7 @@ export default function TopBar({ menuOpen, onToggleMenu }: TopBarProps) {
             </span>
           </NavLink>
         ) : (
-          <NavLink to="/einstellungen" className={utilBtn} aria-label={t('topbar.settings')}>
+          <NavLink to="/einstellungen" className={`${utilBtn} sm:hidden`} aria-label={t('topbar.settings')}>
             <Settings size={18} strokeWidth={1.6} />
           </NavLink>
         )}

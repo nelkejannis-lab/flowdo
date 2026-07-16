@@ -16,7 +16,7 @@ export default function MobileBottomNav() {
   const [showEntryForm, setShowEntryForm] = useState(false)
 
   const itemClass = ({ isActive }: { isActive: boolean }) =>
-    `flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
+    `relative flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
       isActive ? 'text-accent' : 'text-gray-400 dark:text-racing-400'
     }`
 
@@ -27,12 +27,22 @@ export default function MobileBottomNav() {
         style={{ paddingBottom: 'env(safe-area-inset-bottom)', marginBottom: 'env(safe-area-inset-bottom)' }}
       >
         <NavLink to="/" end className={itemClass}>
-          <LayoutDashboard size={20} />
-          <span>{t('sidebar.nav.dashboard')}</span>
+          {({ isActive }) => (
+            <>
+              {isActive && <span className="absolute top-1 h-1 w-1 rounded-full bg-accent" aria-hidden />}
+              <LayoutDashboard size={20} strokeWidth={isActive ? 2 : 1.6} />
+              <span>{t('sidebar.nav.dashboard')}</span>
+            </>
+          )}
         </NavLink>
         <NavLink to="/calendar" className={itemClass}>
-          <CalendarDays size={20} />
-          <span>{t('sidebar.nav.calendar')}</span>
+          {({ isActive }) => (
+            <>
+              {isActive && <span className="absolute top-1 h-1 w-1 rounded-full bg-accent" aria-hidden />}
+              <CalendarDays size={20} strokeWidth={isActive ? 2 : 1.6} />
+              <span>{t('sidebar.nav.calendar')}</span>
+            </>
+          )}
         </NavLink>
 
         {/* Raised quick-add button, floats above the pill */}
@@ -47,12 +57,22 @@ export default function MobileBottomNav() {
         </div>
 
         <NavLink to="/tasks" end className={itemClass}>
-          <ListTodo size={20} />
-          <span>{t('sidebar.nav.allTasks')}</span>
+          {({ isActive }) => (
+            <>
+              {isActive && <span className="absolute top-1 h-1 w-1 rounded-full bg-accent" aria-hidden />}
+              <ListTodo size={20} strokeWidth={isActive ? 2 : 1.6} />
+              <span>{t('sidebar.nav.allTasks')}</span>
+            </>
+          )}
         </NavLink>
         <NavLink to="/creative-board" className={itemClass}>
-          <Brain size={20} />
-          <span>{t('sidebar.nav.brain')}</span>
+          {({ isActive }) => (
+            <>
+              {isActive && <span className="absolute top-1 h-1 w-1 rounded-full bg-accent" aria-hidden />}
+              <Brain size={20} strokeWidth={isActive ? 2 : 1.6} />
+              <span>{t('sidebar.nav.brain')}</span>
+            </>
+          )}
         </NavLink>
       </nav>
 
