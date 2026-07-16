@@ -297,6 +297,23 @@ export default function Dashboard() {
 
   const todayTodos = sortByEisenhower(todayOpenTasks)
 
+  const tasksCompletedToday = allTasks.filter((tk) => tk.completed && isCompletedToday(tk.completedAt)).length
+  const tasksTotalToday = tasksCompletedToday + todayOpenTasks.length
+  const meetingsHeldToday = calendarEntries.filter((e) => {
+    const isToday = e.date === today
+    const isMultiDaySpanningToday = e.date < today && e.endDate && e.endDate >= today
+    if (!isToday && !isMultiDaySpanningToday) return false
+    if (!isToday) return false
+    const endT = e.endTime ?? e.startTime
+    return !!endT && endT < nowTime
+  }).length
+  const doneStats = {
+    tasksCompleted: tasksCompletedToday,
+    tasksTotal: tasksTotalToday,
+    meetingsHeld: meetingsHeldToday,
+    trackedLabel: formatHM(workedMin),
+  }
+
   return (
     <div>
       <OfficePromptModal />
@@ -444,6 +461,7 @@ export default function Dashboard() {
         workStatus={workStatusLabel}
         colleagues={colleagues}
         readiness={readiness}
+        doneStats={doneStats}
         onPlanDay={() => setShowAiDayPlanner(true)}
         onOpenBriefing={() => setShowMorningReport(true)}
         onToggleTodo={(tk) => {

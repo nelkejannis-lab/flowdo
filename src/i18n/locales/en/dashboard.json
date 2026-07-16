@@ -121,6 +121,15 @@
     "todayTodosEmptyHint": "You're clear — or quickly add a task above.",
     "todayTodosMore": "Show {{count}} more",
     "completeTodo": "Mark as done",
+    "doneStats": {
+      "title": "Tasks completed",
+      "centerSub": "done",
+      "ofTotal": "{{done}} of {{total}}",
+      "meetingsHeld": "Meetings held",
+      "tasksDone": "Tasks completed",
+      "trackedTime": "Time tracked",
+      "readinessHint": "Readiness {{score}}"
+    },
     "workControls": {
       "start": "Start",
       "stop": "Stop",

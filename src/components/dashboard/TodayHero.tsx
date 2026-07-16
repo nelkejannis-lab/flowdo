@@ -6,11 +6,13 @@ import {
   Flame,
   ArrowRight,
   Sparkles,
-  Zap,
   CheckCircle2,
   Play,
   Square,
   Pause,
+  Users,
+  Clock,
+  ListTodo,
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
@@ -51,6 +53,13 @@ interface Colleague {
   color?: string
 }
 
+interface DoneStats {
+  tasksCompleted: number
+  tasksTotal: number
+  meetingsHeld: number
+  trackedLabel: string
+}
+
 interface Props {
   dayLabel: string
   nextEvent?: NextEvent | null
@@ -62,17 +71,11 @@ interface Props {
   workStatus?: string | null
   colleagues?: Colleague[]
   readiness: DayReadinessResult
+  doneStats: DoneStats
   onPlanDay?: () => void
   onOpenBriefing?: () => void
   onToggleTodo?: (task: TodayTodo) => void
   onOpenTodo?: (task: TodayTodo) => void
-}
-
-const BAND_RING: Record<DayReadinessResult['band'], string> = {
-  sharp: 'rgb(34 197 94)',
-  ready: 'rgb(var(--accent))',
-  stretched: 'rgb(245 158 11)',
-  critical: 'rgb(239 68 68)',
 }
 
 export default function TodayHero({
@@ -86,6 +89,7 @@ export default function TodayHero({
   workStatus,
   colleagues = [],
   readiness,
+  doneStats,
   onPlanDay,
   onOpenBriefing,
   onToggleTodo,
@@ -95,8 +99,14 @@ export default function TodayHero({
   const dateLocale = i18n.language === 'en' ? enUS : de
   const capped = Math.min(100, Math.max(0, capacityPercent))
   const free = Math.max(0, 100 - capped)
-  const ring = BAND_RING[readiness.band]
-  const scoreFree = Math.max(0, 100 - readiness.score)
+  const donePct =
+    doneStats.tasksTotal > 0
+      ? Math.round((doneStats.tasksCompleted / doneStats.tasksTotal) * 100)
+      : doneStats.tasksCompleted > 0
+        ? 100
+        : 0
+  const doneRing = donePct >= 80 ? 'rgb(34 197 94)' : donePct >= 40 ? 'rgb(var(--accent))' : 'rgb(148 163 184)'
+  const doneFree = Math.max(0, 100 - Math.max(donePct, doneStats.tasksCompleted > 0 ? 1 : 0))
 
   const isRunning = useWorkTimeStore((s) => s.isRunning)
   const isOnBreak = useWorkTimeStore((s) => s.isOnBreak)
@@ -151,29 +161,55 @@ export default function TodayHero({
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-12 lg:gap-6">
-        {/* Day readiness score */}
+        {/* Today's done stats */}
         <div className="flex flex-col items-center gap-3 rounded-[20px] bg-gradient-to-br from-accent/[0.07] via-transparent to-transparent p-4 sm:p-5 lg:col-span-4 dark:from-accent/10">
           <DonutChart
             size={128}
             stroke={12}
             segments={[
-              { value: Math.max(1, readiness.score), color: ring },
-              { value: Math.max(0.5, scoreFree), color: 'rgba(148,163,184,0.22)' },
+              { value: Math.max(1, donePct || (doneStats.tasksCompleted > 0 ? 1 : 0)), color: doneRing },
+              { value: Math.max(0.5, doneFree), color: 'rgba(148,163,184,0.22)' },
             ]}
-            centerLabel={String(readiness.score)}
-            centerSub={t('readiness.scoreShort')}
+            centerLabel={String(doneStats.tasksCompleted)}
+            centerSub={t('readiness.doneStats.centerSub')}
           />
-          <div className="text-center">
-            <p className="text-base font-semibold tracking-tight">
-              {t(`readiness.band.${readiness.band}`)}
-            </p>
-            <p className="mt-0.5 text-xs text-gray-400">{t('readiness.metricName')}</p>
-            {readiness.streak > 0 && (
-              <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
-                <Zap size={11} />
-                {t('readiness.streak', { count: readiness.streak })}
+          <div className="w-full text-center">
+            <p className="text-base font-semibold tracking-tight">{t('readiness.doneStats.title')}</p>
+            {doneStats.tasksTotal > 0 && (
+              <p className="mt-0.5 text-xs text-gray-400">
+                {t('readiness.doneStats.ofTotal', {
+                  done: doneStats.tasksCompleted,
+                  total: doneStats.tasksTotal,
+                })}
+                {donePct > 0 ? ` · ${donePct}%` : ''}
               </p>
             )}
+            <ul className="mt-3 space-y-1.5 text-left">
+              <li className="flex items-center justify-between gap-2 rounded-xl bg-black/[0.03] px-3 py-1.5 dark:bg-white/[0.04]">
+                <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-racing-300">
+                  <Users size={12} className="text-accent" />
+                  {t('readiness.doneStats.meetingsHeld')}
+                </span>
+                <span className="text-sm font-semibold tabular-nums">{doneStats.meetingsHeld}</span>
+              </li>
+              <li className="flex items-center justify-between gap-2 rounded-xl bg-black/[0.03] px-3 py-1.5 dark:bg-white/[0.04]">
+                <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-racing-300">
+                  <ListTodo size={12} className="text-accent" />
+                  {t('readiness.doneStats.tasksDone')}
+                </span>
+                <span className="text-sm font-semibold tabular-nums">{doneStats.tasksCompleted}</span>
+              </li>
+              <li className="flex items-center justify-between gap-2 rounded-xl bg-black/[0.03] px-3 py-1.5 dark:bg-white/[0.04]">
+                <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-racing-300">
+                  <Clock size={12} className="text-accent" />
+                  {t('readiness.doneStats.trackedTime')}
+                </span>
+                <span className="text-sm font-semibold tabular-nums">{doneStats.trackedLabel}</span>
+              </li>
+            </ul>
+            <p className="mt-2 text-[10px] text-gray-400">
+              {t('readiness.doneStats.readinessHint', { score: readiness.score })}
+            </p>
           </div>
         </div>
 
@@ -371,9 +407,22 @@ export default function TodayHero({
           )}
         </StoryCard>
 
-        <StoryCard label={t('readiness.metricName')} icon={<Zap size={14} className="text-amber-500" />}>
-          <p className="text-2xl font-bold tabular-nums">{readiness.score}</p>
-          <p className="text-sm text-gray-500">{t(`readiness.band.${readiness.band}`)}</p>
+        <StoryCard
+          label={t('readiness.doneStats.title')}
+          icon={<CheckCircle2 size={14} className="text-emerald-500" />}
+        >
+          <p className="text-2xl font-bold tabular-nums">{doneStats.tasksCompleted}</p>
+          <p className="text-sm text-gray-500">
+            {doneStats.tasksTotal > 0
+              ? t('readiness.doneStats.ofTotal', {
+                  done: doneStats.tasksCompleted,
+                  total: doneStats.tasksTotal,
+                })
+              : t('readiness.doneStats.centerSub')}
+          </p>
+          <p className="mt-1 text-[11px] text-gray-400">
+            {t('readiness.doneStats.meetingsHeld')}: {doneStats.meetingsHeld} · {doneStats.trackedLabel}
+          </p>
         </StoryCard>
       </div>
 
