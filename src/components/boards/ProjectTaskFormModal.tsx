@@ -55,6 +55,13 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
   const [assigneeIds, setAssigneeIds] = useState<string[]>(task?.assigneeIds ?? (task?.assignedTo ? [task.assignedTo] : []))
   const [urgent, setUrgent] = useState(task?.urgent ?? false)
   const [important, setImportant] = useState(task?.important ?? false)
+  const [matrixPlaced, setMatrixPlaced] = useState(
+    task
+      ? typeof task.matrixPlaced === 'boolean'
+        ? task.matrixPlaced
+        : Boolean(task.urgent || task.important)
+      : false
+  )
   const [startTime, setStartTime] = useState(task?.startTime ?? '')
   const [estimatedMinutes, setEstimatedMinutes] = useState(task?.estimatedMinutes?.toString() ?? '')
   const [statusNote, setStatusNote] = useState(task?.statusNote ?? '')
@@ -97,6 +104,7 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
         priority,
         urgent,
         important,
+        matrixPlaced,
         assignedTo: assigneeIds[0] || assignedTo || undefined,
         assigneeIds: assigneeIds.length ? assigneeIds : undefined,
         startTime: startTime || undefined,
@@ -112,6 +120,7 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
         priority,
         urgent,
         important,
+        matrixPlaced,
         boardId: board.id,
         columnId: defaultColumnId ?? board.columns[0]?.id,
         assignedTo: assigneeIds[0] || assignedTo || undefined,
@@ -153,6 +162,7 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
       priority,
       urgent,
       important,
+      matrixPlaced,
       completed: task?.completed ?? false,
       tags: task?.tags ?? [],
       subtasks: task ? task.subtasks : localSubtasks.map((s) => ({ id: createId(), title: s, completed: false })),
@@ -436,14 +446,21 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
           <label className="mb-1 block text-xs font-medium text-gray-500">{t('taskForm.eisenhowerMatrix')}</label>
           <div className="grid grid-cols-2 gap-2">
             {quadrants.map((q) => {
-              const active = q.urgent === urgent && q.important === important
+              const active = matrixPlaced && q.urgent === urgent && q.important === important
               return (
                 <button
                   type="button"
                   key={q.labelKey}
                   onClick={() => {
-                    setUrgent(q.urgent)
-                    setImportant(q.important)
+                    if (active) {
+                      setUrgent(false)
+                      setImportant(false)
+                      setMatrixPlaced(false)
+                    } else {
+                      setUrgent(q.urgent)
+                      setImportant(q.important)
+                      setMatrixPlaced(true)
+                    }
                   }}
                   className={`rounded-lg border px-2 py-1.5 text-left text-xs font-medium transition-colors ${
                     active ? q.activeClass : 'border-gray-200 text-gray-500 hover:border-gray-300 dark:border-racing-700 dark:text-racing-200'

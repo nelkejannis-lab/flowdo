@@ -36,6 +36,7 @@ interface TaskFormModalProps {
   defaultTags?: string[]
   defaultUrgent?: boolean
   defaultImportant?: boolean
+  defaultMatrixPlaced?: boolean
   onClose: () => void
   onSave?: () => void
 }
@@ -49,6 +50,7 @@ export default function TaskFormModal({
   defaultTags,
   defaultUrgent,
   defaultImportant,
+  defaultMatrixPlaced,
   onClose,
   onSave,
 }: TaskFormModalProps) {
@@ -92,6 +94,13 @@ export default function TaskFormModal({
   const [tagInput, setTagInput] = useState('')
   const [urgent, setUrgent] = useState(task?.urgent ?? defaultUrgent ?? false)
   const [important, setImportant] = useState(task?.important ?? defaultImportant ?? false)
+  const [matrixPlaced, setMatrixPlaced] = useState(
+    task
+      ? typeof task.matrixPlaced === 'boolean'
+        ? task.matrixPlaced
+        : Boolean(task.urgent || task.important)
+      : Boolean(defaultMatrixPlaced || defaultUrgent || defaultImportant)
+  )
   const [evening, setEvening] = useState(task?.evening ?? false)
   const [someday, setSomeday] = useState(task?.someday ?? false)
   const [recurrence, setRecurrence] = useState<Task['recurrence']>(task?.recurrence)
@@ -206,6 +215,7 @@ export default function TaskFormModal({
         tags,
         urgent,
         important,
+        matrixPlaced,
         boardId: projectId,
         columnId: board?.columns[0]?.id,
         startTime: startTime || undefined,
@@ -247,6 +257,7 @@ export default function TaskFormModal({
         tags,
         urgent,
         important,
+        matrixPlaced,
         evening,
         someday,
         recurrence,
@@ -267,6 +278,7 @@ export default function TaskFormModal({
         tags,
         urgent,
         important,
+        matrixPlaced,
         boardId: projectId,
         columnId: board?.columns[0]?.id,
         startTime: startTime || undefined,
@@ -312,6 +324,7 @@ export default function TaskFormModal({
         tags,
         urgent,
         important,
+        matrixPlaced,
         evening,
         someday,
         recurrence,
@@ -351,6 +364,7 @@ export default function TaskFormModal({
       tags,
       urgent,
       important,
+      matrixPlaced,
       evening,
       someday,
       recurrence,
@@ -807,14 +821,21 @@ export default function TaskFormModal({
           <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.eisenhowerMatrix')}</label>
           <div className="grid grid-cols-2 gap-2">
             {quadrants.map((q) => {
-              const active = q.urgent === urgent && q.important === important
+              const active = matrixPlaced && q.urgent === urgent && q.important === important
               return (
                 <button
                   type="button"
                   key={q.labelKey}
                   onClick={() => {
-                    setUrgent(q.urgent)
-                    setImportant(q.important)
+                    if (active) {
+                      setUrgent(false)
+                      setImportant(false)
+                      setMatrixPlaced(false)
+                    } else {
+                      setUrgent(q.urgent)
+                      setImportant(q.important)
+                      setMatrixPlaced(true)
+                    }
                   }}
                   className={`rounded-lg border px-2 py-1.5 text-left text-xs font-medium transition-colors ${
                     active ? q.activeClass : 'border-gray-200 text-gray-500 hover:border-gray-300 dark:border-racing-700 dark:text-racing-200'

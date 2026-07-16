@@ -14,6 +14,7 @@ interface NewTaskInput {
   tags?: string[]
   urgent?: boolean
   important?: boolean
+  matrixPlaced?: boolean
   boardId?: string
   columnId?: string
   evening?: boolean
@@ -33,6 +34,7 @@ interface TaskRow {
   tags: string[]
   urgent: boolean
   important: boolean
+  matrix_placed: boolean | null
   completed: boolean
   completed_at: string | null
   board_id: string | null
@@ -60,6 +62,8 @@ function toTask(row: TaskRow): Task {
     tags: row.tags ?? [],
     urgent: row.urgent,
     important: row.important,
+    matrixPlaced:
+      typeof row.matrix_placed === 'boolean' ? row.matrix_placed : row.urgent || row.important,
     completed: row.completed,
     completedAt: row.completed_at ?? undefined,
     boardId: row.board_id ?? undefined,
@@ -95,6 +99,7 @@ async function syncTask(task: Task, userId: string) {
     tags: task.tags,
     urgent: task.urgent,
     important: task.important,
+    matrix_placed: task.matrixPlaced ?? false,
     completed: task.completed,
     completed_at: task.completedAt ?? null,
     board_id: null,
@@ -197,6 +202,7 @@ export const useTasksStore = create<TasksState>()(
           tags: input.tags ?? [],
           urgent: input.urgent ?? false,
           important: input.important ?? false,
+          matrixPlaced: input.matrixPlaced ?? false,
           completed: false,
           boardId: input.boardId,
           columnId: input.columnId,
@@ -277,6 +283,7 @@ export const useTasksStore = create<TasksState>()(
             tags: task.tags,
             urgent: task.urgent,
             important: task.important,
+            matrixPlaced: task.matrixPlaced,
             evening: task.evening,
             recurrence: task.recurrence,
           })

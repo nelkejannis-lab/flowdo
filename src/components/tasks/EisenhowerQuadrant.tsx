@@ -1,14 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useDroppable } from '@dnd-kit/core'
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react'
 import type { Task } from '../../types'
 import { dateGroupLabel, dateGroupOrder } from '../../utils/date'
 import EisenhowerTaskRow from './EisenhowerTaskRow'
-import { useTasksStore } from '../../store/tasksStore'
-import { useProjectTasksStore } from '../../store/projectTasksStore'
-import { isSupabaseConfigured } from '../../lib/supabase'
 
-// Maps the German labels returned by dateGroupLabel()/dateGroupOrder to translation keys.
 const dateGroupLabelKeys: Record<string, string> = {
   'Überfällig': 'tasks:dateGroups.overdue',
   'Heute': 'tasks:dateGroups.today',
@@ -20,6 +17,7 @@ const dateGroupLabelKeys: Record<string, string> = {
 }
 
 interface EisenhowerQuadrantProps {
+  droppableId: string
   title: string
   colorClass: string
   icon: React.ReactNode
@@ -31,18 +29,17 @@ interface EisenhowerQuadrantProps {
 }
 
 export default function EisenhowerQuadrant({
+  droppableId,
   title,
   colorClass,
   icon,
-  urgent,
-  important,
   tasks,
   onTaskClick,
   onAddTask,
 }: EisenhowerQuadrantProps) {
   const { t } = useTranslation(['eisenhower', 'tasks'])
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
-  const [isDragOver, setIsDragOver] = useState(false)
+  const { setNodeRef, isOver } = useDroppable({ id: droppableId })
 
   const groups = useMemo(() => {
     const map = new Map<string, Task[]>()
@@ -72,31 +69,10 @@ export default function EisenhowerQuadrant({
 
   return (
     <div
-      onDragOver={(e) => {
-        e.preventDefault()
-        setIsDragOver(true)
-      }}
-      onDragLeave={() => setIsDragOver(false)}
-      onDrop={async (e) => {
-        e.preventDefault()
-        setIsDragOver(false)
-        const dragData = e.dataTransfer.getData('text/plain')
-        if (!dragData) return
-        const [taskId, isProjectStr] = dragData.split(':')
-        const isProject = isProjectStr === 'project'
-
-        if (isProject) {
-          await useProjectTasksStore.getState().updateTask(taskId, { urgent, important })
-          if (isSupabaseConfigured) {
-            useProjectTasksStore.getState().fetchMyTasks()
-          }
-        } else {
-          useTasksStore.getState().updateTask(taskId, { urgent, important })
-        }
-      }}
+      ref={setNodeRef}
       className={`flex min-h-[200px] flex-col rounded-xl border p-3 transition-colors ${
-        isDragOver
-          ? 'border-accent bg-accent/5 dark:border-accent dark:bg-accent/5 shadow-md'
+        isOver
+          ? 'border-accent bg-accent/5 shadow-md dark:border-accent dark:bg-accent/5'
           : 'border-gray-100 bg-white dark:border-racing-800 dark:bg-racing-900'
       }`}
     >
@@ -106,6 +82,7 @@ export default function EisenhowerQuadrant({
           {title}
         </div>
         <button
+          type="button"
           onClick={onAddTask}
           className="rounded p-1 text-gray-300 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-racing-800"
           title={t('quadrant.addTask')}
@@ -115,7 +92,7 @@ export default function EisenhowerQuadrant({
       </div>
 
       {groups.length === 0 ? (
-        <p className="py-4 text-center text-xs text-gray-300">{t('quadrant.noTasks')}</p>
+        <p className="py-4 text-center text-xs text-gray-300">{t('quadrant.dropHint')}</p>
       ) : (
         <div className="flex flex-col gap-1">
           {groups.map(([label, items]) => {
@@ -123,6 +100,7 @@ export default function EisenhowerQuadrant({
             return (
               <div key={label}>
                 <button
+                  type="button"
                   onClick={() => toggleGroup(label)}
                   className="flex w-full items-center gap-1 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-gray-400"
                 >

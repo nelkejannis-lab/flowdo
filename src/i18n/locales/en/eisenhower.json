@@ -1,7 +1,7 @@
 {
   "page": {
     "title": "Eisenhower Matrix",
-    "intro": "Prioritize tasks by urgency and importance",
+    "intro": "Drag tasks from the inbox into quadrants — nothing is assigned automatically",
     "hideCompleted": "Hide completed"
   },
   "quadrants": {
@@ -12,6 +12,12 @@
   },
   "quadrant": {
     "addTask": "Add task",
-    "noTasks": "No tasks"
+    "noTasks": "No tasks",
+    "dropHint": "Drop a task here"
+  },
+  "uncategorized": {
+    "title": "Uncategorized tasks",
+    "hint": "Drag tasks into a quadrant to place them. Drag back here to clear placement.",
+    "empty": "All tasks are placed"
   }
 }

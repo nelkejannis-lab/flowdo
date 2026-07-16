@@ -169,6 +169,7 @@ create table if not exists tasks (
   tags text[] not null default '{}',
   urgent boolean not null default false,
   important boolean not null default false,
+  matrix_placed boolean not null default false,
   completed boolean not null default false,
   completed_at timestamptz,
   board_id uuid references boards(id) on delete set null,

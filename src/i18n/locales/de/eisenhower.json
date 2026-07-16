@@ -1,7 +1,7 @@
 {
   "page": {
     "title": "Eisenhower-Matrix",
-    "intro": "Priorisiere Aufgaben nach Dringlichkeit und Wichtigkeit",
+    "intro": "Ziehe Aufgaben aus dem Posteingang in die Quadranten — nichts wird automatisch eingeordnet",
     "hideCompleted": "Erledigte ausblenden"
   },
   "quadrants": {
@@ -12,6 +12,12 @@
   },
   "quadrant": {
     "addTask": "Aufgabe hinzufügen",
-    "noTasks": "Keine Aufgaben"
+    "noTasks": "Keine Aufgaben",
+    "dropHint": "Aufgabe hierher ziehen"
+  },
+  "uncategorized": {
+    "title": "Nicht eingeordnete Aufgaben",
+    "hint": "Ziehe Aufgaben in einen Quadranten, um sie einzuordnen. Zurückziehen entfernt die Zuordnung.",
+    "empty": "Alle Aufgaben sind eingeordnet"
   }
 }

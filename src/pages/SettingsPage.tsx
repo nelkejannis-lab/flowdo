@@ -967,8 +967,8 @@ export default function SettingsPage() {
             <h2 className="mb-1 text-sm font-semibold">{t('privacy.appInfoTitle')}</h2>
             <p className="mb-2 text-xs text-gray-400">{t('privacy.appInfoVersion', { version: __APP_VERSION__ })}</p>
             <div className="flex flex-col gap-1 text-xs">
-              <Link to="/datenschutz" target="_blank" className="text-accent hover:underline">{t('privacy.privacyPolicyLink')}</Link>
-              <Link to="/impressum" target="_blank" className="text-accent hover:underline">{t('privacy.imprintLink')}</Link>
+              <Link to="/datenschutz" className="text-accent hover:underline">{t('privacy.privacyPolicyLink')}</Link>
+              <Link to="/impressum" className="text-accent hover:underline">{t('privacy.imprintLink')}</Link>
             </div>
           </div>
 

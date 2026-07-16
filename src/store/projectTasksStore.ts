@@ -14,6 +14,7 @@ interface NewProjectTaskInput {
   tags?: string[]
   urgent?: boolean
   important?: boolean
+  matrixPlaced?: boolean
   boardId: string
   columnId?: string
   assignedTo?: string
@@ -34,6 +35,7 @@ interface ProjectTaskRow {
   tags: string[]
   urgent: boolean
   important: boolean
+  matrix_placed: boolean | null
   completed: boolean
   completed_at: string | null
   board_id: string | null
@@ -61,6 +63,8 @@ function toTask(row: ProjectTaskRow, dependsOn?: string[], assigneeIds?: string[
     tags: row.tags ?? [],
     urgent: row.urgent,
     important: row.important,
+    matrixPlaced:
+      typeof row.matrix_placed === 'boolean' ? row.matrix_placed : row.urgent || row.important,
     completed: row.completed,
     completedAt: row.completed_at ?? undefined,
     boardId: row.board_id ?? undefined,
@@ -217,6 +221,7 @@ export const useProjectTasksStore = create<ProjectTasksState>()(
             tags: input.tags ?? [],
             urgent: input.urgent ?? false,
             important: input.important ?? false,
+            matrixPlaced: input.matrixPlaced ?? false,
             completed: false,
             boardId: input.boardId,
             columnId: input.columnId ?? undefined,
@@ -250,6 +255,7 @@ export const useProjectTasksStore = create<ProjectTasksState>()(
             tags: input.tags ?? [],
             urgent: input.urgent ?? false,
             important: input.important ?? false,
+            matrix_placed: input.matrixPlaced ?? false,
             board_id: input.boardId,
             column_id: input.columnId ?? null,
             start_time: input.startTime ?? null,
@@ -287,6 +293,7 @@ export const useProjectTasksStore = create<ProjectTasksState>()(
         if (updates.tags !== undefined) payload.tags = updates.tags
         if (updates.urgent !== undefined) payload.urgent = updates.urgent
         if (updates.important !== undefined) payload.important = updates.important
+        if (updates.matrixPlaced !== undefined) payload.matrix_placed = updates.matrixPlaced
         if (updates.completed !== undefined) payload.completed = updates.completed
         if (updates.completedAt !== undefined) payload.completed_at = updates.completedAt ?? null
         if (updates.columnId !== undefined) payload.column_id = updates.columnId ?? null

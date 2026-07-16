@@ -24,6 +24,8 @@ export interface Task {
   tags: string[]
   urgent: boolean
   important: boolean
+  /** Explicit Eisenhower placement; false = uncategorized inbox (not Q4). */
+  matrixPlaced?: boolean
   completed: boolean
   completedAt?: string
   boardId?: string

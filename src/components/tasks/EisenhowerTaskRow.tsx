@@ -1,4 +1,6 @@
 import { Check } from 'lucide-react'
+import { useDraggable } from '@dnd-kit/core'
+import { CSS } from '@dnd-kit/utilities'
 import type { Task } from '../../types'
 import { useTasksStore } from '../../store/tasksStore'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
@@ -14,25 +16,34 @@ export default function EisenhowerTaskRow({ task, onClick }: EisenhowerTaskRowPr
   const toggleTaskCompleted = useTasksStore((s) => s.toggleTaskCompleted)
   const toggleProjectTaskCompleted = useProjectTasksStore((s) => s.toggleTaskCompleted)
   const overdue = isOverdue(task.dueDate) && !task.completed
+  const isProject = Boolean(task.boardId)
+
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: task.id,
+    data: { taskId: task.id, isProject },
+  })
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.45 : 1,
+  }
 
   return (
     <div
-      draggable
-      onDragStart={(e) => {
-        e.dataTransfer.setData('text/plain', `${task.id}:${task.boardId ? 'project' : 'personal'}`)
-        e.dataTransfer.effectAllowed = 'move'
-      }}
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
       onClick={onClick}
       className="flex cursor-grab active:cursor-grabbing items-center gap-2.5 rounded-md px-2 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-racing-800/60"
     >
       <button
+        type="button"
+        onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.stopPropagation()
-          if (task.boardId) {
-            toggleProjectTaskCompleted(task.id)
-          } else {
-            toggleTaskCompleted(task.id)
-          }
+          if (isProject) toggleProjectTaskCompleted(task.id)
+          else toggleTaskCompleted(task.id)
         }}
         className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-sm border-2 ${
           task.completed ? 'border-accent bg-accent text-white' : 'border-gray-300 dark:border-racing-600'

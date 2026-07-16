@@ -134,7 +134,7 @@ export default function TodayHero({
               ))}
             </ul>
           )}
-          <Link to="/termine" className="mt-auto inline-flex items-center gap-1 pt-2 text-xs font-semibold text-accent hover:underline">
+          <Link to="/eisenhower" className="mt-auto inline-flex items-center gap-1 pt-2 text-xs font-semibold text-accent hover:underline">
             {t('sections.manageEisenhower')} <ArrowRight size={12} />
           </Link>
         </div>
