@@ -20,6 +20,7 @@ import { useQuickTaskModalStore } from './store/quickTaskModalStore'
 import { useWorkTimeStore } from './store/workTimeStore'
 import TaskTray from './components/layout/TaskTray'
 import TaskTimerBar from './components/tasks/TaskTimerBar'
+import BootLoader from './components/motion/BootLoader'
 
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const TasksPage = lazy(() => import('./pages/Tasks'))
@@ -147,11 +148,7 @@ export default function App() {
   }
 
   if (isSupabaseConfigured && loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-gray-400">
-        {t('loading')}
-      </div>
-    )
+    return <BootLoader label={t('loading')} />
   }
 
   if (isSupabaseConfigured && !session) {

@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { motion, useReducedMotion } from 'framer-motion'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
 import IconRail from './IconRail'
@@ -10,6 +10,8 @@ import ToastContainer from './ToastContainer'
 import AiChatPanel from '../ai/AiChatPanel'
 import ErrorBoundary from './ErrorBoundary'
 import AppUpdater from './AppUpdater'
+import PageTransition from '../motion/PageTransition'
+import { ShellChrome, ShellMain } from '../motion/ShellEntrance'
 import { useSettingsStore } from '../../store/settingsStore'
 
 /**
@@ -25,6 +27,7 @@ export default function Layout() {
   const [desktop, setDesktop] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(min-width: 640px)').matches : true
   )
+  const reduce = useReducedMotion()
 
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 640px)')
@@ -67,21 +70,29 @@ export default function Layout() {
   return (
     <ErrorBoundary>
       <OfflineBanner />
-      <div className="flex h-screen w-full overflow-hidden">
+      {/* Opacity-only shell entrance — no transform on ancestors of sticky Quick Add. */}
+      <motion.div
+        className="flex h-screen w-full overflow-hidden"
+        initial={reduce ? false : { opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={reduce ? { duration: 0 } : { duration: 0.38, ease: [0.25, 0.46, 0.45, 0.94] }}
+      >
         <GlobalSearch />
         <IconRail collapsed={!labelledMenuOpen} onToggleMenu={toggleMenu} onOpenMenu={openMenu} />
         <Sidebar isOpen={sidebarOpen} onClose={closeMenu} docked={desktop} />
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <TopBar menuOpen={sidebarOpen} onToggleMenu={toggleMenu} />
+        <ShellMain className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          <ShellChrome delay={0.06}>
+            <TopBar menuOpen={sidebarOpen} onToggleMenu={toggleMenu} />
+          </ShellChrome>
           <main className="relative flex-1 overflow-y-auto overflow-x-hidden">
             <AppUpdater />
             <div className="relative mx-auto w-full max-w-7xl p-4 pb-[max(6.5rem,calc(5.5rem+env(safe-area-inset-bottom)))] page-bg sm:p-6 sm:pb-6 lg:p-8">
-              <Outlet />
+              <PageTransition />
             </div>
           </main>
-        </div>
+        </ShellMain>
         <MobileBottomNav />
-      </div>
+      </motion.div>
       <ToastContainer />
       <AiChatPanel />
     </ErrorBoundary>
