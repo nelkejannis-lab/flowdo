@@ -93,10 +93,70 @@ async function fetchActiveLinkCode(userId: string): Promise<LinkCodeRow | null> 
   return (data as LinkCodeRow | null) ?? null
 }
 
+export interface WhatsAppConnectInfo {
+  botNumber: string
+  sandboxMode: boolean
+  sandboxJoinCode: string | null
+  sandboxJoinExpiresHours?: number
+  waMeBot?: string
+}
+
+/** Digits-only E.164 without + for wa.me links. */
+export function whatsappWaMeNumber(botNumber?: string | null): string {
+  const raw = (botNumber || NOVA_PUBLIC.whatsappBotNumber || '+14155238886').replace(/\D/g, '')
+  return raw || '14155238886'
+}
+
+export function whatsappDeepLink(text: string, botNumber?: string | null): string {
+  const digits = whatsappWaMeNumber(botNumber)
+  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`
+}
+
+/** Normalize join phrase to always start with "join ". */
+export function normalizeSandboxJoin(code: string | null | undefined): string | null {
+  const raw = String(code || '').trim()
+  if (!raw) return null
+  return /^join\s+/i.test(raw) ? raw.replace(/^join\s+/i, 'join ') : `join ${raw}`
+}
+
+let cachedConnectInfo: WhatsAppConnectInfo | null = null
+let connectInfoFetchedAt = 0
+
+export async function apiGetWhatsAppConnectInfo(): Promise<WhatsAppConnectInfo> {
+  const fallback: WhatsAppConnectInfo = {
+    botNumber: NOVA_PUBLIC.whatsappBotNumber,
+    sandboxMode: NOVA_PUBLIC.whatsappSandboxMode,
+    sandboxJoinCode: normalizeSandboxJoin(NOVA_PUBLIC.whatsappSandboxJoinCode),
+  }
+  if (cachedConnectInfo && Date.now() - connectInfoFetchedAt < 60_000) {
+    return cachedConnectInfo
+  }
+  try {
+    const res = await fetch(`${NOVA_PUBLIC.serverUrl}/api/whatsapp/connect-info`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    })
+    if (!res.ok) return fallback
+    const data = (await res.json()) as Partial<WhatsAppConnectInfo>
+    cachedConnectInfo = {
+      botNumber: data.botNumber || fallback.botNumber,
+      sandboxMode: data.sandboxMode ?? fallback.sandboxMode,
+      sandboxJoinCode: normalizeSandboxJoin(data.sandboxJoinCode) ?? fallback.sandboxJoinCode,
+      sandboxJoinExpiresHours: data.sandboxJoinExpiresHours ?? 72,
+      waMeBot: data.waMeBot,
+    }
+    connectInfoFetchedAt = Date.now()
+    return cachedConnectInfo
+  } catch {
+    return fallback
+  }
+}
+
 async function buildWhatsAppStatus(userId: string): Promise<WhatsAppLinkStatusResult> {
-  const [{ data: profile, error: profileError }, activeCode] = await Promise.all([
+  const [{ data: profile, error: profileError }, activeCode, connectInfo] = await Promise.all([
     supabase.from('profiles').select('phone_number').eq('id', userId).maybeSingle(),
     fetchActiveLinkCode(userId),
+    apiGetWhatsAppConnectInfo(),
   ])
 
   if (profileError) throw profileError
@@ -105,9 +165,9 @@ async function buildWhatsAppStatus(userId: string): Promise<WhatsAppLinkStatusRe
   return {
     linked: !!phone,
     linkedPhone: phone,
-    botNumber: NOVA_PUBLIC.whatsappBotNumber,
-    sandboxMode: NOVA_PUBLIC.whatsappSandboxMode,
-    sandboxJoinCode: NOVA_PUBLIC.whatsappSandboxJoinCode,
+    botNumber: connectInfo.botNumber,
+    sandboxMode: connectInfo.sandboxMode,
+    sandboxJoinCode: connectInfo.sandboxJoinCode,
     ...mapActiveCode(activeCode),
   }
 }
