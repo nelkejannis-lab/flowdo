@@ -23,15 +23,42 @@
     "title": "Dashboard-Widgets",
     "description": "Wähle aus, welche Bereiche auf dem Dashboard sichtbar sind.",
     "items": {
-      "stats": { "label": "Statistiken", "desc": "Aufgaben & Projekte" },
-      "todayTasks": { "label": "Tagesübersicht", "desc": "Heutige Aufgaben und Termine" },
-      "topPriority": { "label": "Höchste Priorität", "desc": "Dringend & wichtige Aufgaben (Eisenhower Q1)" },
-      "dayPlan": { "label": "Tagesplan", "desc": "Zeitstrahl mit den Punkten aus dem KI-Tagesplaner" },
-      "upcomingDeadlines": { "label": "Deadlines", "desc": "Anstehende Projekt-Deadlines" },
-      "nextEvents": { "label": "Events", "desc": "Nächste Ereignisse" },
-      "projectsOverview": { "label": "Projektübersicht", "desc": "Alle aktiven Projekte" },
-      "workoffice": { "label": "Büro & Kollegen", "desc": "Wer ist im Büro, wer arbeitet von wo?" },
-      "weather": { "label": "Wetter", "desc": "Aktuelles Wetter per GPS-Standort" }
+      "stats": {
+        "label": "Statistiken",
+        "desc": "Aufgaben & Projekte"
+      },
+      "todayTasks": {
+        "label": "Tagesübersicht",
+        "desc": "Heutige Aufgaben und Termine"
+      },
+      "topPriority": {
+        "label": "Höchste Priorität",
+        "desc": "Dringend & wichtige Aufgaben (Eisenhower Q1)"
+      },
+      "dayPlan": {
+        "label": "Tagesplan",
+        "desc": "Zeitstrahl mit den Punkten aus dem KI-Tagesplaner"
+      },
+      "upcomingDeadlines": {
+        "label": "Deadlines",
+        "desc": "Anstehende Projekt-Deadlines"
+      },
+      "nextEvents": {
+        "label": "Events",
+        "desc": "Nächste Ereignisse"
+      },
+      "projectsOverview": {
+        "label": "Projektübersicht",
+        "desc": "Alle aktiven Projekte"
+      },
+      "workoffice": {
+        "label": "Büro & Kollegen",
+        "desc": "Wer ist im Büro, wer arbeitet von wo?"
+      },
+      "weather": {
+        "label": "Wetter",
+        "desc": "Aktuelles Wetter per GPS-Standort"
+      }
     }
   },
   "language": {
@@ -58,21 +85,21 @@
     "loading": "Lade Verknüpfung…",
     "linked": "Verknüpft: {{phone}}",
     "notLinked": "Noch nicht verknüpft{{bot}}",
-    "connectIntro": "Zwei kurze Schritte in WhatsApp — danach ist dein Account verbunden.",
+    "connectIntro": "Zwei Wege: Code in WhatsApp senden (empfohlen) oder Nummer in der App bestätigen.",
     "step1Title": "Schritt 1 · WhatsApp freischalten",
-    "step1Hint": "Einmal den Freischalt-Befehl an den NOVAT-Bot senden und auf die Bestätigung warten (nötig wegen Twilio-Testmodus).",
-    "step1Done": "Erledigt",
+    "step1Hint": "Einmal den Freischalt-Befehl an den NOVAT-Bot senden und auf die Twilio-Bestätigung warten. Ohne diesen Schritt kommen Nachrichten im Testmodus nicht an.",
+    "step1Done": "Bestätigung erhalten",
     "step2Title": "Schritt 2 · NOVAT-Code senden",
-    "step2Hint": "Danach den Account-Code an denselben Chat senden — NOVAT verknüpft deine Nummer automatisch.",
+    "step2Hint": "Code erstellen, in WhatsApp öffnen und absenden — NOVAT verknüpft deine Nummer automatisch. Status aktualisiert sich, sobald du zurückkommst.",
     "botNumberLabel": "Bot-Nummer",
     "openWhatsApp": "In WhatsApp öffnen",
     "openWhatsAppJoin": "WhatsApp öffnen (join …)",
-    "joinMissing": "Der genaue join-Befehl steht in der Twilio Console unter Messaging → Try WhatsApp → Sandbox. Tippe ihn hier in den Chat, oder hinterlege ihn als VITE_TWILIO_SANDBOX_JOIN_CODE / am Server.",
+    "joinMissing": "Der join-Befehl fehlt noch. Steht in der Twilio Console unter Messaging → Try WhatsApp → Sandbox (z. B. \"join yellow-tiger\"). Hier eintragen:",
     "sandboxExpiry": "Die Freischaltung gilt etwa 72 Stunden, danach Schritt 1 einmal wiederholen.",
     "waitingLink": "Warte auf deinen Code in WhatsApp… Status aktualisiert sich automatisch.",
     "codeLabel": "Account Link Code",
-    "sendHint": "Sende diesen Code per WhatsApp an {{bot}}.",
-    "noCode": "Kein aktiver Code. Erstelle einen neuen und sende ihn per WhatsApp.",
+    "sendHint": "Sende genau diesen Code per WhatsApp an {{bot}}.",
+    "noCode": "Kein aktiver Code. Erstelle einen und öffne WhatsApp mit einem Klick.",
     "generateCode": "Code erstellen",
     "generating": "Erstelle…",
     "refreshCode": "Neuen Code",
@@ -88,7 +115,27 @@
     "serverUnavailable": "Supabase ist nicht konfiguriert. WhatsApp-Verknüpfung ist derzeit nicht verfügbar.",
     "fetchError": "Verbindung fehlgeschlagen. Prüfe Internet und ob du angemeldet bist.",
     "memoryHint": "Eingegangene WhatsApp-Nachrichten findest du auch unter",
-    "memoryLink": "Memory in der Seitenleiste"
+    "memoryLink": "Memory in der Seitenleiste",
+    "justLinked": "Fertig — WhatsApp ist verknüpft ({{phone}}).",
+    "modeCode": "Via WhatsApp-Code",
+    "modePhone": "Via Handynummer",
+    "step1Required": "Tipp: Hake \"Bestätigung erhalten\" erst ab, wenn Twilio geantwortet hat — erst dann Schritt 2.",
+    "step1RequiredPhone": "Zuerst Schritt 1 erledigen, sonst kann NOVAT dir keinen Code per WhatsApp schicken.",
+    "joinPlaceholder": "join dein-schlüsselwort",
+    "joinSaveLocal": "Für mich speichern",
+    "joinSaveAdmin": "Für alle speichern (Admin)",
+    "joinSavedLocal": "Join-Befehl gespeichert — jetzt in WhatsApp öffnen.",
+    "joinSavedAdmin": "Join-Befehl für alle Nutzer hinterlegt.",
+    "joinInvalid": "Bitte einen gültigen join-Befehl eingeben (z. B. join yellow-tiger).",
+    "phoneTitle": "Nummer bestätigen",
+    "phoneHint": "Nach Schritt 1: Nummer eingeben → NOVAT schickt einen 6-stelligen Code per WhatsApp → hier eingeben.",
+    "phonePlaceholder": "+49 …",
+    "otpSend": "Code senden",
+    "otpSending": "Sende…",
+    "otpSent": "Code gesendet an {{phone}}. Schau in WhatsApp und tippe ihn hier ein.",
+    "otpPlaceholder": "123456",
+    "otpVerify": "Bestätigen",
+    "otpWaiting": "Code an {{phone}} gesendet — warte auf Bestätigung…"
   },
   "guide": {
     "title": "Was kann NOVAT?",

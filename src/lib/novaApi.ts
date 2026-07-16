@@ -4,6 +4,7 @@ import { isSupabaseConfigured, supabase } from './supabase'
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 const CODE_TTL_MS = 15 * 60 * 1000
+const JOIN_OVERRIDE_KEY = 'novat.whatsapp.sandboxJoin'
 
 export function novaApiAvailable() {
   return isSupabaseConfigured
@@ -30,7 +31,9 @@ export interface WhatsAppLinkStatusResult {
   remainingAttempts?: number | null
   sandboxMode?: boolean
   sandboxJoinCode?: string | null
+  joinConfigured?: boolean
   botNumber?: string | null
+  hint?: string | null
   error?: string
 }
 
@@ -78,6 +81,11 @@ async function requireUserId(): Promise<{ userId: string } | { error: string }> 
   return { userId: data.user.id }
 }
 
+async function getAccessToken(): Promise<string | null> {
+  const { data } = await supabase.auth.getSession()
+  return data.session?.access_token ?? null
+}
+
 async function fetchActiveLinkCode(userId: string): Promise<LinkCodeRow | null> {
   const { data, error } = await supabase
     .from('whatsapp_link_codes')
@@ -97,8 +105,10 @@ export interface WhatsAppConnectInfo {
   botNumber: string
   sandboxMode: boolean
   sandboxJoinCode: string | null
+  joinConfigured?: boolean
   sandboxJoinExpiresHours?: number
   waMeBot?: string
+  hint?: string | null
 }
 
 /** Digits-only E.164 without + for wa.me links. */
@@ -119,16 +129,41 @@ export function normalizeSandboxJoin(code: string | null | undefined): string | 
   return /^join\s+/i.test(raw) ? raw.replace(/^join\s+/i, 'join ') : `join ${raw}`
 }
 
+export function getLocalSandboxJoinOverride(): string | null {
+  try {
+    return normalizeSandboxJoin(localStorage.getItem(JOIN_OVERRIDE_KEY))
+  } catch {
+    return null
+  }
+}
+
+export function setLocalSandboxJoinOverride(code: string | null): string | null {
+  const normalized = normalizeSandboxJoin(code)
+  try {
+    if (normalized) localStorage.setItem(JOIN_OVERRIDE_KEY, normalized)
+    else localStorage.removeItem(JOIN_OVERRIDE_KEY)
+  } catch {
+    // ignore storage restrictions
+  }
+  return normalized
+}
+
 let cachedConnectInfo: WhatsAppConnectInfo | null = null
 let connectInfoFetchedAt = 0
 
-export async function apiGetWhatsAppConnectInfo(): Promise<WhatsAppConnectInfo> {
+export function clearWhatsAppConnectInfoCache() {
+  cachedConnectInfo = null
+  connectInfoFetchedAt = 0
+}
+
+export async function apiGetWhatsAppConnectInfo(force = false): Promise<WhatsAppConnectInfo> {
   const fallback: WhatsAppConnectInfo = {
     botNumber: NOVA_PUBLIC.whatsappBotNumber,
     sandboxMode: NOVA_PUBLIC.whatsappSandboxMode,
     sandboxJoinCode: normalizeSandboxJoin(NOVA_PUBLIC.whatsappSandboxJoinCode),
+    joinConfigured: !!normalizeSandboxJoin(NOVA_PUBLIC.whatsappSandboxJoinCode),
   }
-  if (cachedConnectInfo && Date.now() - connectInfoFetchedAt < 60_000) {
+  if (!force && cachedConnectInfo && Date.now() - connectInfoFetchedAt < 30_000) {
     return cachedConnectInfo
   }
   try {
@@ -138,12 +173,15 @@ export async function apiGetWhatsAppConnectInfo(): Promise<WhatsAppConnectInfo> 
     })
     if (!res.ok) return fallback
     const data = (await res.json()) as Partial<WhatsAppConnectInfo>
+    const join = normalizeSandboxJoin(data.sandboxJoinCode) ?? fallback.sandboxJoinCode
     cachedConnectInfo = {
       botNumber: data.botNumber || fallback.botNumber,
       sandboxMode: data.sandboxMode ?? fallback.sandboxMode,
-      sandboxJoinCode: normalizeSandboxJoin(data.sandboxJoinCode) ?? fallback.sandboxJoinCode,
+      sandboxJoinCode: join,
+      joinConfigured: data.joinConfigured ?? !!join,
       sandboxJoinExpiresHours: data.sandboxJoinExpiresHours ?? 72,
       waMeBot: data.waMeBot,
+      hint: data.hint ?? null,
     }
     connectInfoFetchedAt = Date.now()
     return cachedConnectInfo
@@ -152,35 +190,39 @@ export async function apiGetWhatsAppConnectInfo(): Promise<WhatsAppConnectInfo> 
   }
 }
 
-async function buildWhatsAppStatus(userId: string): Promise<WhatsAppLinkStatusResult> {
+async function buildWhatsAppStatus(userId: string, forceConnectInfo = false): Promise<WhatsAppLinkStatusResult> {
   const [{ data: profile, error: profileError }, activeCode, connectInfo] = await Promise.all([
     supabase.from('profiles').select('phone_number').eq('id', userId).maybeSingle(),
     fetchActiveLinkCode(userId),
-    apiGetWhatsAppConnectInfo(),
+    apiGetWhatsAppConnectInfo(forceConnectInfo),
   ])
 
   if (profileError) throw profileError
 
   const phone = (profile as { phone_number?: string | null } | null)?.phone_number ?? null
+  const localJoin = getLocalSandboxJoinOverride()
+  const join = connectInfo.sandboxJoinCode || localJoin
   return {
     linked: !!phone,
     linkedPhone: phone,
     botNumber: connectInfo.botNumber,
     sandboxMode: connectInfo.sandboxMode,
-    sandboxJoinCode: connectInfo.sandboxJoinCode,
+    sandboxJoinCode: join,
+    joinConfigured: !!connectInfo.sandboxJoinCode,
+    hint: connectInfo.hint,
     ...mapActiveCode(activeCode),
   }
 }
 
 /** Status / generate / unlink use Supabase directly (no nova-server required). */
-export async function apiGetWhatsAppLinkStatus(): Promise<WhatsAppLinkStatusResult> {
+export async function apiGetWhatsAppLinkStatus(forceConnectInfo = false): Promise<WhatsAppLinkStatusResult> {
   if (!isSupabaseConfigured) {
     return { linked: false, error: 'Supabase ist nicht konfiguriert.' }
   }
   try {
     const auth = await requireUserId()
     if ('error' in auth) return { linked: false, error: auth.error }
-    return await buildWhatsAppStatus(auth.userId)
+    return await buildWhatsAppStatus(auth.userId, forceConnectInfo)
   } catch (err: unknown) {
     return {
       linked: false,
@@ -258,5 +300,91 @@ export async function apiUnlinkWhatsAppNumber(): Promise<{ ok?: boolean; error?:
     return { ok: true }
   } catch (err: unknown) {
     return { error: friendlyNetworkError(err, 'Verknüpfung konnte nicht gelöst werden.') }
+  }
+}
+
+export async function apiStartWhatsAppPhoneLink(
+  phone: string,
+): Promise<{ ok?: boolean; phone?: string; error?: string; needsSandboxJoin?: boolean; sandboxJoinCode?: string | null }> {
+  try {
+    const token = await getAccessToken()
+    if (!token) return { error: 'Bitte melde dich an.' }
+    const res = await fetch(`${NOVA_PUBLIC.serverUrl}/api/whatsapp/link/start`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ phone }),
+    })
+    const data = (await res.json().catch(() => ({}))) as {
+      ok?: boolean
+      phone?: string
+      error?: string
+      needsSandboxJoin?: boolean
+      sandboxJoinCode?: string | null
+    }
+    if (!res.ok) {
+      return {
+        error: data.error || `Fehler ${res.status}`,
+        needsSandboxJoin: data.needsSandboxJoin,
+        sandboxJoinCode: normalizeSandboxJoin(data.sandboxJoinCode),
+      }
+    }
+    return { ok: true, phone: data.phone }
+  } catch (err: unknown) {
+    return { error: friendlyNetworkError(err, 'Bestätigungscode konnte nicht gesendet werden.') }
+  }
+}
+
+export async function apiVerifyWhatsAppPhoneLink(
+  code: string,
+): Promise<{ ok?: boolean; phone?: string; error?: string }> {
+  try {
+    const token = await getAccessToken()
+    if (!token) return { error: 'Bitte melde dich an.' }
+    const res = await fetch(`${NOVA_PUBLIC.serverUrl}/api/whatsapp/link/verify`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ code }),
+    })
+    const data = (await res.json().catch(() => ({}))) as { ok?: boolean; phone?: string; error?: string }
+    if (!res.ok) return { error: data.error || `Fehler ${res.status}` }
+    return { ok: true, phone: data.phone }
+  } catch (err: unknown) {
+    return { error: friendlyNetworkError(err, 'Code konnte nicht bestätigt werden.') }
+  }
+}
+
+export async function apiSetSandboxJoinCode(
+  joinCode: string,
+): Promise<{ ok?: boolean; sandboxJoinCode?: string; error?: string }> {
+  try {
+    const token = await getAccessToken()
+    if (!token) return { error: 'Bitte melde dich an.' }
+    const res = await fetch(`${NOVA_PUBLIC.serverUrl}/api/whatsapp/sandbox-join`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ sandboxJoinCode: joinCode }),
+    })
+    const data = (await res.json().catch(() => ({}))) as {
+      ok?: boolean
+      sandboxJoinCode?: string
+      error?: string
+    }
+    if (!res.ok) return { error: data.error || `Fehler ${res.status}` }
+    clearWhatsAppConnectInfoCache()
+    return { ok: true, sandboxJoinCode: normalizeSandboxJoin(data.sandboxJoinCode) || undefined }
+  } catch (err: unknown) {
+    return { error: friendlyNetworkError(err, 'Join-Code konnte nicht gespeichert werden.') }
   }
 }

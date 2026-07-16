@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { CheckCircle2, Copy, ExternalLink, Loader2, MessageCircle, RefreshCw } from 'lucide-react'
@@ -6,9 +6,13 @@ import { useAuthStore } from '../../store/authStore'
 import {
   apiGenerateWhatsAppLinkCode,
   apiGetWhatsAppLinkStatus,
+  apiSetSandboxJoinCode,
+  apiStartWhatsAppPhoneLink,
   apiUnlinkWhatsAppNumber,
+  apiVerifyWhatsAppPhoneLink,
   normalizeSandboxJoin,
   novaApiAvailable,
+  setLocalSandboxJoinOverride,
   whatsappDeepLink,
   type WhatsAppLinkStatusResult,
 } from '../../lib/novaApi'
@@ -23,36 +27,81 @@ function formatBotNumber(bot?: string | null): string {
 export default function WhatsAppLinkSetting() {
   const { t, i18n } = useTranslation('settings')
   const fetchProfile = useAuthStore((s) => s.fetchProfile)
+  const profile = useAuthStore((s) => s.profile)
+  const isAdmin = !!(profile?.is_admin || profile?.app_role === 'admin')
+
   const [state, setState] = useState<WhatsAppLinkStatusResult | null>(null)
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState<string | null>(null)
+  const [messageOk, setMessageOk] = useState(false)
   const [step1Done, setStep1Done] = useState(false)
+  const [joinDraft, setJoinDraft] = useState('')
+  const [phoneDraft, setPhoneDraft] = useState('')
+  const [otpDraft, setOtpDraft] = useState('')
+  const [otpSentTo, setOtpSentTo] = useState<string | null>(null)
+  const [mode, setMode] = useState<'code' | 'phone'>('code')
+  const wasLinked = useRef(false)
 
-  async function reload(silent = false) {
+  async function reload(silent = false, forceConnectInfo = false) {
     if (!silent) {
       setLoading(true)
-      setMessage(null)
+      if (!forceConnectInfo) setMessage(null)
     }
-    const result = await apiGetWhatsAppLinkStatus()
+    const result = await apiGetWhatsAppLinkStatus(forceConnectInfo)
     setState(result)
     if (!silent) setLoading(false)
-    if (result.error) setMessage(result.error)
-    if (result.linked) setStep1Done(true)
+    if (result.error) {
+      setMessage(result.error)
+      setMessageOk(false)
+    }
+    if (result.linked) {
+      setStep1Done(true)
+      if (!wasLinked.current) {
+        wasLinked.current = true
+        void fetchProfile()
+        if (silent) {
+          setMessage(t('whatsapp.justLinked', { phone: result.linkedPhone || '—' }))
+          setMessageOk(true)
+        }
+      }
+    } else {
+      wasLinked.current = false
+    }
   }
 
   useEffect(() => {
-    void reload()
+    void reload(false, true)
   }, [])
 
-  // Poll while waiting for the user to send the NOVAT code via WhatsApp.
+  // Poll while waiting for WhatsApp link (code path or OTP path).
   useEffect(() => {
-    if (!state?.linkCode || state.linked) return
+    if (state?.linked) return
+    const waiting = !!(state?.linkCode || otpSentTo)
+    if (!waiting) return
     const id = window.setInterval(() => {
       void reload(true)
-    }, 5000)
+    }, 2500)
     return () => window.clearInterval(id)
-  }, [state?.linkCode, state?.linked])
+  }, [state?.linkCode, state?.linked, otpSentTo])
+
+  // Refresh when user returns from WhatsApp (tab focus / visibility).
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void reload(true, true)
+    }
+    const onFocus = () => {
+      void reload(true, true)
+    }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('pageshow', onVisible)
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('pageshow', onVisible)
+    }
+  }, [])
 
   async function generateCode() {
     setBusy(true)
@@ -60,8 +109,13 @@ export default function WhatsAppLinkSetting() {
     const result = await apiGenerateWhatsAppLinkCode()
     setBusy(false)
     setState(result)
-    if (result.error) setMessage(result.error)
-    else setMessage(null)
+    if (result.error) {
+      setMessage(result.error)
+      setMessageOk(false)
+    } else {
+      setMessage(null)
+      setMode('code')
+    }
   }
 
   async function unlink() {
@@ -71,20 +125,94 @@ export default function WhatsAppLinkSetting() {
     setBusy(false)
     if (result.error) {
       setMessage(result.error)
+      setMessageOk(false)
       return
     }
     setStep1Done(false)
+    setOtpSentTo(null)
+    wasLinked.current = false
     await fetchProfile()
-    await reload()
+    await reload(false, true)
   }
 
   async function copyText(text: string, okKey: string) {
     try {
       await navigator.clipboard.writeText(text)
       setMessage(t(okKey))
+      setMessageOk(true)
     } catch {
       // ignore clipboard restrictions
     }
+  }
+
+  async function saveJoinLocally() {
+    const normalized = setLocalSandboxJoinOverride(joinDraft)
+    if (!normalized) {
+      setMessage(t('whatsapp.joinInvalid'))
+      setMessageOk(false)
+      return
+    }
+    setJoinDraft(normalized)
+    setMessage(t('whatsapp.joinSavedLocal'))
+    setMessageOk(true)
+    await reload(false, true)
+  }
+
+  async function saveJoinAsAdmin() {
+    setBusy(true)
+    setMessage(null)
+    const result = await apiSetSandboxJoinCode(joinDraft)
+    setBusy(false)
+    if (result.error) {
+      setMessage(result.error)
+      setMessageOk(false)
+      return
+    }
+    if (result.sandboxJoinCode) setLocalSandboxJoinOverride(result.sandboxJoinCode)
+    setMessage(t('whatsapp.joinSavedAdmin'))
+    setMessageOk(true)
+    await reload(false, true)
+  }
+
+  async function sendPhoneOtp() {
+    setBusy(true)
+    setMessage(null)
+    const result = await apiStartWhatsAppPhoneLink(phoneDraft)
+    setBusy(false)
+    if (result.error) {
+      setMessage(result.error)
+      setMessageOk(false)
+      if (result.needsSandboxJoin) setMode('code')
+      return
+    }
+    setOtpSentTo(result.phone || phoneDraft)
+    setMessage(t('whatsapp.otpSent', { phone: result.phone || phoneDraft }))
+    setMessageOk(true)
+  }
+
+  async function verifyPhoneOtp() {
+    setBusy(true)
+    setMessage(null)
+    const result = await apiVerifyWhatsAppPhoneLink(otpDraft)
+    setBusy(false)
+    if (result.error) {
+      setMessage(result.error)
+      setMessageOk(false)
+      return
+    }
+    setOtpSentTo(null)
+    setOtpDraft('')
+    wasLinked.current = false
+    await fetchProfile()
+    await reload(false, true)
+    setMessage(t('whatsapp.justLinked', { phone: result.phone || '—' }))
+    setMessageOk(true)
+  }
+
+  function openWhatsApp(text: string) {
+    if (/^join\s+/i.test(text)) setStep1Done(true)
+    window.open(whatsappDeepLink(text, state?.botNumber), '_blank', 'noopener,noreferrer')
+    window.setTimeout(() => void reload(true, true), 1500)
   }
 
   if (!novaApiAvailable()) {
@@ -101,7 +229,7 @@ export default function WhatsAppLinkSetting() {
   }
 
   const botLabel = formatBotNumber(state?.botNumber)
-  const joinCode = normalizeSandboxJoin(state?.sandboxJoinCode)
+  const joinCode = normalizeSandboxJoin(state?.sandboxJoinCode) || normalizeSandboxJoin(joinDraft)
   const linkCode = state?.linkCode || null
   const sandboxOn = state?.sandboxMode !== false
 
@@ -111,7 +239,7 @@ export default function WhatsAppLinkSetting() {
         <MessageCircle size={20} className="mt-0.5 flex-shrink-0 text-accent" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium">{t('whatsapp.statusTitle')}</p>
-          <p className="mt-1 text-xs text-gray-400">
+          <p className={`mt-1 text-xs ${state?.linked ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'}`}>
             {state?.linked
               ? t('whatsapp.linked', { phone: state.linkedPhone || '—' })
               : t('whatsapp.notLinked', { bot: botLabel ? ` (${botLabel})` : '' })}
@@ -134,6 +262,31 @@ export default function WhatsAppLinkSetting() {
       ) : (
         <>
           <p className="text-xs text-gray-500">{t('whatsapp.connectIntro')}</p>
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setMode('code')}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${
+                mode === 'code'
+                  ? 'bg-accent text-white'
+                  : 'border border-gray-200 text-gray-600 dark:border-racing-700 dark:text-racing-200'
+              }`}
+            >
+              {t('whatsapp.modeCode')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('phone')}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${
+                mode === 'phone'
+                  ? 'bg-accent text-white'
+                  : 'border border-gray-200 text-gray-600 dark:border-racing-700 dark:text-racing-200'
+              }`}
+            >
+              {t('whatsapp.modePhone')}
+            </button>
+          </div>
 
           {/* Step 1 — Sandbox freischalten */}
           {sandboxOn && (
@@ -171,110 +324,197 @@ export default function WhatsAppLinkSetting() {
                     <Copy size={12} />
                     {t('whatsapp.copy')}
                   </button>
-                  <a
-                    href={whatsappDeepLink(joinCode, state?.botNumber)}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => openWhatsApp(joinCode)}
                     className="flex items-center gap-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark"
                   >
                     <ExternalLink size={12} />
                     {t('whatsapp.openWhatsApp')}
-                  </a>
+                  </button>
                 </div>
               ) : (
-                <div className="mt-3 space-y-2 text-xs text-amber-900 dark:text-amber-100">
-                  <p>{t('whatsapp.joinMissing')}</p>
-                  <a
-                    href={whatsappDeepLink('join ', state?.botNumber)}
-                    target="_blank"
-                    rel="noreferrer"
+                <div className="mt-3 space-y-2">
+                  <p className="text-xs text-amber-900 dark:text-amber-100">{t('whatsapp.joinMissing')}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      type="text"
+                      value={joinDraft}
+                      onChange={(e) => setJoinDraft(e.target.value)}
+                      placeholder={t('whatsapp.joinPlaceholder')}
+                      className="min-w-[12rem] flex-1 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-mono text-amber-950 dark:border-amber-800 dark:bg-racing-950 dark:text-amber-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void saveJoinLocally()}
+                      className="rounded-lg border border-amber-300 px-2.5 py-1.5 text-xs font-medium text-amber-900 hover:bg-white dark:border-amber-800 dark:text-amber-100"
+                    >
+                      {t('whatsapp.joinSaveLocal')}
+                    </button>
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void saveJoinAsAdmin()}
+                        className="rounded-lg bg-accent px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark disabled:opacity-50"
+                      >
+                        {t('whatsapp.joinSaveAdmin')}
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openWhatsApp(normalizeSandboxJoin(joinDraft) || 'join ')}
                     className="inline-flex items-center gap-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark"
                   >
                     <ExternalLink size={12} />
                     {t('whatsapp.openWhatsAppJoin')}
-                  </a>
+                  </button>
                 </div>
               )}
               <p className="mt-2 text-[11px] text-amber-800/70 dark:text-amber-200/60">{t('whatsapp.sandboxExpiry')}</p>
             </div>
           )}
 
-          {/* Step 2 — NOVAT-Code */}
-          <div
-            className={`rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-racing-800 dark:bg-racing-950/40 ${
-              sandboxOn && !step1Done ? 'opacity-60' : ''
-            }`}
-          >
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
-              {t('whatsapp.step2Title')}
-            </p>
-            <p className="mb-3 text-xs text-gray-400">{t('whatsapp.step2Hint')}</p>
+          {mode === 'code' ? (
+            <div
+              className={`rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-racing-800 dark:bg-racing-950/40 ${
+                sandboxOn && !step1Done ? 'opacity-70' : ''
+              }`}
+            >
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                {t('whatsapp.step2Title')}
+              </p>
+              <p className="mb-3 text-xs text-gray-400">{t('whatsapp.step2Hint')}</p>
 
-            {linkCode ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <code className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold tracking-wider text-accent dark:border-racing-700 dark:bg-racing-900">
-                  {linkCode}
-                </code>
-                <button
-                  type="button"
-                  onClick={() => void copyText(linkCode, 'whatsapp.copied')}
-                  className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-white dark:border-racing-700 dark:text-racing-200 dark:hover:bg-racing-800"
-                >
-                  <Copy size={12} />
-                  {t('whatsapp.copy')}
-                </button>
-                <a
-                  href={whatsappDeepLink(linkCode, state?.botNumber)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark"
-                >
-                  <ExternalLink size={12} />
-                  {t('whatsapp.openWhatsApp')}
-                </a>
+              {sandboxOn && !step1Done && (
+                <p className="mb-3 text-[11px] text-amber-700 dark:text-amber-300">{t('whatsapp.step1Required')}</p>
+              )}
+
+              {linkCode ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <code className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold tracking-wider text-accent dark:border-racing-700 dark:bg-racing-900">
+                    {linkCode}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => void copyText(linkCode, 'whatsapp.copied')}
+                    className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-white dark:border-racing-700 dark:text-racing-200 dark:hover:bg-racing-800"
+                  >
+                    <Copy size={12} />
+                    {t('whatsapp.copy')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openWhatsApp(linkCode)}
+                    className="flex items-center gap-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark"
+                  >
+                    <ExternalLink size={12} />
+                    {t('whatsapp.openWhatsApp')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={generateCode}
+                    disabled={busy}
+                    className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-white disabled:opacity-50 dark:border-racing-700 dark:text-racing-200 dark:hover:bg-racing-800"
+                  >
+                    {busy ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                    {t('whatsapp.refreshCode')}
+                  </button>
+                </div>
+              ) : (
                 <button
                   type="button"
                   onClick={generateCode}
                   disabled={busy}
-                  className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-white disabled:opacity-50 dark:border-racing-700 dark:text-racing-200 dark:hover:bg-racing-800"
+                  className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-50"
                 >
-                  {busy ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
-                  {t('whatsapp.refreshCode')}
+                  {busy ? t('whatsapp.generating') : t('whatsapp.generateCode')}
+                </button>
+              )}
+
+              <p className="mt-3 text-xs text-gray-400">
+                {linkCode ? t('whatsapp.sendHint', { bot: botLabel }) : t('whatsapp.noCode')}
+                {state?.linkCodeExpiresAt
+                  ? ` ${t('whatsapp.expiresAt')}: ${new Date(state.linkCodeExpiresAt).toLocaleString(
+                      i18n.language === 'en' ? 'en-US' : 'de-DE',
+                    )}.`
+                  : ''}
+              </p>
+              {linkCode && (
+                <p className="mt-1 flex items-center gap-1.5 text-[11px] text-accent">
+                  <Loader2 size={11} className="animate-spin" />
+                  {t('whatsapp.waitingLink')}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div
+              className={`rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-racing-800 dark:bg-racing-950/40 ${
+                sandboxOn && !step1Done ? 'opacity-70' : ''
+              }`}
+            >
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                {t('whatsapp.phoneTitle')}
+              </p>
+              <p className="mb-3 text-xs text-gray-400">{t('whatsapp.phoneHint')}</p>
+              {sandboxOn && !step1Done && (
+                <p className="mb-3 text-[11px] text-amber-700 dark:text-amber-300">{t('whatsapp.step1RequiredPhone')}</p>
+              )}
+
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="tel"
+                  value={phoneDraft}
+                  onChange={(e) => setPhoneDraft(e.target.value)}
+                  placeholder={t('whatsapp.phonePlaceholder')}
+                  className="min-w-[12rem] flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-racing-700 dark:bg-racing-900"
+                />
+                <button
+                  type="button"
+                  disabled={busy || !phoneDraft.trim()}
+                  onClick={() => void sendPhoneOtp()}
+                  className="rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-white hover:bg-accent-dark disabled:opacity-50"
+                >
+                  {busy ? t('whatsapp.otpSending') : t('whatsapp.otpSend')}
                 </button>
               </div>
-            ) : (
-              <button
-                type="button"
-                onClick={generateCode}
-                disabled={busy || (sandboxOn && !step1Done)}
-                className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-50"
-              >
-                {busy ? t('whatsapp.generating') : t('whatsapp.generateCode')}
-              </button>
-            )}
 
-            <p className="mt-3 text-xs text-gray-400">
-              {linkCode ? t('whatsapp.sendHint', { bot: botLabel }) : t('whatsapp.noCode')}
-              {state?.linkCodeExpiresAt
-                ? ` ${t('whatsapp.expiresAt')}: ${new Date(state.linkCodeExpiresAt).toLocaleString(
-                    i18n.language === 'en' ? 'en-US' : 'de-DE',
-                  )}.`
-                : ''}
-              {typeof state?.remainingAttempts === 'number'
-                ? ` ${t('whatsapp.attemptsLeft')}: ${state.remainingAttempts}.`
-                : ''}
-            </p>
-            {linkCode && (
-              <p className="mt-1 text-[11px] text-gray-400">{t('whatsapp.waitingLink')}</p>
-            )}
-          </div>
+              {otpSentTo && (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={otpDraft}
+                    onChange={(e) => setOtpDraft(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder={t('whatsapp.otpPlaceholder')}
+                    className="w-28 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm tracking-widest dark:border-racing-700 dark:bg-racing-900"
+                  />
+                  <button
+                    type="button"
+                    disabled={busy || otpDraft.length < 6}
+                    onClick={() => void verifyPhoneOtp()}
+                    className="rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-white hover:bg-accent-dark disabled:opacity-50"
+                  >
+                    {t('whatsapp.otpVerify')}
+                  </button>
+                  <p className="w-full text-[11px] text-accent">
+                    <Loader2 size={11} className="mr-1 inline animate-spin" />
+                    {t('whatsapp.otpWaiting', { phone: otpSentTo })}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
 
       {message && (
         <div className="flex items-center gap-2 text-xs">
-          <span className={state?.error ? 'text-red-500' : 'text-gray-500'}>{message}</span>
-          <button type="button" onClick={() => void reload()} className="font-medium text-accent hover:underline">
+          <span className={messageOk ? 'text-emerald-600 dark:text-emerald-400' : state?.error ? 'text-red-500' : 'text-gray-500'}>
+            {message}
+          </span>
+          <button type="button" onClick={() => void reload(false, true)} className="font-medium text-accent hover:underline">
             {t('whatsapp.retry')}
           </button>
         </div>
