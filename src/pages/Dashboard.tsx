@@ -567,8 +567,6 @@ export default function Dashboard() {
           )}
         </div>
         <div className="flex flex-col gap-5 lg:col-span-2">
-          <DayCapacityWidget openTaskCount={todayOpenTasks.length} meetingMinutes={meetingMinutesToday} />
-          <WeekOverviewWidget tasks={allTasks} entries={calendarEntries} />
           {dashboardVisibility.topPriority && (() => {
             const topPriorityTasks = allTasks.filter((tk) => !tk.completed && tk.urgent && tk.important).slice(0, 6)
             return (
@@ -614,6 +612,10 @@ export default function Dashboard() {
               </div>
             )
           })()}
+        </div>
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:col-span-5">
+          <DayCapacityWidget openTaskCount={todayOpenTasks.length} meetingMinutes={meetingMinutesToday} />
+          <WeekOverviewWidget tasks={allTasks} entries={calendarEntries} />
         </div>
       </div>
 
