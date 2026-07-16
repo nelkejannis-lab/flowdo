@@ -158,7 +158,7 @@
   },
   "calendar": {
     "title": "External calendars",
-    "description": "Connect your calendars — events are imported into Flowdo automatically.",
+    "description": "Connect your calendars — events are imported into NOVAT automatically.",
     "connectedSuffix": "connected!",
     "errorPrefix": "Error",
     "outlook": "Outlook / Microsoft 365",

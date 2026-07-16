@@ -294,15 +294,15 @@ export default function LoginPage() {
                 animate={{ y: [-5, 5, -5] }}
                 transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
               >
-                <img src="/logo-full.svg" alt="MoonCrew"
+                <img src="/logo-full-dark.svg" alt="NOVAT"
                   className="h-16 w-auto drop-shadow-[0_0_40px_rgba(255,255,255,0.3)]" />
               </motion.div>
               <div>
                 <h1 className="text-5xl font-extrabold tracking-tight text-white lg:text-6xl drop-shadow-xl">
-                  Moon<span className="text-white/40">Crew</span>
+                  NOVAT
                 </h1>
                 <p className="mt-3 text-[13px] font-bold uppercase tracking-[0.25em] text-white/30">
-                  Work Organizer
+                  AI Project Management
                 </p>
               </div>
             </motion.div>
@@ -352,9 +352,9 @@ export default function LoginPage() {
               
               <div className="mb-8 flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 shadow-inner">
-                  <img src="/logo-full.svg" alt="" className="h-5 w-auto" />
+                <img src="/logo-mark.svg" alt="" className="h-5 w-auto" />
                 </div>
-                <span className="text-[15px] font-bold tracking-wide text-white/80">MoonCrew</span>
+                <span className="text-[15px] font-bold tracking-wide text-white/80">NOVAT</span>
               </div>
               {AuthForm}
             </div>
@@ -377,14 +377,14 @@ export default function LoginPage() {
                 {/* top: logo + tagline */}
                 <motion.div variants={containerVariants} initial="hidden" animate="visible" className="flex flex-col items-center text-center">
                   <motion.div variants={itemVariants} className="mb-6">
-                    <img src="/logo-full.svg" alt="MoonCrew"
+                    <img src="/logo-full-dark.svg" alt="NOVAT"
                       className="h-24 w-auto drop-shadow-[0_0_40px_rgba(255,255,255,0.3)]" />
                   </motion.div>
                   <motion.h1 variants={itemVariants} className="text-4xl font-extrabold tracking-tight text-white drop-shadow-lg">
-                    Moon<span className="text-white/40">Crew</span>
+                    NOVAT
                   </motion.h1>
                   <motion.p variants={itemVariants} className="mt-2 text-[12px] font-bold uppercase tracking-[0.2em] text-white/30">
-                    Work Organizer
+                    AI Project Management
                   </motion.p>
                   <motion.p variants={itemVariants} className="mt-6 max-w-[280px] text-[15px] leading-relaxed text-white/50 font-medium">
                     Everything your team needs in one elegant app.

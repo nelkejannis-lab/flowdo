@@ -158,7 +158,7 @@
   },
   "calendar": {
     "title": "Externe Kalender",
-    "description": "Verbinde deine Kalender — Ereignisse werden automatisch in Flowdo importiert.",
+    "description": "Verbinde deine Kalender — Ereignisse werden automatisch in NOVAT importiert.",
     "connectedSuffix": "verbunden!",
     "errorPrefix": "Fehler",
     "outlook": "Outlook / Microsoft 365",
