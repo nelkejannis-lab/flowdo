@@ -1,4 +1,4 @@
-# Deploy Mooncrew everywhere: GitHub push, Vercel web, Electron desktop release.
+# Deploy NOVAT everywhere: GitHub push, Vercel web, Electron desktop release.
 # Run from repo root: .\scripts\deploy-all.ps1
 
 $ErrorActionPreference = "Stop"

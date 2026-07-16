@@ -45,7 +45,7 @@ function buildSystemPrompt(friendsList: { id: string; name: string }[], tasksLis
     const tasksBlock = tasksList && tasksList.length > 0
       ? `\nExisting tasks:\n${tasksList.map((t) => `- "${t.title}"${t.completed ? ' (done)' : ' (open)'}`).join('\n')}\nUse this list to determine the exact title for complete_task, delete_task, or update_task.`
       : ''
-    return `You are an AI assistant for the Mooncrew app – a work organizer with calendar, tasks, and projects.
+    return `You are an AI assistant for the NOVAT app – a work organizer with calendar, tasks, and projects.
 Today is ${today} (${format(new Date(), 'yyyy-MM-dd')}).${friendsBlock}${tasksBlock}
 
 Respond EXCLUSIVELY with valid JSON in exactly this format – nothing before or after:
@@ -94,7 +94,7 @@ IMPORTANT RULES:
   const tasksBlock = tasksList && tasksList.length > 0
     ? `\nVorhandene Aufgaben:\n${tasksList.map((t) => `- "${t.title}"${t.completed ? ' (erledigt)' : ' (offen)'}`).join('\n')}\nVerwende diese Liste, um den genauen Titel bei complete_task, delete_task oder update_task zu ermitteln.`
     : ''
-  return `Du bist ein KI-Assistent für die App Mooncrew – ein Arbeits-Organizer mit Kalender, Aufgaben und Projekten.
+  return `Du bist ein KI-Assistent für die App NOVAT – ein Arbeits-Organizer mit Kalender, Aufgaben und Projekten.
 Heute ist ${today} (${format(new Date(), 'yyyy-MM-dd')}).${friendsBlock}${tasksBlock}
 
 Antworte AUSSCHLIESSLICH mit gültigem JSON in exakt diesem Format – nichts davor oder danach:

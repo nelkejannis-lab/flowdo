@@ -52,8 +52,8 @@
     "anleitung": "Anleitung"
   },
   "guide": {
-    "title": "Was kann Mooncrew?",
-    "intro": "Mooncrew vereint Aufgaben, Projekte, Kalender, Arbeitszeit und KI in einem Tool — hier findest du alle Bereiche auf einen Blick.",
+    "title": "Was kann NOVAT?",
+    "intro": "NOVAT vereint Aufgaben, Projekte, Kalender, Arbeitszeit und KI in einem Tool — hier findest du alle Bereiche auf einen Blick.",
     "shortcutsTitle": "Tastenkürzel",
     "shortcutsDesc": "Arbeite schneller mit Shortcuts für neue Aufgaben, Kalender, Suche und mehr.",
     "shortcutsLink": "Alle Tastenkürzel anzeigen",
@@ -212,11 +212,11 @@
   },
   "privacy": {
     "exportTitle": "Meine Daten exportieren",
-    "exportDescription": "Lade alle deine bei Mooncrew gespeicherten Daten (Profil, Aufgaben, Projekte, Kommentare, Arbeitszeiten, Kalendereinträge) als JSON-Datei herunter (Art. 15 DSGVO).",
+    "exportDescription": "Lade alle deine bei NOVAT gespeicherten Daten (Profil, Aufgaben, Projekte, Kommentare, Arbeitszeiten, Kalendereinträge) als JSON-Datei herunter (Art. 15 DSGVO).",
     "exporting": "Exportiere…",
     "exportButton": "Daten exportieren",
     "appInfoTitle": "App-Infos & Rechtliches",
-    "appInfoVersion": "Mooncrew · Version {{version}}",
+    "appInfoVersion": "NOVAT · Version {{version}}",
     "privacyPolicyLink": "Datenschutzerklärung",
     "imprintLink": "Impressum",
     "deleteTitle": "Account löschen",

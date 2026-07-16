@@ -2,7 +2,10 @@ import { createClient } from '@supabase/supabase-js'
 import { SUPABASE_PUBLIC } from '../config/supabasePublic'
 
 function resolveSupabaseConfig() {
-  const runtime = typeof window !== 'undefined' ? window.mooncrew?.config : undefined
+  const runtime =
+    typeof window !== 'undefined'
+      ? window.novat?.config ?? window.mooncrew?.config
+      : undefined
   const url =
     runtime?.supabaseUrl || import.meta.env.VITE_SUPABASE_URL || SUPABASE_PUBLIC.url
   const anonKey =

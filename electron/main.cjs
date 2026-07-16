@@ -139,6 +139,7 @@ async function createWindow() {
     height: 900,
     minWidth: 960,
     minHeight: 600,
+    title: 'NOVAT',
     show: false,
     backgroundColor: '#0b0f1a',
     autoHideMenuBar: true,

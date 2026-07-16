@@ -40,7 +40,7 @@ export function buildStampedTimesheetText(params: {
     lines.push(`${date} · ${h}:${String(m).padStart(2, '0')} h · ${locLabel}${sick}`)
   }
 
-  lines.push('', isDe ? 'Elektronisch erstellt via Mooncrew.' : 'Electronically generated via Mooncrew.')
+  lines.push('', isDe ? 'Elektronisch erstellt via NOVAT.' : 'Electronically generated via NOVAT.')
   return lines.join('\n')
 }
 

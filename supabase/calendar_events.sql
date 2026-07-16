@@ -1,4 +1,4 @@
--- Mooncrew: personal calendar events (general "Event" entries)
+-- NOVAT: personal calendar events (general "Event" entries)
 -- Run this in the Supabase SQL editor (Project -> SQL Editor -> New query)
 
 create table if not exists calendar_events (

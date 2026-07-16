@@ -1,8 +1,8 @@
-# NovaT (Flowdo)
+# NOVAT (Flowdo)
 
 Work organizer: tasks, calendar, Kanban boards, work time, team chat, AI scheduling, meetings, Instagram metrics, Second Brain — as PWA and Electron desktop app.
 
-**Production:** [novat.app](https://novat.app)
+**Production:** [novat.app](https://novat.app) *(domain unchanged; product display name is NOVAT)*
 
 ## Tech Stack
 

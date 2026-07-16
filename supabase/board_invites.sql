@@ -1,4 +1,4 @@
--- Mooncrew: project invitations (accept/decline like task shares)
+-- NOVAT: project invitations (accept/decline like task shares)
 
 create table if not exists board_invites (
   id uuid primary key default gen_random_uuid(),

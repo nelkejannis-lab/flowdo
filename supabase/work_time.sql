@@ -1,4 +1,4 @@
--- Mooncrew: sync work time entries & settings across devices
+-- NOVAT: sync work time entries & settings across devices
 
 create table if not exists work_time_entries (
   user_id uuid not null references profiles(id) on delete cascade,

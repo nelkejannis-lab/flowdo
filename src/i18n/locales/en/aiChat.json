@@ -1,8 +1,8 @@
 {
   "assistantTitle": "AI Assistant",
-  "panelTitle": "Mooncrew Assistant",
+  "panelTitle": "NOVAT Assistant",
   "panelSubtitle": "Text · Image · Voice · App control",
-  "greeting": "Hi! I'm your AI assistant for Mooncrew. I can control the app for you:\n\n• Create tasks & appointments\n• Set up projects\n• Navigate to pages\n• Read images 📸\n• Voice input 🎙️\n\nWhat can I do for you?",
+  "greeting": "Hi! I'm your AI assistant for NOVAT. I can control the app for you:\n\n• Create tasks & appointments\n• Set up projects\n• Navigate to pages\n• Read images 📸\n• Voice input 🎙️\n\nWhat can I do for you?",
   "imageMessagePlaceholder": "(Image)",
   "voiceNotSupported": "Voice input is not supported in this browser.",
   "confirmPrompt": "Should I go ahead and do this?",

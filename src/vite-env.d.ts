@@ -2,13 +2,16 @@
 
 declare const __APP_VERSION__: string
 
-interface Window {
-  mooncrew?: {
+interface ElectronRuntimeConfig {
     config?: {
       supabaseUrl?: string
       supabaseAnonKey?: string
     }
   }
+
+interface Window {
+  mooncrew?: ElectronRuntimeConfig
+  novat?: ElectronRuntimeConfig
   electronUpdater?: {
     onUpdateAvailable: (callback: (info: any) => void) => void
     onUpdateDownloaded: (callback: (info: any) => void) => void

@@ -1,8 +1,8 @@
 {
   "assistantTitle": "KI-Assistent",
-  "panelTitle": "Mooncrew Assistent",
+  "panelTitle": "NOVAT Assistent",
   "panelSubtitle": "Text · Bild · Sprache · App-Steuerung",
-  "greeting": "Hallo! Ich bin dein KI-Assistent für Mooncrew. Ich kann die App für dich steuern:\n\n• Aufgaben & Termine erstellen\n• Projekte anlegen\n• Zu Seiten navigieren\n• Bilder auslesen 📸\n• Spracheingabe 🎙️\n\nWas soll ich für dich tun?",
+  "greeting": "Hallo! Ich bin dein KI-Assistent für NOVAT. Ich kann die App für dich steuern:\n\n• Aufgaben & Termine erstellen\n• Projekte anlegen\n• Zu Seiten navigieren\n• Bilder auslesen 📸\n• Spracheingabe 🎙️\n\nWas soll ich für dich tun?",
   "imageMessagePlaceholder": "(Bild)",
   "voiceNotSupported": "Spracheingabe wird in diesem Browser nicht unterstützt.",
   "confirmPrompt": "Soll ich das ausführen?",

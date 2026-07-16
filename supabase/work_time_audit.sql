@@ -1,4 +1,4 @@
--- Mooncrew: tamper-proof time tracking (German Arbeitszeiterfassung)
+-- NOVAT: tamper-proof time tracking (German Arbeitszeiterfassung)
 -- Adds an append-only punch event log ("Stempeluhr") and a change/audit trail.
 -- Both are append-only at the API level: RLS grants SELECT + INSERT only, so
 -- authenticated users can never UPDATE or DELETE their own records. Deletion

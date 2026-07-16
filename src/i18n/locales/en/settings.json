@@ -52,8 +52,8 @@
     "anleitung": "Guide"
   },
   "guide": {
-    "title": "What can Mooncrew do?",
-    "intro": "Mooncrew combines tasks, projects, calendar, time tracking and AI in one tool — here's an overview of every area.",
+    "title": "What can NOVAT do?",
+    "intro": "NOVAT combines tasks, projects, calendar, time tracking and AI in one tool — here's an overview of every area.",
     "shortcutsTitle": "Keyboard shortcuts",
     "shortcutsDesc": "Work faster with shortcuts for new tasks, calendar, search and more.",
     "shortcutsLink": "Show all shortcuts",
@@ -212,11 +212,11 @@
   },
   "privacy": {
     "exportTitle": "Export my data",
-    "exportDescription": "Download all your data stored with Mooncrew (profile, tasks, projects, comments, work hours, calendar entries) as a JSON file (Art. 15 GDPR).",
+    "exportDescription": "Download all your data stored with NOVAT (profile, tasks, projects, comments, work hours, calendar entries) as a JSON file (Art. 15 GDPR).",
     "exporting": "Exporting…",
     "exportButton": "Export data",
     "appInfoTitle": "App info & legal",
-    "appInfoVersion": "Mooncrew · Version {{version}}",
+    "appInfoVersion": "NOVAT · Version {{version}}",
     "privacyPolicyLink": "Privacy Policy",
     "imprintLink": "Imprint",
     "deleteTitle": "Delete account",

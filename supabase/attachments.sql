@@ -1,4 +1,4 @@
--- Mooncrew: file attachments for tasks and projects (user-scoped storage paths)
+-- NOVAT: file attachments for tasks and projects (user-scoped storage paths)
 
 alter table tasks add column if not exists attachments jsonb not null default '[]';
 alter table boards add column if not exists attachments jsonb not null default '[]';

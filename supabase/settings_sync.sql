@@ -1,4 +1,4 @@
--- Mooncrew: Sync user settings across devices
+-- NOVAT: Sync user settings across devices
 -- Run this in the Supabase SQL editor (Project -> SQL Editor -> New query)
 
 -- 1. Add settings JSONB column to profiles
