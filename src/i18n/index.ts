@@ -72,6 +72,7 @@ export const resources = {
     admin: adminDe,
     onboarding: onboardingDe,
     memory: memoryDe,
+    statistics: statisticsDe,
   },
   en: {
     common: commonEn,
@@ -95,6 +96,7 @@ export const resources = {
     admin: adminEn,
     onboarding: onboardingEn,
     memory: memoryEn,
+    statistics: statisticsEn,
   },
 } as const
 
