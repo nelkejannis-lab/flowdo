@@ -2,7 +2,7 @@
   "sections": {
     "tasksTitle": "Aufgaben",
     "hideCompletedTitle": "Erledigte Aufgaben ausblenden",
-    "hideCompletedDesc": "Gilt für Aufgabenlisten, Kanban-Boards und Projekt-Todos",
+    "hideCompletedDesc": "Gilt für Aufgabenlisten, Eisenhower-Matrix, Kanban-Boards und Projekt-Todos",
     "notificationsTitle": "Benachrichtigungen",
     "notificationsUnsupported": "Dein Browser unterstützt keine Benachrichtigungen.",
     "departmentProfilesDesc": "Arbeitszeitregelungen für verschiedene Abteilungen — aktiviertes Profil wird für alle Berechnungen verwendet.",

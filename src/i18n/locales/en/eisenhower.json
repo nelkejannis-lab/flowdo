@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "Eisenhower Matrix",
-    "intro": "Prioritize tasks by urgency and importance"
+    "intro": "Prioritize tasks by urgency and importance",
+    "hideCompleted": "Hide completed"
   },
   "quadrants": {
     "urgentImportant": "Urgent & Important",

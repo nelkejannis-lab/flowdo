@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "Eisenhower-Matrix",
-    "intro": "Priorisiere Aufgaben nach Dringlichkeit und Wichtigkeit"
+    "intro": "Priorisiere Aufgaben nach Dringlichkeit und Wichtigkeit",
+    "hideCompleted": "Erledigte ausblenden"
   },
   "quadrants": {
     "urgentImportant": "Dringend & Wichtig",
