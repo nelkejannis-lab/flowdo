@@ -260,6 +260,11 @@ export default function Sidebar({ isOpen, onClose, docked = false }: SidebarProp
     )
   }
 
+  function handleNavNavigate() {
+    // Only dismiss the drawer on mobile. Docked desktop menu stays open while browsing.
+    if (!docked) onClose()
+  }
+
   function toggleFolder(id: string) {
     setOpenFolders((prev) => {
       const next = new Set(prev)
@@ -292,21 +297,30 @@ export default function Sidebar({ isOpen, onClose, docked = false }: SidebarProp
       {isOpen && !docked && (
         <div
           onClick={onClose}
-          className="fixed inset-0 z-40 bg-black/35 backdrop-blur-[2px] sm:left-[60px]"
+          className="fixed inset-0 z-40 bg-black/35 backdrop-blur-[2px]"
           aria-hidden="true"
         />
       )}
       <aside
-        style={{ paddingTop: 'max(16px, calc(16px + env(safe-area-inset-top)))', paddingBottom: 'max(16px, calc(16px + env(safe-area-inset-bottom)))' }}
-        className={`vibrancy-sidebar z-50 flex h-full flex-col overflow-y-auto px-3 ${
+        className={`vibrancy-sidebar z-50 flex h-full flex-col ${
           docked
-            ? `relative flex-shrink-0 border-r border-black/[0.04] transition-[width,opacity,transform] duration-300 ease-out dark:border-white/[0.06] ${
-                isOpen ? 'w-[272px] translate-x-0 opacity-100' : 'pointer-events-none w-0 -translate-x-2 overflow-hidden opacity-0'
+            ? `relative flex-shrink-0 overflow-hidden border-r border-black/[0.04] transition-[width] duration-300 ease-out dark:border-white/[0.06] ${
+                isOpen ? 'w-[272px]' : 'pointer-events-none w-0 border-r-0'
               }`
-            : `fixed inset-y-0 left-0 w-[272px] shadow-bento-lg transition-transform duration-300 ease-out sm:left-[60px] ${
+            : `fixed inset-y-0 left-0 w-[min(272px,85vw)] shadow-bento-lg transition-transform duration-300 ease-out ${
                 isOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none'
               }`
         }`}
+        aria-hidden={docked ? !isOpen : undefined}
+      >
+      <div
+        style={{
+          paddingTop: 'max(16px, calc(16px + env(safe-area-inset-top)))',
+          paddingBottom: 'max(16px, calc(16px + env(safe-area-inset-bottom)))',
+        }}
+        className={`flex h-full flex-col overflow-y-auto px-3 ${
+          docked ? 'w-[272px]' : 'w-full'
+        } ${docked && !isOpen ? 'pointer-events-none' : ''}`}
       >
       <div className="mb-5 flex items-center justify-between gap-1 px-2">
         <div className="flex min-w-0 items-center gap-1.5">
@@ -355,7 +369,7 @@ export default function Sidebar({ isOpen, onClose, docked = false }: SidebarProp
             id={dashboardItem.key}
             to={dashboardItem.to}
             exact={dashboardItem.exact}
-            onClose={onClose}
+            onClose={handleNavNavigate}
             draggable={false}
           >
             {renderNavItemChildren(dashboardItem)}
@@ -376,7 +390,7 @@ export default function Sidebar({ isOpen, onClose, docked = false }: SidebarProp
                   id={item.key}
                   to={item.to}
                   exact={item.exact}
-                  onClose={onClose}
+                  onClose={handleNavNavigate}
                   pinned
                   onTogglePin={() => togglePinnedNavItem(item.key)}
                 >
@@ -404,7 +418,7 @@ export default function Sidebar({ isOpen, onClose, docked = false }: SidebarProp
                     id={item.key}
                     to={item.to}
                     exact={item.exact}
-                    onClose={onClose}
+                    onClose={handleNavNavigate}
                     pinned={pinnedNavItems.includes(item.key)}
                     onTogglePin={item.key === 'dashboard' ? undefined : () => togglePinnedNavItem(item.key)}
                   >
@@ -424,7 +438,7 @@ export default function Sidebar({ isOpen, onClose, docked = false }: SidebarProp
           </span>
           <NavLink
             to="/projekte"
-            onClick={onClose}
+            onClick={handleNavNavigate}
             className="text-gray-400 hover:text-accent"
             title={t('sidebar.projects.manage')}
           >
@@ -432,7 +446,7 @@ export default function Sidebar({ isOpen, onClose, docked = false }: SidebarProp
           </NavLink>
         </div>
         <div className="flex flex-col gap-1">
-          <NavLink to="/projekte" end className={navItemClass} onClick={onClose}>
+          <NavLink to="/projekte" end className={navItemClass} onClick={handleNavNavigate}>
             <Trello size={18} />
             {t('sidebar.projects.all')}
           </NavLink>
@@ -461,7 +475,7 @@ export default function Sidebar({ isOpen, onClose, docked = false }: SidebarProp
                       <span className="px-3 py-1.5 text-xs text-gray-400">{t('sidebar.projects.empty')}</span>
                     ) : (
                       folderBoards.map((board) => (
-                        <NavLink key={board.id} to={`/projekte/${board.id}`} className={navItemClass} onClick={onClose}>
+                        <NavLink key={board.id} to={`/projekte/${board.id}`} className={navItemClass} onClick={handleNavNavigate}>
                           <BoardProgressPie color={board.color} stats={taskStats[board.id]} />
                           <span className="truncate">{board.title}</span>
                         </NavLink>
@@ -475,7 +489,7 @@ export default function Sidebar({ isOpen, onClose, docked = false }: SidebarProp
 
           {/* Boards without folder */}
           {boards.filter((b) => !b.folderId).map((board) => (
-            <NavLink key={board.id} to={`/projekte/${board.id}`} className={navItemClass} onClick={onClose}>
+            <NavLink key={board.id} to={`/projekte/${board.id}`} className={navItemClass} onClick={handleNavNavigate}>
               <BoardProgressPie color={board.color} stats={taskStats[board.id]} />
               <span className="truncate">{board.title}</span>
             </NavLink>
@@ -487,7 +501,7 @@ export default function Sidebar({ isOpen, onClose, docked = false }: SidebarProp
         {isSupabaseConfigured && showAdmin && (
           <NavLink
             to="/admin"
-            onClick={onClose}
+            onClick={handleNavNavigate}
             className={({ isActive }) =>
               `flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                 isActive ? 'bg-accent/10 text-accent' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
@@ -501,7 +515,7 @@ export default function Sidebar({ isOpen, onClose, docked = false }: SidebarProp
         {isSupabaseConfigured && profile && (
           <NavLink
             to="/einstellungen"
-            onClick={onClose}
+            onClick={handleNavNavigate}
             className="mb-1 flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-gray-100 dark:hover:bg-racing-800"
           >
             {profile.avatar_url ? (
@@ -586,6 +600,7 @@ export default function Sidebar({ isOpen, onClose, docked = false }: SidebarProp
           <Link to="/impressum" className="hover:underline">{t('sidebar.legal.imprint')}</Link>
         </div>
         <p className="mt-1 text-center text-[10px] text-gray-300 dark:text-racing-600">v{__APP_VERSION__}</p>
+      </div>
       </div>
       </aside>
       {showShortcuts && (

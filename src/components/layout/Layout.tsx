@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+﻿import { useCallback, useEffect, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
@@ -13,12 +13,10 @@ import AppUpdater from './AppUpdater'
 import { useSettingsStore } from '../../store/settingsStore'
 
 /**
- * Shell roles:
- * - IconRail (desktop): always mounted — slim pin/icon chrome + expand control.
- *   Collapse must NEVER unmount this; it is the collapsed navigation.
- * - Sidebar: full labelled menu only (docked when expanded, overlay on mobile).
- * - TopBar: brand, pin strip, search/utilities + expand/collapse.
- * - MobileBottomNav: four primaries + quick-add
+ * Shell roles (mutually exclusive on desktop — never both at once):
+ * - Collapsed: IconRail only (60px pin/icon chrome + expand). Never disappears.
+ * - Expanded: labelled Sidebar only (docked 272px + collapse). IconRail width collapses to 0.
+ * - Mobile: overlay Sidebar + bottom nav; IconRail hidden via sm: breakpoint.
  */
 export default function Layout() {
   const menuCollapsed = useSettingsStore((s) => s.menuCollapsed)
@@ -39,7 +37,6 @@ export default function Layout() {
     return () => mq.removeEventListener('change', onChange)
   }, [])
 
-  // Expanded = labelled sidebar docked. Collapsed = IconRail + TopBar pins only.
   const labelledMenuOpen = desktop && !menuCollapsed
   const sidebarOpen = labelledMenuOpen || mobileOpen
 
@@ -53,7 +50,6 @@ export default function Layout() {
 
   const closeMenu = useCallback(() => {
     if (desktop) {
-      // Only hide the labelled panel — IconRail / TopBar pins stay mounted.
       setMenuCollapsed(true)
     } else {
       setMobileOpen(false)
@@ -73,20 +69,16 @@ export default function Layout() {
       <OfflineBanner />
       <div className="flex h-screen w-full overflow-hidden">
         <GlobalSearch />
-        {/* Always render on desktop; collapse toggles Sidebar only */}
-        <IconRail menuOpen={labelledMenuOpen} onToggleMenu={toggleMenu} onOpenMenu={openMenu} />
+        <IconRail collapsed={!labelledMenuOpen} onToggleMenu={toggleMenu} onOpenMenu={openMenu} />
+        <Sidebar isOpen={sidebarOpen} onClose={closeMenu} docked={desktop} />
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <TopBar menuOpen={sidebarOpen} onToggleMenu={toggleMenu} />
-          <div className="relative flex min-h-0 flex-1 overflow-hidden">
-            <Sidebar isOpen={sidebarOpen} onClose={closeMenu} docked={labelledMenuOpen} />
-            <main className="relative flex-1 overflow-y-auto overflow-x-hidden">
-              <AppUpdater />
-              {/* No overflow-x-clip / h-full here — those force a nested scrollport and break sticky Quick Add */}
-              <div className="relative mx-auto w-full max-w-7xl p-4 pb-[max(6.5rem,calc(5.5rem+env(safe-area-inset-bottom)))] page-bg sm:p-6 sm:pb-6 lg:p-8">
-                <Outlet />
-              </div>
-            </main>
-          </div>
+          <main className="relative flex-1 overflow-y-auto overflow-x-hidden">
+            <AppUpdater />
+            <div className="relative mx-auto w-full max-w-7xl p-4 pb-[max(6.5rem,calc(5.5rem+env(safe-area-inset-bottom)))] page-bg sm:p-6 sm:pb-6 lg:p-8">
+              <Outlet />
+            </div>
+          </main>
         </div>
         <MobileBottomNav />
       </div>

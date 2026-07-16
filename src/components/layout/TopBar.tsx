@@ -6,20 +6,6 @@ import {
   Bell,
   MessageCircle,
   Settings,
-  LayoutDashboard,
-  ListTodo,
-  CalendarDays,
-  CalendarClock,
-  Trello,
-  Clock,
-  Sparkles,
-  Inbox,
-  CheckCircle2,
-  Grid2x2,
-  Users,
-  Instagram,
-  Brain,
-  Mic,
   ChevronRight,
   ChevronLeft,
   PanelLeft,
@@ -27,33 +13,13 @@ import {
 import Logo from './Logo'
 import { useSearchStore } from '../../store/searchStore'
 import { useMessagesStore } from '../../store/messagesStore'
-import { useSettingsStore, type NavItemKey } from '../../store/settingsStore'
+import { useSettingsStore } from '../../store/settingsStore'
 import { useAuthStore } from '../../store/authStore'
 import { useTaskSharesStore } from '../../store/taskSharesStore'
 import { useBoardInvitesStore } from '../../store/boardInvitesStore'
 import { useTeamInvitesStore } from '../../store/teamInvitesStore'
 import { useNotificationsStore } from '../../store/notificationsStore'
 import { isSupabaseConfigured } from '../../lib/supabase'
-import { NAV_PATHS, MAX_TOPBAR_PINS } from './navConfig'
-
-const NAV_ICONS: Record<NavItemKey, React.ReactNode> = {
-  dashboard: <LayoutDashboard size={18} strokeWidth={1.6} />,
-  week: <CheckCircle2 size={18} strokeWidth={1.6} />,
-  inbox: <Inbox size={18} strokeWidth={1.6} />,
-  tasks: <ListTodo size={18} strokeWidth={1.6} />,
-  calendar: <CalendarDays size={18} strokeWidth={1.6} />,
-  termine: <CalendarClock size={18} strokeWidth={1.6} />,
-  brain: <Brain size={18} strokeWidth={1.6} />,
-  memory: <MessageCircle size={18} strokeWidth={1.6} />,
-  eisenhower: <Grid2x2 size={18} strokeWidth={1.6} />,
-  worktime: <Clock size={18} strokeWidth={1.6} />,
-  aiScheduler: <Sparkles size={18} strokeWidth={1.6} />,
-  chat: <MessageCircle size={18} strokeWidth={1.6} />,
-  friends: <Users size={18} strokeWidth={1.6} />,
-  social: <Instagram size={18} strokeWidth={1.6} />,
-  meetings: <Mic size={18} strokeWidth={1.6} />,
-  projekte: <Trello size={18} strokeWidth={1.6} />,
-}
 
 const isMac =
   typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent)
@@ -63,13 +29,12 @@ interface TopBarProps {
   onToggleMenu: () => void
 }
 
+/** Brand + utilities. Expand/collapse + pinned destinations live on IconRail / Sidebar. */
 export default function TopBar({ menuOpen, onToggleMenu }: TopBarProps) {
   const { t } = useTranslation('layout')
   const openSearch = useSearchStore((s) => s.open)
   const unreadMessages = useMessagesStore((s) => s.unreadTotal)
   const featureVisibility = useSettingsStore((s) => s.featureVisibility)
-  const pinnedNavItems = useSettingsStore((s) => s.pinnedNavItems ?? [])
-  const navVisibility = useSettingsStore((s) => s.navVisibility)
   const profile = useAuthStore((s) => s.profile)
   const taskIncoming = useTaskSharesStore((s) => s.incoming ?? [])
   const boardIncoming = useBoardInvitesStore((s) => s.incoming ?? [])
@@ -77,40 +42,14 @@ export default function TopBar({ menuOpen, onToggleMenu }: TopBarProps) {
   const unreadNotifications = useNotificationsStore((s) => s.unreadCount)
   const notificationCount = taskIncoming.length + boardIncoming.length + teamIncoming.length + unreadNotifications
 
-  // Pin strip stays visible when the labelled menu is collapsed — never strip pins on collapse.
-  const pinKeys = pinnedNavItems
-    .filter((k) => k !== 'dashboard')
-    .filter((k) => {
-      if (k === 'calendar' && !featureVisibility.calendar) return false
-      if (k === 'worktime' && !featureVisibility.worktime) return false
-      if (k === 'eisenhower' && !featureVisibility.eisenhower) return false
-      if (k === 'aiScheduler' && !featureVisibility.aiScheduler) return false
-      if (k === 'chat' && !featureVisibility.chat) return false
-      if (k === 'friends' && !featureVisibility.friends) return false
-      if (k === 'social' && !featureVisibility.social) return false
-      if ((k === 'aiScheduler' || k === 'chat' || k === 'friends' || k === 'social') && !isSupabaseConfigured) {
-        return false
-      }
-      return navVisibility?.[k] ?? true
-    })
-    .slice(0, MAX_TOPBAR_PINS)
-
   const utilBtn =
     'relative flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 transition-colors hover:bg-black/[0.05] hover:text-gray-800 dark:text-racing-300 dark:hover:bg-white/[0.06] dark:hover:text-white'
-
-  const pinBtn = ({ isActive }: { isActive: boolean }) =>
-    `relative flex h-9 w-9 items-center justify-center rounded-xl transition-colors ${
-      isActive
-        ? 'bg-accent/12 text-accent'
-        : 'text-gray-500 hover:bg-black/[0.05] hover:text-gray-800 dark:text-racing-300 dark:hover:bg-white/[0.06] dark:hover:text-white'
-    }`
 
   return (
     <header
       className="vibrancy-header relative z-30 flex h-14 flex-shrink-0 items-center gap-3 px-3 sm:px-4"
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
-      {/* Left: expand/collapse + brand */}
       <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
         <button
           type="button"
@@ -147,45 +86,6 @@ export default function TopBar({ menuOpen, onToggleMenu }: TopBarProps) {
         </NavLink>
       </div>
 
-      {/* Center pin strip — stays when labelled sidebar collapses */}
-      {pinKeys.length > 0 && (
-        <nav
-          className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 sm:flex"
-          aria-label={t('topbar.pinnedNav')}
-        >
-          {pinKeys.map((key) => {
-            const path = NAV_PATHS[key] ?? NAV_PATHS.dashboard
-            const label =
-              key === 'projekte'
-                ? t('sidebar.projects.all')
-                : t(`sidebar.nav.${key}` as 'sidebar.nav.tasks', { defaultValue: key })
-            return (
-              <NavLink
-                key={key}
-                to={path.to}
-                end={path.exact}
-                className={pinBtn}
-                title={label}
-                aria-label={label}
-              >
-                {({ isActive }) => (
-                  <>
-                    {isActive && (
-                      <span
-                        className="absolute bottom-0.5 left-1/2 h-0.5 w-3.5 -translate-x-1/2 rounded-full bg-accent"
-                        aria-hidden
-                      />
-                    )}
-                    {NAV_ICONS[key] ?? NAV_ICONS.dashboard}
-                  </>
-                )}
-              </NavLink>
-            )
-          })}
-        </nav>
-      )}
-
-      {/* Right: utilities — Cmd/Ctrl+K remains primary search */}
       <div className="ml-auto flex items-center gap-0.5 sm:gap-1">
         <button
           type="button"
