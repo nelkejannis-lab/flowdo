@@ -120,6 +120,7 @@ export default function SecondBrainPage() {
   const [justSaved, setJustSaved] = useState(false)
   const [moodError, setMoodError] = useState<string | null>(null)
   const [inviteOpen, setInviteOpen] = useState(false)
+  const [editorMetaOpen, setEditorMetaOpen] = useState(false)
 
   // State inside note creation
   const [isCreating, setIsCreating] = useState(false)
@@ -131,6 +132,18 @@ export default function SecondBrainPage() {
   const [notePeople, setNotePeople] = useState('')
   const [noteLinkedBoardId, setNoteLinkedBoardId] = useState('')
   const editorOpen = isCreating || !!activePage
+
+  // Lock body scroll while the mobile note sheet is open
+  useEffect(() => {
+    if (!editorOpen) return
+    const mq = window.matchMedia('(max-width: 1023px)')
+    if (!mq.matches) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [editorOpen])
 
   // Speech Recognition & Recording states (for editing/creating notes)
   const [isTranscribing, setIsTranscribing] = useState(false)
@@ -379,6 +392,7 @@ ${textToSummarize}`
     setActivePage(page)
     setNoteTitle(page.title)
     setNoteContent(page.content)
+    setEditorMetaOpen(false)
     setNoteTags((page.tags ?? []).join(', '))
     setNotePeople((page.people ?? []).map((p) => p.name).join(', '))
     setNoteLinkedBoardId(page.linkedBoardId ?? '')
@@ -415,6 +429,7 @@ ${textToSummarize}`
     setAudioUrl(null)
     setAudioBlob(null)
     setAiError(null)
+    setEditorMetaOpen(false)
   }
 
   // Save new note page
@@ -522,18 +537,19 @@ ${textToSummarize}`
   function closeEditor() {
     setActivePage(null)
     setIsCreating(false)
+    setEditorMetaOpen(false)
   }
 
-  // Shared toolbar for the create/edit detail pane
+  // Shared toolbar for the create/edit detail pane — compact icon row on mobile
   function Toolbar() {
     const btnBase =
-      'flex min-h-11 items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold touch-manipulation'
+      'flex h-10 w-10 sm:h-auto sm:w-auto sm:min-h-11 items-center justify-center sm:gap-1.5 rounded-xl sm:px-3 sm:py-2 text-sm font-semibold touch-manipulation'
     return (
-      <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 dark:border-racing-800 pb-3">
+      <div className="flex flex-nowrap sm:flex-wrap items-center gap-1.5 sm:gap-2 border-b border-gray-100 dark:border-racing-800 pb-2 sm:pb-3 overflow-x-auto scrollbar-none">
         <button
           type="button"
           onClick={insertBulletPoint}
-          className={`${btnBase} bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white`}
+          className={`${btnBase} bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white flex-shrink-0`}
           title={t('toolbar.insertBullet')}
         >
           <List size={16} />
@@ -542,7 +558,7 @@ ${textToSummarize}`
         <button
           type="button"
           onClick={toggleTranscription}
-          className={`${btnBase} transition-all ${
+          className={`${btnBase} flex-shrink-0 transition-all ${
             isTranscribing
               ? 'bg-red-500 text-white animate-pulse'
               : 'bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white'
@@ -555,7 +571,7 @@ ${textToSummarize}`
         <button
           type="button"
           onClick={isRecordingAudio ? stopRecordingAudio : startRecordingAudio}
-          className={`${btnBase} transition-all ${
+          className={`${btnBase} flex-shrink-0 transition-all ${
             isRecordingAudio
               ? 'bg-indigo-600 text-white animate-pulse'
               : 'bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white'
@@ -575,7 +591,7 @@ ${textToSummarize}`
         <button
           type="button"
           onClick={() => document.getElementById('audio-file-upload')?.click()}
-          className={`${btnBase} bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white`}
+          className={`${btnBase} bg-gray-100 hover:bg-gray-200 dark:bg-racing-800 hover:text-gray-800 dark:hover:text-white flex-shrink-0`}
           title={t('toolbar.uploadAudioFile')}
         >
           <Upload size={16} />
@@ -585,11 +601,11 @@ ${textToSummarize}`
           type="button"
           disabled={aiLoading}
           onClick={generateAiSummary}
-          className={`${btnBase} bg-accent text-white hover:bg-accent-dark disabled:opacity-50 sm:ml-auto transition-colors`}
+          className={`${btnBase} bg-accent text-white hover:bg-accent-dark disabled:opacity-50 sm:ml-auto transition-colors flex-shrink-0 sm:w-auto sm:px-3`}
           title={t('toolbar.generateSummary')}
         >
           <Sparkles size={16} className={aiLoading ? 'animate-spin' : ''} />
-          {aiLoading ? t('toolbar.summarizing') : t('toolbar.summarize')}
+          <span className="hidden sm:inline">{aiLoading ? t('toolbar.summarizing') : t('toolbar.summarize')}</span>
         </button>
       </div>
     )
@@ -618,9 +634,9 @@ ${textToSummarize}`
   }
 
   return (
-    <div className="flex flex-col gap-3 sm:gap-4 h-full min-h-[60vh] sm:min-h-[75vh] pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-      {/* Sticky header: title + section tabs */}
-      <div className="sticky top-0 z-20 -mx-4 px-4 pt-1 pb-3 sm:-mx-0 sm:px-0 bg-white/90 dark:bg-[rgb(var(--surface-0)/0.92)] backdrop-blur-md border-b border-gray-100/80 dark:border-racing-850/80 sm:border-0 sm:static sm:bg-transparent sm:backdrop-blur-none sm:pb-0 sm:pt-0">
+    <div className={`flex flex-col gap-3 sm:gap-4 h-full min-h-[60vh] sm:min-h-[75vh] pb-[max(0.5rem,env(safe-area-inset-bottom))] ${editorOpen ? 'max-lg:min-h-0 max-lg:pb-0' : ''}`}>
+      {/* Sticky header: title + section tabs — hidden on mobile while editing */}
+      <div className={`sticky top-0 z-20 -mx-4 px-4 pt-1 pb-3 sm:-mx-0 sm:px-0 bg-white/90 dark:bg-[rgb(var(--surface-0)/0.92)] backdrop-blur-md border-b border-gray-100/80 dark:border-racing-850/80 sm:border-0 sm:static sm:bg-transparent sm:backdrop-blur-none sm:pb-0 sm:pt-0 ${editorOpen ? 'hidden lg:block' : ''}`}>
         <h1 className="text-xl font-semibold sm:text-2xl mb-3">{t('title')}</h1>
         <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2 sm:w-auto">
           <button
@@ -644,8 +660,8 @@ ${textToSummarize}`
         </div>
       </div>
 
-      {/* Invite panel — collapsed by default on mobile */}
-      <div className="rounded-xl border border-gray-100 bg-white/70 dark:border-racing-850 dark:bg-racing-900/70 overflow-hidden">
+      {/* Invite panel — collapsed by default; fully hidden on mobile while editing */}
+      <div className={`rounded-xl border border-gray-100 bg-white/70 dark:border-racing-850 dark:bg-racing-900/70 overflow-hidden ${editorOpen ? 'hidden lg:block' : ''}`}>
         <button
           type="button"
           onClick={() => setInviteOpen((v) => !v)}
@@ -743,7 +759,7 @@ ${textToSummarize}`
       </div>
 
       {activeSection === 'notes' && (
-        <div className="flex flex-1 flex-col gap-4 min-h-0 lg:flex-row">
+        <div className={`flex flex-1 flex-col gap-4 min-h-0 lg:flex-row ${editorOpen ? 'max-lg:contents' : ''}`}>
           {/* Left pane: search, tabs, list — hidden on mobile when editor is open */}
           <div className={`flex w-full flex-shrink-0 flex-col gap-3 lg:w-80 ${editorOpen ? 'hidden lg:flex' : 'flex'}`}>
             <div className="flex items-center gap-2">
@@ -859,209 +875,295 @@ ${textToSummarize}`
             </div>
           </div>
 
-          {/* Right pane: detail editor — full-width sheet on mobile when open */}
+          {/* Right pane: full-viewport sheet on mobile when open; side pane on desktop */}
           <div
-            className={`flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-gray-100 dark:border-racing-850 bg-white/70 dark:bg-racing-900/70 p-4 sm:p-5 backdrop-blur-apple ${
-              editorOpen ? 'flex flex-col' : 'hidden lg:flex lg:flex-col'
-            }`}
+            className={
+              editorOpen
+                ? 'fixed inset-0 z-[45] flex flex-col overflow-hidden bg-white dark:bg-racing-900 pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] px-3 sm:px-5 lg:static lg:inset-auto lg:z-auto lg:overflow-y-auto lg:overscroll-contain lg:rounded-2xl lg:border lg:border-gray-100 lg:dark:border-racing-850 lg:bg-white/70 lg:dark:bg-racing-900/70 lg:p-5 lg:pt-5 lg:pb-5 lg:backdrop-blur-apple'
+                : 'hidden flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-gray-100 dark:border-racing-850 bg-white/70 dark:bg-racing-900/70 p-4 sm:p-5 backdrop-blur-apple lg:flex lg:flex-col'
+            }
           >
             {editorOpen && (
-              <button
-                type="button"
-                onClick={closeEditor}
-                className="mb-3 flex min-h-11 w-full items-center gap-2 rounded-xl px-2 text-sm font-semibold text-accent touch-manipulation lg:hidden"
-              >
-                <ChevronLeft size={20} />
-                {t('backToList')}
-              </button>
-            )}
-            {isCreating ? (
-              <div className="flex flex-col gap-4">
-                <input
-                  autoFocus
-                  type="text"
-                  value={noteTitle}
-                  onChange={(e) => setNoteTitle(e.target.value)}
-                  placeholder={t('editor.titlePlaceholder')}
-                  className="w-full text-lg font-bold bg-transparent border-b border-gray-100 dark:border-racing-800 focus:border-accent focus:outline-none pb-1.5"
-                />
-                <Toolbar />
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 mb-1.5">{t('editor.categoryLabel')}</label>
-                  <select
-                    value={createColId}
-                    onChange={(e) => setCreateColId(e.target.value)}
-                    className="w-full min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base focus:border-accent focus:outline-none dark:border-racing-700 font-medium"
-                  >
-                    {columns.map((c) => (
-                      <option key={c.id} value={c.id}>{c.title}</option>
-                    ))}
-                  </select>
-                </div>
-                <textarea
-                  value={noteContent}
-                  onChange={(e) => setNoteContent(e.target.value)}
-                  placeholder={t('editor.contentPlaceholder')}
-                  rows={10}
-                  className="w-full rounded-xl border border-gray-200 bg-transparent px-3.5 py-3 text-base focus:border-accent focus:outline-none dark:border-racing-700 leading-relaxed"
-                />
-                <BrainChecklist
-                  items={noteChecklist}
-                  onAdd={(text) => setNoteChecklist((prev) => [...prev, { id: createId(), text, done: false }])}
-                  onToggle={(id) => setNoteChecklist((prev) => prev.map((it) => (it.id === id ? { ...it, done: !it.done } : it)))}
-                  onDelete={(id) => setNoteChecklist((prev) => prev.filter((it) => it.id !== id))}
-                />
-                <AudioPlayback />
-                {aiError && <p className="text-sm text-red-500">{aiError}</p>}
-                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end mt-1 pt-3 border-t border-gray-100 dark:border-racing-800 sticky bottom-0 bg-white/90 dark:bg-racing-900/90 backdrop-blur-sm pb-[max(0.25rem,env(safe-area-inset-bottom))] sm:static sm:bg-transparent sm:backdrop-blur-none sm:pb-0">
-                  <button
-                    type="button"
-                    onClick={() => setIsCreating(false)}
-                    className="min-h-11 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold touch-manipulation hover:bg-gray-50 dark:border-racing-800 dark:hover:bg-racing-800"
-                  >
-                    {t('editor.discard')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSaveNewPage}
-                    className="min-h-11 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent-dark transition-all shadow-sm touch-manipulation"
-                  >
-                    {t('editor.saveAndCreate')}
-                  </button>
-                </div>
-              </div>
-            ) : activePage ? (
-              <div className="flex flex-col gap-4">
-                <input
-                  type="text"
-                  value={noteTitle}
-                  onChange={(e) => setNoteTitle(e.target.value)}
-                  placeholder={t('editor.titlePlaceholderEdit')}
-                  className="w-full text-lg font-bold bg-transparent border-b border-gray-100 dark:border-racing-800 focus:border-accent focus:outline-none pb-1.5"
-                />
-                <Toolbar />
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 mb-1.5">{t('editor.categoryLabel')}</label>
-                  <select
-                    value={activePage.columnId}
-                    onChange={(e) => {
-                      const colId = e.target.value
-                      updatePage(activePage.id, { columnId: colId })
-                      setActivePage((prev) => (prev ? { ...prev, columnId: colId } : null))
-                    }}
-                    className="w-full min-h-11 max-w-full sm:max-w-xs rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base focus:border-accent focus:outline-none dark:border-racing-700 font-medium"
-                  >
-                    {columns.map((c) => (
-                      <option key={c.id} value={c.id}>{c.title}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <input
-                    value={noteTags}
-                    onChange={(e) => setNoteTags(e.target.value)}
-                    placeholder={t('editor.tagsPlaceholder')}
-                    className="min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700"
-                  />
-                  <input
-                    value={notePeople}
-                    onChange={(e) => setNotePeople(e.target.value)}
-                    placeholder={t('editor.peoplePlaceholder')}
-                    className="min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700"
-                  />
-                </div>
-                {boards.length > 0 && (
-                  <select
-                    value={noteLinkedBoardId}
-                    onChange={(e) => setNoteLinkedBoardId(e.target.value)}
-                    className="w-full min-h-11 max-w-full sm:max-w-xs rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700"
-                  >
-                    <option value="">{t('editor.linkProject')}</option>
-                    {boards.map((b) => (
-                      <option key={b.id} value={b.id}>{b.title}</option>
-                    ))}
-                  </select>
-                )}
-                <textarea
-                  value={noteContent}
-                  onChange={(e) => setNoteContent(e.target.value)}
-                  placeholder={t('editor.contentPlaceholder')}
-                  rows={10}
-                  className="w-full rounded-xl border border-gray-200 bg-transparent px-3.5 py-3 text-base focus:border-accent focus:outline-none dark:border-racing-700 leading-relaxed"
-                />
-                <BrainChecklist
-                  items={activePage.checklist ?? []}
-                  onAdd={(text) => {
-                    const updated = [...(activePage.checklist ?? []), { id: createId(), text, done: false }]
-                    updatePage(activePage.id, { checklist: updated })
-                    setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
-                  }}
-                  onToggle={(id) => {
-                    const updated = (activePage.checklist ?? []).map((it) => (it.id === id ? { ...it, done: !it.done } : it))
-                    updatePage(activePage.id, { checklist: updated })
-                    setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
-                  }}
-                  onDelete={(id) => {
-                    const updated = (activePage.checklist ?? []).filter((it) => it.id !== id)
-                    updatePage(activePage.id, { checklist: updated })
-                    setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
-                  }}
-                />
-                <AudioPlayback
-                  onDelete={() => {
-                    if (confirm(t('audio.confirmDelete'))) {
-                      setAudioUrl(null)
-                      updatePage(activePage.id, { audioBase64: undefined })
-                      setActivePage((prev) => (prev ? { ...prev, audioBase64: undefined } : null))
-                    }
-                  }}
-                />
-                {activePage.summary && (
-                  <div className="rounded-xl bg-emerald-50/50 dark:bg-racing-950/40 p-3.5 border border-emerald-100/50 dark:border-racing-850 flex flex-col gap-2">
-                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                      <Sparkles size={13} /> {t('editor.aiSummaryTitle')}
-                    </span>
-                    <div className="text-sm leading-relaxed text-gray-700 dark:text-racing-200 whitespace-pre-wrap border-l-2 border-emerald-400 pl-3">
-                      {activePage.summary}
+              <div className="flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 lg:gap-4">
+                <button
+                  type="button"
+                  onClick={closeEditor}
+                  className="flex h-10 w-full flex-shrink-0 items-center gap-1.5 rounded-xl px-1 text-sm font-semibold text-accent touch-manipulation lg:hidden"
+                >
+                  <ChevronLeft size={20} />
+                  {t('backToList')}
+                </button>
+                {isCreating ? (
+                  <div className="flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 lg:gap-4">
+                    <input
+                      autoFocus
+                      type="text"
+                      value={noteTitle}
+                      onChange={(e) => setNoteTitle(e.target.value)}
+                      placeholder={t('editor.titlePlaceholder')}
+                      className="w-full flex-shrink-0 text-xl sm:text-lg font-bold bg-transparent border-b border-gray-100 dark:border-racing-800 focus:border-accent focus:outline-none pb-1.5"
+                    />
+                    <Toolbar />
+                    {/* Meta fields collapsed on mobile to maximize content space */}
+                    <div className="flex-shrink-0 lg:contents">
+                      <button
+                        type="button"
+                        onClick={() => setEditorMetaOpen((v) => !v)}
+                        className="flex min-h-10 w-full items-center justify-between gap-2 rounded-xl border border-gray-100 px-3 py-2 text-sm font-semibold text-gray-500 touch-manipulation dark:border-racing-800 lg:hidden"
+                      >
+                        <span>{t('editor.categoryLabel')}</span>
+                        {editorMetaOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      </button>
+                      <div className={`${editorMetaOpen ? 'flex' : 'hidden'} flex-col gap-2 lg:flex lg:contents`}>
+                        <div className="lg:block">
+                          <label className="mb-1.5 hidden text-xs font-semibold text-gray-400 lg:block">{t('editor.categoryLabel')}</label>
+                          <select
+                            value={createColId}
+                            onChange={(e) => setCreateColId(e.target.value)}
+                            className="w-full min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base focus:border-accent focus:outline-none dark:border-racing-700 font-medium"
+                          >
+                            {columns.map((c) => (
+                              <option key={c.id} value={c.id}>{c.title}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (confirm(t('editor.confirmDeleteSummary'))) {
-                          updatePage(activePage.id, { summary: undefined })
-                          setActivePage((prev) => (prev ? { ...prev, summary: undefined } : null))
-                        }
-                      }}
-                      className="min-h-11 self-start rounded-lg px-2 text-sm text-red-500 font-semibold touch-manipulation"
-                    >
-                      {t('editor.deleteSummary')}
-                    </button>
+                    <textarea
+                      value={noteContent}
+                      onChange={(e) => setNoteContent(e.target.value)}
+                      placeholder={t('editor.contentPlaceholder')}
+                      className="min-h-0 w-full flex-1 resize-none rounded-xl border border-gray-200 bg-transparent px-3.5 py-3 text-lg leading-relaxed focus:border-accent focus:outline-none dark:border-racing-700 max-lg:min-h-[calc(100dvh-10.5rem)] lg:min-h-[16rem] lg:flex-none lg:text-base"
+                    />
+                    <div className="hidden flex-shrink-0 space-y-3 lg:block">
+                      <BrainChecklist
+                        items={noteChecklist}
+                        onAdd={(text) => setNoteChecklist((prev) => [...prev, { id: createId(), text, done: false }])}
+                        onToggle={(id) => setNoteChecklist((prev) => prev.map((it) => (it.id === id ? { ...it, done: !it.done } : it)))}
+                        onDelete={(id) => setNoteChecklist((prev) => prev.filter((it) => it.id !== id))}
+                      />
+                      <AudioPlayback />
+                      {aiError && <p className="text-sm text-red-500">{aiError}</p>}
+                    </div>
+                    {editorMetaOpen && (
+                      <div className="flex-shrink-0 space-y-2 overflow-y-auto max-h-[30vh] lg:hidden">
+                        <BrainChecklist
+                          items={noteChecklist}
+                          onAdd={(text) => setNoteChecklist((prev) => [...prev, { id: createId(), text, done: false }])}
+                          onToggle={(id) => setNoteChecklist((prev) => prev.map((it) => (it.id === id ? { ...it, done: !it.done } : it)))}
+                          onDelete={(id) => setNoteChecklist((prev) => prev.filter((it) => it.id !== id))}
+                        />
+                        <AudioPlayback />
+                        {aiError && <p className="text-sm text-red-500">{aiError}</p>}
+                      </div>
+                    )}
+                    <div className="flex flex-shrink-0 flex-col-reverse gap-2 sm:flex-row sm:justify-end mt-auto pt-2 border-t border-gray-100 dark:border-racing-800 pb-[max(0.25rem,env(safe-area-inset-bottom))] sm:pb-0">
+                      <button
+                        type="button"
+                        onClick={() => setIsCreating(false)}
+                        className="min-h-11 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold touch-manipulation hover:bg-gray-50 dark:border-racing-800 dark:hover:bg-racing-800"
+                      >
+                        {t('editor.discard')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveNewPage}
+                        className="min-h-11 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent-dark transition-all shadow-sm touch-manipulation"
+                      >
+                        {t('editor.saveAndCreate')}
+                      </button>
+                    </div>
                   </div>
-                )}
-                {aiError && <p className="text-sm text-red-500">{aiError}</p>}
-                <div className="flex justify-between items-center gap-2 mt-1 pt-3 border-t border-gray-100 dark:border-racing-800 sticky bottom-0 bg-white/90 dark:bg-racing-900/90 backdrop-blur-sm pb-[max(0.25rem,env(safe-area-inset-bottom))] sm:static sm:bg-transparent sm:backdrop-blur-none sm:pb-0">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (confirm(t('editor.confirmDeleteNote'))) {
-                        deletePage(activePage.id)
-                        setActivePage(null)
-                      }
-                    }}
-                    className="min-h-11 rounded-xl px-3 text-sm font-semibold text-red-500 touch-manipulation"
-                  >
-                    {t('editor.delete')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSavePage}
-                    className="min-h-11 rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:bg-accent-dark transition-all shadow-sm touch-manipulation"
-                  >
-                    {justSaved ? t('editor.saved') : t('editor.save')}
-                  </button>
-                </div>
+                ) : activePage ? (
+                  <div className="flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 lg:gap-4">
+                    <input
+                      type="text"
+                      value={noteTitle}
+                      onChange={(e) => setNoteTitle(e.target.value)}
+                      placeholder={t('editor.titlePlaceholderEdit')}
+                      className="w-full flex-shrink-0 text-xl sm:text-lg font-bold bg-transparent border-b border-gray-100 dark:border-racing-800 focus:border-accent focus:outline-none pb-1.5"
+                    />
+                    <Toolbar />
+                    <div className="flex-shrink-0 lg:contents">
+                      <button
+                        type="button"
+                        onClick={() => setEditorMetaOpen((v) => !v)}
+                        className="flex min-h-10 w-full items-center justify-between gap-2 rounded-xl border border-gray-100 px-3 py-2 text-sm font-semibold text-gray-500 touch-manipulation dark:border-racing-800 lg:hidden"
+                      >
+                        <span>{t('editor.categoryLabel')} · Tags</span>
+                        {editorMetaOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      </button>
+                      <div className={`${editorMetaOpen ? 'flex' : 'hidden'} flex-col gap-2 lg:flex lg:contents`}>
+                        <div className="lg:block">
+                          <label className="mb-1.5 hidden text-xs font-semibold text-gray-400 lg:block">{t('editor.categoryLabel')}</label>
+                          <select
+                            value={activePage.columnId}
+                            onChange={(e) => {
+                              const colId = e.target.value
+                              updatePage(activePage.id, { columnId: colId })
+                              setActivePage((prev) => (prev ? { ...prev, columnId: colId } : null))
+                            }}
+                            className="w-full min-h-11 max-w-full sm:max-w-xs rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base focus:border-accent focus:outline-none dark:border-racing-700 font-medium"
+                          >
+                            {columns.map((c) => (
+                              <option key={c.id} value={c.id}>{c.title}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:contents">
+                          <input
+                            value={noteTags}
+                            onChange={(e) => setNoteTags(e.target.value)}
+                            placeholder={t('editor.tagsPlaceholder')}
+                            className="min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700 lg:mt-0"
+                          />
+                          <input
+                            value={notePeople}
+                            onChange={(e) => setNotePeople(e.target.value)}
+                            placeholder={t('editor.peoplePlaceholder')}
+                            className="min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700"
+                          />
+                        </div>
+                        {boards.length > 0 && (
+                          <select
+                            value={noteLinkedBoardId}
+                            onChange={(e) => setNoteLinkedBoardId(e.target.value)}
+                            className="w-full min-h-11 max-w-full sm:max-w-xs rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700"
+                          >
+                            <option value="">{t('editor.linkProject')}</option>
+                            {boards.map((b) => (
+                              <option key={b.id} value={b.id}>{b.title}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                    </div>
+                    <textarea
+                      value={noteContent}
+                      onChange={(e) => setNoteContent(e.target.value)}
+                      placeholder={t('editor.contentPlaceholder')}
+                      className="min-h-0 w-full flex-1 resize-none rounded-xl border border-gray-200 bg-transparent px-3.5 py-3 text-lg leading-relaxed focus:border-accent focus:outline-none dark:border-racing-700 max-lg:min-h-[calc(100dvh-10.5rem)] lg:min-h-[16rem] lg:flex-none lg:text-base"
+                    />
+                    <div className="hidden flex-shrink-0 space-y-3 lg:block">
+                      <BrainChecklist
+                        items={activePage.checklist ?? []}
+                        onAdd={(text) => {
+                          const updated = [...(activePage.checklist ?? []), { id: createId(), text, done: false }]
+                          updatePage(activePage.id, { checklist: updated })
+                          setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
+                        }}
+                        onToggle={(id) => {
+                          const updated = (activePage.checklist ?? []).map((it) => (it.id === id ? { ...it, done: !it.done } : it))
+                          updatePage(activePage.id, { checklist: updated })
+                          setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
+                        }}
+                        onDelete={(id) => {
+                          const updated = (activePage.checklist ?? []).filter((it) => it.id !== id)
+                          updatePage(activePage.id, { checklist: updated })
+                          setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
+                        }}
+                      />
+                      <AudioPlayback
+                        onDelete={() => {
+                          if (confirm(t('audio.confirmDelete'))) {
+                            setAudioUrl(null)
+                            updatePage(activePage.id, { audioBase64: undefined })
+                            setActivePage((prev) => (prev ? { ...prev, audioBase64: undefined } : null))
+                          }
+                        }}
+                      />
+                      {activePage.summary && (
+                        <div className="rounded-xl bg-emerald-50/50 dark:bg-racing-950/40 p-3.5 border border-emerald-100/50 dark:border-racing-850 flex flex-col gap-2">
+                          <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                            <Sparkles size={13} /> {t('editor.aiSummaryTitle')}
+                          </span>
+                          <div className="text-sm leading-relaxed text-gray-700 dark:text-racing-200 whitespace-pre-wrap border-l-2 border-emerald-400 pl-3">
+                            {activePage.summary}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm(t('editor.confirmDeleteSummary'))) {
+                                updatePage(activePage.id, { summary: undefined })
+                                setActivePage((prev) => (prev ? { ...prev, summary: undefined } : null))
+                              }
+                            }}
+                            className="min-h-11 self-start rounded-lg px-2 text-sm text-red-500 font-semibold touch-manipulation"
+                          >
+                            {t('editor.deleteSummary')}
+                          </button>
+                        </div>
+                      )}
+                      {aiError && <p className="text-sm text-red-500">{aiError}</p>}
+                    </div>
+                    {editorMetaOpen && (
+                      <div className="flex-shrink-0 space-y-2 overflow-y-auto max-h-[30vh] lg:hidden">
+                        <BrainChecklist
+                          items={activePage.checklist ?? []}
+                          onAdd={(text) => {
+                            const updated = [...(activePage.checklist ?? []), { id: createId(), text, done: false }]
+                            updatePage(activePage.id, { checklist: updated })
+                            setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
+                          }}
+                          onToggle={(id) => {
+                            const updated = (activePage.checklist ?? []).map((it) => (it.id === id ? { ...it, done: !it.done } : it))
+                            updatePage(activePage.id, { checklist: updated })
+                            setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
+                          }}
+                          onDelete={(id) => {
+                            const updated = (activePage.checklist ?? []).filter((it) => it.id !== id)
+                            updatePage(activePage.id, { checklist: updated })
+                            setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
+                          }}
+                        />
+                        <AudioPlayback
+                          onDelete={() => {
+                            if (confirm(t('audio.confirmDelete'))) {
+                              setAudioUrl(null)
+                              updatePage(activePage.id, { audioBase64: undefined })
+                              setActivePage((prev) => (prev ? { ...prev, audioBase64: undefined } : null))
+                            }
+                          }}
+                        />
+                        {activePage.summary && (
+                          <div className="rounded-xl bg-emerald-50/50 dark:bg-racing-950/40 p-3 border border-emerald-100/50 dark:border-racing-850 flex flex-col gap-2">
+                            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                              <Sparkles size={13} /> {t('editor.aiSummaryTitle')}
+                            </span>
+                            <div className="text-sm leading-relaxed text-gray-700 dark:text-racing-200 whitespace-pre-wrap border-l-2 border-emerald-400 pl-3">
+                              {activePage.summary}
+                            </div>
+                          </div>
+                        )}
+                        {aiError && <p className="text-sm text-red-500">{aiError}</p>}
+                      </div>
+                    )}
+                    <div className="flex flex-shrink-0 justify-between items-center gap-2 mt-auto pt-2 border-t border-gray-100 dark:border-racing-800 pb-[max(0.25rem,env(safe-area-inset-bottom))] sm:pb-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm(t('editor.confirmDeleteNote'))) {
+                            deletePage(activePage.id)
+                            setActivePage(null)
+                          }
+                        }}
+                        className="min-h-11 rounded-xl px-3 text-sm font-semibold text-red-500 touch-manipulation"
+                      >
+                        {t('editor.delete')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSavePage}
+                        className="min-h-11 rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:bg-accent-dark transition-all shadow-sm touch-manipulation"
+                      >
+                        {justSaved ? t('editor.saved') : t('editor.save')}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
-            ) : (
+            )}
+            {!editorOpen && (
               <div className="flex h-full min-h-[40vh] flex-col items-center justify-center text-center text-gray-400">
                 <FileText size={32} className="mb-3 opacity-40" />
                 <p className="text-sm px-4">{t('editor.emptyState')}</p>
