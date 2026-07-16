@@ -12,7 +12,7 @@ const GUIDE_SECTIONS = [
   { key: 'calendar', icon: CalendarDays, to: '/calendar', color: 'text-orange-500' },
   { key: 'worktime', icon: Clock, to: '/arbeitszeit', color: 'text-cyan-500' },
   { key: 'ai', icon: Sparkles, to: '/ki-termine', color: 'text-violet-500' },
-  { key: 'brain', icon: Brain, to: '/gehirn', color: 'text-amber-500' },
+  { key: 'brain', icon: Brain, to: '/creative-board', color: 'text-amber-500' },
   { key: 'eisenhower', icon: Grid2x2, to: '/eisenhower', color: 'text-pink-500' },
   { key: 'team', icon: Users, to: '/friends', color: 'text-indigo-500' },
   { key: 'chat', icon: MessageCircle, to: '/chat', color: 'text-teal-500' },

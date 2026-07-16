@@ -21,6 +21,7 @@ import { useBrainStore, NotePage, NoteColumn, NoteChecklistItem } from '../store
 import { useBoardsStore } from '../store/boardsStore'
 import { createId } from '../utils/id'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { useCreativeBoardStore, type CreativeInviteRole } from '../store/creativeBoardStore'
 
 export default function SecondBrainPage() {
   const { t } = useTranslation('brain')
@@ -35,19 +36,38 @@ export default function SecondBrainPage() {
   const deletePage = useBrainStore((s) => s.deletePage)
   const fetchAll = useBrainStore((s) => s.fetchAll)
   const subscribeToBrain = useBrainStore((s) => s.subscribeToBrain)
+  const moodItems = useCreativeBoardStore((s) => s.moodItems)
+  const fetchMoodItems = useCreativeBoardStore((s) => s.fetchMoodItems)
+  const addMoodItem = useCreativeBoardStore((s) => s.addMoodItem)
+  const deleteMoodItem = useCreativeBoardStore((s) => s.deleteMoodItem)
+  const searchProfiles = useCreativeBoardStore((s) => s.searchProfiles)
+  const inviteToCreativeBoard = useCreativeBoardStore((s) => s.inviteToCreativeBoard)
+  const incomingInvites = useCreativeBoardStore((s) => s.incomingInvites)
+  const fetchIncomingInvites = useCreativeBoardStore((s) => s.fetchIncomingInvites)
+  const acceptInvite = useCreativeBoardStore((s) => s.acceptInvite)
+  const declineInvite = useCreativeBoardStore((s) => s.declineInvite)
 
   useEffect(() => {
     if (isSupabaseConfigured) {
       void fetchAll()
+      void fetchMoodItems()
+      void fetchIncomingInvites()
       const unsubscribe = subscribeToBrain()
       return () => unsubscribe()
     }
-  }, [fetchAll, subscribeToBrain])
+  }, [fetchAll, subscribeToBrain, fetchMoodItems, fetchIncomingInvites])
 
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState<'all' | string>('all')
   const [activePage, setActivePage] = useState<NotePage | null>(null)
   const [showAddColumn, setShowAddColumn] = useState(false)
+  const [activeSection, setActiveSection] = useState<'notes' | 'moodboard'>('notes')
+  const [inviteQuery, setInviteQuery] = useState('')
+  const [inviteRole, setInviteRole] = useState<CreativeInviteRole>('editor')
+  const [inviteHits, setInviteHits] = useState<Array<{ id: string; display_name: string; username: string; avatar_color: string }>>([])
+  const [moodTitle, setMoodTitle] = useState('')
+  const [moodType, setMoodType] = useState<'note' | 'image' | 'link'>('note')
+  const [moodValue, setMoodValue] = useState('')
   const [newColTitle, setNewColTitle] = useState('')
   const [editingColId, setEditingColId] = useState<string | null>(null)
   const [editingColTitle, setEditingColTitle] = useState('')
@@ -397,6 +417,40 @@ ${textToSummarize}`
 
   const columnTitle = (id: string) => columns.find((c) => c.id === id)?.title ?? ''
 
+  async function runInviteSearch(value: string) {
+    setInviteQuery(value)
+    if (value.trim().length < 2) {
+      setInviteHits([])
+      return
+    }
+    const hits = await searchProfiles(value)
+    setInviteHits(hits)
+  }
+
+  async function sendInvite(userId: string) {
+    const err = await inviteToCreativeBoard(userId, inviteRole)
+    if (!err) {
+      setInviteQuery('')
+      setInviteHits([])
+      return
+    }
+    alert(err)
+  }
+
+  async function addMoodboardItem() {
+    if (!moodTitle.trim()) return
+    await addMoodItem({
+      title: moodTitle.trim(),
+      type: moodType,
+      textContent: moodType === 'note' ? moodValue : undefined,
+      imageUrl: moodType === 'image' ? moodValue : undefined,
+      linkUrl: moodType === 'link' ? moodValue : undefined,
+      position: moodItems.length,
+    })
+    setMoodTitle('')
+    setMoodValue('')
+  }
+
   // Shared toolbar for the create/edit detail pane
   function Toolbar() {
     return (
@@ -487,8 +541,47 @@ ${textToSummarize}`
   return (
     <div className="flex flex-col gap-4 h-full min-h-[60vh] sm:min-h-[75vh]">
       <h1 className="text-xl font-semibold sm:text-2xl">{t('title')}</h1>
+      <div className="flex items-center gap-2">
+        <button onClick={() => setActiveSection('notes')} className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${activeSection === 'notes' ? 'bg-accent text-white' : 'bg-gray-100 dark:bg-racing-800'}`}>{t('notesTab')}</button>
+        <button onClick={() => setActiveSection('moodboard')} className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${activeSection === 'moodboard' ? 'bg-accent text-white' : 'bg-gray-100 dark:bg-racing-800'}`}>{t('moodboardTab')}</button>
+      </div>
+      <div className="rounded-xl border border-gray-100 bg-white/70 p-3 dark:border-racing-850 dark:bg-racing-900/70">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">{t('inviteTitle')}</p>
+        <div className="flex flex-wrap gap-2">
+          <input value={inviteQuery} onChange={(e) => void runInviteSearch(e.target.value)} placeholder={t('invitePlaceholder')} className="min-w-[220px] flex-1 rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm dark:border-racing-700" />
+          <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value as CreativeInviteRole)} className="rounded-lg border border-gray-200 bg-transparent px-2 py-2 text-xs dark:border-racing-700">
+            <option value="owner">{t('inviteRoleOwner')}</option>
+            <option value="editor">{t('inviteRoleEditor')}</option>
+            <option value="viewer">{t('inviteRoleViewer')}</option>
+          </select>
+        </div>
+        {inviteHits.length > 0 && (
+          <div className="mt-2 flex flex-col gap-1">
+            {inviteHits.map((u) => (
+              <button key={u.id} onClick={() => void sendInvite(u.id)} className="flex items-center justify-between rounded-lg px-2 py-1.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-racing-800">
+                <span>{u.display_name} <span className="text-xs text-gray-400">@{u.username}</span></span>
+                <span className="text-xs font-semibold text-accent">{t('inviteSend')}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        {incomingInvites.length > 0 && (
+          <div className="mt-3 border-t border-gray-100 pt-2 dark:border-racing-800">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">{t('incomingInvites')}</p>
+            {incomingInvites.map((inv) => (
+              <div key={inv.id} className="mb-1 flex items-center justify-between rounded-lg bg-black/[0.03] px-2 py-1.5 text-xs dark:bg-white/[0.04]">
+                <span>{inv.fromUser?.display_name} ({inv.role})</span>
+                <div className="flex gap-1">
+                  <button onClick={() => void acceptInvite(inv.id)} className="rounded bg-emerald-500 px-2 py-0.5 text-white">{t('acceptInvite')}</button>
+                  <button onClick={() => void declineInvite(inv.id)} className="rounded bg-gray-200 px-2 py-0.5 dark:bg-racing-700">{t('declineInvite')}</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
-      <div className="flex flex-1 flex-col gap-4 min-h-0 lg:flex-row">
+      {activeSection === 'notes' && <div className="flex flex-1 flex-col gap-4 min-h-0 lg:flex-row">
         {/* Left pane: search, tabs, list */}
         <div className="flex w-full flex-shrink-0 flex-col gap-3 lg:w-80">
           <div className="flex items-center gap-2">
@@ -775,7 +868,35 @@ ${textToSummarize}`
             </div>
           )}
         </div>
-      </div>
+      </div>}
+      {activeSection === 'moodboard' && (
+        <div className="rounded-2xl border border-gray-100 bg-white/70 p-4 dark:border-racing-850 dark:bg-racing-900/70">
+          <div className="mb-3 flex flex-wrap gap-2">
+            <input value={moodTitle} onChange={(e) => setMoodTitle(e.target.value)} placeholder={t('moodboardAdd')} className="min-w-[220px] flex-1 rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm dark:border-racing-700" />
+            <select value={moodType} onChange={(e) => setMoodType(e.target.value as 'note' | 'image' | 'link')} className="rounded-lg border border-gray-200 bg-transparent px-2 py-2 text-xs dark:border-racing-700">
+              <option value="note">{t('moodboardText')}</option>
+              <option value="image">{t('moodboardImage')}</option>
+              <option value="link">{t('moodboardLink')}</option>
+            </select>
+            <input value={moodValue} onChange={(e) => setMoodValue(e.target.value)} placeholder={moodType === 'note' ? t('moodboardText') : moodType === 'image' ? t('moodboardImage') : t('moodboardLink')} className="min-w-[220px] flex-1 rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm dark:border-racing-700" />
+            <button onClick={() => void addMoodboardItem()} className="rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-white">{t('moodboardAdd')}</button>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {moodItems.map((item) => (
+              <div key={item.id} className="rounded-xl border border-gray-100 bg-white p-3 dark:border-racing-800 dark:bg-racing-900">
+                <div className="mb-2 flex items-center justify-between">
+                  <h4 className="text-sm font-semibold">{item.title}</h4>
+                  <button onClick={() => void deleteMoodItem(item.id)} className="text-xs text-red-500">{t('editor.delete')}</button>
+                </div>
+                {item.type === 'note' && <p className="text-xs text-gray-500 whitespace-pre-wrap">{item.textContent}</p>}
+                {item.type === 'image' && item.imageUrl && <img src={item.imageUrl} alt={item.title} className="max-h-40 w-full rounded-lg object-cover" />}
+                {item.type === 'link' && item.linkUrl && <a href={item.linkUrl} target="_blank" rel="noreferrer" className="text-xs text-accent underline break-all">{item.linkUrl}</a>}
+              </div>
+            ))}
+            {moodItems.length === 0 && <p className="text-sm text-gray-400">{t('noNotes')}</p>}
+          </div>
+        </div>
+      )}
 
       {/* Spalte hinzufügen Popover */}
       {showAddColumn && (

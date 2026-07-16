@@ -106,7 +106,7 @@ export default function GlobalSearch() {
 
   function goToBrain() {
     close()
-    navigate(`/gehirn`)
+    navigate(`/creative-board`)
   }
 
   const hasResults = results.tasks.length > 0 || results.boards.length > 0 || results.brainPages.length > 0 || results.tags.length > 0
@@ -193,7 +193,7 @@ export default function GlobalSearch() {
 
             {results.brainPages.length > 0 && (
               <div className="mb-2">
-                <p className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Notizen (Gehirn)</p>
+                <p className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Notizen (Creative Board)</p>
                 {results.brainPages.map((page) => (
                   <button
                     key={page.id}

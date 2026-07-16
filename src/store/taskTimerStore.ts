@@ -11,7 +11,7 @@ interface TaskTimerState {
   taskTitle: string | null
   startedAt: number | null
   accumulatedSeconds: number
-  start: (taskId: string, boardId: string, title: string) => void
+  start: (taskId: string, boardId: string | null, title: string) => void
   pause: () => void
   resume: () => void
   stop: () => Promise<void>
@@ -67,7 +67,7 @@ export const useTaskTimerStore = create<TaskTimerState>()(
 
       stop: async () => {
         const s = get()
-        if (!s.taskId || !s.boardId) return
+        if (!s.taskId) return
 
         const totalSeconds = get().getElapsedSeconds()
         const minutes = Math.max(1, Math.round(totalSeconds / 60))
@@ -76,7 +76,8 @@ export const useTaskTimerStore = create<TaskTimerState>()(
         if (userId && minutes > 0) {
           await useTaskTimeStore.getState().addEntry({
             taskId: s.taskId,
-            boardId: s.boardId,
+            boardId: s.boardId ?? undefined,
+            ownerId: s.boardId ? undefined : userId,
             userId,
             minutes,
             date: todayISO(),

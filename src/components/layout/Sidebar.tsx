@@ -171,7 +171,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     { key: 'tasks', to: '/tasks', icon: <ListTodo size={18} />, label: t('sidebar.nav.allTasks'), visible: true, exact: true },
     { key: 'calendar', to: '/calendar', icon: <CalendarDays size={18} />, label: t('sidebar.nav.calendar'), visible: !!featureVisibility.calendar },
     { key: 'termine', to: '/termine', icon: <CalendarClock size={18} />, label: t('sidebar.nav.termine'), visible: true },
-    { key: 'brain', to: '/gehirn', icon: <Brain size={18} />, label: t('sidebar.nav.brain'), visible: true },
+    { key: 'brain', to: '/creative-board', icon: <Brain size={18} />, label: t('sidebar.nav.brain'), visible: true },
     { key: 'memory', to: '/memory', icon: <MessageCircle size={18} />, label: t('sidebar.nav.memory'), visible: true },
     { key: 'eisenhower', to: '/eisenhower', icon: <Grid2x2 size={18} />, label: t('sidebar.nav.eisenhower'), visible: !!featureVisibility.eisenhower },
     { key: 'worktime', to: '/arbeitszeit', icon: <Clock size={18} />, label: t('sidebar.nav.worktime'), visible: !!featureVisibility.worktime },

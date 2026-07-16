@@ -50,7 +50,7 @@ export default function MobileBottomNav() {
           <ListTodo size={20} />
           <span>{t('sidebar.nav.allTasks')}</span>
         </NavLink>
-        <NavLink to="/gehirn" className={itemClass}>
+        <NavLink to="/creative-board" className={itemClass}>
           <Brain size={20} />
           <span>{t('sidebar.nav.brain')}</span>
         </NavLink>

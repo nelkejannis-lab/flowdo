@@ -36,7 +36,10 @@
     "sending": "Sending…",
     "sendQuestion": "Send question",
     "collapse": "Collapse",
-    "showSubtasks": "Show subtasks"
+    "showSubtasks": "Show subtasks",
+    "track": "Track",
+    "pauseTimer": "Pause",
+    "resumeTimer": "Resume"
   },
   "form": {
     "titleNew": "New task",
@@ -107,7 +110,8 @@
       "inbox": "Inbox",
       "completed": "Done",
       "someday": "Someday",
-      "priority": "Priority list"
+      "priority": "Priority list",
+      "tracked": "Tracked Tasks"
     },
     "tabs": {
       "tasks": "All Active",
@@ -117,6 +121,16 @@
       "someday": "Someday",
       "completed": "Done",
       "matrix": "Matrix"
+      ,
+      "tracked": "Tracked"
+    },
+    "tracked": {
+      "from": "From",
+      "to": "To",
+      "total": "Total: {{minutes}} min",
+      "byTask": "By task",
+      "empty": "No tracked entries in this range.",
+      "deletedTask": "Deleted task"
     },
     "inbox": {
       "allDone": "All done. No new notifications.",

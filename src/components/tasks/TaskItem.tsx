@@ -7,6 +7,7 @@ import { useProjectTasksStore } from '../../store/projectTasksStore'
 import { useCommentsStore } from '../../store/commentsStore'
 import { useFriendsStore } from '../../store/friendsStore'
 import { useNotificationsStore } from '../../store/notificationsStore'
+import { useTaskTimerStore } from '../../store/taskTimerStore'
 import { formatFriendlyDate, isOverdue } from '../../utils/date'
 import BoardBadge from '../boards/BoardBadge'
 import PriorityBadge from './PriorityBadge'
@@ -49,6 +50,11 @@ export default function TaskItem({ task, onClick, showBoard = true, priorityRank
   const [askDone, setAskDone] = useState(false)
   const askRef = useRef<HTMLDivElement>(null)
   const commentCount = useCommentsStore((s) => (s.comments[task.id] ?? []).length)
+  const runningTaskId = useTaskTimerStore((s) => s.taskId)
+  const timerRunning = useTaskTimerStore((s) => s.running)
+  const startTimer = useTaskTimerStore((s) => s.start)
+  const pauseTimer = useTaskTimerStore((s) => s.pause)
+  const resumeTimer = useTaskTimerStore((s) => s.resume)
   const overdue = isOverdue(task.dueDate) && !task.completed
   const hasSubtasks = task.subtasks.length > 0
   const subtaskDone = task.subtasks.filter((s) => s.completed).length
@@ -118,6 +124,22 @@ export default function TaskItem({ task, onClick, showBoard = true, priorityRank
               </span>
             )}
             <PriorityBadge priority={task.priority} />
+            {!task.completed && !task.boardId && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  const isCurrent = runningTaskId === task.id
+                  if (!isCurrent) startTimer(task.id, null, task.title)
+                  else if (timerRunning) pauseTimer()
+                  else resumeTimer()
+                }}
+                className="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-100"
+                title={runningTaskId === task.id ? (timerRunning ? t('item.pauseTimer') : t('item.resumeTimer')) : t('item.track')}
+              >
+                {runningTaskId === task.id ? (timerRunning ? t('item.pauseTimer') : t('item.resumeTimer')) : t('item.track')}
+              </button>
+            )}
             {showBoard && task.boardId && <BoardBadge boardId={task.boardId} />}
             {task.tags.map((tag) => (
               <span key={tag} className="hidden sm:inline-block rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:bg-racing-800 dark:text-racing-200">

@@ -29,7 +29,7 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers = {}) {
       if (key === 'k') { e.preventDefault(); handlers.onClockIn?.() }
       if (key === 'p') { e.preventDefault(); handlers.onPause?.() }
       if (key === '/') { e.preventDefault(); handlers.onSearch?.() }
-      if (key === 'g') { e.preventDefault(); handlers.onBrain?.() ?? navigate('/gehirn') }
+      if (key === 'g') { e.preventDefault(); handlers.onBrain?.() ?? navigate('/creative-board') }
       if (key === '?') { e.preventDefault(); handlers.onShowHelp?.() }
     }
     window.addEventListener('keydown', handle)
@@ -45,7 +45,7 @@ export const SHORTCUTS = [
   { key: 'K', description: 'Einstempeln', descriptionDe: 'Einstempeln', descriptionEn: 'Clock in', scope: 'Global' },
   { key: 'P', description: 'Pause', descriptionDe: 'Pause', descriptionEn: 'Break', scope: 'Global' },
   { key: '/', description: 'Suche fokussieren', descriptionDe: 'Suche fokussieren', descriptionEn: 'Focus search', scope: 'Global' },
-  { key: 'G', description: 'Gehirn', descriptionDe: 'Gehirn', descriptionEn: 'Second Brain', scope: 'Global' },
+  { key: 'G', description: 'Creative Board', descriptionDe: 'Creative Board', descriptionEn: 'Creative Board', scope: 'Global' },
   { key: '?', description: 'Shortcuts anzeigen', descriptionDe: 'Shortcuts anzeigen', descriptionEn: 'Show shortcuts', scope: 'Global' },
   { key: 'Esc', description: 'Dialog schließen', descriptionDe: 'Dialog schließen', descriptionEn: 'Close dialog', scope: 'Global' },
 ] as const

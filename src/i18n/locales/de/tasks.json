@@ -36,7 +36,10 @@
     "sending": "Sende…",
     "sendQuestion": "Frage senden",
     "collapse": "Einklappen",
-    "showSubtasks": "Unteraufgaben anzeigen"
+    "showSubtasks": "Unteraufgaben anzeigen",
+    "track": "Tracken",
+    "pauseTimer": "Pausieren",
+    "resumeTimer": "Fortsetzen"
   },
   "form": {
     "titleNew": "Neue Aufgabe",
@@ -107,7 +110,8 @@
       "inbox": "Inbox",
       "completed": "Erledigt",
       "someday": "Irgendwann",
-      "priority": "Prioritätenliste"
+      "priority": "Prioritätenliste",
+      "tracked": "Getrackte Aufgaben"
     },
     "tabs": {
       "tasks": "Alle Aktiven",
@@ -116,7 +120,16 @@
       "priority": "Priorität",
       "someday": "Irgendwann",
       "completed": "Erledigt",
-      "matrix": "Matrix"
+      "matrix": "Matrix",
+      "tracked": "Tracking"
+    },
+    "tracked": {
+      "from": "Von",
+      "to": "Bis",
+      "total": "Gesamt: {{minutes}} Min.",
+      "byTask": "Nach Aufgabe",
+      "empty": "Keine Zeiteinträge im Zeitraum.",
+      "deletedTask": "Gelöschte Aufgabe"
     },
     "inbox": {
       "allDone": "Alles erledigt. Keine neuen Benachrichtigungen.",

@@ -98,7 +98,7 @@ export default function App() {
     onClockIn: () => { if (!isRunning) clockIn() },
     onPause: () => { if (isOnBreak) endBreak(); else if (isRunning) startBreak('break') },
     onSearch: () => document.querySelector<HTMLInputElement>('[data-global-search]')?.focus(),
-    onBrain: () => navigate('/gehirn'),
+    onBrain: () => navigate('/creative-board'),
     onShowHelp: () => setShowShortcuts(true),
   }), [navigate, clockIn, isRunning, isOnBreak, startBreak, endBreak])
 
@@ -197,6 +197,8 @@ export default function App() {
         <Route path="/social/:accountId" element={isSupabaseConfigured ? <SocialAccountDetailPage /> : <Navigate to="/" replace />} />
         <Route path="/instagram-callback" element={<InstagramCallbackPage />} />
         <Route path="/gehirn" element={<SecondBrainPage />} />
+        <Route path="/brain" element={<SecondBrainPage />} />
+        <Route path="/creative-board" element={<SecondBrainPage />} />
         <Route path="/memory" element={<MemoryPage />} />
         <Route path="/meetings" element={<MeetingsPage />} />
         <Route path="/ki-termine" element={isSupabaseConfigured ? <AiSchedulerPage /> : <Navigate to="/" replace />} />

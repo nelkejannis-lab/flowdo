@@ -6,7 +6,8 @@ import { createId } from '../utils/id'
 export interface TaskTimeEntry {
   id: string
   taskId?: string
-  boardId: string
+  boardId?: string
+  ownerId?: string
   userId: string
   minutes: number
   date: string
@@ -17,6 +18,7 @@ export interface TaskTimeEntry {
 interface TaskTimeState {
   entries: TaskTimeEntry[]
   fetchByBoard: (boardId: string) => Promise<void>
+  fetchForUser: () => Promise<void>
   addEntry: (input: Omit<TaskTimeEntry, 'id' | 'createdAt'>) => Promise<void>
   updateEntry: (id: string, updates: Partial<Pick<TaskTimeEntry, 'minutes' | 'date' | 'taskId' | 'note'>>) => Promise<void>
   deleteEntry: (id: string) => Promise<void>
@@ -30,7 +32,8 @@ async function syncEntry(entry: TaskTimeEntry) {
   await supabase.from('task_time_entries').upsert({
     id: entry.id,
     task_id: entry.taskId ?? null,
-    board_id: entry.boardId,
+    board_id: entry.boardId ?? null,
+    owner_id: entry.ownerId ?? null,
     user_id: entry.userId,
     minutes: entry.minutes,
     date: entry.date,
@@ -55,6 +58,7 @@ export const useTaskTimeStore = create<TaskTimeState>()(
           id: r.id,
           taskId: r.task_id ?? undefined,
           boardId: r.board_id,
+          ownerId: undefined,
           userId: r.user_id,
           minutes: r.minutes,
           date: r.date,
@@ -63,6 +67,33 @@ export const useTaskTimeStore = create<TaskTimeState>()(
         }))
         set((s) => ({
           entries: [...s.entries.filter((e) => e.boardId !== boardId), ...fetched],
+        }))
+      },
+
+      fetchForUser: async () => {
+        if (!isSupabaseConfigured) return
+        const { data: userData } = await supabase.auth.getUser()
+        const userId = userData.user?.id
+        if (!userId) return
+        const { data } = await supabase
+          .from('task_time_entries')
+          .select('id, task_id, board_id, owner_id, user_id, minutes, date, note, created_at')
+          .eq('owner_id', userId)
+          .order('date', { ascending: false })
+        const rows = (data ?? []) as { id: string; task_id: string | null; board_id: string | null; owner_id: string | null; user_id: string; minutes: number; date: string; note: string | null; created_at: string }[]
+        const fetched = rows.map((r) => ({
+          id: r.id,
+          taskId: r.task_id ?? undefined,
+          boardId: r.board_id ?? undefined,
+          ownerId: r.owner_id ?? undefined,
+          userId: r.user_id,
+          minutes: r.minutes,
+          date: r.date,
+          note: r.note ?? undefined,
+          createdAt: r.created_at,
+        }))
+        set((s) => ({
+          entries: [...s.entries.filter((e) => e.ownerId !== userId || e.boardId), ...fetched],
         }))
       },
 

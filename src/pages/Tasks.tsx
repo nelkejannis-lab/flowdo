@@ -20,6 +20,7 @@ import PriorityBadge from '../components/tasks/PriorityBadge'
 import { formatFriendlyDate, isDueThisWeek, isDueToday, isOverdue, todayISO, parseTaskInput, isCompletedToday, isCompletedThisWeek, isSnoozed } from '../utils/date'
 import { useAiSchedulerStore } from '../store/aiSchedulerStore'
 import { useQuickTaskModalStore } from '../store/quickTaskModalStore'
+import { useTaskTimeStore } from '../store/taskTimeStore'
 
 const titleKeys: Record<string, string> = {
   today: 'page.titles.today',
@@ -28,6 +29,7 @@ const titleKeys: Record<string, string> = {
   completed: 'page.titles.completed',
   someday: 'page.titles.someday',
   priority: 'page.titles.priority',
+  tracked: 'page.titles.tracked',
 }
 
 export default function TasksPage() {
@@ -67,6 +69,10 @@ export default function TasksPage() {
   const openQuickTaskModal = useQuickTaskModalStore((s) => s.open)
   const [quickInput, setQuickInput] = useState('')
   const [parsingTask, setParsingTask] = useState(false)
+  const timeEntries = useTaskTimeStore((s) => s.entries)
+  const fetchTrackedEntries = useTaskTimeStore((s) => s.fetchForUser)
+  const [rangeStart, setRangeStart] = useState('')
+  const [rangeEnd, setRangeEnd] = useState('')
 
   useEffect(() => {
     setSearchQuery('')
@@ -89,8 +95,9 @@ export default function TasksPage() {
       fetchMyProjectTasks()
       fetchTasks()
       fetchCalendarEntries()
+      fetchTrackedEntries()
     }
-  }, [fetchBoards, fetchMyProjectTasks, fetchTasks, fetchCalendarEntries])
+  }, [fetchBoards, fetchMyProjectTasks, fetchTasks, fetchCalendarEntries, fetchTrackedEntries])
 
   const allTasks = [...tasks, ...myProjectTasks]
 
@@ -126,6 +133,8 @@ export default function TasksPage() {
   } else if (smartList === 'priority') {
     filtered = allTasks.filter((t) => !t.completed && !t.boardId)
     title = t(titleKeys.priority)
+  } else if (smartList === 'tracked') {
+    title = t(titleKeys.tracked)
   }
 
   const filterForPills = useMemo(() => {
@@ -199,6 +208,24 @@ export default function TasksPage() {
   }
 
   const today = todayISO()
+  const trackedEntries = useMemo(() => {
+    const start = rangeStart || '0000-01-01'
+    const end = rangeEnd || '9999-12-31'
+    return timeEntries
+      .filter((e) => !e.boardId && e.taskId && e.date >= start && e.date <= end)
+      .sort((a, b) => b.date.localeCompare(a.date))
+  }, [timeEntries, rangeStart, rangeEnd])
+  const trackedByTask = useMemo(() => {
+    const map: Record<string, { title: string; minutes: number }> = {}
+    for (const e of trackedEntries) {
+      if (!e.taskId) continue
+      const task = allTasks.find((t) => t.id === e.taskId)
+      const key = e.taskId
+      map[key] = map[key] ?? { title: task?.title ?? t('page.tracked.deletedTask'), minutes: 0 }
+      map[key].minutes += e.minutes
+    }
+    return Object.entries(map).sort((a, b) => b[1].minutes - a[1].minutes)
+  }, [trackedEntries, allTasks, t])
 
   // ISO date of Sunday this week
   const weekEndDate = (() => {
@@ -365,6 +392,17 @@ export default function TasksPage() {
             <Grid2x2 size={14} />
             {t('page.tabs.matrix')}
           </Link>
+          <Link
+            to="/tasks/tracked"
+            className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+              smartList === 'tracked'
+                ? 'border-accent text-accent'
+                : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-racing-200'
+            }`}
+          >
+            <Bell size={14} />
+            {t('page.tabs.tracked')}
+          </Link>
         </div>
       )}
 
@@ -491,6 +529,34 @@ export default function TasksPage() {
 
       {smartList === 'matrix' ? (
         <TaskEisenhowerGrid tasks={allTasks} />
+      ) : smartList === 'tracked' ? (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+            <label className="text-xs font-medium text-gray-500">
+              {t('page.tracked.from')}
+              <input type="date" value={rangeStart} onChange={(e) => setRangeStart(e.target.value)} className="mt-1 block rounded-lg border border-gray-200 px-2 py-1 dark:border-racing-700 dark:bg-racing-900" />
+            </label>
+            <label className="text-xs font-medium text-gray-500">
+              {t('page.tracked.to')}
+              <input type="date" value={rangeEnd} onChange={(e) => setRangeEnd(e.target.value)} className="mt-1 block rounded-lg border border-gray-200 px-2 py-1 dark:border-racing-700 dark:bg-racing-900" />
+            </label>
+            <div className="ml-auto text-sm font-semibold text-accent">
+              {t('page.tracked.total', { minutes: trackedEntries.reduce((sum, e) => sum + e.minutes, 0) })}
+            </div>
+          </div>
+          <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+            <h3 className="mb-3 text-sm font-semibold">{t('page.tracked.byTask')}</h3>
+            <div className="space-y-2">
+              {trackedByTask.map(([taskId, v]) => (
+                <div key={taskId} className="flex items-center justify-between rounded-lg bg-black/[0.03] px-3 py-2 dark:bg-white/[0.04]">
+                  <span className="truncate text-sm">{v.title}</span>
+                  <span className="text-xs font-semibold text-gray-500">{v.minutes} min</span>
+                </div>
+              ))}
+              {trackedByTask.length === 0 && <p className="text-sm text-gray-400">{t('page.tracked.empty')}</p>}
+            </div>
+          </div>
+        </div>
       ) : smartList === 'inbox' ? (
         <div>
           {boardInvites.length === 0 && teamInvites.length === 0 && incoming.length === 0 && notifications.filter((n) => !n.read || n.type === 'birthday').length === 0 && (
