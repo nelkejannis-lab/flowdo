@@ -104,7 +104,75 @@
     "tasksShort": "Aufgaben",
     "eventsShort": "Termine",
     "insightWeekEmpty": "Diese Woche ist noch ruhig — ideal zum Vorplanen.",
-    "insightWeekPeak": "{{day}} ist der dichteste Tag der Woche."
+    "insightWeekPeak": "{{day}} ist der dichteste Tag der Woche.",
+    "emptyCapacityTitle": "Freiraum da",
+    "emptyCapacityBody": "Noch keine schwere Last — schütze einen Block für Deep Work."
+  },
+  "readiness": {
+    "eyebrow": "Dein Tag mit NOVAT",
+    "metricName": "Tages-Bereitschaft",
+    "scoreShort": "Bereit",
+    "howYoureDoing": "So stehst du da",
+    "whatNext": "Als Nächstes",
+    "streak_one": "{{count}}-Tage-Fokus-Serie",
+    "streak_other": "{{count}}-Tage-Fokus-Serie",
+    "band": {
+      "sharp": "Klar & bereit",
+      "ready": "Fokusbereit",
+      "stretched": "Etwas angespannt",
+      "critical": "Braucht Aufmerksamkeit"
+    },
+    "why": {
+      "balanced": "Kapazität, Prioritäten und offene Dringlichkeiten sind im grünen Bereich — schütze deinen nächsten Fokusblock.",
+      "allClear": "Die Fokusarbeit für heute ist klar. Genieß den Win und schau kurz auf die Woche voraus.",
+      "overdue": "{{count}} überfällige Punkte ziehen die Bereitschaft runter — räume zuerst das Älteste.",
+      "overloaded": "Meetings und erfasste Zeit stapeln sich — kürze die Liste auf die Top-Prioritäten.",
+      "q1Heavy": "{{count}} dringend & wichtige Aufgaben sind offen — erledige eine, bevor du mehr hinzufügst.",
+      "noStatus": "Du hast noch nicht gesetzt, wo du arbeitest — Status setzen, damit der Tag bewusst startet.",
+      "lightDay": "Leichter Tag — seltene Chance für Deep Work oder Vorausplanung.",
+      "streak": "Du bist in einer {{count}}-Tage-Fokus-Serie — halte die Kette mit einem sinnvollen Abschluss.",
+      "progress": "Du hast heute schon {{count}} Fokus-Aufgabe(n) geschlossen — Momentum ist auf deiner Seite."
+    },
+    "factors": {
+      "factorOverdue": "Überfällige Aufgaben senken die Bereitschaft",
+      "factorCapacityHigh": "Hohe Zeit-/Meeting-Last verringert Spielraum",
+      "factorQ1": "Offene Q1 (dringend + wichtig) brauchen Fokus",
+      "factorStatus": "Arbeitsort / Timer noch nicht gesetzt",
+      "factorCapacityLow": "Niedrige Last — Kapazität für Deep Work",
+      "factorStreak": "Fokus-Serie fließt in die Bereitschaft ein"
+    },
+    "next": {
+      "celebrate": "Feiern — dann den ersten Zug für morgen planen",
+      "prepEvent": "Auf den nächsten Termin vorbereiten",
+      "setStatus": "Arbeitsort für heute setzen",
+      "planDay": "Tag in 2 Minuten planen",
+      "overdueTag": "Überfällig"
+    },
+    "delight": {
+      "title": "Heute alles klar",
+      "body": "Fokus-Aufgaben erledigt. Kurz durchatmen — verdient.",
+      "noQ1": "Keine dringend & wichtigen offen",
+      "noQ1Hint": "Dein Eisenhower-Q1 ist leer — gute Kontrolle."
+    },
+    "week": {
+      "eyebrow": "Woche im Fokus",
+      "aiRefresh": "KI vertiefen",
+      "done": "Erledigt",
+      "focusWins": "Fokus-Wins",
+      "remaining": "Offen",
+      "progress": "Wochenfortschritt",
+      "wins": "Wins diese Woche",
+      "quiet": "Bisher ruhige Woche",
+      "quietBody": "Noch wenig Aktivität — gut, 2–3 Prioritäten zu setzen.",
+      "steady": "Solide Woche",
+      "steadyBody": "{{done}} erledigt · {{focus}} Fokus-Wins · {{remaining}} noch offen.",
+      "strong": "Starke Woche",
+      "strongBody": "Du hast den Großteil der Wochenarbeit geschlossen ({{done}}). Die letzten {{remaining}} mit Absicht.",
+      "catchup": "Aufholmodus",
+      "catchupBody": "{{overdue}} überfällige Punkte brauchen Aufmerksamkeit — erst eines räumen.",
+      "peak": "Dichter Tag voraus",
+      "peakBody": "{{day}} ist am dichtesten ({{load}} Punkte) — Fokusblöcke darum schützen."
+    }
   },
   "eventStatus": {
     "ongoing": "läuft",

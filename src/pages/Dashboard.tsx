@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import React, { useEffect, useState, useMemo } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useSocialStore } from '../store/socialStore'
-import { differenceInCalendarDays, format, parseISO } from 'date-fns'
+import { differenceInCalendarDays, format, parseISO, addDays, startOfWeek, isSameDay } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
 import { Plus, CalendarClock, Instagram, TrendingUp, Heart, Bookmark, Users, Loader2, Sliders, Check, X, Sparkles, Flame, Star, ArrowRight, BarChart3 } from 'lucide-react'
 import type { Task, CalendarEntry } from '../types'
@@ -36,12 +36,14 @@ import OnboardingPermissions from '../components/dashboard/OnboardingPermissions
 import OnboardingWizard from '../components/onboarding/OnboardingWizard'
 import MorningReportModal from '../components/dashboard/MorningReportModal'
 import TodayHero from '../components/dashboard/TodayHero'
+import WeeklyInsightCard from '../components/dashboard/WeeklyInsightCard'
 import { DayCapacityWidget, WeekOverviewWidget } from '../components/dashboard/FocusWidgets'
 import { useSettingsStore, DEFAULT_DASHBOARD_WIDGET_ORDER } from '../store/settingsStore'
 import { isDueThisWeek, isDueToday, isOverdue, todayISO, parseNaturalDate, parseTaskInput, parseAppointmentInput, isCompletedToday } from '../utils/date'
 import { useQuickTaskModalStore } from '../store/quickTaskModalStore'
 import { useOfficeStore } from '../store/officeStore'
 import { dayTargetMinutes, formatHM, netMinutes } from '../utils/worktime'
+import { computeDayReadiness, computeWeeklyInsight, type NextAction } from '../lib/dayReadiness'
 
 function isLikelyAppointment(input: string): boolean {
   const lower = input.toLowerCase()
@@ -52,6 +54,7 @@ function isLikelyAppointment(input: string): boolean {
 
 export default function Dashboard() {
   const { t, i18n } = useTranslation('dashboard')
+  const navigate = useNavigate()
   const dateLocale = i18n.language === 'en' ? enUS : de
   const tasks = useTasksStore((s) => s.tasks)
   const fetchTasks = useTasksStore((s) => s.fetchAll)
@@ -244,6 +247,75 @@ export default function Dashboard() {
         : null
   const dayLabel = format(new Date(), 'EEEE, d. MMMM', { locale: dateLocale })
 
+  const readiness = useMemo(
+    () =>
+      computeDayReadiness({
+        tasks: allTasks,
+        capacityPercent,
+        meetingMinutes: meetingMinutesToday,
+        targetMinutes: targetMin,
+        hasWorkStatus: !!todayOffice?.location,
+        isWorkRunning: isRunning,
+        openTodayCount: todayOpenTasks.length,
+        nextEventTitle: nextEvent?.title ?? null,
+      }),
+    [
+      allTasks,
+      capacityPercent,
+      meetingMinutesToday,
+      targetMin,
+      todayOffice?.location,
+      isRunning,
+      todayOpenTasks.length,
+      nextEvent?.title,
+    ],
+  )
+
+  const weekDayLoads = useMemo(() => {
+    const start = startOfWeek(new Date(), { weekStartsOn: 1 })
+    return Array.from({ length: 7 }).map((_, i) => {
+      const d = addDays(start, i)
+      const iso = format(d, 'yyyy-MM-dd')
+      const taskCount = allTasks.filter((tk) => !tk.completed && tk.dueDate === iso).length
+      const entryCount = calendarEntries.filter((e) => {
+        if (e.date === iso) return true
+        if (e.endDate && e.date < iso && e.endDate >= iso) return true
+        return false
+      }).length
+      return {
+        iso,
+        label: format(d, 'EEEE', { locale: dateLocale }),
+        total: taskCount + entryCount,
+        isToday: isSameDay(d, new Date()),
+      }
+    })
+  }, [allTasks, calendarEntries, dateLocale])
+
+  const weeklyInsight = useMemo(
+    () => computeWeeklyInsight(allTasks, weekDayLoads),
+    [allTasks, weekDayLoads],
+  )
+
+  function handleReadinessAction(action: NextAction) {
+    if (action.kind === 'plan' || action.kind === 'celebrate') {
+      setShowAiDayPlanner(true)
+      return
+    }
+    if (action.kind === 'event') {
+      navigate('/calendar')
+      return
+    }
+    if (action.kind === 'status') {
+      const el = document.getElementById('work-office-widget')
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
+    if (action.taskId) {
+      const task = allTasks.find((tk) => tk.id === action.taskId)
+      if (task) setEditingTask(task)
+    }
+  }
+
   return (
     <div>
       <OfficePromptModal />
@@ -276,9 +348,19 @@ export default function Dashboard() {
         targetLabel={formatHM(targetMin)}
         workStatus={workStatusLabel}
         colleagues={colleagues}
+        readiness={readiness}
+        openTodayCount={todayOpenTasks.length}
         onPlanDay={() => setShowAiDayPlanner(true)}
         onOpenBriefing={() => setShowMorningReport(true)}
+        onActionClick={handleReadinessAction}
       />
+
+      <div className="mb-6">
+        <WeeklyInsightCard
+          insight={weeklyInsight}
+          onAiRefresh={() => setShowWeekReport(true)}
+        />
+      </div>
 
       <div className="mb-6">
         <div className="mb-3 flex items-center justify-end gap-3">
@@ -518,7 +600,13 @@ export default function Dashboard() {
                   </h2>
                 </div>
                 {topPriorityTasks.length === 0 ? (
-                  <p className="text-sm text-gray-400">{t('sections.noTopPriority')}</p>
+                  <div className="flex flex-col items-start gap-1 rounded-2xl bg-emerald-500/5 px-3 py-4">
+                    <p className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                      <Check size={15} />
+                      {t('readiness.delight.noQ1')}
+                    </p>
+                    <p className="text-xs text-gray-400">{t('readiness.delight.noQ1Hint')}</p>
+                  </div>
                 ) : (
                   <div className="flex flex-col gap-2">
                     {topPriorityTasks.map((tk) => (

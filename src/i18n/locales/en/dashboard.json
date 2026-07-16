@@ -104,7 +104,75 @@
     "tasksShort": "tasks",
     "eventsShort": "events",
     "insightWeekEmpty": "This week is still calm — a good time to plan ahead.",
-    "insightWeekPeak": "{{day}} is the busiest day this week."
+    "insightWeekPeak": "{{day}} is the busiest day this week.",
+    "emptyCapacityTitle": "Room to breathe",
+    "emptyCapacityBody": "No heavy load yet — protect a block for deep work."
+  },
+  "readiness": {
+    "eyebrow": "Your day with NOVAT",
+    "metricName": "Day Readiness",
+    "scoreShort": "Ready",
+    "howYoureDoing": "How you're doing",
+    "whatNext": "What to do next",
+    "streak_one": "{{count}}-day focus streak",
+    "streak_other": "{{count}}-day focus streak",
+    "band": {
+      "sharp": "Sharp & ready",
+      "ready": "Ready to focus",
+      "stretched": "A bit stretched",
+      "critical": "Needs attention"
+    },
+    "why": {
+      "balanced": "Capacity, priorities and open urgents are in a healthy range — protect your next focus block.",
+      "allClear": "Today's focus work is clear. Enjoy the win, then peek at the week ahead.",
+      "overdue": "{{count}} overdue item(s) are pulling readiness down — clear the oldest first.",
+      "overloaded": "Meetings and tracked time are stacking up — shrink the list to your top priorities.",
+      "q1Heavy": "{{count}} urgent & important tasks are open — tackle one before adding more.",
+      "noStatus": "You haven't set where you're working — set status so the day starts intentionally.",
+      "lightDay": "Light load today — a rare chance for deep work or planning ahead.",
+      "streak": "You're on a {{count}}-day focus streak — keep the chain alive with one meaningful close.",
+      "progress": "You've already closed {{count}} focus task(s) today — momentum is on your side."
+    },
+    "factors": {
+      "factorOverdue": "Overdue tasks lower readiness until cleared",
+      "factorCapacityHigh": "High time/meeting load reduces headroom",
+      "factorQ1": "Open Q1 (urgent + important) tasks need focus",
+      "factorStatus": "Work location / timer not set yet",
+      "factorCapacityLow": "Low load — capacity available for deep work",
+      "factorStreak": "Focus streak contributes to readiness"
+    },
+    "next": {
+      "celebrate": "Celebrate — then plan tomorrow's first move",
+      "prepEvent": "Prep for your next event",
+      "setStatus": "Set work location for today",
+      "planDay": "Plan your day in 2 minutes",
+      "overdueTag": "Overdue"
+    },
+    "delight": {
+      "title": "All clear for today",
+      "body": "Focus tasks done. Take a breath — you've earned it.",
+      "noQ1": "No urgent & important open",
+      "noQ1Hint": "Your Eisenhower Q1 is clear — nice control."
+    },
+    "week": {
+      "eyebrow": "Week in focus",
+      "aiRefresh": "AI deepen",
+      "done": "Done",
+      "focusWins": "Focus wins",
+      "remaining": "Left",
+      "progress": "Week progress",
+      "wins": "Wins this week",
+      "quiet": "Quiet week so far",
+      "quietBody": "Little activity logged yet — a good moment to set 2–3 priorities.",
+      "steady": "Steady week",
+      "steadyBody": "{{done}} completed · {{focus}} focus wins · {{remaining}} still open.",
+      "strong": "Strong week",
+      "strongBody": "You've closed most of this week's work ({{done}} done). Finish the last {{remaining}} with intention.",
+      "catchup": "Catch-up mode",
+      "catchupBody": "{{overdue}} overdue items need attention — clear one before adding new work.",
+      "peak": "Peak day ahead",
+      "peakBody": "{{day}} is densest ({{load}} items) — protect focus blocks around it."
+    }
   },
   "eventStatus": {
     "ongoing": "ongoing",

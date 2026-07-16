@@ -66,11 +66,13 @@ export function DayCapacityWidget({ openTaskCount, meetingMinutes }: CapacityPro
         </div>
       </div>
       <p className="mt-auto text-[11px] leading-relaxed text-gray-400">
-        {pct >= 90
-          ? t('focus.insightFull')
-          : pct >= 50
-            ? t('focus.insightBalanced')
-            : t('focus.insightLight')}
+        {openTaskCount === 0 && meetingMinutes < 15 && pct < 20
+          ? t('focus.emptyCapacityBody')
+          : pct >= 90
+            ? t('focus.insightFull')
+            : pct >= 50
+              ? t('focus.insightBalanced')
+              : t('focus.insightLight')}
       </p>
     </div>
   )

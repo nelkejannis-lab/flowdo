@@ -50,7 +50,7 @@ export default function WorkOfficeWidget() {
   const totalColleagues = colleagueEntries.length
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+    <div id="work-office-widget" className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
       {/* Header */}
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">{t('sections.widgetLabels.workoffice')}</span>
