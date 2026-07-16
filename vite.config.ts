@@ -29,8 +29,12 @@ export default defineConfig({
   },
   plugins: [
     react(),
-    ...(isElectronBuild ? [] : [VitePWA({
-      registerType: 'autoUpdate',
+    // Always register the plugin so `virtual:pwa-register` resolves in Electron builds too.
+    // `disable: true` skips SW generation / registration for desktop (electron-updater owns updates).
+    VitePWA({
+      disable: isElectronBuild,
+      registerType: 'prompt',
+      injectRegister: false,
       includeAssets: ['favicon.svg', 'icons/*.png'],
       manifest: {
         name: 'NOVAT – AI Project Management',
@@ -59,8 +63,10 @@ export default defineConfig({
         ],
       },
       workbox: {
-        skipWaiting: true,
+        // skipWaiting applied when the user accepts the update toast (updateSW(true)).
         clientsClaim: true,
+        cleanupOutdatedCaches: true,
+        navigateFallback: '/index.html',
         maximumFileSizeToCacheInBytes: 5000000,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
@@ -74,6 +80,6 @@ export default defineConfig({
           },
         ],
       },
-    })]),
+    }),
   ],
 })

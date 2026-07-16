@@ -69,6 +69,18 @@ const MIME_TYPES = {
 // with empty storage and the user gets logged out every time.
 const STATIC_SERVER_PORT = 47811
 
+function cacheHeadersFor(ext, urlPath) {
+  // HTML entry must always revalidate so desktop installs don't stick on a stale shell.
+  if (ext === '.html' || urlPath === '/index.html' || urlPath.endsWith('/index.html')) {
+    return { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+  }
+  // Hashed Vite assets are immutable; everything else is short-lived.
+  if (urlPath.includes('/assets/')) {
+    return { 'Cache-Control': 'public, max-age=31536000, immutable' }
+  }
+  return { 'Cache-Control': 'no-cache' }
+}
+
 function startStaticServer(rootDir) {
   return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
@@ -89,13 +101,19 @@ function startStaticServer(rootDir) {
               res.end()
               return
             }
-            res.writeHead(200, { 'Content-Type': 'text/html' })
+            res.writeHead(200, {
+              'Content-Type': 'text/html',
+              ...cacheHeadersFor('.html', '/index.html'),
+            })
             res.end(indexData)
           })
           return
         }
         const ext = path.extname(filePath)
-        res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] || 'application/octet-stream' })
+        res.writeHead(200, {
+          'Content-Type': MIME_TYPES[ext] || 'application/octet-stream',
+          ...cacheHeadersFor(ext, urlPath),
+        })
         res.end(data)
       })
     })
@@ -202,7 +220,10 @@ async function createWindow() {
     // on no longer register one (see vite.config.ts), but installs that already have one
     // active need it purged once so they actually pick up new code instead of stale cache.
     await win.webContents.session.clearStorageData({ storages: ['serviceworkers', 'cachestorage'] })
-    win.loadURL(`http://127.0.0.1:${STATIC_SERVER_PORT}`)
+    await win.webContents.session.clearCache()
+    // Version query busts any leftover Chromium HTTP cache for the document shell.
+    const appVersion = encodeURIComponent(app.getVersion())
+    win.loadURL(`http://127.0.0.1:${STATIC_SERVER_PORT}/?v=${appVersion}`)
   }
 
   // Setup auto-updater IPC to frontend

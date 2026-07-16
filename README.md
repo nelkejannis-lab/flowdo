@@ -41,8 +41,15 @@ Without Supabase env vars the app runs in **local-only mode** (localStorage).
 
 ## Deploy
 
-- **Web:** Vercel (auto on push to `master`, or `npx vercel deploy --prod`)
+- **Web:** Vercel — prefer `npx vercel deploy --prebuilt --prod` after `npm run build`, or `.\scripts\deploy-all.ps1`
 - **Desktop:** GitHub Releases via electron-builder (`npm run electron:build`)
+- **CI:** Workflow template is `scripts/github-deploy-workflow.yml`. Enabling `.github/workflows/deploy.yml` requires a token with **workflow** scope — see [docs/DEPLOY-SECRETS.md](docs/DEPLOY-SECRETS.md).
+
+### Cache / fresh builds after deploy
+
+- **PWA:** `vite-plugin-pwa` with update toast (`src/pwa.ts`); SW checks on focus / hourly; outdated caches cleaned
+- **Vercel:** `index.html` + `sw.js` are `no-cache`; hashed `/assets/*` are immutable
+- **Electron:** no PWA SW in desktop builds; startup clears service worker + HTTP cache; `loadURL` includes `?v=<appVersion>`
 
 ## Security notes
 

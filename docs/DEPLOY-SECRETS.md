@@ -1,8 +1,19 @@
 # Automatic deploy / release (pending GitHub `workflow` scope)
 
-The production workflow lives at `.github/workflows/deploy.yml.local`.
-Rename to `deploy.yml` and push once the GitHub token has **workflow** scope
+Tracked template: `scripts/github-deploy-workflow.yml`
+Local copy (gitignored `*.local`): `.github/workflows/deploy.yml.local`
+
+Enable CI by copying the template to `.github/workflows/deploy.yml` and pushing
+once the GitHub token has **workflow** scope
 (Settings → Developer settings → Personal access tokens → enable `workflow`).
+
+Until then, ship web manually (Vercel still works from local/ship commits):
+
+```powershell
+npm run build
+npx vercel deploy --prebuilt --prod
+# or: .\scripts\deploy-all.ps1
+```
 
 ## Required GitHub Actions secrets (repo `nelkejannis-lab/flowdo`)
 
@@ -14,6 +25,8 @@ Rename to `deploy.yml` and push once the GitHub token has **workflow** scope
 
 Project: **workorganizer** → https://novat.app
 
+Optional for builds that need them at compile time: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
+
 ## What it does on push to `master`
 
 1. `npm ci` → lint → test → build
@@ -21,3 +34,12 @@ Project: **workorganizer** → https://novat.app
 3. If no GitHub release exists for `package.json` version → Windows Electron build + `gh release create` with `NOVAT-Setup-x.x.x.exe`
 
 Manual: Actions → Deploy → Run workflow.
+
+## Enable CI (when token has `workflow` scope)
+
+```powershell
+Copy-Item scripts/github-deploy-workflow.yml .github/workflows/deploy.yml
+git add .github/workflows/deploy.yml
+git commit -m "ci: enable Deploy workflow on push to master"
+git push origin master
+```

@@ -100,5 +100,9 @@
     "restartNow": "Restart now",
     "download": "Download",
     "later": "Later"
+  },
+  "pwaUpdate": {
+    "message": "A new version is available — update without a hard refresh.",
+    "reload": "Update"
   }
 }
