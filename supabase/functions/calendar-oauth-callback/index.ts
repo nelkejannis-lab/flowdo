@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { parseOAuthState } from '../_shared/oauthState.ts'
 
-const APP_URL = 'https://mooncrew.app/einstellungen?tab=kalender'
+const APP_URL = 'https://novat.app/einstellungen?tab=kalender'
 const callbackBase = `${Deno.env.get('SUPABASE_URL')}/functions/v1/calendar-oauth-callback`
 
 Deno.serve(async (req: Request) => {

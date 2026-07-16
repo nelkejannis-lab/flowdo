@@ -344,7 +344,7 @@ function EditAccountModal({ account, onClose }: { account: { id: string; usernam
               href={(() => {
                 const url = new URL('https://www.instagram.com/oauth/authorize')
                 url.searchParams.set('client_id', '1337831181889435')
-                url.searchParams.set('redirect_uri', 'https://mooncrew.app/instagram-callback')
+                url.searchParams.set('redirect_uri', 'https://novat.app/instagram-callback')
                 url.searchParams.set('response_type', 'code')
                 url.searchParams.set('scope', 'instagram_business_basic,instagram_business_manage_insights,instagram_business_content_publish')
                 return url.toString()

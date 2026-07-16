@@ -33,8 +33,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icons/*.png'],
       manifest: {
-        name: 'Mooncrew – Work Organizer',
-        short_name: 'Mooncrew',
+        name: 'NOVAT – Work Organizer',
+        short_name: 'NOVAT',
         description: 'Aufgaben, Kalender, Projekte und Team-Chat in einer App.',
         theme_color: '#4772FA',
         background_color: '#ffffff',
@@ -54,8 +54,8 @@ export default defineConfig({
           { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
         ],
         screenshots: [
-          { src: '/icons/screenshot-mobile.png', sizes: '390x844', type: 'image/png', form_factor: 'narrow', label: 'Mooncrew auf dem Handy' },
-          { src: '/icons/screenshot-desktop.png', sizes: '1280x800', type: 'image/png', form_factor: 'wide', label: 'Mooncrew auf dem Desktop' },
+          { src: '/icons/screenshot-mobile.png', sizes: '390x844', type: 'image/png', form_factor: 'narrow', label: 'NOVAT auf dem Handy' },
+          { src: '/icons/screenshot-desktop.png', sizes: '1280x800', type: 'image/png', form_factor: 'wide', label: 'NOVAT auf dem Desktop' },
         ],
       },
       workbox: {

@@ -1,8 +1,8 @@
-# Mooncrew (Flowdo)
+# NovaT (Flowdo)
 
 Work organizer: tasks, calendar, Kanban boards, work time, team chat, AI scheduling, meetings, Instagram metrics, Second Brain — as PWA and Electron desktop app.
 
-**Production:** [mooncrew.app](https://mooncrew.app)
+**Production:** [novat.app](https://novat.app)
 
 ## Tech Stack
 

@@ -1,6 +1,6 @@
 import { jsonResponse, optionsResponse, requireUser, serviceClient } from '../_shared/auth.ts'
 
-const REDIRECT_URI = 'https://mooncrew.app/instagram-callback'
+const REDIRECT_URI = 'https://novat.app/instagram-callback'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return optionsResponse()
