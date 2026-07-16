@@ -34,11 +34,9 @@ export type NavItemKey =
   | 'social'
   | 'meetings'
   | 'projekte'
-  | 'statistiken'
 
 export const DEFAULT_NAV_ORDER: NavItemKey[] = [
   'dashboard',
-  'statistiken',
   'week',
   'inbox',
   'tasks',
@@ -76,7 +74,6 @@ export const DEFAULT_NAV_VISIBILITY: Record<NavItemKey, boolean> = {
   social: true,
   meetings: true,
   projekte: true,
-  statistiken: true,
 }
 
 export const DEFAULT_FEATURE_VISIBILITY: Record<FeatureKey, boolean> = {

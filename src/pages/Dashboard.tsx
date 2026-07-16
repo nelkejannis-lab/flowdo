@@ -301,11 +301,18 @@ export default function Dashboard() {
     const endT = e.endTime ?? e.startTime
     return !!endT && endT < nowTime
   }).length
+  const meetingsTodayCount = calendarEntries.filter((e) => {
+    const isToday = e.date === today
+    const isMultiDaySpanningToday = e.date < today && e.endDate && e.endDate >= today
+    return isToday || !!isMultiDaySpanningToday
+  }).length
   const doneStats = {
     tasksCompleted: tasksCompletedToday,
     tasksTotal: tasksTotalToday,
-    meetingsHeld: meetingsHeldToday,
+    meetingsToday: meetingsTodayCount,
+    meetingsDone: meetingsHeldToday,
     trackedLabel: formatHM(workedMin),
+    targetLabel: formatHM(targetMin),
   }
 
   return (
@@ -523,8 +530,6 @@ export default function Dashboard() {
                   doneStats={doneStats}
                   onPlanDay={() => setShowAiDayPlanner(true)}
                   onOpenBriefing={() => setShowMorningReport(true)}
-                  onAddTask={() => setNewTaskForToday(true)}
-                  onAddEntry={() => { setQuickEntryDefaults(null); setEditingEntry(undefined); setShowEntryForm(true) }}
                   onToggleTodo={(tk) => {
                     if (tk.boardId) toggleProjectTaskCompleted(tk.id)
                     else toggleTaskCompleted(tk.id)
