@@ -1,7 +1,7 @@
 {
   "name": "workorganizer",
   "private": true,
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "NOVAT Work Organizer",
   "author": "NOVAT",
   "type": "module",

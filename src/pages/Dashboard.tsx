@@ -471,6 +471,28 @@ export default function Dashboard() {
         onOpenTodo={(tk) => setEditingTask(tk as typeof allTasks[number])}
       />
 
+      {/* Tagesübersicht — full page width, above Woche im Fokus */}
+      {dashboardVisibility.todayTasks && (
+        <div className={`mb-6 relative group transition-all ${isEditing ? 'rounded-2xl ring-2 ring-dashed ring-accent/40 p-3' : ''}`}>
+          {isEditing && (
+            <button type="button" onClick={() => toggleDashboardWidget('todayTasks')} className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md" title={t('sections.removeWidget')}>
+              <X size={12} />
+            </button>
+          )}
+          <DailyAgendaPanel
+            selectedDate={today}
+            tasks={allTasks}
+            events={events}
+            entries={calendarEntries}
+            onTaskClick={(task) => setEditingTask(task)}
+            onEventClick={() => {}}
+            onEntryClick={(entry) => { setQuickEntryDefaults(null); setEditingEntry(entry); setShowEntryForm(true) }}
+            onAddTask={() => setNewTaskForToday(true)}
+            onAddEntry={() => { setQuickEntryDefaults(null); setEditingEntry(undefined); setShowEntryForm(true) }}
+          />
+        </div>
+      )}
+
       <div className="mb-6">
         <WeeklyInsightCard
           insight={weeklyInsight}
@@ -553,26 +575,6 @@ export default function Dashboard() {
                 </button>
               )}
               <div className="max-w-xs"><WeatherWidget /></div>
-            </div>
-          )}
-          {dashboardVisibility.todayTasks && (
-            <div className={`bento-card relative group p-3 transition-all ${isEditing ? 'ring-2 ring-dashed ring-accent/40' : ''}`}>
-              {isEditing && (
-                <button type="button" onClick={() => toggleDashboardWidget('todayTasks')} className="absolute right-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md" title={t('sections.removeWidget')}>
-                  <X size={12} />
-                </button>
-              )}
-              <DailyAgendaPanel
-                selectedDate={today}
-                tasks={allTasks}
-                events={events}
-                entries={calendarEntries}
-                onTaskClick={(task) => setEditingTask(task)}
-                onEventClick={() => {}}
-                onEntryClick={(entry) => { setQuickEntryDefaults(null); setEditingEntry(entry); setShowEntryForm(true) }}
-                onAddTask={() => setNewTaskForToday(true)}
-                onAddEntry={() => { setQuickEntryDefaults(null); setEditingEntry(undefined); setShowEntryForm(true) }}
-              />
             </div>
           )}
           {dashboardVisibility.dayPlan && (
