@@ -122,6 +122,25 @@ export function whatsappDeepLink(text: string, botNumber?: string | null): strin
   return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`
 }
 
+/**
+ * Build WhatsApp prefill / clipboard text.
+ * Join always comes first when included, then NOVAT code on the next line.
+ * - Step 1 only: `join keyword`
+ * - Step 2 after joined: `NOVAT-XXXXXX`
+ * - Combined: `join keyword\nNOVAT-XXXXXX`
+ */
+export function composeWhatsAppConnectText(options: {
+  joinCode?: string | null
+  linkCode?: string | null
+  /** When false, omit join even if joinCode is set. Default: include join when present. */
+  includeJoin?: boolean
+}): string {
+  const includeJoin = options.includeJoin !== false
+  const join = includeJoin ? normalizeSandboxJoin(options.joinCode) : null
+  const code = String(options.linkCode || '').trim() || null
+  return [join, code].filter(Boolean).join('\n')
+}
+
 /** Normalize join phrase to always start with "join ". */
 export function normalizeSandboxJoin(code: string | null | undefined): string | null {
   const raw = String(code || '').trim()

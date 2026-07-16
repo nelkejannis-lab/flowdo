@@ -10,6 +10,7 @@ import {
   apiStartWhatsAppPhoneLink,
   apiUnlinkWhatsAppNumber,
   apiVerifyWhatsAppPhoneLink,
+  composeWhatsAppConnectText,
   normalizeSandboxJoin,
   novaApiAvailable,
   setLocalSandboxJoinOverride,
@@ -232,6 +233,14 @@ export default function WhatsAppLinkSetting() {
   const joinCode = normalizeSandboxJoin(state?.sandboxJoinCode) || normalizeSandboxJoin(joinDraft)
   const linkCode = state?.linkCode || null
   const sandboxOn = state?.sandboxMode !== false
+  // Step 1 only → join. Step 2 after join → code. Otherwise combine: join first, then code.
+  const includeJoinInStep2 = sandboxOn && !!joinCode && !step1Done
+  const step2Message = composeWhatsAppConnectText({
+    joinCode,
+    linkCode,
+    includeJoin: includeJoinInStep2,
+  })
+  const step1Message = composeWhatsAppConnectText({ joinCode, includeJoin: true })
 
   return (
     <div className="flex flex-col gap-4">
@@ -331,8 +340,8 @@ export default function WhatsAppLinkSetting() {
                   <p className="text-xs font-semibold text-amber-900 dark:text-amber-100">
                     {t('whatsapp.exactJoinTitle')}
                   </p>
-                  <code className="block select-all rounded-lg border border-amber-300 bg-white px-3 py-2.5 text-base font-bold tracking-wide text-amber-950 dark:border-amber-800 dark:bg-racing-950 dark:text-amber-100">
-                    {joinCode}
+                  <code className="block select-all whitespace-pre-wrap rounded-lg border border-amber-300 bg-white px-3 py-2.5 text-base font-bold tracking-wide text-amber-950 dark:border-amber-800 dark:bg-racing-950 dark:text-amber-100">
+                    {step1Message}
                   </code>
                   <p className="text-[11px] text-amber-800/80 dark:text-amber-200/70">
                     {t('whatsapp.exactJoinHint', { bot: botLabel })}
@@ -340,23 +349,23 @@ export default function WhatsAppLinkSetting() {
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => void copyText(joinCode, 'whatsapp.copiedJoin')}
-                      className="flex items-center gap-1 rounded-lg border border-amber-300 px-2.5 py-1.5 text-xs font-medium text-amber-900 hover:bg-white dark:border-amber-800 dark:text-amber-100 dark:hover:bg-racing-900"
+                      onClick={() => void copyText(step1Message, 'whatsapp.copiedMessage')}
+                      className="flex items-center gap-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark"
                     >
                       <Copy size={12} />
-                      {t('whatsapp.copy')}
+                      {t('whatsapp.copyMessage')}
                     </button>
                     <button
                       type="button"
-                      onClick={() => openWhatsApp(joinCode)}
-                      className="flex items-center gap-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark"
+                      onClick={() => openWhatsApp(step1Message)}
+                      className="flex items-center gap-1 rounded-lg border border-amber-300 px-2.5 py-1.5 text-xs font-medium text-amber-900 hover:bg-white dark:border-amber-800 dark:text-amber-100 dark:hover:bg-racing-900"
                     >
                       <ExternalLink size={12} />
                       {t('whatsapp.openWhatsAppPrefill')}
                     </button>
                   </div>
                   <p className="break-all text-[10px] text-amber-800/60 dark:text-amber-200/50">
-                    {whatsappDeepLink(joinCode, state?.botNumber)}
+                    {whatsappDeepLink(step1Message, state?.botNumber)}
                   </p>
                 </div>
               ) : (
@@ -433,35 +442,53 @@ export default function WhatsAppLinkSetting() {
               )}
 
               {linkCode ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  <code className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold tracking-wider text-accent dark:border-racing-700 dark:bg-racing-900">
-                    {linkCode}
+                <div className="space-y-2">
+                  <code className="block select-all whitespace-pre-wrap rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold tracking-wider text-accent dark:border-racing-700 dark:bg-racing-900">
+                    {step2Message}
                   </code>
-                  <button
-                    type="button"
-                    onClick={() => void copyText(linkCode, 'whatsapp.copied')}
-                    className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-white dark:border-racing-700 dark:text-racing-200 dark:hover:bg-racing-800"
-                  >
-                    <Copy size={12} />
-                    {t('whatsapp.copy')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openWhatsApp(linkCode)}
-                    className="flex items-center gap-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark"
-                  >
-                    <ExternalLink size={12} />
-                    {t('whatsapp.openWhatsApp')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={generateCode}
-                    disabled={busy}
-                    className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-white disabled:opacity-50 dark:border-racing-700 dark:text-racing-200 dark:hover:bg-racing-800"
-                  >
-                    {busy ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
-                    {t('whatsapp.refreshCode')}
-                  </button>
+                  {includeJoinInStep2 && (
+                    <p className="text-[11px] text-gray-500 dark:text-racing-300">{t('whatsapp.combinedMessageHint')}</p>
+                  )}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void copyText(step2Message, 'whatsapp.copiedMessage')}
+                      className="flex items-center gap-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark"
+                    >
+                      <Copy size={12} />
+                      {t('whatsapp.copyMessage')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openWhatsApp(step2Message)}
+                      className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-white dark:border-racing-700 dark:text-racing-200 dark:hover:bg-racing-800"
+                    >
+                      <ExternalLink size={12} />
+                      {t('whatsapp.openWhatsApp')}
+                    </button>
+                    {includeJoinInStep2 && (
+                      <button
+                        type="button"
+                        onClick={() => void copyText(linkCode, 'whatsapp.copied')}
+                        className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-500 hover:bg-white dark:border-racing-700 dark:text-racing-300 dark:hover:bg-racing-800"
+                      >
+                        <Copy size={12} />
+                        {t('whatsapp.copyCodeOnly')}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={generateCode}
+                      disabled={busy}
+                      className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-white disabled:opacity-50 dark:border-racing-700 dark:text-racing-200 dark:hover:bg-racing-800"
+                    >
+                      {busy ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                      {t('whatsapp.refreshCode')}
+                    </button>
+                  </div>
+                  <p className="break-all text-[10px] text-gray-400 dark:text-racing-500">
+                    {whatsappDeepLink(step2Message, state?.botNumber)}
+                  </p>
                 </div>
               ) : (
                 <button
