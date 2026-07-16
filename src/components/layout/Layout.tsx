@@ -78,7 +78,8 @@ export default function Layout() {
             <Sidebar isOpen={sidebarOpen} onClose={closeMenu} docked={docked} />
             <main className="relative flex-1 overflow-y-auto">
               <AppUpdater />
-              <div className="mx-auto h-full w-full max-w-7xl overflow-x-hidden p-4 pb-[max(6.5rem,calc(5.5rem+env(safe-area-inset-bottom)))] sm:p-6 sm:pb-6 lg:p-8 relative page-bg">
+              {/* overflow-x-clip (not hidden) so position:sticky children can stick to main's scrollport */}
+              <div className="mx-auto h-full w-full max-w-7xl overflow-x-clip p-4 pb-[max(6.5rem,calc(5.5rem+env(safe-area-inset-bottom)))] sm:p-6 sm:pb-6 lg:p-8 relative page-bg">
                 <Outlet />
               </div>
             </main>

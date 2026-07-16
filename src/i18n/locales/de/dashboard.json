@@ -114,6 +114,21 @@
     "scoreShort": "Bereit",
     "howYoureDoing": "So stehst du da",
     "whatNext": "Als Nächstes",
+    "todayTodos": "Heutige To-dos",
+    "todayTodosCount_one": "{{count}} offen",
+    "todayTodosCount_other": "{{count}} offen",
+    "todayTodosEmpty": "Keine offenen To-dos für heute",
+    "todayTodosEmptyHint": "Alles klar — oder füge oben schnell eine Aufgabe hinzu.",
+    "todayTodosMore": "+{{count}} weitere anzeigen",
+    "completeTodo": "Als erledigt markieren",
+    "workControls": {
+      "start": "Starten",
+      "stop": "Stoppen",
+      "pause": "Pause",
+      "resume": "Weiter",
+      "running": "Timer läuft",
+      "onBreak": "In Pause"
+    },
     "streak_one": "{{count}}-Tage-Fokus-Serie",
     "streak_other": "{{count}}-Tage-Fokus-Serie",
     "band": {

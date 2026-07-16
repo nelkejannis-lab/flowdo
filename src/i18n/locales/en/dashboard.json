@@ -114,6 +114,21 @@
     "scoreShort": "Ready",
     "howYoureDoing": "How you're doing",
     "whatNext": "What to do next",
+    "todayTodos": "Today's to-dos",
+    "todayTodosCount_one": "{{count}} open",
+    "todayTodosCount_other": "{{count}} open",
+    "todayTodosEmpty": "No open to-dos for today",
+    "todayTodosEmptyHint": "You're clear — or quickly add a task above.",
+    "todayTodosMore": "Show {{count}} more",
+    "completeTodo": "Mark as done",
+    "workControls": {
+      "start": "Start",
+      "stop": "Stop",
+      "pause": "Pause",
+      "resume": "Resume",
+      "running": "Timer running",
+      "onBreak": "On break"
+    },
     "streak_one": "{{count}}-day focus streak",
     "streak_other": "{{count}}-day focus streak",
     "band": {

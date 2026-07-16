@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useSocialStore } from '../store/socialStore'
 import { differenceInCalendarDays, format, parseISO, addDays, startOfWeek, isSameDay } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
@@ -43,7 +43,7 @@ import { isDueThisWeek, isDueToday, isOverdue, todayISO, parseNaturalDate, parse
 import { useQuickTaskModalStore } from '../store/quickTaskModalStore'
 import { useOfficeStore } from '../store/officeStore'
 import { dayTargetMinutes, formatHM, netMinutes } from '../utils/worktime'
-import { computeDayReadiness, computeWeeklyInsight, type NextAction } from '../lib/dayReadiness'
+import { computeDayReadiness, computeWeeklyInsight } from '../lib/dayReadiness'
 
 function isLikelyAppointment(input: string): boolean {
   const lower = input.toLowerCase()
@@ -54,7 +54,6 @@ function isLikelyAppointment(input: string): boolean {
 
 export default function Dashboard() {
   const { t, i18n } = useTranslation('dashboard')
-  const navigate = useNavigate()
   const dateLocale = i18n.language === 'en' ? enUS : de
   const tasks = useTasksStore((s) => s.tasks)
   const fetchTasks = useTasksStore((s) => s.fetchAll)
@@ -296,25 +295,7 @@ export default function Dashboard() {
     [allTasks, weekDayLoads],
   )
 
-  function handleReadinessAction(action: NextAction) {
-    if (action.kind === 'plan' || action.kind === 'celebrate') {
-      setShowAiDayPlanner(true)
-      return
-    }
-    if (action.kind === 'event') {
-      navigate('/calendar')
-      return
-    }
-    if (action.kind === 'status') {
-      const el = document.getElementById('work-office-widget')
-      el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      return
-    }
-    if (action.taskId) {
-      const task = allTasks.find((tk) => tk.id === action.taskId)
-      if (task) setEditingTask(task)
-    }
-  }
+  const todayTodos = sortByEisenhower(todayOpenTasks)
 
   return (
     <div>
@@ -339,52 +320,8 @@ export default function Dashboard() {
       {!onboardingTourDone && <OnboardingWizard />}
       {!onboardingPermissionsDone && <OnboardingPermissions />}
 
-      <TodayHero
-        dayLabel={dayLabel}
-        nextEvent={nextEvent}
-        priorities={topPriorities}
-        capacityPercent={capacityPercent}
-        workedLabel={formatHM(workedMin)}
-        targetLabel={formatHM(targetMin)}
-        workStatus={workStatusLabel}
-        colleagues={colleagues}
-        readiness={readiness}
-        openTodayCount={todayOpenTasks.length}
-        onPlanDay={() => setShowAiDayPlanner(true)}
-        onOpenBriefing={() => setShowMorningReport(true)}
-        onActionClick={handleReadinessAction}
-      />
-
-      <div className="mb-6">
-        <WeeklyInsightCard
-          insight={weeklyInsight}
-          onAiRefresh={() => setShowWeekReport(true)}
-        />
-      </div>
-
-      <div className="mb-6">
-        <div className="mb-3 flex items-center justify-end gap-3">
-          <button
-            onClick={() => setIsEditing(!isEditing)}
-            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold shadow-sm transition-all duration-150 active:scale-95 ${
-              isEditing
-                ? 'bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600'
-                : 'bg-black/[0.04] text-gray-600 hover:bg-black/[0.08] dark:bg-white/[0.06] dark:text-racing-200 dark:hover:bg-white/[0.1]'
-            }`}
-          >
-            {isEditing ? (
-              <>
-                <Check size={14} />
-                Fertig
-              </>
-            ) : (
-              <>
-                <Sliders size={14} />
-                Dashboard anpassen
-              </>
-            )}
-          </button>
-        </div>
+      {/* Sticky Quick Add — sticks to top of main scroll (below Focus Horizon TopBar) */}
+      <div className="sticky top-0 z-20 -mx-4 mb-6 border-b border-gray-100/80 bg-white/90 px-4 py-3 backdrop-blur-md dark:border-racing-850/80 dark:bg-[rgb(var(--surface-0)/0.92)] sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         <form
           onSubmit={async (e) => {
             e.preventDefault()
@@ -467,21 +404,21 @@ export default function Dashboard() {
             onChange={(e) => setQuickInput(e.target.value)}
             disabled={parsingTask}
             placeholder={parsingTask ? "Analysiere mit KI..." : t('quickAddPlaceholder')}
-            className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-accent dark:border-racing-700 dark:bg-racing-900 disabled:opacity-75"
+            className="min-w-0 flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-accent dark:border-racing-700 dark:bg-racing-900 disabled:opacity-75"
           />
           <button
             type="submit"
             disabled={!quickInput.trim() || parsingTask}
-            className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-40"
+            className="flex flex-shrink-0 items-center gap-1.5 rounded-xl bg-accent px-3 py-2.5 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-40 sm:px-4"
           >
             {parsingTask ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
-            {parsingTask ? "Analysiere..." : t('addTask')}
+            <span className="hidden sm:inline">{parsingTask ? "Analysiere..." : t('addTask')}</span>
           </button>
           <button
             type="button"
             onClick={() => setShowWeekReport(true)}
             title={t('weekReport.title')}
-            className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-racing-700 dark:bg-racing-900"
+            className="flex flex-shrink-0 items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-racing-700 dark:bg-racing-900 sm:px-4"
           >
             <BarChart3 size={16} />
           </button>
@@ -489,11 +426,61 @@ export default function Dashboard() {
             type="button"
             onClick={() => setShowAiDayPlanner(true)}
             title={t('aiPlanner.title')}
-            className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:brightness-110"
+            className="flex flex-shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-2.5 text-sm font-semibold text-white shadow-sm hover:brightness-110 sm:px-4"
           >
             <Sparkles size={16} />
           </button>
         </form>
+      </div>
+
+      <TodayHero
+        dayLabel={dayLabel}
+        nextEvent={nextEvent}
+        priorities={topPriorities}
+        todayTodos={todayTodos}
+        capacityPercent={capacityPercent}
+        workedLabel={formatHM(workedMin)}
+        targetLabel={formatHM(targetMin)}
+        workStatus={workStatusLabel}
+        colleagues={colleagues}
+        readiness={readiness}
+        onPlanDay={() => setShowAiDayPlanner(true)}
+        onOpenBriefing={() => setShowMorningReport(true)}
+        onToggleTodo={(tk) => {
+          if (tk.boardId) toggleProjectTaskCompleted(tk.id)
+          else toggleTaskCompleted(tk.id)
+        }}
+        onOpenTodo={(tk) => setEditingTask(tk as typeof allTasks[number])}
+      />
+
+      <div className="mb-6">
+        <WeeklyInsightCard
+          insight={weeklyInsight}
+          onAiRefresh={() => setShowWeekReport(true)}
+        />
+      </div>
+
+      <div className="mb-6 flex items-center justify-end gap-3">
+        <button
+          onClick={() => setIsEditing(!isEditing)}
+          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold shadow-sm transition-all duration-150 active:scale-95 ${
+            isEditing
+              ? 'bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600'
+              : 'bg-black/[0.04] text-gray-600 hover:bg-black/[0.08] dark:bg-white/[0.06] dark:text-racing-200 dark:hover:bg-white/[0.1]'
+          }`}
+        >
+          {isEditing ? (
+            <>
+              <Check size={14} />
+              Fertig
+            </>
+          ) : (
+            <>
+              <Sliders size={14} />
+              Dashboard anpassen
+            </>
+          )}
+        </button>
       </div>
 
       {showAiDayPlanner && <AiDayPlannerModal onClose={() => setShowAiDayPlanner(false)} />}
