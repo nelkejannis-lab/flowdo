@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
-import { DonutChart, SegmentedBar, AvatarStack } from './FocusVisuals'
+import { DonutChart, ProgressTrack, AvatarStack } from './FocusVisuals'
 import type { DayReadinessResult } from '../../lib/dayReadiness'
 import { useWorkTimeStore } from '../../store/workTimeStore'
 import { isOverdue } from '../../utils/date'
@@ -252,80 +252,95 @@ export default function TodayHero({
         </div>
 
         {/* Capacity + work-time controls */}
-        <div className="flex flex-col justify-between gap-3 rounded-[18px] border border-black/[0.04] bg-white/60 p-4 dark:border-white/[0.06] dark:bg-racing-900/40 lg:col-span-3">
+        <div className="flex flex-col gap-3 rounded-[20px] border border-black/[0.05] bg-gradient-to-b from-black/[0.02] to-transparent p-3.5 dark:border-white/[0.07] dark:from-white/[0.04] lg:col-span-3">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{t('focus.capacityHint')}</p>
+            {isOnBreak ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                {t('readiness.workControls.onBreak')}
+              </span>
+            ) : isRunning ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-semibold text-accent">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
+                {t('readiness.workControls.running')}
+              </span>
+            ) : null}
+          </div>
+
           <div className="flex items-center gap-3">
             <DonutChart
-              size={72}
-              stroke={8}
+              size={68}
+              stroke={7}
               segments={[
                 { value: capped, color: 'rgb(var(--accent))' },
-                { value: free, color: 'rgba(148,163,184,0.25)' },
+                { value: free, color: 'rgba(148,163,184,0.22)' },
               ]}
               centerLabel={`${Math.round(capped)}%`}
             />
 
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{t('focus.capacityHint')}</p>
-              <p className="mt-0.5 text-sm font-semibold tabular-nums">
-                {workedLabel} <span className="font-normal text-gray-400">/ {targetLabel}</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xl font-bold tabular-nums tracking-tight leading-none">{workedLabel}</p>
+              <p className="mt-1 text-[11px] text-gray-400">
+                {t('readiness.doneStats.trackedHint', { target: targetLabel })}
               </p>
-              {isOnBreak && (
-                <p className="mt-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">{t('readiness.workControls.onBreak')}</p>
-              )}
-              {isRunning && !isOnBreak && (
-                <p className="mt-0.5 text-[10px] font-semibold text-accent">{t('readiness.workControls.running')}</p>
-              )}
+              <ProgressTrack value={capped} className="mt-2.5" />
             </div>
           </div>
 
-          <SegmentedBar value={capped} className="mt-1" />
-
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div
+            className={`flex overflow-hidden rounded-xl border ${
+              isOnBreak
+                ? 'border-amber-200/80 dark:border-amber-800/60'
+                : isRunning
+                  ? 'border-black/[0.08] dark:border-white/[0.1]'
+                  : 'border-transparent'
+            }`}
+          >
             {!isRunning ? (
               <button
                 type="button"
                 onClick={clockIn}
-                className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl bg-accent px-2.5 py-2 text-[11px] font-semibold text-white shadow-sm transition hover:brightness-110 active:scale-95"
+                className="inline-flex flex-1 items-center justify-center gap-1.5 bg-accent px-3 py-2.5 text-xs font-semibold text-white transition hover:bg-accent-dark active:scale-[0.99]"
               >
-                <Play size={12} className="ml-0.5" />
+                <Play size={13} className="ml-0.5" strokeWidth={2.2} />
                 {t('readiness.workControls.start')}
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={clockOut}
-                className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl bg-red-500 px-2.5 py-2 text-[11px] font-semibold text-white shadow-sm transition hover:bg-red-600 active:scale-95"
-              >
-                <Square size={11} />
-                {t('readiness.workControls.stop')}
-              </button>
-            )}
-
-            {isRunning && !isOnBreak && (
-              <button
-                type="button"
-                onClick={() => startBreak('pause')}
-                className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-2 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-100 active:scale-95 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300"
-              >
-                <Pause size={12} />
-                {t('readiness.workControls.pause')}
-              </button>
-            )}
-
-            {isOnBreak && (
-              <button
-                type="button"
-                onClick={endBreak}
-                className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-2 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-100 active:scale-95 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300"
-              >
-                <Play size={12} />
-                {t('readiness.workControls.resume')}
-              </button>
+              <>
+                {isOnBreak ? (
+                  <button
+                    type="button"
+                    onClick={endBreak}
+                    className="inline-flex flex-1 items-center justify-center gap-1.5 bg-amber-50 px-3 py-2.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 active:scale-[0.99] dark:bg-amber-900/30 dark:text-amber-200 dark:hover:bg-amber-900/45"
+                  >
+                    <Play size={13} className="ml-0.5" strokeWidth={2.2} />
+                    {t('readiness.workControls.resume')}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => startBreak('pause')}
+                    className="inline-flex flex-1 items-center justify-center gap-1.5 bg-black/[0.03] px-3 py-2.5 text-xs font-semibold text-gray-700 transition hover:bg-black/[0.06] active:scale-[0.99] dark:bg-white/[0.05] dark:text-racing-100 dark:hover:bg-white/[0.08]"
+                  >
+                    <Pause size={13} strokeWidth={2.2} />
+                    {t('readiness.workControls.pause')}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={clockOut}
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 border-l border-black/[0.08] bg-red-500/90 px-3 py-2.5 text-xs font-semibold text-white transition hover:bg-red-600 active:scale-[0.99] dark:border-white/[0.1]"
+                >
+                  <Square size={11} strokeWidth={2.4} />
+                  {t('readiness.workControls.stop')}
+                </button>
+              </>
             )}
           </div>
 
           {colleagues.length > 0 && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pt-0.5">
               <AvatarStack people={colleagues} />
               <span className="text-[11px] text-gray-400">{t('focus.teamActive', { count: colleagues.length })}</span>
             </div>

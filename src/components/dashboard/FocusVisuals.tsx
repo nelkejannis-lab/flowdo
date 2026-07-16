@@ -64,6 +64,32 @@ export function AvatarStack({
   )
 }
 
+export function ProgressTrack({
+  value,
+  max = 100,
+  className = '',
+}: {
+  value: number
+  max?: number
+  className?: string
+}) {
+  const pct = Math.max(0, Math.min(100, (value / Math.max(max, 1)) * 100))
+  return (
+    <div
+      className={`h-1.5 w-full overflow-hidden rounded-full bg-black/[0.07] dark:bg-white/[0.1] ${className}`}
+      role="progressbar"
+      aria-valuenow={Math.round(pct)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+    >
+      <div
+        className="h-full rounded-full bg-accent transition-[width] duration-500 ease-out"
+        style={{ width: `${pct}%` }}
+      />
+    </div>
+  )
+}
+
 export function DonutChart({
   segments,
   size = 120,
@@ -81,8 +107,10 @@ export function DonutChart({
   const r = (size - stroke) / 2
   const c = 2 * Math.PI * r
   let offset = 0
+  const labelClass =
+    size < 80 ? 'text-sm font-bold tabular-nums leading-none' : size < 100 ? 'text-lg font-bold tabular-nums leading-none' : 'text-2xl font-bold tabular-nums leading-none'
   return (
-    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+    <div className="relative inline-flex flex-shrink-0 items-center justify-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeOpacity={0.08} strokeWidth={stroke} />
         {segments.map((seg, i) => {
@@ -107,8 +135,8 @@ export function DonutChart({
       </svg>
       {(centerLabel || centerSub) && (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-          {centerLabel && <span className="text-2xl font-bold tabular-nums leading-none">{centerLabel}</span>}
-          {centerSub && <span className="mt-1 text-[10px] font-medium uppercase tracking-wide text-gray-400">{centerSub}</span>}
+          {centerLabel && <span className={labelClass}>{centerLabel}</span>}
+          {centerSub && <span className="mt-0.5 text-[9px] font-medium uppercase tracking-wide text-gray-400">{centerSub}</span>}
         </div>
       )}
     </div>
