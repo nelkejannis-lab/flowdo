@@ -44,8 +44,7 @@
   "title": "Settings",
   "tabs": {
     "profil": "Profile",
-    "whatsapp": "Link WhatsApp",
-    "kalender": "Calendar",
+    "verbindungen": "Connections",
     "funktionen": "Features",
     "datenschutz": "Privacy",
     "tastenkuerzel": "Shortcuts",

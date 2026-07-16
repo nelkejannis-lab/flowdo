@@ -24,8 +24,13 @@ import SettingsGuideTab from '../components/settings/SettingsGuideTab'
 import WhatsAppLinkSetting from '../components/settings/WhatsAppLinkSetting'
 import type { WorkProfile } from '../types'
 
-type SettingsTab = 'profil' | 'whatsapp' | 'kalender' | 'funktionen' | 'datenschutz' | 'tastenkuerzel' | 'arbeitszeit' | 'anleitung'
-const VALID_TABS: SettingsTab[] = ['profil', 'whatsapp', 'kalender', 'funktionen', 'arbeitszeit', 'datenschutz', 'tastenkuerzel', 'anleitung']
+type SettingsTab = 'profil' | 'verbindungen' | 'funktionen' | 'datenschutz' | 'tastenkuerzel' | 'arbeitszeit' | 'anleitung'
+const VALID_TABS: SettingsTab[] = ['profil', 'verbindungen', 'funktionen', 'arbeitszeit', 'datenschutz', 'tastenkuerzel', 'anleitung']
+
+function normalizeSettingsTab(tab: string | null): SettingsTab {
+  if (tab === 'kalender' || tab === 'whatsapp') return 'verbindungen'
+  return VALID_TABS.includes(tab as SettingsTab) ? (tab as SettingsTab) : 'profil'
+}
 
 const FEATURE_ICONS: Record<FeatureKey, React.ReactNode> = {
   calendar: <CalendarDays size={18} />,
@@ -312,9 +317,11 @@ export default function SettingsPage() {
   const [newProfile, setNewProfile] = useState<Omit<WorkProfile, 'id'>>({ name: '', weeklyHours: 38.5, workDaysPerWeek: 5, defaultBreakMinutes: 45 })
 
   const tabParam = searchParams.get('tab')
-  const [activeTab, setActiveTab] = useState<SettingsTab>(
-    VALID_TABS.includes(tabParam as SettingsTab) ? (tabParam as SettingsTab) : 'profil'
-  )
+  const [activeTab, setActiveTab] = useState<SettingsTab>(() => normalizeSettingsTab(tabParam))
+
+  useEffect(() => {
+    setActiveTab(normalizeSettingsTab(tabParam))
+  }, [tabParam])
   const connections = useCalendarConnectionsStore((s) => s.connections)
   const fetchConnections = useCalendarConnectionsStore((s) => s.fetch)
   const disconnectCalendar = useCalendarConnectionsStore((s) => s.disconnect)
@@ -440,7 +447,7 @@ export default function SettingsPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 overflow-x-auto rounded-lg border border-gray-200 p-1 dark:border-racing-700 sm:w-fit">
-        {(['profil', 'whatsapp', 'anleitung', 'kalender', 'funktionen', 'arbeitszeit', 'datenschutz', 'tastenkuerzel'] as const).map((tab) => (
+        {(['profil', 'verbindungen', 'anleitung', 'funktionen', 'arbeitszeit', 'datenschutz', 'tastenkuerzel'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -451,7 +458,7 @@ export default function SettingsPage() {
         ))}
       </div>
 
-      {activeTab === 'whatsapp' && (
+      {activeTab === 'verbindungen' && (
         <div className="flex flex-col gap-4">
           <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
             <div className="mb-4 flex items-center gap-2">
@@ -461,11 +468,7 @@ export default function SettingsPage() {
             <p className="mb-4 text-xs text-gray-400">{t('whatsapp.description')}</p>
             <WhatsAppLinkSetting />
           </div>
-        </div>
-      )}
 
-      {activeTab === 'kalender' && (
-        <div className="flex flex-col gap-4">
           <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
             <h2 className="mb-1 text-sm font-semibold">{t('calendar.title')}</h2>
             <p className="mb-4 text-xs text-gray-400">{t('calendar.description')}</p>
