@@ -337,7 +337,7 @@ export default function Dashboard() {
       {!onboardingPermissionsDone && <OnboardingPermissions />}
 
       {/* Sticky Quick Add — always pinned to top of main scrollport for fast add */}
-      <div className="sticky top-0 z-30 -mx-4 mb-6 border-b border-gray-100/80 bg-white/95 px-4 py-3 shadow-sm shadow-black/[0.04] backdrop-blur-md dark:border-racing-850/80 dark:bg-[rgb(var(--surface-0)/0.95)] dark:shadow-black/20 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+      <div className="sticky top-0 z-30 -mx-4 mb-6 border-b border-black/[0.04] bg-[rgb(var(--surface-0)/0.82)] px-4 py-3 backdrop-blur-apple dark:border-white/[0.06] dark:bg-[rgb(var(--surface-0)/0.88)] sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         <form
           onSubmit={async (e) => {
             e.preventDefault()
@@ -413,38 +413,38 @@ export default function Dashboard() {
               setParsingTask(false)
             }
           }}
-          className="flex gap-2"
+          className="flex items-center gap-2 rounded-2xl border border-black/[0.06] bg-white/90 p-1.5 shadow-apple-sm ring-1 ring-black/[0.02] transition-[box-shadow,border-color] duration-200 ease-apple focus-within:border-accent/25 focus-within:shadow-[0_8px_28px_rgb(var(--accent)/0.12),0_2px_8px_rgba(15,23,42,0.06)] dark:border-white/[0.08] dark:bg-racing-900/90 dark:ring-white/[0.04] dark:focus-within:border-accent/35 sm:gap-2.5 sm:p-2"
         >
           <input
             value={quickInput}
             onChange={(e) => setQuickInput(e.target.value)}
             disabled={parsingTask}
             placeholder={parsingTask ? "Analysiere mit KI..." : t('quickAddPlaceholder')}
-            className="min-w-0 flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-accent dark:border-racing-700 dark:bg-racing-900 disabled:opacity-75"
+            className="min-w-0 flex-1 rounded-xl border-0 bg-transparent px-3.5 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:ring-0 disabled:opacity-75 dark:text-racing-50 dark:placeholder:text-racing-400 sm:px-4"
           />
           <button
             type="submit"
             disabled={!quickInput.trim() || parsingTask}
-            className="flex flex-shrink-0 items-center gap-1.5 rounded-xl bg-accent px-3 py-2.5 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-40 sm:px-4"
+            className="flex flex-shrink-0 items-center gap-1.5 rounded-xl bg-accent px-3.5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgb(var(--accent)/0.32)] transition-all duration-200 ease-apple hover:bg-accent-dark hover:shadow-[0_6px_18px_rgb(var(--accent)/0.4)] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-35 sm:px-4"
           >
-            {parsingTask ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+            {parsingTask ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} strokeWidth={2.25} />}
             <span className="hidden sm:inline">{parsingTask ? "Analysiere..." : t('addTask')}</span>
           </button>
           <button
             type="button"
             onClick={() => setShowWeekReport(true)}
             title={t('weekReport.title')}
-            className="flex flex-shrink-0 items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-racing-700 dark:bg-racing-900 sm:px-4"
+            className="flex h-[42px] w-[42px] flex-shrink-0 items-center justify-center rounded-xl border border-black/[0.06] bg-black/[0.02] text-gray-600 transition-all duration-200 ease-apple hover:border-accent/25 hover:bg-accent/[0.06] hover:text-accent active:scale-[0.98] dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-racing-200 dark:hover:border-accent/30 dark:hover:bg-accent/10 dark:hover:text-accent-light"
           >
-            <BarChart3 size={16} />
+            <BarChart3 size={16} strokeWidth={1.75} />
           </button>
           <button
             type="button"
             onClick={() => setShowAiDayPlanner(true)}
             title={t('aiPlanner.title')}
-            className="flex flex-shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-2.5 text-sm font-semibold text-white shadow-sm hover:brightness-110 sm:px-4"
+            className="flex h-[42px] w-[42px] flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-accent-dark text-white shadow-[0_4px_12px_rgb(var(--accent)/0.28)] transition-all duration-200 ease-apple hover:brightness-[1.06] hover:shadow-[0_6px_16px_rgb(var(--accent)/0.38)] active:scale-[0.98]"
           >
-            <Sparkles size={16} />
+            <Sparkles size={16} strokeWidth={1.75} />
           </button>
         </form>
       </div>
