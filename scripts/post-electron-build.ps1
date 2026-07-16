@@ -1,6 +1,4 @@
-﻿# After electron-builder: silent-install latest NOVAT, prune old installers (keep 2).
-# Run from repo root via npm run electron:build
-
+# After electron-builder: silent-install current package.json version, prune old installers (keep 2 newest by version).
 $ErrorActionPreference = "Stop"
 $Root = Split-Path $PSScriptRoot -Parent
 Set-Location $Root
@@ -13,6 +11,7 @@ function Get-InstallerVersion {
     return $null
 }
 
+$pkgVersion = (Get-Content (Join-Path $Root "package.json") -Raw | ConvertFrom-Json).version
 $releaseDir = Join-Path $Root "release"
 if (-not (Test-Path $releaseDir)) {
     Write-Host "[NOVAT] release/ missing - nothing to install."
@@ -42,21 +41,22 @@ foreach ($item in $toRemove) {
     }
 }
 
-$latest = $installers[0]
-Write-Host "[NOVAT] Installing $($latest.Version) ..."
+$target = $installers | Where-Object { $_.Version.ToString() -eq $pkgVersion } | Select-Object -First 1
+if (-not $target) { $target = $installers[0] }
+Write-Host "[NOVAT] Installing $($target.Version) (package.json=$pkgVersion) ..."
 
 Get-Process -Name "NOVAT" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 1
 
-$proc = Start-Process -FilePath $latest.File.FullName -ArgumentList "/S" -Wait -PassThru
+$proc = Start-Process -FilePath $target.File.FullName -ArgumentList "/S" -Wait -PassThru
 if ($proc.ExitCode -and $proc.ExitCode -ne 0) {
     Write-Warning "[NOVAT] Installer exit code: $($proc.ExitCode)"
 }
 
 $candidates = @(
+    (Join-Path $env:LOCALAPPDATA "Programs\workorganizer\NOVAT.exe"),
     (Join-Path $env:LOCALAPPDATA "Programs\NOVAT\NOVAT.exe"),
     (Join-Path $env:LOCALAPPDATA "Programs\novat\NOVAT.exe"),
-    (Join-Path $env:LOCALAPPDATA "Programs\Mooncrew\Mooncrew.exe"),
     (Join-Path $env:ProgramFiles "NOVAT\NOVAT.exe")
 )
 $app = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
@@ -64,8 +64,8 @@ if (-not $app) {
     $shortcut = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\NOVAT.lnk"
     if (Test-Path $shortcut) {
         $shell = New-Object -ComObject WScript.Shell
-        $target = $shell.CreateShortcut($shortcut).TargetPath
-        if ($target -and (Test-Path $target)) { $app = $target }
+        $targetPath = $shell.CreateShortcut($shortcut).TargetPath
+        if ($targetPath -and (Test-Path $targetPath)) { $app = $targetPath }
     }
 }
 if ($app) {
@@ -75,5 +75,5 @@ if ($app) {
     Write-Host "[NOVAT] Install done. Start NOVAT manually if needed."
 }
 
-$kept = ($installers | Select-Object -First 2 | ForEach-Object { $_.Version.ToString() }) -join ", "
-Write-Host "[NOVAT] Kept (max 2): $kept"
+$kept = (@(Get-ChildItem (Join-Path $releaseDir "NOVAT-Setup-*.exe") | ForEach-Object { $_.Name }) -join ", ")
+Write-Host "[NOVAT] Kept: $kept"
