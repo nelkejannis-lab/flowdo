@@ -94,13 +94,13 @@
     "teamActive_one": "{{count}} colleague active",
     "teamActive_other": "{{count}} colleagues active",
     "dayCapacity": "Day capacity",
-    "dayCapacitySub": "Work time, meetings & tasks",
+    "dayCapacitySub": "What's still loading the day",
     "details": "Details",
-    "worked": "Worked",
-    "legendWorked": "Worked",
-    "legendMeetings": "Meetings",
+    "worked": "Free",
+    "legendWorked": "Already tracked",
+    "legendMeetings": "Meetings left",
     "legendOpenTasks": "Open tasks",
-    "load": "Load",
+    "load": "Remaining load",
     "insightFull": "The day is packed — focus on your top priorities.",
     "insightBalanced": "Nice balance between work and breathing room.",
     "insightLight": "Capacity left — great for deep work.",
@@ -111,7 +111,8 @@
     "insightWeekEmpty": "This week is still calm — a good time to plan ahead.",
     "insightWeekPeak": "{{day}} is the busiest day this week.",
     "emptyCapacityTitle": "Room to breathe",
-    "emptyCapacityBody": "No heavy load yet — protect a block for deep work."
+    "emptyCapacityBody": "No heavy load yet — protect a block for deep work.",
+    "legendFree": "Headroom"
   },
   "readiness": {
     "eyebrow": "Your day with NOVAT",
@@ -125,13 +126,16 @@
     "todayTodosMore": "Show {{count}} more",
     "completeTodo": "Mark as done",
     "doneStats": {
-      "title": "Tasks completed",
+      "title": "Today at a glance",
       "centerSub": "done",
       "ofTotal": "{{done}} of {{total}}",
-      "meetingsHeld": "Meetings held",
-      "tasksDone": "Tasks completed",
+      "meetingsHeld": "Meetings today",
+      "tasksDone": "Done",
       "trackedTime": "Time tracked",
-      "readinessHint": "Readiness {{score}}"
+      "readinessHint": "Readiness {{score}}",
+      "meetingsDetail": "{{done}} done · {{open}} left",
+      "tasksOpen": "{{count}} open",
+      "trackedHint": "of {{target}} target"
     },
     "workControls": {
       "start": "Start",
@@ -302,5 +306,10 @@
       "nextEvents": "Upcoming events",
       "projectsOverview": "Projects overview"
     }
-  }
+  },
+  "quickAddPlaceholderTask": "Describe a task…",
+  "quickAddPlaceholderAppointment": "Describe an appointment (e.g. Meeting at 2pm)…",
+  "quickModeAuto": "Auto",
+  "quickModeTask": "Task",
+  "quickModeAppointment": "Event"
 }

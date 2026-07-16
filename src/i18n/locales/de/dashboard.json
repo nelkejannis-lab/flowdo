@@ -94,13 +94,13 @@
     "teamActive_one": "{{count}} Kollege aktiv",
     "teamActive_other": "{{count}} Kollegen aktiv",
     "dayCapacity": "Tageskapazität",
-    "dayCapacitySub": "Arbeitszeit, Meetings & Aufgaben",
+    "dayCapacitySub": "Was den Tag noch belastet",
     "details": "Details",
-    "worked": "Gearbeitet",
-    "legendWorked": "Gearbeitet",
-    "legendMeetings": "Meetings",
+    "worked": "Frei",
+    "legendWorked": "Bereits erfasst",
+    "legendMeetings": "Meetings noch",
     "legendOpenTasks": "Offene Aufgaben",
-    "load": "Auslastung",
+    "load": "Restlast",
     "insightFull": "Der Tag ist gut gefüllt — fokussiere dich auf die Top-Prioritäten.",
     "insightBalanced": "Gute Balance zwischen Arbeit und Freiraum.",
     "insightLight": "Noch Kapazität frei — gut für Deep Work.",
@@ -111,7 +111,8 @@
     "insightWeekEmpty": "Diese Woche ist noch ruhig — ideal zum Vorplanen.",
     "insightWeekPeak": "{{day}} ist der dichteste Tag der Woche.",
     "emptyCapacityTitle": "Freiraum da",
-    "emptyCapacityBody": "Noch keine schwere Last — schütze einen Block für Deep Work."
+    "emptyCapacityBody": "Noch keine schwere Last — schütze einen Block für Deep Work.",
+    "legendFree": "Freiraum"
   },
   "readiness": {
     "eyebrow": "Dein Tag mit NOVAT",
@@ -125,13 +126,16 @@
     "todayTodosMore": "+{{count}} weitere anzeigen",
     "completeTodo": "Als erledigt markieren",
     "doneStats": {
-      "title": "Aufgaben erledigt",
+      "title": "Heute im Blick",
       "centerSub": "fertig",
       "ofTotal": "{{done}} von {{total}}",
-      "meetingsHeld": "Meetings gehalten",
-      "tasksDone": "Aufgaben erledigt",
+      "meetingsHeld": "Meetings heute",
+      "tasksDone": "Erledigt",
       "trackedTime": "Zeit erfasst",
-      "readinessHint": "Bereitschaft {{score}}"
+      "readinessHint": "Bereitschaft {{score}}",
+      "meetingsDetail": "{{done}} vorbei · {{open}} offen",
+      "tasksOpen": "{{count}} offen",
+      "trackedHint": "von {{target}} Ziel"
     },
     "workControls": {
       "start": "Starten",
@@ -302,5 +306,10 @@
       "nextEvents": "Nächste Events",
       "projectsOverview": "Projektübersicht"
     }
-  }
+  },
+  "quickAddPlaceholderTask": "Aufgabe beschreiben…",
+  "quickAddPlaceholderAppointment": "Termin beschreiben (z. B. Meeting um 14:00)…",
+  "quickModeAuto": "Auto",
+  "quickModeTask": "Aufgabe",
+  "quickModeAppointment": "Termin"
 }

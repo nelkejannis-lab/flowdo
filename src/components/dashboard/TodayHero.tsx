@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+﻿import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState, type ReactNode } from 'react'
 import {
@@ -13,7 +13,6 @@ import {
   Users,
   Clock,
   ListTodo,
-  Plus,
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
@@ -57,8 +56,10 @@ interface Colleague {
 interface DoneStats {
   tasksCompleted: number
   tasksTotal: number
-  meetingsHeld: number
+  meetingsToday: number
+  meetingsDone: number
   trackedLabel: string
+  targetLabel: string
 }
 
 interface Props {
@@ -75,8 +76,6 @@ interface Props {
   doneStats: DoneStats
   onPlanDay?: () => void
   onOpenBriefing?: () => void
-  onAddTask?: () => void
-  onAddEntry?: () => void
   onToggleTodo?: (task: TodayTodo) => void
   onOpenTodo?: (task: TodayTodo) => void
 }
@@ -95,24 +94,23 @@ export default function TodayHero({
   doneStats,
   onPlanDay,
   onOpenBriefing,
-  onAddTask,
-  onAddEntry,
   onToggleTodo,
   onOpenTodo,
 }: Props) {
   const { t, i18n } = useTranslation('dashboard')
-  const { t: tc } = useTranslation('calendar')
   const dateLocale = i18n.language === 'en' ? enUS : de
+
   const capped = Math.min(100, Math.max(0, capacityPercent))
   const free = Math.max(0, 100 - capped)
+
   const donePct =
     doneStats.tasksTotal > 0
       ? Math.round((doneStats.tasksCompleted / doneStats.tasksTotal) * 100)
       : doneStats.tasksCompleted > 0
         ? 100
         : 0
-  const doneRing = donePct >= 80 ? 'rgb(34 197 94)' : donePct >= 40 ? 'rgb(var(--accent))' : 'rgb(148 163 184)'
-  const doneFree = Math.max(0, 100 - Math.max(donePct, doneStats.tasksCompleted > 0 ? 1 : 0))
+
+  const meetingsOpen = Math.max(0, doneStats.meetingsToday - doneStats.meetingsDone)
 
   const isRunning = useWorkTimeStore((s) => s.isRunning)
   const isOnBreak = useWorkTimeStore((s) => s.isOnBreak)
@@ -131,39 +129,18 @@ export default function TodayHero({
   const openTodos = todayTodos.filter((tk) => !tk.completed)
   const visibleTodos = openTodos.slice(0, 8)
 
+  const meetingsLabelKey = 'readiness.doneStats.meetings' + 'Held'
+
   return (
     <section className="bento-card mb-6 overflow-hidden p-5 sm:p-7">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wider text-accent">
-            {t('readiness.eyebrow')}
-          </p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-accent">{t('readiness.eyebrow')}</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">{dayLabel}</h1>
-          {workStatus && (
-            <p className="mt-1.5 text-sm text-gray-500 dark:text-racing-300">{workStatus}</p>
-          )}
+          {workStatus && <p className="mt-1.5 text-sm text-gray-500 dark:text-racing-300">{workStatus}</p>}
         </div>
+
         <div className="flex flex-wrap items-center gap-2">
-          {onAddTask && (
-            <button
-              type="button"
-              onClick={onAddTask}
-              className="inline-flex items-center gap-1 rounded-full bg-accent px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm shadow-accent/20 transition hover:brightness-110 active:scale-95"
-            >
-              <Plus size={13} />
-              {tc('agenda.taskButton')}
-            </button>
-          )}
-          {onAddEntry && (
-            <button
-              type="button"
-              onClick={onAddEntry}
-              className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-95 dark:border-racing-700 dark:bg-racing-800 dark:text-racing-100"
-            >
-              <Plus size={13} />
-              {tc('agenda.entryButton')}
-            </button>
-          )}
           {onOpenBriefing && (
             <button
               type="button"
@@ -173,6 +150,7 @@ export default function TodayHero({
               {t('focus.openBriefing')}
             </button>
           )}
+
           {onPlanDay && (
             <button
               type="button"
@@ -187,70 +165,48 @@ export default function TodayHero({
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-12 lg:gap-6">
-        {/* Today's done stats */}
-        <div className="flex flex-col items-center gap-3 rounded-[20px] bg-gradient-to-br from-accent/[0.07] via-transparent to-transparent p-4 sm:p-5 lg:col-span-4 dark:from-accent/10">
-          <DonutChart
-            size={128}
-            stroke={12}
-            segments={[
-              { value: Math.max(1, donePct || (doneStats.tasksCompleted > 0 ? 1 : 0)), color: doneRing },
-              { value: Math.max(0.5, doneFree), color: 'rgba(148,163,184,0.22)' },
-            ]}
-            centerLabel={String(doneStats.tasksCompleted)}
-            centerSub={t('readiness.doneStats.centerSub')}
+        {/* Done metrics */}
+        <div className="flex flex-col gap-3 lg:col-span-4">
+          <MetricTile
+            icon={<ListTodo size={15} className="text-accent" />}
+            label={t('readiness.doneStats.tasksDone')}
+            value={
+              doneStats.tasksTotal > 0
+                ? `${doneStats.tasksCompleted}/${doneStats.tasksTotal}`
+                : String(doneStats.tasksCompleted)
+            }
+            detail={doneStats.tasksTotal > 0 ? `${donePct}%` : undefined}
           />
-          <div className="w-full text-center">
-            <p className="text-base font-semibold tracking-tight">{t('readiness.doneStats.title')}</p>
-            {doneStats.tasksTotal > 0 && (
-              <p className="mt-0.5 text-xs text-gray-400">
-                {t('readiness.doneStats.ofTotal', {
-                  done: doneStats.tasksCompleted,
-                  total: doneStats.tasksTotal,
-                })}
-                {donePct > 0 ? ` · ${donePct}%` : ''}
-              </p>
-            )}
-            <ul className="mt-3 space-y-1.5 text-left">
-              <li className="flex items-center justify-between gap-2 rounded-xl bg-black/[0.03] px-3 py-1.5 dark:bg-white/[0.04]">
-                <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-racing-300">
-                  <Users size={12} className="text-accent" />
-                  {t('readiness.doneStats.meetingsHeld')}
-                </span>
-                <span className="text-sm font-semibold tabular-nums">{doneStats.meetingsHeld}</span>
-              </li>
-              <li className="flex items-center justify-between gap-2 rounded-xl bg-black/[0.03] px-3 py-1.5 dark:bg-white/[0.04]">
-                <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-racing-300">
-                  <ListTodo size={12} className="text-accent" />
-                  {t('readiness.doneStats.tasksDone')}
-                </span>
-                <span className="text-sm font-semibold tabular-nums">{doneStats.tasksCompleted}</span>
-              </li>
-              <li className="flex items-center justify-between gap-2 rounded-xl bg-black/[0.03] px-3 py-1.5 dark:bg-white/[0.04]">
-                <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-racing-300">
-                  <Clock size={12} className="text-accent" />
-                  {t('readiness.doneStats.trackedTime')}
-                </span>
-                <span className="text-sm font-semibold tabular-nums">{doneStats.trackedLabel}</span>
-              </li>
-            </ul>
-            <p className="mt-2 text-[10px] text-gray-400">
-              {t('readiness.doneStats.readinessHint', { score: readiness.score })}
-            </p>
-          </div>
+
+          <MetricTile
+            icon={<Users size={15} className="text-accent" />}
+            label={t(meetingsLabelKey)}
+            value={String(doneStats.meetingsToday)}
+            detail={t('readiness.doneStats.meetingsDetail', {
+              done: doneStats.meetingsDone,
+              open: meetingsOpen,
+            })}
+          />
+
+          <MetricTile
+            icon={<Clock size={15} className="text-accent" />}
+            label={t('readiness.doneStats.trackedTime')}
+            value={doneStats.trackedLabel}
+            detail={t('readiness.doneStats.trackedHint', { target: doneStats.targetLabel })}
+          />
+
+          <p className="pt-1 text-[10px] text-gray-400">{t('readiness.doneStats.readinessHint', { score: readiness.score })}</p>
         </div>
 
         {/* Today's to-dos */}
         <div className="flex min-h-0 flex-col lg:col-span-5">
           <div className="mb-2 flex items-baseline justify-between gap-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-              {t('readiness.todayTodos')}
-            </p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{t('readiness.todayTodos')}</p>
             {openTodos.length > 0 && (
-              <span className="text-[11px] tabular-nums text-gray-400">
-                {t('readiness.todayTodosCount', { count: openTodos.length })}
-              </span>
+              <span className="text-[11px] tabular-nums text-gray-400">{t('readiness.todayTodosCount', { count: openTodos.length })}</span>
             )}
           </div>
+
           {visibleTodos.length === 0 ? (
             <DelightEmpty />
           ) : (
@@ -271,19 +227,13 @@ export default function TodayHero({
                         onClick={() => onOpenTodo?.(tk)}
                         className="min-w-0 flex-1 text-left"
                       >
-                        <span className="block truncate text-sm font-medium leading-snug">
-                          {tk.title}
-                        </span>
+                        <span className="block truncate text-sm font-medium leading-snug">{tk.title}</span>
                         <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-gray-400">
                           {tk.startTime && (
                             <span className="font-semibold tabular-nums text-accent">{tk.startTime}</span>
                           )}
-                          {overdue && (
-                            <span className="font-semibold text-red-500">{t('readiness.next.overdueTag')}</span>
-                          )}
-                          {tk.urgent && tk.important && (
-                            <span className="font-semibold text-amber-600 dark:text-amber-400">Q1</span>
-                          )}
+                          {overdue && <span className="font-semibold text-red-500">{t('readiness.next.overdueTag')}</span>}
+                          {tk.urgent && tk.important && <span className="font-semibold text-amber-600 dark:text-amber-400">Q1</span>}
                         </span>
                       </button>
                     </div>
@@ -292,11 +242,9 @@ export default function TodayHero({
               })}
             </ul>
           )}
+
           {openTodos.length > visibleTodos.length && (
-            <Link
-              to="/tasks"
-              className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-accent hover:underline"
-            >
+            <Link to="/tasks" className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-accent hover:underline">
               {t('readiness.todayTodosMore', { count: openTodos.length - visibleTodos.length })}
               <ArrowRight size={12} />
             </Link>
@@ -315,25 +263,21 @@ export default function TodayHero({
               ]}
               centerLabel={`${Math.round(capped)}%`}
             />
+
             <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-                {t('focus.capacityHint')}
-              </p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{t('focus.capacityHint')}</p>
               <p className="mt-0.5 text-sm font-semibold tabular-nums">
                 {workedLabel} <span className="font-normal text-gray-400">/ {targetLabel}</span>
               </p>
               {isOnBreak && (
-                <p className="mt-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
-                  {t('readiness.workControls.onBreak')}
-                </p>
+                <p className="mt-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">{t('readiness.workControls.onBreak')}</p>
               )}
               {isRunning && !isOnBreak && (
-                <p className="mt-0.5 text-[10px] font-semibold text-accent">
-                  {t('readiness.workControls.running')}
-                </p>
+                <p className="mt-0.5 text-[10px] font-semibold text-accent">{t('readiness.workControls.running')}</p>
               )}
             </div>
           </div>
+
           <SegmentedBar value={capped} className="mt-1" />
 
           <div className="flex flex-wrap items-center gap-1.5">
@@ -356,6 +300,7 @@ export default function TodayHero({
                 {t('readiness.workControls.stop')}
               </button>
             )}
+
             {isRunning && !isOnBreak && (
               <button
                 type="button"
@@ -366,6 +311,7 @@ export default function TodayHero({
                 {t('readiness.workControls.pause')}
               </button>
             )}
+
             {isOnBreak && (
               <button
                 type="button"
@@ -381,9 +327,7 @@ export default function TodayHero({
           {colleagues.length > 0 && (
             <div className="flex items-center gap-2">
               <AvatarStack people={colleagues} />
-              <span className="text-[11px] text-gray-400">
-                {t('focus.teamActive', { count: colleagues.length })}
-              </span>
+              <span className="text-[11px] text-gray-400">{t('focus.teamActive', { count: colleagues.length })}</span>
             </div>
           )}
         </div>
@@ -391,10 +335,7 @@ export default function TodayHero({
 
       {/* Mobile story strip */}
       <div className="mt-5 -mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1 lg:hidden scrollbar-none">
-        <StoryCard
-          label={t('focus.nextEvent')}
-          icon={<CalendarDays size={14} className="text-accent" />}
-        >
+        <StoryCard label={t('focus.nextEvent')} icon={<CalendarDays size={14} className="text-accent" />}>
           {nextEvent ? (
             <>
               {nextEvent.startTime && (
@@ -415,13 +356,8 @@ export default function TodayHero({
           </Link>
         </StoryCard>
 
-        <StoryCard
-          label={t('focus.topPriorities')}
-          icon={<Flame size={14} className="text-red-500" />}
-        >
-          {priorities.length === 0 ? (
-            <ClearPrioritiesEmpty />
-          ) : (
+        {priorities.length > 0 && (
+          <StoryCard label={t('focus.topPriorities')} icon={<Flame size={14} className="text-red-500" />}>
             <ul className="flex flex-col gap-1.5">
               {priorities.slice(0, 3).map((tk, i) => (
                 <li key={tk.id} className="flex gap-2 text-sm font-medium">
@@ -430,41 +366,22 @@ export default function TodayHero({
                 </li>
               ))}
             </ul>
-          )}
-        </StoryCard>
-
-        <StoryCard
-          label={t('readiness.doneStats.title')}
-          icon={<CheckCircle2 size={14} className="text-emerald-500" />}
-        >
-          <p className="text-2xl font-bold tabular-nums">{doneStats.tasksCompleted}</p>
-          <p className="text-sm text-gray-500">
-            {doneStats.tasksTotal > 0
-              ? t('readiness.doneStats.ofTotal', {
-                  done: doneStats.tasksCompleted,
-                  total: doneStats.tasksTotal,
-                })
-              : t('readiness.doneStats.centerSub')}
-          </p>
-          <p className="mt-1 text-[11px] text-gray-400">
-            {t('readiness.doneStats.meetingsHeld')}: {doneStats.meetingsHeld} · {doneStats.trackedLabel}
-          </p>
-        </StoryCard>
+            <Link to="/eisenhower" className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-accent">
+              {t('sections.manageEisenhower')} <ArrowRight size={11} />
+            </Link>
+          </StoryCard>
+        )}
       </div>
 
-      {/* Desktop secondary row */}
-      <div className="mt-5 hidden gap-4 lg:grid lg:grid-cols-2">
+      {/* Desktop: only next event */}
+      <div className="mt-5 hidden lg:block">
         <div className="bento-card-sm flex flex-col gap-2 p-4">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-            {t('focus.nextEvent')}
-          </span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{t('focus.nextEvent')}</span>
           {nextEvent ? (
             <>
               <div className="flex items-center gap-2 text-accent">
                 <CalendarDays size={16} strokeWidth={1.6} />
-                {nextEvent.startTime && (
-                  <span className="text-sm font-bold tabular-nums">{nextEvent.startTime}</span>
-                )}
+                {nextEvent.startTime && <span className="text-sm font-bold tabular-nums">{nextEvent.startTime}</span>}
               </div>
               <p className="text-base font-semibold leading-snug">{nextEvent.title}</p>
             </>
@@ -478,34 +395,35 @@ export default function TodayHero({
             {t('calendar')} <ArrowRight size={12} />
           </Link>
         </div>
-
-        <div className="bento-card-sm flex flex-col gap-2 p-4">
-          <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-            <Flame size={11} className="text-red-500" /> {t('focus.topPriorities')}
-          </span>
-          {priorities.length === 0 ? (
-            <ClearPrioritiesEmpty />
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {priorities.slice(0, 3).map((tk, i) => (
-                <li key={tk.id} className="flex items-start gap-2">
-                  <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md bg-accent/10 text-[10px] font-bold text-accent">
-                    {i + 1}
-                  </span>
-                  <span className="text-sm font-medium leading-snug">{tk.title}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-          <Link
-            to="/eisenhower"
-            className="mt-auto inline-flex items-center gap-1 pt-2 text-xs font-semibold text-accent hover:underline"
-          >
-            {t('sections.manageEisenhower')} <ArrowRight size={12} />
-          </Link>
-        </div>
       </div>
     </section>
+  )
+}
+
+function MetricTile({
+  icon,
+  label,
+  value,
+  detail,
+}: {
+  icon: ReactNode
+  label: string
+  value: string
+  detail?: string
+}) {
+  return (
+    <div className="rounded-[18px] bg-gradient-to-br from-accent/[0.07] via-transparent to-transparent p-4 dark:from-accent/10">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+            {icon}
+            {label}
+          </p>
+          <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight">{value}</p>
+          {detail && <p className="mt-0.5 text-xs text-gray-500 dark:text-racing-300">{detail}</p>}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -534,23 +452,8 @@ function DelightEmpty() {
   return (
     <div className="readiness-delight flex flex-col items-center gap-2 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-accent/5 px-4 py-6 text-center">
       <CheckCircle2 size={28} className="text-emerald-500 readiness-pop" />
-      <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
-        {t('readiness.todayTodosEmpty')}
-      </p>
+      <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{t('readiness.todayTodosEmpty')}</p>
       <p className="text-xs text-gray-500 dark:text-racing-300">{t('readiness.todayTodosEmptyHint')}</p>
-    </div>
-  )
-}
-
-function ClearPrioritiesEmpty() {
-  const { t } = useTranslation('dashboard')
-  return (
-    <div className="flex flex-col items-start gap-1 py-1">
-      <p className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
-        <CheckCircle2 size={15} />
-        {t('readiness.delight.noQ1')}
-      </p>
-      <p className="text-xs text-gray-400">{t('readiness.delight.noQ1Hint')}</p>
     </div>
   )
 }

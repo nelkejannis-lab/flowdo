@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+﻿import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { format, addDays, startOfWeek, isSameDay } from 'date-fns'
@@ -8,6 +8,8 @@ import { useWorkTimeStore } from '../../store/workTimeStore'
 import { dayTargetMinutes, formatHM, netMinutes } from '../../utils/worktime'
 import { todayISO } from '../../utils/date'
 import type { Task, CalendarEntry } from '../../types'
+
+const TASK_MINUTES_ESTIMATE = 30
 
 interface CapacityProps {
   openTaskCount: number
@@ -23,13 +25,22 @@ export function DayCapacityWidget({ openTaskCount, meetingMinutes }: CapacityPro
 
   const today = todayISO()
   const entry = entries[today]
-  const live = isRunning && runningStartedAt ? (Date.now() - new Date(runningStartedAt).getTime()) / 60000 : 0
+  const live =
+    isRunning && runningStartedAt ? (Date.now() - new Date(runningStartedAt).getTime()) / 60000 : 0
   const worked = netMinutes(entry) + live
   const target = dayTargetMinutes(new Date(), settings)
-  const pct = target > 0 ? Math.min(100, (worked / target) * 100) : 0
-  const taskLoad = Math.min(40, openTaskCount * 6)
-  const meetingLoad = Math.min(40, (meetingMinutes / Math.max(target, 1)) * 100)
-  const free = Math.max(0, 100 - pct)
+
+  // Remaining-load view:
+  // free = target - worked - remaining meetings
+  const freeMinutes = Math.max(0, target - worked - meetingMinutes)
+
+  const taskMinutes = openTaskCount * TASK_MINUTES_ESTIMATE
+  const remainingLoadMinutes = meetingMinutes + taskMinutes
+  const remainingLoadPct = target > 0 ? Math.min(100, (remainingLoadMinutes / target) * 100) : 0
+
+  const meetingsSeg = Math.max(0.5, meetingMinutes)
+  const taskSeg = Math.max(0.5, taskMinutes)
+  const freeSeg = Math.max(0.5, freeMinutes)
 
   return (
     <div className="bento-card flex h-full flex-col gap-4 p-5">
@@ -42,35 +53,46 @@ export function DayCapacityWidget({ openTaskCount, meetingMinutes }: CapacityPro
           {t('focus.details')}
         </Link>
       </div>
+
       <div className="flex items-center gap-4">
         <DonutChart
           size={112}
           stroke={11}
           segments={[
-            { value: Math.max(1, pct), color: 'rgb(var(--accent))' },
-            { value: Math.max(0.5, meetingLoad), color: 'rgb(167 139 250)' },
-            { value: Math.max(0.5, taskLoad), color: 'rgb(100 116 139)' },
-            { value: Math.max(1, free), color: 'rgba(148,163,184,0.2)' },
+            { value: meetingsSeg, color: 'rgb(167 139 250)' },
+            { value: taskSeg, color: 'rgb(100 116 139)' },
+            { value: freeSeg, color: 'rgba(148,163,184,0.22)' },
           ]}
-          centerLabel={formatHM(worked)}
+          centerLabel={formatHM(freeMinutes)}
           centerSub={t('focus.worked')}
         />
+
         <div className="flex flex-1 flex-col gap-3 text-xs">
-          <LegendDot color="rgb(var(--accent))" label={t('focus.legendWorked')} value={formatHM(worked)} />
-          <LegendDot color="rgb(167 139 250)" label={t('focus.legendMeetings')} value={`${Math.round(meetingMinutes)} min`} />
+          <LegendDot
+            color="rgb(167 139 250)"
+            label={t('focus.legendMeetings')}
+            value={`${Math.round(meetingMinutes)} min`}
+          />
           <LegendDot color="rgb(100 116 139)" label={t('focus.legendOpenTasks')} value={String(openTaskCount)} />
+          <LegendDot
+            color="rgba(148,163,184,0.55)"
+            label={t('focus.legendFree')}
+            value={formatHM(freeMinutes)}
+          />
+
           <div>
             <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">{t('focus.load')}</p>
-            <SegmentedBar value={pct} />
+            <SegmentedBar value={remainingLoadPct} />
           </div>
         </div>
       </div>
+
       <p className="mt-auto text-[11px] leading-relaxed text-gray-400">
-        {openTaskCount === 0 && meetingMinutes < 15 && pct < 20
+        {openTaskCount === 0 && meetingMinutes < 15 && remainingLoadPct < 20
           ? t('focus.emptyCapacityBody')
-          : pct >= 90
+          : remainingLoadPct >= 90
             ? t('focus.insightFull')
-            : pct >= 50
+            : remainingLoadPct >= 50
               ? t('focus.insightBalanced')
               : t('focus.insightLight')}
       </p>

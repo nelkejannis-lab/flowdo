@@ -1,6 +1,5 @@
-import React, { useEffect, useState, useMemo } from 'react'
+import React, { useEffect, useState, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { useSocialStore } from '../store/socialStore'
 import { differenceInCalendarDays, format, parseISO, addDays, startOfWeek, isSameDay } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
 import { Plus, CalendarClock, Loader2, Check, X, Sparkles, Flame, BarChart3 } from 'lucide-react'
@@ -74,14 +73,7 @@ export default function Dashboard() {
   const todayOffice = useOfficeStore((s) => s.todayEntry)
   const fetchOfficeToday = useOfficeStore((s) => s.fetchToday)
   const events = useEventsStore((s) => s.events)
-  const fetchEvents = useEventsStore((s) => s.fetchAll)
   const calendarEntries = useCalendarEntriesStore((s) => s.entries)
-  const fetchCalendarEntries = useCalendarEntriesStore((s) => s.fetchEntries)
-  const socialAccounts = useSocialStore((s) => s.accounts)
-  const socialMetrics = useSocialStore((s) => s.metrics)
-  const socialPosts = useSocialStore((s) => s.posts)
-  const fetchSocialAccounts = useSocialStore((s) => s.fetchAccounts)
-  const fetchSocialAccountData = useSocialStore((s) => s.fetchAccountData)
   const featureVisibility = useSettingsStore((s) => s.featureVisibility)
   const dashboardVisibility = useSettingsStore((s) => s.dashboardVisibility)
   const toggleDashboardWidget = useSettingsStore((s) => s.toggleDashboardWidget)
@@ -94,9 +86,10 @@ export default function Dashboard() {
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [editingEntry, setEditingEntry] = useState<CalendarEntry | undefined>()
   const [showEntryForm, setShowEntryForm] = useState(false)
-  const [newTaskForToday, setNewTaskForToday] = useState(false)
   const [quickInput, setQuickInput] = useState('')
+  const [quickMode, setQuickMode] = useState<'auto' | 'task' | 'appointment'>('auto')
   const [parsingTask, setParsingTask] = useState(false)
+  const quickInputRef = useRef<HTMLInputElement>(null)
   const [quickEntryDefaults, setQuickEntryDefaults] = useState<{
     title?: string
     description?: string
@@ -126,25 +119,31 @@ export default function Dashboard() {
   )
 
   useEffect(() => {
-    fetchBoards()
-    fetchOfficeToday()
-    if (isSupabaseConfigured) {
-      fetchMyProjectTasks()
-      fetchTasks()
-      fetchEvents()
-      fetchCalendarEntries()
-      fetchWorkTime()
-      fetchSocialAccounts()
-    }
-  }, [fetchBoards, fetchMyProjectTasks, fetchTasks, fetchEvents, fetchCalendarEntries, fetchWorkTime, fetchSocialAccounts, fetchOfficeToday])
+    void fetchOfficeToday()
+    void fetchWorkTime()
+    if (!isSupabaseConfigured) return
+    void fetchTasks()
+    void fetchMyProjectTasks()
+  }, [fetchOfficeToday, fetchWorkTime, fetchTasks, fetchMyProjectTasks])
 
   useEffect(() => {
-    socialAccounts.forEach((a) => fetchSocialAccountData(a.id))
-  }, [socialAccounts, fetchSocialAccountData])
+    let cancelled = false
+    const run = () => {
+      if (cancelled) return
+      if (useBoardsStore.getState().boards.length === 0) void fetchBoards()
+    }
+    const idleId = typeof requestIdleCallback !== 'undefined' ? requestIdleCallback(run, { timeout: 1800 }) : window.setTimeout(run, 450)
+    return () => {
+      cancelled = true
+      if (typeof cancelIdleCallback !== 'undefined') { try { cancelIdleCallback(idleId as number) } catch { clearTimeout(idleId as number) } } else clearTimeout(idleId as number)
+    }
+  }, [fetchBoards])
 
   useEffect(() => {
     if (!isSupabaseConfigured) return
-    return subscribeToMyProjectTasks()
+    let unsub: (() => void) | undefined
+    const t = window.setTimeout(() => { unsub = subscribeToMyProjectTasks() }, 700)
+    return () => { clearTimeout(t); unsub?.() }
   }, [subscribeToMyProjectTasks])
 
   const allTasks = [...tasks, ...myProjectTasks]
@@ -306,6 +305,7 @@ export default function Dashboard() {
     const isMultiDaySpanningToday = e.date < today && e.endDate && e.endDate >= today
     return isToday || !!isMultiDaySpanningToday
   }).length
+  const remainingMeetingMinutes = meetingMinutesToday
   const doneStats = {
     tasksCompleted: tasksCompletedToday,
     tasksTotal: tasksTotalToday,
@@ -347,7 +347,8 @@ export default function Dashboard() {
             if (!input || parsingTask) return
             setParsingTask(true)
             try {
-              if (isLikelyAppointment(input)) {
+              const asAppointment = quickMode === 'appointment' || (quickMode === 'auto' && isLikelyAppointment(input))
+              if (asAppointment) {
                 let parsed
                 try {
                   const friendsStore = useFriendsStore.getState()
@@ -415,13 +416,44 @@ export default function Dashboard() {
               setParsingTask(false)
             }
           }}
-          className="flex items-center gap-2 rounded-2xl border border-black/[0.06] bg-white/90 p-1.5 shadow-apple-sm ring-1 ring-black/[0.02] transition-[box-shadow,border-color] duration-200 ease-apple focus-within:border-accent/25 focus-within:shadow-[0_8px_28px_rgb(var(--accent)/0.12),0_2px_8px_rgba(15,23,42,0.06)] dark:border-white/[0.08] dark:bg-racing-900/90 dark:ring-white/[0.04] dark:focus-within:border-accent/35 sm:gap-2.5 sm:p-2"
+          className="flex flex-col gap-2 rounded-2xl border border-black/[0.06] bg-white/90 p-1.5 shadow-apple-sm ring-1 ring-black/[0.02] transition-[box-shadow,border-color] duration-200 ease-apple focus-within:border-accent/25 focus-within:shadow-[0_8px_28px_rgb(var(--accent)/0.12),0_2px_8px_rgba(15,23,42,0.06)] dark:border-white/[0.08] dark:bg-racing-900/90 dark:ring-white/[0.04] dark:focus-within:border-accent/35 sm:p-2"
         >
+          <div className="flex items-center gap-1 px-1 pt-0.5">
+            {([
+              ['auto', t('quickModeAuto')],
+              ['task', t('quickModeTask')],
+              ['appointment', t('quickModeAppointment')],
+            ] as const).map(([mode, label]) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => { setQuickMode(mode); quickInputRef.current?.focus() }}
+                className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all ${
+                  quickMode === mode
+                    ? 'bg-accent/15 text-accent'
+                    : 'text-gray-400 hover:bg-black/[0.04] hover:text-gray-600 dark:hover:bg-white/[0.06] dark:hover:text-racing-200'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 sm:gap-2.5">
           <input
+            ref={quickInputRef}
+            id="dashboard-quick-add"
             value={quickInput}
             onChange={(e) => setQuickInput(e.target.value)}
             disabled={parsingTask}
-            placeholder={parsingTask ? "Analysiere mit KI..." : t('quickAddPlaceholder')}
+            placeholder={
+              parsingTask
+                ? 'Analysiere mit KI...'
+                : quickMode === 'task'
+                  ? t('quickAddPlaceholderTask')
+                  : quickMode === 'appointment'
+                    ? t('quickAddPlaceholderAppointment')
+                    : t('quickAddPlaceholder')
+            }
             className="min-w-0 flex-1 rounded-xl border-0 bg-transparent px-3.5 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:ring-0 disabled:opacity-75 dark:text-racing-50 dark:placeholder:text-racing-400 sm:px-4"
           />
           <button
@@ -448,6 +480,7 @@ export default function Dashboard() {
           >
             <Sparkles size={16} strokeWidth={1.75} />
           </button>
+          </div>
         </form>
       </div>
 
@@ -464,7 +497,7 @@ export default function Dashboard() {
                 {block.ids.map((id) => (
                   <EditableSection key={id} isEditing={isEditing} onRemove={() => toggleDashboardWidget(id)}>
                     {id === 'dayCapacity' ? (
-                      <DayCapacityWidget openTaskCount={todayOpenTasks.length} meetingMinutes={meetingMinutesToday} />
+                      <DayCapacityWidget openTaskCount={todayOpenTasks.length} meetingMinutes={remainingMeetingMinutes} />
                     ) : (
                       <WeekOverviewWidget tasks={allTasks} entries={calendarEntries} />
                     )}
@@ -553,7 +586,7 @@ export default function Dashboard() {
                 />
               )}
               {id === 'dayCapacity' && (
-                <DayCapacityWidget openTaskCount={todayOpenTasks.length} meetingMinutes={meetingMinutesToday} />
+                <DayCapacityWidget openTaskCount={todayOpenTasks.length} meetingMinutes={remainingMeetingMinutes} />
               )}
               {id === 'weekOverview' && (
                 <WeekOverviewWidget tasks={allTasks} entries={calendarEntries} />
@@ -680,9 +713,6 @@ export default function Dashboard() {
 
       {showForm && (
         <TaskFormModal defaultDueDate={todayISO()} onClose={() => setShowForm(false)} />
-      )}
-      {newTaskForToday && (
-        <TaskFormModal defaultDueDate={today} onClose={() => setNewTaskForToday(false)} />
       )}
       {editingTask && (() => {
         const board = editingTask.boardId ? boards.find((b) => b.id === editingTask.boardId) : undefined
