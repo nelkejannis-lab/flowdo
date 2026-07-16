@@ -4,7 +4,7 @@ All Phase 2 features have MVP implementations in this codebase:
 
 | Feature | Location | Notes |
 |---------|----------|-------|
-| Microsoft Teams calendar sync | `calendarConnectionsStore.pushEntryToTeams`, `supabase/functions/calendar-sync` POST | Connect Outlook in Settings → Calendar; push on save |
+| Microsoft Teams calendar sync | `calendarConnectionsStore` + `calendarEntriesStore` + `supabase/functions/calendar-sync` | Import + create/update/delete push with `external_id`; see `docs/TEAMS_CALENDAR_SYNC.md` |
 | Calendar cancellation sync | `supabase/functions/calendar-sync` | Removes imported entries missing from external feed |
 | Calendar privacy blur | `utils/calendarPrivacy.ts`, `TeamAvailabilitySidebar`, Settings → Functions | Toggle colleague absences; blur vacation/OOO |
 | Department filter | `CalendarPage` team filter dropdown | When enabled in settings |

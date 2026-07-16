@@ -11,6 +11,8 @@ create table if not exists calendar_entries (
   start_time time,
   end_time time,
   color text not null default '#4772FA',
+  external_id text,
+  external_provider text check (external_provider is null or external_provider in ('google', 'microsoft', 'ical')),
   created_at timestamptz not null default now()
 );
 

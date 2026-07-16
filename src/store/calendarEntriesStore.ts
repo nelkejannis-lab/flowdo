@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware'
 import { supabase } from '../lib/supabase'
 import type { CalendarEntry, CalendarEntryInvitee, CalendarEntryType } from '../types'
 import { extractSeriesId, occurrenceKey, parseCalendarEntryId } from '../utils/calendarEntry'
+import { useCalendarConnectionsStore } from './calendarConnectionsStore'
 
 interface CalendarEntryRow {
   id: string
@@ -17,6 +18,8 @@ interface CalendarEntryRow {
   color: string
   completed: boolean | null
   meeting_link: string | null
+  external_id: string | null
+  external_provider: string | null
   created_at: string
   owner: CalendarEntryInvitee | CalendarEntryInvitee[] | null
   calendar_entry_invites: { user: CalendarEntryInvitee | CalendarEntryInvitee[] }[] | null
@@ -76,7 +79,56 @@ function toEntry(row: CalendarEntryRow & { recurrence?: string | null }): Calend
     recurrence: (row.recurrence ?? undefined) as CalendarEntry['recurrence'],
     completed: row.completed ?? false,
     meetingLink: row.meeting_link ?? undefined,
+    externalId: row.external_id ?? undefined,
   }
+}
+
+function hasMicrosoftConnection(): boolean {
+  return useCalendarConnectionsStore.getState().connections.some((c) => c.provider === 'microsoft')
+}
+
+async function syncTerminToTeams(
+  action: 'push' | 'update' | 'delete',
+  entry: {
+    id?: string
+    type: CalendarEntryType
+    title: string
+    date: string
+    startTime?: string
+    endTime?: string
+    meetingLink?: string
+    externalId?: string
+  },
+): Promise<string | null> {
+  if (entry.type !== 'termin') return null
+  const store = useCalendarConnectionsStore.getState()
+  if (store.connections.length === 0) await store.fetch()
+  if (!hasMicrosoftConnection()) return null
+  if (action === 'delete') {
+    if (!entry.externalId) return null
+    return store.deleteEntryOnTeams(entry.externalId)
+  }
+  if (action === 'update') {
+    const result = await store.updateEntryOnTeams({
+      id: entry.id,
+      title: entry.title,
+      date: entry.date,
+      startTime: entry.startTime,
+      endTime: entry.endTime,
+      meetingLink: entry.meetingLink,
+      externalId: entry.externalId,
+    })
+    return result.error
+  }
+  const result = await store.pushEntryToTeams({
+    id: entry.id,
+    title: entry.title,
+    date: entry.date,
+    startTime: entry.startTime,
+    endTime: entry.endTime,
+    meetingLink: entry.meetingLink,
+  })
+  return result.error
 }
 
 async function setInvites(entryId: string, userIds: string[]): Promise<string | null> {
@@ -167,12 +219,24 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()(
           if (inviteErr) console.error('[addEntry] setInvites error:', inviteErr)
         }
 
+        const teamsErr = await syncTerminToTeams('push', {
+          id: data.id,
+          type: input.type,
+          title: input.title,
+          date: input.date,
+          startTime: input.startTime,
+          endTime: input.endTime,
+          meetingLink: input.meetingLink,
+        })
+        if (teamsErr) console.warn('[addEntry] Teams push:', teamsErr)
+
         await get().fetchEntries()
         return null
       },
 
       updateEntry: async (id, input) => {
         const { dbId } = parseCalendarEntryId(id)
+        const existing = get().entries.find((e) => e.id === dbId)
         const { error } = await supabase
           .from('calendar_entries')
           .update({
@@ -192,6 +256,19 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()(
         if (error) return error.message
 
         await setInvites(dbId, input.invitedUserIds)
+
+        const teamsErr = await syncTerminToTeams('update', {
+          id: dbId,
+          type: input.type,
+          title: input.title,
+          date: input.date,
+          startTime: input.startTime,
+          endTime: input.endTime,
+          meetingLink: input.meetingLink,
+          externalId: existing?.externalId,
+        })
+        if (teamsErr) console.warn('[updateEntry] Teams update:', teamsErr)
+
         await get().fetchEntries()
         return null
       },
@@ -210,6 +287,7 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()(
 
       rescheduleEntry: async (id, patch) => {
         const { dbId } = parseCalendarEntryId(id)
+        const existing = get().entries.find((e) => e.id === dbId)
         const payload: Record<string, unknown> = {}
         if (patch.date !== undefined) payload.date = patch.date
         if (patch.endDate !== undefined) payload.end_date = patch.endDate
@@ -229,7 +307,23 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()(
           ),
         }))
         const { error } = await supabase.from('calendar_entries').update(payload).eq('id', dbId)
-        if (error) await get().fetchEntries()
+        if (error) {
+          await get().fetchEntries()
+          return
+        }
+        if (existing?.type === 'termin') {
+          const teamsErr = await syncTerminToTeams('update', {
+            id: dbId,
+            type: existing.type,
+            title: existing.title,
+            date: patch.date ?? existing.date,
+            startTime: patch.startTime === null ? undefined : patch.startTime ?? existing.startTime,
+            endTime: patch.endTime === null ? undefined : patch.endTime ?? existing.endTime,
+            meetingLink: existing.meetingLink,
+            externalId: existing.externalId,
+          })
+          if (teamsErr) console.warn('[rescheduleEntry] Teams update:', teamsErr)
+        }
       },
 
       deleteEntry: async (id, occurrenceDate) => {
@@ -247,12 +341,12 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()(
 
         const entry = get().entries.find((e) => e.id === dbId)
         const seriesId = extractSeriesId(entry?.description)
-        const idsToDelete = seriesId
-          ? get().entries
-              .filter((e) => extractSeriesId(e.description) === seriesId)
-              .map((e) => e.id)
-          : [dbId]
-        const deleteIds = [...new Set(idsToDelete)]
+        const entriesToDelete = seriesId
+          ? get().entries.filter((e) => extractSeriesId(e.description) === seriesId)
+          : entry
+            ? [entry]
+            : []
+        const deleteIds = [...new Set(entriesToDelete.map((e) => e.id).concat(dbId))]
 
         for (const delId of deleteIds) pendingDeletes.add(delId)
         set((state) => ({
@@ -264,15 +358,29 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()(
         }))
 
         let hadError = false
-        for (const delId of deleteIds) {
-          await supabase.from('calendar_entry_invites').delete().eq('entry_id', delId)
-          const { error } = await supabase.from('calendar_entries').delete().eq('id', delId)
-          pendingDeletes.delete(delId)
+        for (const toDelete of entriesToDelete) {
+          const isImportedMirror =
+            toDelete.title.startsWith('[Outlook]') ||
+            toDelete.title.startsWith('[Google]') ||
+            toDelete.title.startsWith('[iCal]')
+          if (!isImportedMirror && toDelete.externalId) {
+            const teamsErr = await syncTerminToTeams('delete', {
+              type: toDelete.type,
+              title: toDelete.title,
+              date: toDelete.date,
+              externalId: toDelete.externalId,
+            })
+            if (teamsErr) console.warn('[deleteEntry] Teams delete:', teamsErr)
+          }
+          await supabase.from('calendar_entry_invites').delete().eq('entry_id', toDelete.id)
+          const { error } = await supabase.from('calendar_entries').delete().eq('id', toDelete.id)
+          pendingDeletes.delete(toDelete.id)
           if (error) {
             hadError = true
             console.error('[deleteEntry] failed:', error.message)
           }
         }
+        for (const delId of deleteIds) pendingDeletes.delete(delId)
 
         if (hadError) await get().fetchEntries()
       },
