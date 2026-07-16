@@ -157,9 +157,34 @@ async function createWindow() {
     win.focus()
   })
 
-  // Open external links (OAuth, etc.) in the system browser instead of inside the app window
+  // Only open truly external http(s) links in the system browser.
+  // Same-origin / localhost SPA routes (menu NavLinks with target=_blank, window.open,
+  // middle-click, etc.) must stay inside this Electron window — otherwise every in-app
+  // navigation looks like "it opened Chrome instead of the app".
+  const isInternalAppUrl = (rawUrl) => {
+    try {
+      const parsed = new URL(rawUrl)
+      if (parsed.protocol === 'file:') return true
+      const { hostname, port } = parsed
+      if (hostname !== '127.0.0.1' && hostname !== 'localhost') return false
+      // Packaged static server, Vite electron:dev, or plain vite
+      const p = port || (parsed.protocol === 'https:' ? '443' : '80')
+      return p === String(STATIC_SERVER_PORT) || p === '5173' || p === '5183'
+    } catch {
+      return false
+    }
+  }
+
   win.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url)
+    if (isInternalAppUrl(url)) {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.loadURL(url)
+      }
+      return { action: 'deny' }
+    }
+    if (/^https?:/i.test(url)) {
+      shell.openExternal(url)
+    }
     return { action: 'deny' }
   })
 
