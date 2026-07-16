@@ -227,22 +227,6 @@ button, a, [role="button"], input, select, textarea, label {
   border: 1px solid rgba(148, 163, 184, 0.1);
 }
 
-.timeframe-pill {
-  @apply rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all;
-  color: rgb(var(--ink-secondary));
-  background: transparent;
-}
-.timeframe-pill[aria-pressed="true"],
-.timeframe-pill.is-active {
-  background: rgb(var(--ink));
-  color: rgb(var(--surface-1));
-}
-.dark .timeframe-pill[aria-pressed="true"],
-.dark .timeframe-pill.is-active {
-  background: rgb(226 232 240);
-  color: rgb(15 23 42);
-}
-
 .segmented-bar {
   display: flex;
   gap: 3px;

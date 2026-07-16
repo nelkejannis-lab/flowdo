@@ -281,12 +281,7 @@ export default function Dashboard() {
       />
 
       <div className="mb-6">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5">
-            <span className="timeframe-pill is-active" aria-pressed="true">{t('focus.today')}</span>
-            <Link to="/tasks/week" className="timeframe-pill">{t('focus.thisWeek')}</Link>
-            <Link to="/calendar" className="timeframe-pill hidden sm:inline-flex">{t('focus.thisMonth')}</Link>
-          </div>
+        <div className="mb-3 flex items-center justify-end gap-3">
           <button
             onClick={() => setIsEditing(!isEditing)}
             className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold shadow-sm transition-all duration-150 active:scale-95 ${
