@@ -272,6 +272,16 @@ export default function WhatsAppLinkSetting() {
         <>
           <p className="text-xs text-gray-500">{t('whatsapp.connectIntro')}</p>
 
+          {sandboxOn && (
+            <div className="rounded-lg border border-amber-300/90 bg-amber-100/80 px-3 py-2.5 text-xs leading-relaxed text-amber-950 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-100">
+              <p className="font-semibold">{t('whatsapp.joinFirstBannerTitle')}</p>
+              <p className="mt-1">{t('whatsapp.joinFirstBannerBody', { bot: botLabel })}</p>
+              {!joinCode && (
+                <p className="mt-1.5 font-medium">{t('whatsapp.joinFirstBannerMissing')}</p>
+              )}
+            </div>
+          )}
+
           <div className="flex gap-2">
             <button
               type="button"

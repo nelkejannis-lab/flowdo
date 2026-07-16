@@ -112,8 +112,6 @@
     "eyebrow": "Dein Tag mit NOVAT",
     "metricName": "Tages-Bereitschaft",
     "scoreShort": "Bereit",
-    "howYoureDoing": "So stehst du da",
-    "whatNext": "Als Nächstes",
     "todayTodos": "Heutige To-dos",
     "todayTodosCount_one": "{{count}} offen",
     "todayTodosCount_other": "{{count}} offen",
@@ -142,7 +140,7 @@
     "streak_other": "{{count}}-Tage-Fokus-Serie",
     "band": {
       "sharp": "Klar & bereit",
-      "ready": "Fokusbereit",
+      "ready": "Aufgaben erledigt",
       "stretched": "Etwas angespannt",
       "critical": "Braucht Aufmerksamkeit"
     },

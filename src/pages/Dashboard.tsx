@@ -337,8 +337,8 @@ export default function Dashboard() {
       {!onboardingTourDone && <OnboardingWizard />}
       {!onboardingPermissionsDone && <OnboardingPermissions />}
 
-      {/* Sticky Quick Add — sticks to top of main scroll (below Focus Horizon TopBar) */}
-      <div className="sticky top-0 z-20 -mx-4 mb-6 border-b border-gray-100/80 bg-white/90 px-4 py-3 backdrop-blur-md dark:border-racing-850/80 dark:bg-[rgb(var(--surface-0)/0.92)] sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+      {/* Sticky Quick Add — always pinned to top of main scrollport for fast add */}
+      <div className="sticky top-0 z-30 -mx-4 mb-6 border-b border-gray-100/80 bg-white/95 px-4 py-3 shadow-sm shadow-black/[0.04] backdrop-blur-md dark:border-racing-850/80 dark:bg-[rgb(var(--surface-0)/0.95)] dark:shadow-black/20 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         <form
           onSubmit={async (e) => {
             e.preventDefault()

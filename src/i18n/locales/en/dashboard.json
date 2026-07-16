@@ -112,8 +112,6 @@
     "eyebrow": "Your day with NOVAT",
     "metricName": "Day Readiness",
     "scoreShort": "Ready",
-    "howYoureDoing": "How you're doing",
-    "whatNext": "What to do next",
     "todayTodos": "Today's to-dos",
     "todayTodosCount_one": "{{count}} open",
     "todayTodosCount_other": "{{count}} open",
@@ -142,7 +140,7 @@
     "streak_other": "{{count}}-day focus streak",
     "band": {
       "sharp": "Sharp & ready",
-      "ready": "Ready to focus",
+      "ready": "Tasks completed",
       "stretched": "A bit stretched",
       "critical": "Needs attention"
     },
