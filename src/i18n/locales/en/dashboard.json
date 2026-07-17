@@ -143,7 +143,9 @@
       "pause": "Pause",
       "resume": "Resume",
       "running": "Timer running",
-      "onBreak": "On break"
+      "onBreak": "On break",
+      "onBreakTimer": "Break · {{time}}",
+      "breakDuration": "Break time"
     },
     "streak_one": "{{count}}-day focus streak",
     "streak_other": "{{count}}-day focus streak",

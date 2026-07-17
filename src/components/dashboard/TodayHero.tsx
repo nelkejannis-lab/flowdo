@@ -115,6 +115,7 @@ export default function TodayHero({
 
   const isRunning = useWorkTimeStore((s) => s.isRunning)
   const isOnBreak = useWorkTimeStore((s) => s.isOnBreak)
+  const breakStartedAt = useWorkTimeStore((s) => s.breakStartedAt)
   const clockIn = useWorkTimeStore((s) => s.clockIn)
   const clockOut = useWorkTimeStore((s) => s.clockOut)
   const startBreak = useWorkTimeStore((s) => s.startBreak)
@@ -122,10 +123,16 @@ export default function TodayHero({
 
   const [, forceTick] = useState(0)
   useEffect(() => {
-    if (!isRunning) return
+    if (!isRunning && !isOnBreak) return
     const id = setInterval(() => forceTick((n) => n + 1), 1000)
     return () => clearInterval(id)
-  }, [isRunning])
+  }, [isRunning, isOnBreak])
+
+  const breakElapsedSec =
+    isOnBreak && breakStartedAt
+      ? Math.floor((Date.now() - new Date(breakStartedAt).getTime()) / 1000)
+      : 0
+  const breakTimerLabel = formatBreakElapsed(breakElapsedSec)
 
   const openTodos = todayTodos.filter((tk) => !tk.completed)
   const visibleTodos = openTodos.slice(0, 8)
@@ -280,9 +287,9 @@ export default function TodayHero({
           <div className="flex items-center justify-between gap-2">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{t('focus.capacityHint')}</p>
             {isOnBreak ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                {t('readiness.workControls.onBreak')}
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-amber-700 dark:text-amber-300">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" />
+                {t('readiness.workControls.onBreakTimer', { time: breakTimerLabel })}
               </span>
             ) : isRunning ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-semibold text-accent">
@@ -311,6 +318,17 @@ export default function TodayHero({
               <ProgressTrack value={capped} className="mt-2.5" />
             </div>
           </div>
+
+          {isOnBreak && (
+            <div className="flex items-center justify-between rounded-lg border border-amber-200/80 bg-amber-50/90 px-3 py-2 dark:border-amber-800/60 dark:bg-amber-900/25">
+              <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-300">
+                {t('readiness.workControls.breakDuration')}
+              </span>
+              <span className="text-sm font-bold tabular-nums tracking-tight text-amber-800 dark:text-amber-200">
+                {breakTimerLabel}
+              </span>
+            </div>
+          )}
 
           <div
             className={`flex overflow-hidden rounded-xl border ${
@@ -440,6 +458,16 @@ export default function TodayHero({
       </div>
     </section>
   )
+}
+
+function formatBreakElapsed(totalSeconds: number): string {
+  const h = Math.floor(totalSeconds / 3600)
+  const m = Math.floor((totalSeconds % 3600) / 60)
+  const s = totalSeconds % 60
+  if (h > 0) {
+    return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  }
+  return `${m}:${String(s).padStart(2, '0')}`
 }
 
 function MetricTile({

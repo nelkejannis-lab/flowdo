@@ -71,6 +71,8 @@ export default function Dashboard() {
   const workSettings = useWorkTimeStore((s) => s.settings)
   const isRunning = useWorkTimeStore((s) => s.isRunning)
   const runningStartedAt = useWorkTimeStore((s) => s.runningStartedAt)
+  const isOnBreak = useWorkTimeStore((s) => s.isOnBreak)
+  const breakStartedAt = useWorkTimeStore((s) => s.breakStartedAt)
   const colleagueEntries = useOfficeStore((s) => s.colleagueEntries)
   const todayOffice = useOfficeStore((s) => s.todayEntry)
   const fetchOfficeToday = useOfficeStore((s) => s.fetchToday)
@@ -110,6 +112,13 @@ export default function Dashboard() {
     return hour >= 5 && hour < 12 && dismissed !== today
   })
   const sectionOrder = useSettingsStore((s) => normalizeDashboardSectionOrder(s.dashboardSectionOrder))
+
+  const [, workTimeTick] = useState(0)
+  useEffect(() => {
+    if (!isRunning) return
+    const id = setInterval(() => workTimeTick((n) => n + 1), 1000)
+    return () => clearInterval(id)
+  }, [isRunning])
 
   function isSectionVisible(id: DashboardSectionId): boolean {
     return dashboardVisibility[id] ?? true
@@ -217,7 +226,8 @@ export default function Dashboard() {
     : null
 
   const todayWork = workEntries[today]
-  const liveMin = isRunning && runningStartedAt ? (Date.now() - new Date(runningStartedAt).getTime()) / 60000 : 0
+  const liveAnchor = isOnBreak && breakStartedAt ? new Date(breakStartedAt).getTime() : Date.now()
+  const liveMin = isRunning && runningStartedAt ? (liveAnchor - new Date(runningStartedAt).getTime()) / 60000 : 0
   const workedMin = netMinutes(todayWork) + liveMin
   const targetMin = dayTargetMinutes(new Date(), workSettings)
   const capacityPercent = targetMin > 0 ? Math.min(100, (workedMin / targetMin) * 100) : 0
