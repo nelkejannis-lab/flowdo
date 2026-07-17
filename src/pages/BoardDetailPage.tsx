@@ -521,6 +521,7 @@ export default function BoardDetailPage() {
               onAddTask={() => setNewTaskColumnId(board.columns[0]?.id ?? '')}
               onTaskClick={(task) => setEditingTask(task)}
               onSwitchToBoard={() => setActiveView('board')}
+              onUpdateTask={updateTask}
             />
           )}
 

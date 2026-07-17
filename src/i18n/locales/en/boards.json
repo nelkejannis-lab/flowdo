@@ -193,6 +193,7 @@
     "completion": "Progress"
   },
   "timeline": {
+    "project": "Project",
     "week": "Week",
     "month": "Month",
     "today": "Today",

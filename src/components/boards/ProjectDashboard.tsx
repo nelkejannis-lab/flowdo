@@ -30,11 +30,12 @@ import type { Board, BoardColumn, Priority, Task } from '../../types'
 import { useTaskTimeStore } from '../../store/taskTimeStore'
 import { useBoardMilestonesStore } from '../../store/boardMilestonesStore'
 import { useAuthStore } from '../../store/authStore'
-import { DonutChart, AvatarStack } from '../dashboard/FocusVisuals'
+import { DonutChart } from '../dashboard/FocusVisuals'
 import DashboardSectionHeader from '../dashboard/DashboardSectionHeader'
 import PriorityBadge from '../tasks/PriorityBadge'
 import TaskTimer from '../tasks/TaskTimer'
 import ProjectTimeReport from './ProjectTimeReport'
+import ProjectTimeline from './ProjectTimeline'
 import { formatFriendlyDate, isOverdue, todayISO } from '../../utils/date'
 import { formatHM } from '../../utils/worktime'
 
@@ -49,6 +50,7 @@ interface Props {
   onAddTask: () => void
   onTaskClick: (task: Task) => void
   onSwitchToBoard: () => void
+  onUpdateTask: (id: string, updates: Partial<Task>) => Promise<void>
 }
 
 type TaskStatus = 'done' | 'in_progress' | 'pending' | 'overdue'
@@ -148,6 +150,7 @@ export default function ProjectDashboard({
   onAddTask,
   onTaskClick,
   onSwitchToBoard,
+  onUpdateTask,
 }: Props) {
   const { t, i18n } = useTranslation('boards')
   const dateLocale = i18n.language === 'en' ? enUS : de
@@ -156,7 +159,6 @@ export default function ProjectDashboard({
   const fetchByBoard = useTaskTimeStore((s) => s.fetchByBoard)
   const getBoardSummary = useTaskTimeStore((s) => s.getBoardSummary)
   const getTaskMinutes = useTaskTimeStore((s) => s.getTaskMinutes)
-  const milestones = useBoardMilestonesStore((s) => s.milestones.filter((m) => m.boardId === board.id))
   const fetchMilestones = useBoardMilestonesStore((s) => s.fetchByBoard)
 
   const [period, setPeriod] = useState<DashboardPeriod>('week')
@@ -258,13 +260,6 @@ export default function ProjectDashboard({
   }, [weekDays, entries, dateLocale])
 
   const maxDayMins = Math.max(...dailyHours.map((d) => d.mins), 1)
-
-  const timelineTasks = useMemo(() => {
-    return visibleTasks
-      .filter((tk) => tk.dueDate && !tk.completed)
-      .sort((a, b) => (a.dueDate ?? '').localeCompare(b.dueDate ?? ''))
-      .slice(0, 8)
-  }, [visibleTasks])
 
   const teamMembers = useMemo(() => {
     const members: { id: string; name: string; color: string; role: string; open: number }[] = []
@@ -388,9 +383,9 @@ export default function ProjectDashboard({
 
       {/* Bento middle row */}
       <div className="grid gap-4 lg:grid-cols-12">
-        {/* Timeline */}
+        {/* Gantt Zeitstrahl */}
         <div className={`${cardClass()} lg:col-span-7`}>
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-2 flex items-center justify-between">
             <h3 className="flex items-center gap-2 text-sm font-semibold">
               <Calendar size={14} className="text-accent" />
               {t('projectDashboard.timeline')}
@@ -401,51 +396,13 @@ export default function ProjectDashboard({
               </span>
             )}
           </div>
-          {timelineTasks.length === 0 && milestones.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <Calendar size={28} className="mb-2 text-gray-300" />
-              <p className="text-sm text-gray-400">{t('projectDashboard.timelineEmpty')}</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {milestones.slice(0, 3).map((ms) => (
-                <div key={ms.id} className="flex items-center gap-3 rounded-xl bg-gray-50 px-3 py-2 dark:bg-racing-800">
-                  <span className={`h-2 w-2 rounded-full ${ms.completed ? 'bg-accent' : 'bg-amber-400'}`} />
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{ms.title}</span>
-                  <span className="text-xs text-gray-400">{formatFriendlyDate(ms.dueDate)}</span>
-                </div>
-              ))}
-              {timelineTasks.map((tk) => {
-                const col = board.columns.find((c) => c.id === tk.columnId)
-                const pct = tk.completed ? 100 : col ? Math.max(20, Math.round(((board.columns.findIndex((c) => c.id === tk.columnId) + 1) / board.columns.length) * 100)) : 10
-                const assignees = tk.assignee
-                  ? [{ id: tk.assignee.id, name: tk.assignee.display_name, color: tk.assignee.avatar_color }]
-                  : []
-                return (
-                  <button
-                    key={tk.id}
-                    type="button"
-                    onClick={() => onTaskClick(tk)}
-                    className="group flex items-center gap-3 rounded-xl border border-transparent px-2 py-2 text-left hover:border-gray-100 hover:bg-gray-50 dark:hover:border-racing-700 dark:hover:bg-racing-800"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="mb-1 flex items-center gap-2">
-                        <span className="truncate text-sm font-medium group-hover:text-accent">{tk.title}</span>
-                        {assignees.length > 0 && <AvatarStack people={assignees} max={2} />}
-                      </div>
-                      <div className="relative h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-racing-700">
-                        <div
-                          className="absolute inset-y-0 left-0 rounded-full transition-all"
-                          style={{ width: `${pct}%`, backgroundColor: board.color }}
-                        />
-                      </div>
-                    </div>
-                    <span className="flex-shrink-0 text-xs text-gray-400">{formatFriendlyDate(tk.dueDate)}</span>
-                  </button>
-                )
-              })}
-            </div>
-          )}
+          <ProjectTimeline
+            board={board}
+            tasks={visibleTasks}
+            onTaskClick={onTaskClick}
+            onUpdateTask={onUpdateTask}
+            embedded
+          />
         </div>
 
         {/* Progress donut + team */}
