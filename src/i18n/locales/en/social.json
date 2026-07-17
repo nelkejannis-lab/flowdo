@@ -2,7 +2,14 @@
   "page": {
     "title": "Social Media",
     "addAccount": "Account",
-    "emptyState": "No Instagram account connected yet. Add an account to track followers, reach, and other metrics.",
+    "emptyState": "No Instagram account connected yet. Connect a Business or Creator account to track followers, reach, and engagement.",
+    "intro": "Clear metrics and short tips — real sync data only.",
+    "introFebi": "FEBI Bilstein (@febi.bilstein) — performance from connected Instagram data.",
+    "period": {
+      "today": "Today",
+      "week": "Week",
+      "month": "Month"
+    },
     "callback": {
       "accessDenied": "Instagram denied access: {{reason}}",
       "noAuthCode": "No authorization code received.",

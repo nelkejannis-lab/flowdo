@@ -2,9 +2,9 @@
   "page": {
     "title": "Social Media",
     "addAccount": "Account",
-    "emptyState": "Noch kein Instagram-Account verbunden. Füge einen Account hinzu, um Follower, Reichweite und weitere Kennzahlen zu tracken.",
-    "intro": "Übersicht, Trends und umsetzbare Tipps für deine verbundenen Instagram-Accounts.",
-    "introFebi": "Performance & Handlungsempfehlungen für FEBI Bilstein (@febi.bilstein) — basierend auf verbundenen Instagram-Daten.",
+    "emptyState": "Noch kein Instagram-Account verbunden. Verbinde einen Business- oder Creator-Account, um Follower, Reichweite und Engagement zu tracken.",
+    "intro": "Klare Kennzahlen und kurze Tipps — nur echte Sync-Daten.",
+    "introFebi": "FEBI Bilstein (@febi.bilstein) — Performance aus verbundenen Instagram-Daten.",
     "period": {
       "today": "Heute",
       "week": "Woche",

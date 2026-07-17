@@ -78,6 +78,9 @@ export interface SocialDashboardData {
   kpis: SocialOverviewKpis
   engagementSeries: { date: string; value: number }[]
   reachSeries: { date: string; value: number }[]
+  /** Primary series for the overview chart (reach preferred, else engagement). */
+  primarySeries: { date: string; value: number }[]
+  primarySeriesKind: 'reach' | 'engagement'
   topPosts: SocialPost[]
   contentMix: ContentMixSlice[]
   bestHour: number | null
@@ -112,10 +115,10 @@ function buildContentMix(posts: SocialPost[], followers: number): ContentMixSlic
     else buckets.OTHER.push(p)
   }
   const meta: Array<{ key: ContentMixSlice['key']; label: string; color: string }> = [
-    { key: 'VIDEO', label: 'Reels / Video', color: '#8b5cf6' },
-    { key: 'CAROUSEL_ALBUM', label: 'Karussell', color: '#3b82f6' },
-    { key: 'IMAGE', label: 'Bilder', color: '#10b981' },
-    { key: 'OTHER', label: 'Sonstiges', color: '#94a3b8' },
+    { key: 'VIDEO', label: 'Reels / Video', color: 'rgb(var(--accent))' },
+    { key: 'CAROUSEL_ALBUM', label: 'Karussell', color: '#64748b' },
+    { key: 'IMAGE', label: 'Bilder', color: '#94a3b8' },
+    { key: 'OTHER', label: 'Sonstiges', color: '#cbd5e1' },
   ]
   return meta
     .map(({ key, label, color }) => {
@@ -164,21 +167,21 @@ function buildInsights(opts: {
   const brand = isFebiAccount(account)
   const brandName = brand ? 'FEBI Bilstein' : `@${account.username}`
 
-  if (bestDay != null && bestHour != null) {
-    tips.push({
-      id: 'best-time',
-      title: 'Beste Posting-Zeit',
-      body: `Für ${brandName} performen Beiträge am ${DAY_LABELS[bestDay]} gegen ${bestHour}:00 Uhr am stärksten (gewichtet nach Likes, Kommentaren, Saves und Shares).`,
-      tone: 'positive',
-    })
-  }
+  const periodLabel = period === 'today' ? 'heute' : period === 'week' ? 'diese Woche' : 'diesen Monat'
+  const targetPosts = period === 'today' ? 1 : period === 'week' ? 4 : 12
 
-  const topFormat = [...contentMix].sort((a, b) => b.avgEngagement - a.avgEngagement)[0]
-  if (topFormat && topFormat.avgEngagement > 0) {
+  if (kpis.postsInPeriod === 0) {
     tips.push({
-      id: 'format',
-      title: 'Stärkstes Format',
-      body: `${topFormat.label} liegt bei ${fmtPct(topFormat.avgEngagement)} Ø Engagement — priorisiere dieses Format im Content-Mix${brand ? ' (z. B. Produkt-Reels, Montage-Tipps, Karussell-Checklisten)' : ''}.`,
+      id: 'frequency-empty',
+      title: 'Keine Posts im Zeitraum',
+      body: `${periodLabel.charAt(0).toUpperCase() + periodLabel.slice(1)} wurde noch nichts veröffentlicht. Ziel: ca. ${targetPosts} Beiträge ${period === 'today' ? 'pro Tag' : period === 'week' ? 'pro Woche' : 'pro Monat'}.`,
+      tone: 'action',
+    })
+  } else if (kpis.postsInPeriod < targetPosts * 0.5 && period !== 'today') {
+    tips.push({
+      id: 'frequency-low',
+      title: 'Posting-Frequenz erhöhen',
+      body: `Nur ${kpis.postsInPeriod} Posts ${periodLabel}. Konsistenz (ca. ${targetPosts} ${period === 'week' ? '×/Woche' : '×/Monat'}) hilft dem Algorithmus mehr als einzelne „perfekte“ Beiträge.`,
       tone: 'action',
     })
   }
@@ -197,51 +200,52 @@ function buildInsights(opts: {
     }
     tips.push({
       id: 'engagement',
-      title: `Engagement-Rate (${verdict})`,
-      body: `${fmtPct(er)} bezogen auf ${basis} im gewählten Zeitraum. Benchmark Instagram Business oft ca. 1–4 % — ${er < 1 ? 'stärkere Hooks und Fragen in Captions helfen.' : 'halte den Dialog in den ersten 60 Minuten nach dem Post.'}`,
+      title: `Engagement ${verdict}`,
+      body: `${fmtPct(er)} bezogen auf ${basis}. ${er < 1 ? 'Stärkere Hooks und eine Frage in der Caption helfen.' : 'Dialog in den ersten 60 Minuten nach dem Post halten.'}`,
       tone,
     })
   }
 
-  const periodLabel = period === 'today' ? 'heute' : period === 'week' ? 'diese Woche' : 'diesen Monat'
-  const targetPosts = period === 'today' ? 1 : period === 'week' ? 4 : 12
-  if (kpis.postsInPeriod === 0) {
+  const topFormat = [...contentMix].sort((a, b) => b.avgEngagement - a.avgEngagement)[0]
+  if (topFormat && topFormat.avgEngagement > 0 && tips.length < 3) {
     tips.push({
-      id: 'frequency-empty',
-      title: 'Keine Posts im Zeitraum',
-      body: `${periodLabel.charAt(0).toUpperCase() + periodLabel.slice(1)} wurde noch nichts veröffentlicht. Ziel für sichtbare Markenpräsenz: ca. ${targetPosts} Beiträge ${period === 'today' ? 'pro Tag' : period === 'week' ? 'pro Woche' : 'pro Monat'}.`,
-      tone: 'action',
-    })
-  } else if (kpis.postsInPeriod < targetPosts * 0.5 && period !== 'today') {
-    tips.push({
-      id: 'frequency-low',
-      title: 'Posting-Frequenz erhöhen',
-      body: `Nur ${kpis.postsInPeriod} Posts ${periodLabel}. Konsistenz (ca. ${targetPosts} ${period === 'week' ? '×/Woche' : '×/Monat'}) hilft dem Algorithmus mehr als einzelne „perfekte“ Beiträge.`,
+      id: 'format',
+      title: 'Stärkstes Format',
+      body: `${topFormat.label} bei ${fmtPct(topFormat.avgEngagement)} Ø Engagement — dieses Format priorisieren${brand ? ' (Produkt-Reels, Montage-Tipps, Checklisten)' : ''}.`,
       tone: 'action',
     })
   }
 
-  const withSaves = periodPosts.filter((p) => (p.saved ?? 0) > 0)
-  if (withSaves.length > 0) {
-    const avgSaves = withSaves.reduce((s, p) => s + (p.saved ?? 0), 0) / withSaves.length
+  if (bestDay != null && bestHour != null && tips.length < 3) {
     tips.push({
-      id: 'saves',
-      title: 'Saves als Qualitäts-Signal',
-      body: `Ø ${fmtCompact(avgSaves)} Saves auf Posts mit Speicherungen. Tutorial-/Checklisten-Content (z. B. Einbau, Verschleiß-Erkennung) steigert Saves und organische Reichweite.`,
+      id: 'best-time',
+      title: 'Beste Posting-Zeit',
+      body: `Für ${brandName} performen Beiträge am ${DAY_LABELS[bestDay]} gegen ${bestHour}:00 am stärksten.`,
       tone: 'positive',
     })
   }
 
-  if (brand && tips.length < 4) {
+  const withSaves = periodPosts.filter((p) => (p.saved ?? 0) > 0)
+  if (withSaves.length > 0 && tips.length < 3) {
+    const avgSaves = withSaves.reduce((s, p) => s + (p.saved ?? 0), 0) / withSaves.length
+    tips.push({
+      id: 'saves',
+      title: 'Saves als Qualitäts-Signal',
+      body: `Ø ${fmtCompact(avgSaves)} Saves. Tutorial-/Checklisten-Content steigert Speicherungen und organische Reichweite.`,
+      tone: 'positive',
+    })
+  }
+
+  if (brand && tips.length < 3) {
     tips.push({
       id: 'febi-context',
-      title: 'Marken-Fokus FEBI Bilstein',
-      body: 'Automotive Aftermarket: kurze Produkt-Reels, Vorher/Nachher-Montage und technische Karussells performen typischerweise besser als reine Lifestyle-Bilder. Nutze klare CTAs („Speichern für die Werkstatt“).',
+      title: 'FEBI Bilstein Fokus',
+      body: 'Kurze Produkt-Reels, Vorher/Nachher-Montage und technische Karussells performen typischerweise besser als reine Lifestyle-Bilder.',
       tone: 'neutral',
     })
   }
 
-  return tips.slice(0, 5)
+  return tips.slice(0, 3)
 }
 
 export function computeSocialDashboard(
@@ -298,7 +302,6 @@ export function computeSocialDashboard(
       value: m.totalInteractions ?? (m.likes ?? 0) + (m.comments ?? 0) + (m.saves ?? 0) + (m.shares ?? 0),
     }))
 
-  // Fallback: one point per post day from posts if no daily interaction metrics
   const reachSeries = periodMetrics
     .filter((m) => m.reach != null)
     .map((m) => ({ date: m.date, value: m.reach! }))
@@ -315,6 +318,9 @@ export function computeSocialDashboard(
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, value]) => ({ date, value }))
   }
+
+  const primarySeriesKind: 'reach' | 'engagement' = reachSeries.length >= 2 ? 'reach' : 'engagement'
+  const primarySeries = primarySeriesKind === 'reach' ? reachSeries : seriesEng
 
   const topPosts = [...periodPosts]
     .sort((a, b) => engagementScore(b) - engagementScore(a))
@@ -354,6 +360,8 @@ export function computeSocialDashboard(
     kpis,
     engagementSeries: seriesEng,
     reachSeries,
+    primarySeries,
+    primarySeriesKind,
     topPosts,
     contentMix,
     bestHour,
