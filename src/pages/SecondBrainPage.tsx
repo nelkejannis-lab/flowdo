@@ -24,21 +24,15 @@ import {
   ChevronDown,
   ChevronUp,
   UserPlus,
-  Download,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useBrainStore, NotePage, NoteColumn, NoteChecklistItem } from '../store/brainStore'
 import { useBoardsStore } from '../store/boardsStore'
 import { createId } from '../utils/id'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
-import { useCreativeBoardStore, type CreativeItemType } from '../store/creativeBoardStore'
-import ItemInviteModal from '../components/brain/ItemInviteModal'
-import { exportMoodboardItemAsPdf, exportNoteAsPdf } from '../utils/pdfExport'
+import { useCreativeBoardStore, type CreativeInviteRole } from '../store/creativeBoardStore'
 
 type MoodInputType = 'note' | 'image' | 'video' | 'social' | 'website'
-
-const SHARED_TAB = '__shared__'
-type ItemInviteTarget = { type: CreativeItemType; id: string; title: string }
 
 const SOCIAL_HOSTS = ['instagram.com', 'x.com', 'twitter.com', 'facebook.com', 'linkedin.com', 'tiktok.com', 'youtube.com', 'youtu.be']
 
@@ -76,7 +70,7 @@ function deriveMoodMetadata(title: string, url: URL, kind: Exclude<MoodInputType
 }
 
 export default function SecondBrainPage() {
-  const { t, i18n } = useTranslation('brain')
+  const { t } = useTranslation('brain')
   const columns = useBrainStore((s) => s.columns)
   const pages = useBrainStore((s) => s.pages)
   const boards = useBoardsStore((s) => s.boards)
@@ -92,28 +86,31 @@ export default function SecondBrainPage() {
   const fetchMoodItems = useCreativeBoardStore((s) => s.fetchMoodItems)
   const addMoodItem = useCreativeBoardStore((s) => s.addMoodItem)
   const deleteMoodItem = useCreativeBoardStore((s) => s.deleteMoodItem)
-  const inviteToItem = useCreativeBoardStore((s) => s.inviteToItem)
-  const incomingItemInvites = useCreativeBoardStore((s) => s.incomingItemInvites)
-  const fetchIncomingItemInvites = useCreativeBoardStore((s) => s.fetchIncomingItemInvites)
-  const acceptItemInvite = useCreativeBoardStore((s) => s.acceptItemInvite)
-  const declineItemInvite = useCreativeBoardStore((s) => s.declineItemInvite)
+  const searchProfiles = useCreativeBoardStore((s) => s.searchProfiles)
+  const inviteToCreativeBoard = useCreativeBoardStore((s) => s.inviteToCreativeBoard)
+  const incomingInvites = useCreativeBoardStore((s) => s.incomingInvites)
+  const fetchIncomingInvites = useCreativeBoardStore((s) => s.fetchIncomingInvites)
+  const acceptInvite = useCreativeBoardStore((s) => s.acceptInvite)
+  const declineInvite = useCreativeBoardStore((s) => s.declineInvite)
 
   useEffect(() => {
     if (isSupabaseConfigured) {
       void fetchAll()
       void fetchMoodItems()
-      void fetchIncomingItemInvites()
+      void fetchIncomingInvites()
       const unsubscribe = subscribeToBrain()
       return () => unsubscribe()
     }
-  }, [fetchAll, subscribeToBrain, fetchMoodItems, fetchIncomingItemInvites])
+  }, [fetchAll, subscribeToBrain, fetchMoodItems, fetchIncomingInvites])
 
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState<'all' | string>('all')
   const [activePage, setActivePage] = useState<NotePage | null>(null)
   const [showAddColumn, setShowAddColumn] = useState(false)
   const [activeSection, setActiveSection] = useState<'notes' | 'moodboard'>('notes')
-  const [itemInviteTarget, setItemInviteTarget] = useState<ItemInviteTarget | null>(null)
+  const [inviteQuery, setInviteQuery] = useState('')
+  const [inviteRole, setInviteRole] = useState<CreativeInviteRole>('editor')
+  const [inviteHits, setInviteHits] = useState<Array<{ id: string; display_name: string; username: string; avatar_color: string }>>([])
   const [moodTitle, setMoodTitle] = useState('')
   const [moodType, setMoodType] = useState<MoodInputType>('note')
   const [moodValue, setMoodValue] = useState('')
@@ -161,18 +158,11 @@ export default function SecondBrainPage() {
   const audioChunksRef = useRef<Blob[]>([])
   const recognitionRef = useRef<any>(null)
 
-  const sharedPages = useMemo(() => pages.filter((p) => p.sharedWithMe), [pages])
-  const ownMoodItems = useMemo(() => moodItems.filter((i) => !i.sharedWithMe), [moodItems])
-  const sharedMoodItems = useMemo(() => moodItems.filter((i) => i.sharedWithMe), [moodItems])
-
+  // Filter pages based on search query + active tab
   const filteredPages = useMemo(() => {
     const q = searchQuery.toLowerCase().trim()
     let list = pages
-    if (activeTab === SHARED_TAB) {
-      list = list.filter((p) => p.sharedWithMe)
-    } else if (activeTab !== 'all') {
-      list = list.filter((p) => p.columnId === activeTab)
-    }
+    if (activeTab !== 'all') list = list.filter((p) => p.columnId === activeTab)
     if (q) {
       list = list.filter(
         (p) => p.title.toLowerCase().includes(q) || p.content.toLowerCase().includes(q) || (p.summary && p.summary.toLowerCase().includes(q))
@@ -491,6 +481,26 @@ ${textToSummarize}`
 
   const columnTitle = (id: string) => columns.find((c) => c.id === id)?.title ?? ''
 
+  async function runInviteSearch(value: string) {
+    setInviteQuery(value)
+    if (value.trim().length < 2) {
+      setInviteHits([])
+      return
+    }
+    const hits = await searchProfiles(value)
+    setInviteHits(hits)
+  }
+
+  async function sendInvite(userId: string) {
+    const err = await inviteToCreativeBoard(userId, inviteRole)
+    if (!err) {
+      setInviteQuery('')
+      setInviteHits([])
+      return
+    }
+    alert(err)
+  }
+
   async function addMoodboardItem() {
     setMoodError(null)
     if (!moodTitle.trim()) return
@@ -518,7 +528,7 @@ ${textToSummarize}`
       metadataHost: metadata?.host,
       metadataTitle: metadata?.fallbackTitle,
       metadataThumbnail: metadata?.thumbnail,
-      position: ownMoodItems.length,
+      position: moodItems.length,
     })
     setMoodTitle('')
     setMoodValue('')
@@ -528,45 +538,6 @@ ${textToSummarize}`
     setActivePage(null)
     setIsCreating(false)
     setEditorMetaOpen(false)
-  }
-
-  function renderMoodboardCard(item: (typeof moodItems)[number], showActions: boolean) {
-    return (
-      <div key={item.id} className="rounded-xl border border-gray-100 bg-white p-3.5 dark:border-racing-800 dark:bg-racing-900 overflow-hidden">
-        <div className="mb-2 flex items-start justify-between gap-2">
-          <h4 className="text-sm font-semibold break-words min-w-0 flex-1">{item.title}</h4>
-          {showActions ? (
-            <div className="flex flex-shrink-0 items-center gap-0.5">
-              <button type="button" onClick={() => setItemInviteTarget({ type: 'moodboard', id: item.id, title: item.title })} className="flex h-11 w-11 items-center justify-center rounded-xl text-accent touch-manipulation hover:bg-accent/10" aria-label={t('itemInviteButton')}><UserPlus size={16} /></button>
-              <button type="button" onClick={() => void exportMoodboardItemAsPdf(item, i18n.language)} className="flex h-11 w-11 items-center justify-center rounded-xl text-gray-500 touch-manipulation hover:bg-gray-100 dark:hover:bg-racing-800" aria-label={t('exportPdf')}><Download size={16} /></button>
-              <button type="button" onClick={() => void deleteMoodItem(item.id)} className="flex h-11 w-11 items-center justify-center rounded-xl text-red-500 touch-manipulation hover:bg-red-50 dark:hover:bg-red-950/30" aria-label={t('editor.delete')}><Trash2 size={16} /></button>
-            </div>
-          ) : (
-            <button type="button" onClick={() => void exportMoodboardItemAsPdf(item, i18n.language)} className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-gray-500 touch-manipulation hover:bg-gray-100 dark:hover:bg-racing-800" aria-label={t('exportPdf')}><Download size={16} /></button>
-          )}
-        </div>
-        <div className="mb-2 flex items-center gap-1.5">
-          <span className="rounded-full bg-black/[0.05] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide dark:bg-white/[0.07]">
-            {item.type === 'note' ? <List size={12} /> : item.type === 'image' ? <ImageIcon size={12} /> : item.type === 'video' ? <Video size={12} /> : item.type === 'social' ? <Share2 size={12} /> : <Globe size={12} />}
-          </span>
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-            {item.type === 'note' ? t('moodboardText') : item.type === 'image' ? t('moodboardImage') : item.type === 'video' ? t('moodboardVideo') : item.type === 'social' ? t('moodboardSocial') : t('moodboardWebsite')}
-          </span>
-          {!showActions && <span className="ml-auto text-[10px] font-bold uppercase tracking-wider text-accent bg-accent/10 rounded-full px-2 py-0.5">{t('sharedBadge')}</span>}
-        </div>
-        {item.type === 'note' && <p className="text-sm text-gray-500 whitespace-pre-wrap break-words">{item.textContent}</p>}
-        {item.type === 'image' && item.imageUrl && <img src={item.imageUrl} alt={item.title} className="max-h-48 w-full rounded-lg object-cover" loading="lazy" />}
-        {(item.type === 'link' || item.type === 'video' || item.type === 'social' || item.type === 'website') && item.linkUrl && (
-          <a href={item.linkUrl} target="_blank" rel="noreferrer" className="block rounded-xl border border-gray-100 p-3 text-sm dark:border-racing-800 touch-manipulation active:bg-gray-50 dark:active:bg-racing-800">
-            <div className="mb-1 flex items-center gap-2 min-w-0">
-              {item.metadataThumbnail ? <img src={item.metadataThumbnail} alt="" className="h-6 w-6 rounded object-cover flex-shrink-0" /> : <Link2 size={14} className="flex-shrink-0" />}
-              <span className="truncate font-semibold">{item.metadataTitle || item.linkUrl}</span>
-            </div>
-            <span className="block truncate text-gray-400 text-xs">{item.metadataHost || item.linkUrl}</span>
-          </a>
-        )}
-      </div>
-    )
   }
 
   // Shared toolbar for the create/edit detail pane — compact icon row on mobile
@@ -689,7 +660,7 @@ ${textToSummarize}`
         </div>
       </div>
 
-      {/* Incoming item invites — collapsed by default; fully hidden on mobile while editing */}
+      {/* Invite panel — collapsed by default; fully hidden on mobile while editing */}
       <div className={`rounded-xl border border-gray-100 bg-white/70 dark:border-racing-850 dark:bg-racing-900/70 overflow-hidden ${editorOpen ? 'hidden lg:block' : ''}`}>
         <button
           type="button"
@@ -699,50 +670,95 @@ ${textToSummarize}`
         >
           <span className="flex items-center gap-2 text-sm font-semibold">
             <UserPlus size={16} className="text-accent flex-shrink-0" />
-            {t('sharedWithMeTab')}
-            {incomingItemInvites.length > 0 && (
+            {t('inviteToggle')}
+            {incomingInvites.length > 0 && (
               <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-bold text-white">
-                {incomingItemInvites.length}
+                {incomingInvites.length}
               </span>
             )}
           </span>
           {inviteOpen ? <ChevronUp size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
         </button>
-        {(inviteOpen || incomingItemInvites.length > 0) && incomingItemInvites.length > 0 && (
+        {(inviteOpen || incomingInvites.length > 0) && (
           <div className="border-t border-gray-100 px-3 pb-3 pt-2 dark:border-racing-800">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">{t('incomingItemInvites')}</p>
-            {incomingItemInvites.map((inv) => (
-              <div
-                key={inv.id}
-                className="mb-2 flex flex-col gap-2 rounded-xl bg-black/[0.03] px-3 py-2.5 dark:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between"
-              >
-                <span className="text-sm break-words">
-                  {inv.fromUser?.display_name} → {inv.itemTitle ?? inv.itemId}{' '}
-                  <span className="text-xs text-gray-400">({inv.itemType})</span>
-                </span>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => void acceptItemInvite(inv.id).then((err) => { if (err) alert(err); else void fetchAll() })}
-                    className="min-h-11 flex-1 rounded-xl bg-emerald-500 px-3 text-sm font-semibold text-white touch-manipulation sm:flex-none"
+            {inviteOpen && (
+              <>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">{t('inviteTitle')}</p>
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  <input
+                    value={inviteQuery}
+                    onChange={(e) => void runInviteSearch(e.target.value)}
+                    placeholder={t('invitePlaceholder')}
+                    className="w-full min-h-11 flex-1 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700 sm:min-w-0"
+                    autoComplete="off"
+                    autoCorrect="off"
+                  />
+                  <select
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value as CreativeInviteRole)}
+                    className="w-full min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700 sm:w-auto"
                   >
-                    {t('acceptInvite')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void declineItemInvite(inv.id)}
-                    className="min-h-11 flex-1 rounded-xl bg-gray-200 px-3 text-sm font-semibold touch-manipulation dark:bg-racing-700 sm:flex-none"
-                  >
-                    {t('declineInvite')}
-                  </button>
+                    <option value="owner">{t('inviteRoleOwner')}</option>
+                    <option value="editor">{t('inviteRoleEditor')}</option>
+                    <option value="viewer">{t('inviteRoleViewer')}</option>
+                  </select>
                 </div>
+                {inviteHits.length > 0 && (
+                  <div className="mt-2 flex flex-col gap-1">
+                    {inviteHits.map((u) => (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => void sendInvite(u.id)}
+                        className="flex min-h-11 items-center justify-between gap-2 rounded-xl px-3 py-2 text-left text-sm touch-manipulation hover:bg-gray-100 active:bg-gray-100 dark:hover:bg-racing-800"
+                      >
+                        <span className="min-w-0 truncate">
+                          {u.display_name}{' '}
+                          <span className="text-xs text-gray-400">@{u.username}</span>
+                        </span>
+                        <span className="flex-shrink-0 text-sm font-semibold text-accent">{t('inviteSend')}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+            {incomingInvites.length > 0 && (
+              <div className={`${inviteOpen ? 'mt-3 border-t border-gray-100 pt-2 dark:border-racing-800' : ''}`}>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">{t('incomingInvites')}</p>
+                {incomingInvites.map((inv) => (
+                  <div
+                    key={inv.id}
+                    className="mb-2 flex flex-col gap-2 rounded-xl bg-black/[0.03] px-3 py-2.5 dark:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <span className="text-sm break-words">
+                      {inv.fromUser?.display_name} ({inv.role})
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void acceptInvite(inv.id)}
+                        className="min-h-11 flex-1 rounded-xl bg-emerald-500 px-3 text-sm font-semibold text-white touch-manipulation sm:flex-none"
+                      >
+                        {t('acceptInvite')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void declineInvite(inv.id)}
+                        className="min-h-11 flex-1 rounded-xl bg-gray-200 px-3 text-sm font-semibold touch-manipulation dark:bg-racing-700 sm:flex-none"
+                      >
+                        {t('declineInvite')}
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         )}
       </div>
 
-            {activeSection === 'notes' && (
+      {activeSection === 'notes' && (
         <div className={`flex flex-1 flex-col gap-4 min-h-0 lg:flex-row ${editorOpen ? 'max-lg:contents' : ''}`}>
           {/* Left pane: search, tabs, list — hidden on mobile when editor is open */}
           <div className={`flex w-full flex-shrink-0 flex-col gap-3 lg:w-80 ${editorOpen ? 'hidden lg:flex' : 'flex'}`}>
@@ -760,7 +776,7 @@ ${textToSummarize}`
               </div>
               <button
                 type="button"
-                onClick={() => handleOpenCreate(activeTab !== 'all' && activeTab !== SHARED_TAB ? activeTab : columns[0]?.id ?? '')}
+                onClick={() => handleOpenCreate(activeTab !== 'all' ? activeTab : columns[0]?.id ?? '')}
                 disabled={columns.length === 0}
                 className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-accent text-white hover:bg-accent-dark disabled:opacity-40 touch-manipulation"
                 title={t('newNote')}
@@ -782,9 +798,6 @@ ${textToSummarize}`
               >
                 {t('allTab')}
               </button>
-              {sharedPages.length > 0 && (
-                <button type="button" onClick={() => setActiveTab(SHARED_TAB)} className={`flex-shrink-0 min-h-11 rounded-xl px-3.5 text-xs font-bold uppercase tracking-wide transition-colors touch-manipulation ${activeTab === SHARED_TAB ? 'bg-accent text-white' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-racing-800'}`}>{t('sharedWithMeTab')}</button>
-              )}
               {columns.map((col) => (
                 <button
                   key={col.id}
@@ -824,10 +837,9 @@ ${textToSummarize}`
                 >
                   <div className="flex items-start justify-between gap-2">
                     <h4 className="font-semibold text-sm break-words line-clamp-2 min-w-0">{page.title}</h4>
-                    <div className="flex flex-shrink-0 flex-col items-end gap-1">
-                      {page.sharedWithMe && <span className="text-[10px] font-bold uppercase tracking-wider text-accent bg-accent/10 rounded-full px-2 py-1">{t('sharedBadge')}</span>}
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-black/[0.04] dark:bg-white/[0.05] rounded-full px-2 py-1">{columnTitle(page.columnId)}</span>
-                    </div>
+                    <span className="flex-shrink-0 text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-black/[0.04] dark:bg-white/[0.05] rounded-full px-2 py-1">
+                      {columnTitle(page.columnId)}
+                    </span>
                   </div>
                   <p className="text-sm text-gray-400 dark:text-racing-300 line-clamp-2 leading-relaxed whitespace-pre-wrap">
                     {page.content || '...'}
@@ -964,90 +976,188 @@ ${textToSummarize}`
                   </div>
                 ) : activePage ? (
                   <div className="flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 lg:gap-4">
-                    {activePage.sharedWithMe && <p className="flex-shrink-0 rounded-xl bg-accent/5 px-3 py-2 text-xs font-semibold text-accent">{t('readOnlyShared')}</p>}
-                    <input type="text" value={noteTitle} onChange={(e) => setNoteTitle(e.target.value)} readOnly={!!activePage.sharedWithMe} placeholder={t('editor.titlePlaceholderEdit')} className="w-full flex-shrink-0 text-xl sm:text-lg font-bold bg-transparent border-b border-gray-100 dark:border-racing-800 focus:border-accent focus:outline-none pb-1.5" />
-                    {!activePage.sharedWithMe && <Toolbar />}
+                    <input
+                      type="text"
+                      value={noteTitle}
+                      onChange={(e) => setNoteTitle(e.target.value)}
+                      placeholder={t('editor.titlePlaceholderEdit')}
+                      className="w-full flex-shrink-0 text-xl sm:text-lg font-bold bg-transparent border-b border-gray-100 dark:border-racing-800 focus:border-accent focus:outline-none pb-1.5"
+                    />
+                    <Toolbar />
                     <div className="flex-shrink-0 lg:contents">
-                      <button type="button" onClick={() => setEditorMetaOpen((v) => !v)} className="flex min-h-10 w-full items-center justify-between gap-2 rounded-xl border border-gray-100 px-3 py-2 text-sm font-semibold text-gray-500 touch-manipulation dark:border-racing-800 lg:hidden">
+                      <button
+                        type="button"
+                        onClick={() => setEditorMetaOpen((v) => !v)}
+                        className="flex min-h-10 w-full items-center justify-between gap-2 rounded-xl border border-gray-100 px-3 py-2 text-sm font-semibold text-gray-500 touch-manipulation dark:border-racing-800 lg:hidden"
+                      >
                         <span>{t('editor.categoryLabel')} · Tags</span>
                         {editorMetaOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                       </button>
                       <div className={`${editorMetaOpen ? 'flex' : 'hidden'} flex-col gap-2 lg:flex lg:contents`}>
                         <div className="lg:block">
                           <label className="mb-1.5 hidden text-xs font-semibold text-gray-400 lg:block">{t('editor.categoryLabel')}</label>
-                          <select value={activePage.columnId} onChange={(e) => { const colId = e.target.value; updatePage(activePage.id, { columnId: colId }); setActivePage((prev) => (prev ? { ...prev, columnId: colId } : null)) }} disabled={!!activePage.sharedWithMe} className="w-full min-h-11 max-w-full sm:max-w-xs rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base focus:border-accent focus:outline-none dark:border-racing-700 font-medium disabled:opacity-60">
-                            {columns.map((c) => (<option key={c.id} value={c.id}>{c.title}</option>))}
+                          <select
+                            value={activePage.columnId}
+                            onChange={(e) => {
+                              const colId = e.target.value
+                              updatePage(activePage.id, { columnId: colId })
+                              setActivePage((prev) => (prev ? { ...prev, columnId: colId } : null))
+                            }}
+                            className="w-full min-h-11 max-w-full sm:max-w-xs rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base focus:border-accent focus:outline-none dark:border-racing-700 font-medium"
+                          >
+                            {columns.map((c) => (
+                              <option key={c.id} value={c.id}>{c.title}</option>
+                            ))}
                           </select>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:contents">
-                          <input value={noteTags} onChange={(e) => setNoteTags(e.target.value)} readOnly={!!activePage.sharedWithMe} placeholder={t('editor.tagsPlaceholder')} className="min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700 lg:mt-0 disabled:opacity-60" />
-                          <input value={notePeople} onChange={(e) => setNotePeople(e.target.value)} readOnly={!!activePage.sharedWithMe} placeholder={t('editor.peoplePlaceholder')} className="min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700 disabled:opacity-60" />
+                          <input
+                            value={noteTags}
+                            onChange={(e) => setNoteTags(e.target.value)}
+                            placeholder={t('editor.tagsPlaceholder')}
+                            className="min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700 lg:mt-0"
+                          />
+                          <input
+                            value={notePeople}
+                            onChange={(e) => setNotePeople(e.target.value)}
+                            placeholder={t('editor.peoplePlaceholder')}
+                            className="min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700"
+                          />
                         </div>
                         {boards.length > 0 && (
-                          <select value={noteLinkedBoardId} onChange={(e) => setNoteLinkedBoardId(e.target.value)} disabled={!!activePage.sharedWithMe} className="w-full min-h-11 max-w-full sm:max-w-xs rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700 disabled:opacity-60">
+                          <select
+                            value={noteLinkedBoardId}
+                            onChange={(e) => setNoteLinkedBoardId(e.target.value)}
+                            className="w-full min-h-11 max-w-full sm:max-w-xs rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700"
+                          >
                             <option value="">{t('editor.linkProject')}</option>
-                            {boards.map((b) => (<option key={b.id} value={b.id}>{b.title}</option>))}
+                            {boards.map((b) => (
+                              <option key={b.id} value={b.id}>{b.title}</option>
+                            ))}
                           </select>
                         )}
                       </div>
                     </div>
-                    <textarea value={noteContent} onChange={(e) => setNoteContent(e.target.value)} readOnly={!!activePage.sharedWithMe} placeholder={t('editor.contentPlaceholder')} className="min-h-0 w-full flex-1 resize-none rounded-xl border border-gray-200 bg-transparent px-3.5 py-3 text-lg leading-relaxed focus:border-accent focus:outline-none dark:border-racing-700 max-lg:min-h-[calc(100dvh-10.5rem)] lg:min-h-[16rem] lg:flex-none lg:text-base disabled:opacity-60" />
-                    {!activePage.sharedWithMe ? (
+                    <textarea
+                      value={noteContent}
+                      onChange={(e) => setNoteContent(e.target.value)}
+                      placeholder={t('editor.contentPlaceholder')}
+                      className="min-h-0 w-full flex-1 resize-none rounded-xl border border-gray-200 bg-transparent px-3.5 py-3 text-lg leading-relaxed focus:border-accent focus:outline-none dark:border-racing-700 max-lg:min-h-[calc(100dvh-10.5rem)] lg:min-h-[16rem] lg:flex-none lg:text-base"
+                    />
                     <div className="hidden flex-shrink-0 space-y-3 lg:block">
-                      <BrainChecklist items={activePage.checklist ?? []} onAdd={(text) => { const updated = [...(activePage.checklist ?? []), { id: createId(), text, done: false }]; updatePage(activePage.id, { checklist: updated }); setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null)) }} onToggle={(id) => { const updated = (activePage.checklist ?? []).map((it) => (it.id === id ? { ...it, done: !it.done } : it)); updatePage(activePage.id, { checklist: updated }); setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null)) }} onDelete={(id) => { const updated = (activePage.checklist ?? []).filter((it) => it.id !== id); updatePage(activePage.id, { checklist: updated }); setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null)) }} />
-                      <AudioPlayback onDelete={() => { if (confirm(t('audio.confirmDelete'))) { setAudioUrl(null); updatePage(activePage.id, { audioBase64: undefined }); setActivePage((prev) => (prev ? { ...prev, audioBase64: undefined } : null)) } }} />
+                      <BrainChecklist
+                        items={activePage.checklist ?? []}
+                        onAdd={(text) => {
+                          const updated = [...(activePage.checklist ?? []), { id: createId(), text, done: false }]
+                          updatePage(activePage.id, { checklist: updated })
+                          setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
+                        }}
+                        onToggle={(id) => {
+                          const updated = (activePage.checklist ?? []).map((it) => (it.id === id ? { ...it, done: !it.done } : it))
+                          updatePage(activePage.id, { checklist: updated })
+                          setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
+                        }}
+                        onDelete={(id) => {
+                          const updated = (activePage.checklist ?? []).filter((it) => it.id !== id)
+                          updatePage(activePage.id, { checklist: updated })
+                          setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
+                        }}
+                      />
+                      <AudioPlayback
+                        onDelete={() => {
+                          if (confirm(t('audio.confirmDelete'))) {
+                            setAudioUrl(null)
+                            updatePage(activePage.id, { audioBase64: undefined })
+                            setActivePage((prev) => (prev ? { ...prev, audioBase64: undefined } : null))
+                          }
+                        }}
+                      />
                       {activePage.summary && (
                         <div className="rounded-xl bg-emerald-50/50 dark:bg-racing-950/40 p-3.5 border border-emerald-100/50 dark:border-racing-850 flex flex-col gap-2">
-                          <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5"><Sparkles size={13} /> {t('editor.aiSummaryTitle')}</span>
-                          <div className="text-sm leading-relaxed text-gray-700 dark:text-racing-200 whitespace-pre-wrap border-l-2 border-emerald-400 pl-3">{activePage.summary}</div>
-                          <button type="button" onClick={() => { if (confirm(t('editor.confirmDeleteSummary'))) { updatePage(activePage.id, { summary: undefined }); setActivePage((prev) => (prev ? { ...prev, summary: undefined } : null)) } }} className="min-h-11 self-start rounded-lg px-2 text-sm text-red-500 font-semibold touch-manipulation">{t('editor.deleteSummary')}</button>
+                          <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                            <Sparkles size={13} /> {t('editor.aiSummaryTitle')}
+                          </span>
+                          <div className="text-sm leading-relaxed text-gray-700 dark:text-racing-200 whitespace-pre-wrap border-l-2 border-emerald-400 pl-3">
+                            {activePage.summary}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm(t('editor.confirmDeleteSummary'))) {
+                                updatePage(activePage.id, { summary: undefined })
+                                setActivePage((prev) => (prev ? { ...prev, summary: undefined } : null))
+                              }
+                            }}
+                            className="min-h-11 self-start rounded-lg px-2 text-sm text-red-500 font-semibold touch-manipulation"
+                          >
+                            {t('editor.deleteSummary')}
+                          </button>
                         </div>
                       )}
                       {aiError && <p className="text-sm text-red-500">{aiError}</p>}
                     </div>
-                    ) : (
-                      <div className="hidden flex-shrink-0 space-y-3 lg:block">
-                        {activePage.checklist && activePage.checklist.length > 0 && (
-                          <div className="rounded-xl border border-gray-200 dark:border-racing-700 p-3.5">
-                            <span className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-racing-300"><ListChecks size={13} /> {t('checklist.title')}</span>
-                            <ul className="space-y-1 text-sm">{activePage.checklist.map((item) => (<li key={item.id} className={item.done ? 'text-gray-400 line-through' : ''}>{item.done ? '✓' : '○'} {item.text}</li>))}</ul>
-                          </div>
-                        )}
-                        <AudioPlayback />
-                        {activePage.summary && (
-                          <div className="rounded-xl bg-emerald-50/50 dark:bg-racing-950/40 p-3.5 border border-emerald-100/50 dark:border-racing-850 flex flex-col gap-2">
-                            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5"><Sparkles size={13} /> {t('editor.aiSummaryTitle')}</span>
-                            <div className="text-sm leading-relaxed text-gray-700 dark:text-racing-200 whitespace-pre-wrap border-l-2 border-emerald-400 pl-3">{activePage.summary}</div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    {editorMetaOpen && !activePage.sharedWithMe && (
+                    {editorMetaOpen && (
                       <div className="flex-shrink-0 space-y-2 overflow-y-auto max-h-[30vh] lg:hidden">
-                        <BrainChecklist items={activePage.checklist ?? []} onAdd={(text) => { const updated = [...(activePage.checklist ?? []), { id: createId(), text, done: false }]; updatePage(activePage.id, { checklist: updated }); setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null)) }} onToggle={(id) => { const updated = (activePage.checklist ?? []).map((it) => (it.id === id ? { ...it, done: !it.done } : it)); updatePage(activePage.id, { checklist: updated }); setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null)) }} onDelete={(id) => { const updated = (activePage.checklist ?? []).filter((it) => it.id !== id); updatePage(activePage.id, { checklist: updated }); setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null)) }} />
-                        <AudioPlayback onDelete={() => { if (confirm(t('audio.confirmDelete'))) { setAudioUrl(null); updatePage(activePage.id, { audioBase64: undefined }); setActivePage((prev) => (prev ? { ...prev, audioBase64: undefined } : null)) } }} />
+                        <BrainChecklist
+                          items={activePage.checklist ?? []}
+                          onAdd={(text) => {
+                            const updated = [...(activePage.checklist ?? []), { id: createId(), text, done: false }]
+                            updatePage(activePage.id, { checklist: updated })
+                            setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
+                          }}
+                          onToggle={(id) => {
+                            const updated = (activePage.checklist ?? []).map((it) => (it.id === id ? { ...it, done: !it.done } : it))
+                            updatePage(activePage.id, { checklist: updated })
+                            setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
+                          }}
+                          onDelete={(id) => {
+                            const updated = (activePage.checklist ?? []).filter((it) => it.id !== id)
+                            updatePage(activePage.id, { checklist: updated })
+                            setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
+                          }}
+                        />
+                        <AudioPlayback
+                          onDelete={() => {
+                            if (confirm(t('audio.confirmDelete'))) {
+                              setAudioUrl(null)
+                              updatePage(activePage.id, { audioBase64: undefined })
+                              setActivePage((prev) => (prev ? { ...prev, audioBase64: undefined } : null))
+                            }
+                          }}
+                        />
                         {activePage.summary && (
                           <div className="rounded-xl bg-emerald-50/50 dark:bg-racing-950/40 p-3 border border-emerald-100/50 dark:border-racing-850 flex flex-col gap-2">
-                            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5"><Sparkles size={13} /> {t('editor.aiSummaryTitle')}</span>
-                            <div className="text-sm leading-relaxed text-gray-700 dark:text-racing-200 whitespace-pre-wrap border-l-2 border-emerald-400 pl-3">{activePage.summary}</div>
+                            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                              <Sparkles size={13} /> {t('editor.aiSummaryTitle')}
+                            </span>
+                            <div className="text-sm leading-relaxed text-gray-700 dark:text-racing-200 whitespace-pre-wrap border-l-2 border-emerald-400 pl-3">
+                              {activePage.summary}
+                            </div>
                           </div>
                         )}
                         {aiError && <p className="text-sm text-red-500">{aiError}</p>}
                       </div>
                     )}
                     <div className="flex flex-shrink-0 justify-between items-center gap-2 mt-auto pt-2 border-t border-gray-100 dark:border-racing-800 pb-[max(0.25rem,env(safe-area-inset-bottom))] sm:pb-0">
-                      {!activePage.sharedWithMe ? (
-                        <button type="button" onClick={() => { if (confirm(t('editor.confirmDeleteNote'))) { deletePage(activePage.id); setActivePage(null) } }} className="min-h-11 rounded-xl px-3 text-sm font-semibold text-red-500 touch-manipulation">{t('editor.delete')}</button>
-                      ) : (<span />)}
-                      <div className="flex flex-wrap items-center justify-end gap-2">
-                        {!activePage.sharedWithMe && (
-                          <button type="button" onClick={() => setItemInviteTarget({ type: 'note', id: activePage.id, title: noteTitle.trim() || activePage.title })} className="min-h-11 flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2.5 text-sm font-semibold touch-manipulation dark:border-racing-800"><UserPlus size={16} /> {t('itemInviteButton')}</button>
-                        )}
-                        <button type="button" onClick={() => void exportNoteAsPdf({ ...activePage, title: noteTitle.trim() || activePage.title, content: noteContent, tags: noteTags.split(',').map((s) => s.trim()).filter(Boolean), people: notePeople.split(',').map((s) => s.trim()).filter(Boolean).map((name) => ({ name })), linkedBoardId: noteLinkedBoardId || undefined }, { columnTitle: columnTitle(activePage.columnId), projectName: boards.find((b) => b.id === noteLinkedBoardId)?.title, language: i18n.language })} className="min-h-11 flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2.5 text-sm font-semibold touch-manipulation dark:border-racing-800"><Download size={16} /> {t('exportPdf')}</button>
-                        {!activePage.sharedWithMe && (
-                          <button type="button" onClick={handleSavePage} className="min-h-11 rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:bg-accent-dark transition-all shadow-sm touch-manipulation">{justSaved ? t('editor.saved') : t('editor.save')}</button>
-                        )}
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm(t('editor.confirmDeleteNote'))) {
+                            deletePage(activePage.id)
+                            setActivePage(null)
+                          }
+                        }}
+                        className="min-h-11 rounded-xl px-3 text-sm font-semibold text-red-500 touch-manipulation"
+                      >
+                        {t('editor.delete')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSavePage}
+                        className="min-h-11 rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:bg-accent-dark transition-all shadow-sm touch-manipulation"
+                      >
+                        {justSaved ? t('editor.saved') : t('editor.save')}
+                      </button>
                     </div>
                   </div>
                 ) : null}
@@ -1113,31 +1223,88 @@ ${textToSummarize}`
           </div>
           {moodError && <p className="mb-3 text-sm font-semibold text-red-500">{moodError}</p>}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {ownMoodItems.map((item) => renderMoodboardCard(item, true))}
-            {ownMoodItems.length === 0 && sharedMoodItems.length === 0 && (
+            {moodItems.map((item) => (
+              <div
+                key={item.id}
+                className="rounded-xl border border-gray-100 bg-white p-3.5 dark:border-racing-800 dark:bg-racing-900 overflow-hidden"
+              >
+                <div className="mb-2 flex items-start justify-between gap-2">
+                  <h4 className="text-sm font-semibold break-words min-w-0 flex-1">{item.title}</h4>
+                  <button
+                    type="button"
+                    onClick={() => void deleteMoodItem(item.id)}
+                    className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-red-500 touch-manipulation hover:bg-red-50 dark:hover:bg-red-950/30"
+                    aria-label={t('editor.delete')}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+                <div className="mb-2 flex items-center gap-1.5">
+                  <span className="rounded-full bg-black/[0.05] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide dark:bg-white/[0.07]">
+                    {item.type === 'note' ? (
+                      <List size={12} />
+                    ) : item.type === 'image' ? (
+                      <ImageIcon size={12} />
+                    ) : item.type === 'video' ? (
+                      <Video size={12} />
+                    ) : item.type === 'social' ? (
+                      <Share2 size={12} />
+                    ) : (
+                      <Globe size={12} />
+                    )}
+                  </span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                    {item.type === 'note'
+                      ? t('moodboardText')
+                      : item.type === 'image'
+                        ? t('moodboardImage')
+                        : item.type === 'video'
+                          ? t('moodboardVideo')
+                          : item.type === 'social'
+                            ? t('moodboardSocial')
+                            : t('moodboardWebsite')}
+                  </span>
+                </div>
+                {item.type === 'note' && (
+                  <p className="text-sm text-gray-500 whitespace-pre-wrap break-words">{item.textContent}</p>
+                )}
+                {item.type === 'image' && item.imageUrl && (
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    className="max-h-48 w-full rounded-lg object-cover"
+                    loading="lazy"
+                  />
+                )}
+                {(item.type === 'link' || item.type === 'video' || item.type === 'social' || item.type === 'website') &&
+                  item.linkUrl && (
+                    <a
+                      href={item.linkUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block rounded-xl border border-gray-100 p-3 text-sm dark:border-racing-800 touch-manipulation active:bg-gray-50 dark:active:bg-racing-800"
+                    >
+                      <div className="mb-1 flex items-center gap-2 min-w-0">
+                        {item.metadataThumbnail ? (
+                          <img src={item.metadataThumbnail} alt="" className="h-6 w-6 rounded object-cover flex-shrink-0" />
+                        ) : (
+                          <Link2 size={14} className="flex-shrink-0" />
+                        )}
+                        <span className="truncate font-semibold">{item.metadataTitle || item.linkUrl}</span>
+                      </div>
+                      <span className="block truncate text-gray-400 text-xs">{item.metadataHost || item.linkUrl}</span>
+                    </a>
+                  )}
+              </div>
+            ))}
+            {moodItems.length === 0 && (
               <p className="col-span-full text-sm text-gray-400 py-6 text-center">{t('moodboardEmpty')}</p>
             )}
           </div>
-          {sharedMoodItems.length > 0 && (
-            <div className="mt-6">
-              <h3 className="mb-3 text-sm font-semibold text-gray-500">{t('sharedWithMeTab')}</h3>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {sharedMoodItems.map((item) => renderMoodboardCard(item, false))}
-              </div>
-            </div>
-          )}
         </div>
       )}
 
-      {itemInviteTarget && (
-        <ItemInviteModal
-          title={itemInviteTarget.title}
-          onClose={() => setItemInviteTarget(null)}
-          onInvite={(userId) => inviteToItem(itemInviteTarget.type, itemInviteTarget.id, userId)}
-        />
-      )}
-
-            {/* Spalte hinzufügen Popover */}
+      {/* Spalte hinzufügen Popover */}
       {showAddColumn && (
         <div
           className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/45 backdrop-blur-sm p-0 sm:p-4"
