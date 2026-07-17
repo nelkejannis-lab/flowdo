@@ -205,6 +205,10 @@
       "peakBody": "{{day}} is densest ({{load}} items) — protect focus blocks around it."
     }
   },
+  "progressPills": {
+    "tasksRatio": "{{done}}/{{total}} done",
+    "meetingsRatio": "{{done}}/{{total}}"
+  },
   "eventStatus": {
     "ongoing": "ongoing",
     "today": "Today",

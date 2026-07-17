@@ -130,7 +130,17 @@ export default function TodayHero({
   const openTodos = todayTodos.filter((tk) => !tk.completed)
   const visibleTodos = openTodos.slice(0, 8)
 
-  const meetingsLabelKey = 'readiness.doneStats.meetings' + 'Held'
+  const meetingsLabelKey = 'readiness.doneStats.meetingsHeld'
+
+  const taskValue =
+    doneStats.tasksTotal > 0
+      ? t('progressPills.tasksRatio', { done: doneStats.tasksCompleted, total: doneStats.tasksTotal })
+      : String(doneStats.tasksCompleted)
+
+  const meetingValue =
+    doneStats.meetingsToday > 0
+      ? t('progressPills.meetingsRatio', { done: doneStats.meetingsDone, total: doneStats.meetingsToday })
+      : String(doneStats.meetingsToday)
 
   return (
     <section className="bento-card mb-6 overflow-hidden p-5 sm:p-7">
@@ -166,23 +176,19 @@ export default function TodayHero({
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-12 lg:gap-6">
-        {/* Done metrics */}
+        {/* Done metrics — original left column */}
         <div className="flex flex-col gap-3 lg:col-span-4">
           <MetricTile
             icon={<ListTodo size={15} className="text-accent" />}
             label={t('readiness.doneStats.tasksDone')}
-            value={
-              doneStats.tasksTotal > 0
-                ? `${doneStats.tasksCompleted}/${doneStats.tasksTotal}`
-                : String(doneStats.tasksCompleted)
-            }
+            value={taskValue}
             detail={doneStats.tasksTotal > 0 ? `${donePct}%` : undefined}
           />
 
           <MetricTile
             icon={<Users size={15} className="text-accent" />}
             label={t(meetingsLabelKey)}
-            value={String(doneStats.meetingsToday)}
+            value={meetingValue}
             detail={t('readiness.doneStats.meetingsDetail', {
               done: doneStats.meetingsDone,
               open: meetingsOpen,
@@ -196,15 +202,22 @@ export default function TodayHero({
             detail={t('readiness.doneStats.trackedHint', { target: doneStats.targetLabel })}
           />
 
-          <p className="pt-1 text-[10px] text-gray-400">{t('readiness.doneStats.readinessHint', { score: readiness.score })}</p>
+          <p className="pt-1 text-[10px] text-gray-400">
+            {t('readiness.doneStats.readinessHint', { score: readiness.score })}
+          </p>
         </div>
 
         {/* Today's to-dos */}
         <div className="flex min-h-0 flex-col lg:col-span-5">
           <div className="mb-2 flex items-baseline justify-between gap-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{t('readiness.todayTodos')}</p>
+            <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+              <span className="h-3.5 w-1 rounded-full bg-accent/70" aria-hidden />
+              {t('readiness.todayTodos')}
+            </p>
             {openTodos.length > 0 && (
-              <span className="text-[11px] tabular-nums text-gray-400">{t('readiness.todayTodosCount', { count: openTodos.length })}</span>
+              <span className="text-[11px] tabular-nums text-gray-400">
+                {t('readiness.todayTodosCount', { count: openTodos.length })}
+              </span>
             )}
           </div>
 
@@ -233,8 +246,12 @@ export default function TodayHero({
                           {tk.startTime && (
                             <span className="font-semibold tabular-nums text-accent">{tk.startTime}</span>
                           )}
-                          {overdue && <span className="font-semibold text-red-500">{t('readiness.next.overdueTag')}</span>}
-                          {tk.urgent && tk.important && <span className="font-semibold text-amber-600 dark:text-amber-400">Q1</span>}
+                          {overdue && (
+                            <span className="font-semibold text-red-500">{t('readiness.next.overdueTag')}</span>
+                          )}
+                          {tk.urgent && tk.important && (
+                            <span className="font-semibold text-amber-600 dark:text-amber-400">Q1</span>
+                          )}
                         </span>
                       </button>
                       {!tk.completed && (
@@ -248,7 +265,10 @@ export default function TodayHero({
           )}
 
           {openTodos.length > visibleTodos.length && (
-            <Link to="/tasks" className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-accent hover:underline">
+            <Link
+              to="/tasks"
+              className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-accent hover:underline"
+            >
               {t('readiness.todayTodosMore', { count: openTodos.length - visibleTodos.length })}
               <ArrowRight size={12} />
             </Link>
@@ -392,10 +412,13 @@ export default function TodayHero({
         )}
       </div>
 
-      {/* Desktop: only next event */}
+      {/* Desktop: next event */}
       <div className="mt-5 hidden lg:block">
         <div className="bento-card-sm flex flex-col gap-2 p-4">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{t('focus.nextEvent')}</span>
+          <span className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+            <span className="h-3 w-0.5 rounded-full bg-accent/70" aria-hidden />
+            {t('focus.nextEvent')}
+          </span>
           {nextEvent ? (
             <>
               <div className="flex items-center gap-2 text-accent">

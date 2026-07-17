@@ -33,6 +33,7 @@ import TodayHero from '../components/dashboard/TodayHero'
 import WeeklyInsightCard from '../components/dashboard/WeeklyInsightCard'
 import { DayCapacityWidget, WeekOverviewWidget } from '../components/dashboard/FocusWidgets'
 import DashboardCustomizePanel from '../components/dashboard/DashboardCustomizePanel'
+import DashboardSectionHeader from '../components/dashboard/DashboardSectionHeader'
 import TaskTimer from '../components/tasks/TaskTimer'
 import { useSettingsStore } from '../store/settingsStore'
 import {
@@ -594,28 +595,30 @@ export default function Dashboard() {
               )}
               {id === 'dueThisWeek' && (weekTasks.length > 0 || weekEntries.length > 0) && (
                 <div>
-                  <div className="mb-3 flex items-center justify-between">
-                    <h2 className="text-lg font-semibold">{t('sections.dueThisWeek')}</h2>
-                    <div className="flex items-center gap-3">
-                      {weekEntries.length > 0 && (
-                        <label className="flex cursor-pointer items-center gap-1.5 text-xs text-gray-400">
-                          <span>{t('sections.showAppointmentsToggle')}</span>
-                          <button
-                            type="button"
-                            role="switch"
-                            aria-checked={showWeekEntries}
-                            onClick={() => setShowWeekEntries((v) => !v)}
-                            className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${showWeekEntries ? 'bg-[#34c759]' : 'bg-gray-200 dark:bg-racing-700'}`}
-                          >
-                            <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${showWeekEntries ? 'translate-x-5' : 'translate-x-0'}`} />
-                          </button>
-                        </label>
-                      )}
-                      <Link to="/tasks/week" className="text-sm font-medium text-accent hover:underline">
-                        {t('showAll')}
-                      </Link>
-                    </div>
-                  </div>
+                  <DashboardSectionHeader
+                    title={t('sections.dueThisWeek')}
+                    action={
+                      <div className="flex items-center gap-3">
+                        {weekEntries.length > 0 && (
+                          <label className="flex cursor-pointer items-center gap-1.5 text-xs text-gray-400">
+                            <span>{t('sections.showAppointmentsToggle')}</span>
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={showWeekEntries}
+                              onClick={() => setShowWeekEntries((v) => !v)}
+                              className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${showWeekEntries ? 'bg-[#34c759]' : 'bg-gray-200 dark:bg-racing-700'}`}
+                            >
+                              <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${showWeekEntries ? 'translate-x-5' : 'translate-x-0'}`} />
+                            </button>
+                          </label>
+                        )}
+                        <Link to="/tasks/week" className="text-sm font-medium text-accent hover:underline">
+                          {t('showAll')}
+                        </Link>
+                      </div>
+                    }
+                  />
                   {showWeekEntries && <CalendarEntriesBlock entries={weekEntries} label="Termine diese Woche" today={today} />}
                   <TaskList tasks={weekTasks} groupByDate emptyMessage={t('noTasksThisWeek')} />
                 </div>
@@ -641,10 +644,12 @@ export default function Dashboard() {
               )}
               {id === 'upcomingDeadlines' && (
                 <div>
-                  <div className="mb-3 flex items-center justify-between">
-                    <h2 className="text-lg font-semibold">{t('sections.upcomingDeadlines')}</h2>
-                    <Link to="/projekte" className="text-sm font-medium text-accent hover:underline">{t('allProjects')}</Link>
-                  </div>
+                  <DashboardSectionHeader
+                    title={t('sections.upcomingDeadlines')}
+                    action={
+                      <Link to="/projekte" className="text-sm font-medium text-accent hover:underline">{t('allProjects')}</Link>
+                    }
+                  />
                   {upcomingBoards.length === 0 ? (
                     <p className="text-sm text-gray-400">{t('noUpcomingDeadlines')}</p>
                   ) : (
@@ -658,10 +663,12 @@ export default function Dashboard() {
               )}
               {id === 'nextEvents' && (
                 <div>
-                  <div className="mb-3 flex items-center justify-between">
-                    <h2 className="text-lg font-semibold">{t('sections.upcomingEvents')}</h2>
-                    <Link to="/calendar" className="text-sm font-medium text-accent hover:underline">{t('calendar')}</Link>
-                  </div>
+                  <DashboardSectionHeader
+                    title={t('sections.upcomingEvents')}
+                    action={
+                      <Link to="/calendar" className="text-sm font-medium text-accent hover:underline">{t('calendar')}</Link>
+                    }
+                  />
                   {upcomingEvents.length === 0 ? (
                     <p className="text-sm text-gray-400">{t('noUpcomingEvents')}</p>
                   ) : (
@@ -692,10 +699,12 @@ export default function Dashboard() {
               )}
               {id === 'projectsOverview' && (
                 <div>
-                  <div className="mb-3 flex items-center justify-between">
-                    <h2 className="text-lg font-semibold">{t('sections.projectsOverview')}</h2>
-                    <Link to="/projekte" className="text-sm font-medium text-accent hover:underline">{t('allProjects')}</Link>
-                  </div>
+                  <DashboardSectionHeader
+                    title={t('sections.projectsOverview')}
+                    action={
+                      <Link to="/projekte" className="text-sm font-medium text-accent hover:underline">{t('allProjects')}</Link>
+                    }
+                  />
                   {boards.length === 0 ? (
                     <p className="text-sm text-gray-400">{t('noProjectsYet')}</p>
                   ) : (
@@ -792,6 +801,7 @@ function TopPriorityCard({
     <div className="bento-card p-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="flex items-center gap-2 text-sm font-semibold">
+          <span className="h-4 w-1 rounded-full bg-red-500/80" aria-hidden />
           <Flame size={16} className="text-red-500" />
           {t('sections.topPriority')}
         </h2>

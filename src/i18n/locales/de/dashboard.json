@@ -205,6 +205,10 @@
       "peakBody": "{{day}} ist am dichtesten ({{load}} Punkte) — Fokusblöcke darum schützen."
     }
   },
+  "progressPills": {
+    "tasksRatio": "{{done}}/{{total}} erledigt",
+    "meetingsRatio": "{{done}}/{{total}}"
+  },
   "eventStatus": {
     "ongoing": "läuft",
     "today": "Heute",

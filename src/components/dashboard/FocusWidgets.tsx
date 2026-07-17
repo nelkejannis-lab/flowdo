@@ -46,7 +46,10 @@ export function DayCapacityWidget({ openTaskCount, meetingMinutes }: CapacityPro
     <div className="bento-card flex h-full flex-col gap-4 p-5">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold">{t('focus.dayCapacity')}</h3>
+          <h3 className="flex items-center gap-2 text-sm font-semibold">
+            <span className="h-4 w-1 rounded-full bg-accent/70" aria-hidden />
+            {t('focus.dayCapacity')}
+          </h3>
           <p className="mt-0.5 text-xs text-gray-400">{t('focus.dayCapacitySub')}</p>
         </div>
         <Link to="/arbeitszeit" className="text-xs font-semibold text-accent hover:underline">
@@ -150,7 +153,10 @@ export function WeekOverviewWidget({ tasks, entries }: WeekProps) {
     <div className="bento-card flex h-full flex-col gap-4 p-5">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold">{t('focus.weekOverview')}</h3>
+          <h3 className="flex items-center gap-2 text-sm font-semibold">
+            <span className="h-4 w-1 rounded-full bg-accent/70" aria-hidden />
+            {t('focus.weekOverview')}
+          </h3>
           <p className="mt-0.5 text-xs text-gray-400">{t('focus.weekOverviewSub')}</p>
         </div>
         <Link to="/tasks/week" className="text-xs font-semibold text-accent hover:underline">

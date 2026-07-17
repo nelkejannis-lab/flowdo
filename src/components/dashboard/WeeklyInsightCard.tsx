@@ -49,7 +49,14 @@ export default function WeeklyInsightCard({ insight, onAiRefresh, aiLoading }: P
         <Stat
           icon={<Trophy size={14} className="text-amber-500" />}
           label={t('readiness.week.done')}
-          value={String(insight.completedCount)}
+          value={
+            insight.completedCount + insight.openRemaining > 0
+              ? t('progressPills.tasksRatio', {
+                  done: insight.completedCount,
+                  total: insight.completedCount + insight.openRemaining,
+                })
+              : String(insight.completedCount)
+          }
         />
         <Stat
           icon={<TrendingUp size={14} className="text-accent" />}
@@ -102,12 +109,12 @@ function Stat({
   value: string
 }) {
   return (
-    <div className="rounded-2xl bg-black/[0.03] px-3 py-2.5 dark:bg-white/[0.04]">
+    <div className="bento-card-sm px-3 py-2.5">
       <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
         {icon}
         {label}
       </p>
-      <p className="mt-1 text-2xl font-bold tabular-nums leading-none">{value}</p>
+      <p className="mt-1 text-xl font-bold tabular-nums leading-none sm:text-2xl">{value}</p>
     </div>
   )
 }
