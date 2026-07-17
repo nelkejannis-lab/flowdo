@@ -18,6 +18,7 @@ import ShortcutsHelpModal from './components/layout/ShortcutsHelpModal'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useQuickTaskModalStore } from './store/quickTaskModalStore'
 import { useWorkTimeStore } from './store/workTimeStore'
+import { useTaskTimeStore } from './store/taskTimeStore'
 import TaskTray from './components/layout/TaskTray'
 import TaskTimerBar from './components/tasks/TaskTimerBar'
 import BootLoader from './components/motion/BootLoader'
@@ -68,6 +69,7 @@ export default function App() {
   const subscribeToEntries = useCalendarEntriesStore((s) => s.subscribeToEntries)
   const fetchCalendarEntries = useCalendarEntriesStore((s) => s.fetchEntries)
   const fetchEvents = useEventsStore((s) => s.fetchAll)
+  const fetchTaskTime = useTaskTimeStore((s) => s.fetchForUser)
   useNotifications()
   useCalendarReminders()
 
@@ -75,13 +77,14 @@ export default function App() {
     if (!isSupabaseConfigured || !session) return
     void fetchEvents()
     void fetchCalendarEntries()
+    void fetchTaskTime()
     const unsubTasks = subscribeToTasks()
     const unsubEntries = subscribeToEntries()
     return () => {
       unsubTasks()
       unsubEntries()
     }
-  }, [session, subscribeToTasks, subscribeToEntries, fetchEvents, fetchCalendarEntries])
+  }, [session, subscribeToTasks, subscribeToEntries, fetchEvents, fetchCalendarEntries, fetchTaskTime])
 
   const [showNewTask, setShowNewTask] = useState(false)
   const [showNewTermin, setShowNewTermin] = useState(false)

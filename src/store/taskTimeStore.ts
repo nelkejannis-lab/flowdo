@@ -78,7 +78,7 @@ export const useTaskTimeStore = create<TaskTimeState>()(
         const { data } = await supabase
           .from('task_time_entries')
           .select('id, task_id, board_id, owner_id, user_id, minutes, date, note, created_at')
-          .eq('owner_id', userId)
+          .or(`owner_id.eq.${userId},user_id.eq.${userId}`)
           .order('date', { ascending: false })
         const rows = (data ?? []) as { id: string; task_id: string | null; board_id: string | null; owner_id: string | null; user_id: string; minutes: number; date: string; note: string | null; created_at: string }[]
         const fetched = rows.map((r) => ({
@@ -92,8 +92,12 @@ export const useTaskTimeStore = create<TaskTimeState>()(
           note: r.note ?? undefined,
           createdAt: r.created_at,
         }))
+        const fetchedIds = new Set(fetched.map((e) => e.id))
         set((s) => ({
-          entries: [...s.entries.filter((e) => e.ownerId !== userId || e.boardId), ...fetched],
+          entries: [
+            ...s.entries.filter((e) => e.userId !== userId && e.ownerId !== userId && !fetchedIds.has(e.id)),
+            ...fetched,
+          ],
         }))
       },
 

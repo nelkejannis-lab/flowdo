@@ -37,9 +37,12 @@
     "sendQuestion": "Frage senden",
     "collapse": "Einklappen",
     "showSubtasks": "Unteraufgaben anzeigen",
-    "track": "Tracken",
+    "track": "Zeit tracken",
     "pauseTimer": "Pausieren",
-    "resumeTimer": "Fortsetzen"
+    "resumeTimer": "Fortsetzen",
+    "stopTimer": "Stoppen",
+    "tracked": "{{time}} erfasst",
+    "trackedShort": "erfasst"
   },
   "form": {
     "titleNew": "Neue Aufgabe",

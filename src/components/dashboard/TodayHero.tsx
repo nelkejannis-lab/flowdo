@@ -20,6 +20,7 @@ import { DonutChart, ProgressTrack, AvatarStack } from './FocusVisuals'
 import type { DayReadinessResult } from '../../lib/dayReadiness'
 import { useWorkTimeStore } from '../../store/workTimeStore'
 import { isOverdue } from '../../utils/date'
+import TaskTimer from '../tasks/TaskTimer'
 
 interface TodayTodo {
   id: string
@@ -236,6 +237,9 @@ export default function TodayHero({
                           {tk.urgent && tk.important && <span className="font-semibold text-amber-600 dark:text-amber-400">Q1</span>}
                         </span>
                       </button>
+                      {!tk.completed && (
+                        <TaskTimer taskId={tk.id} boardId={tk.boardId} title={tk.title} compact />
+                      )}
                     </div>
                   </li>
                 )

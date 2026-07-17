@@ -33,6 +33,7 @@ import TodayHero from '../components/dashboard/TodayHero'
 import WeeklyInsightCard from '../components/dashboard/WeeklyInsightCard'
 import { DayCapacityWidget, WeekOverviewWidget } from '../components/dashboard/FocusWidgets'
 import DashboardCustomizePanel from '../components/dashboard/DashboardCustomizePanel'
+import TaskTimer from '../components/tasks/TaskTimer'
 import { useSettingsStore } from '../store/settingsStore'
 import {
   buildDashboardLayoutBlocks,
@@ -817,6 +818,7 @@ function TopPriorityCard({
               <div className="min-w-0 flex-1 cursor-pointer" onClick={() => onOpen(tk)}>
                 <p className="truncate text-sm font-medium">{tk.title}</p>
               </div>
+              <TaskTimer taskId={tk.id} boardId={tk.boardId} title={tk.title} compact />
             </div>
           ))}
         </div>

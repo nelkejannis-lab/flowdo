@@ -37,9 +37,12 @@
     "sendQuestion": "Send question",
     "collapse": "Collapse",
     "showSubtasks": "Show subtasks",
-    "track": "Track",
+    "track": "Track time",
     "pauseTimer": "Pause",
-    "resumeTimer": "Resume"
+    "resumeTimer": "Resume",
+    "stopTimer": "Stop",
+    "tracked": "{{time}} tracked",
+    "trackedShort": "tracked"
   },
   "form": {
     "titleNew": "New task",

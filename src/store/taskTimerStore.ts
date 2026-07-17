@@ -11,7 +11,7 @@ interface TaskTimerState {
   taskTitle: string | null
   startedAt: number | null
   accumulatedSeconds: number
-  start: (taskId: string, boardId: string | null, title: string) => void
+  start: (taskId: string, boardId: string | null, title: string) => Promise<void>
   pause: () => void
   resume: () => void
   stop: () => Promise<void>
@@ -36,16 +36,25 @@ export const useTaskTimerStore = create<TaskTimerState>()(
         return s.accumulatedSeconds
       },
 
-      start: (taskId, boardId, title) => {
+      start: async (taskId, boardId, title) => {
         const cur = get()
-        if (cur.running && cur.taskId === taskId) return
+        if (cur.taskId === taskId && cur.running) return
+
+        // Switching tasks: persist the previous session first (one active timer).
+        if (cur.taskId && cur.taskId !== taskId) {
+          await get().stop()
+        } else if (cur.taskId === taskId && !cur.running) {
+          set({ running: true, startedAt: Date.now(), boardId, taskTitle: title })
+          return
+        }
+
         set({
           running: true,
           taskId,
           boardId,
           taskTitle: title,
           startedAt: Date.now(),
-          accumulatedSeconds: cur.taskId === taskId ? cur.accumulatedSeconds : 0,
+          accumulatedSeconds: 0,
         })
       },
 
@@ -73,7 +82,7 @@ export const useTaskTimerStore = create<TaskTimerState>()(
         const minutes = Math.max(1, Math.round(totalSeconds / 60))
         const userId = useAuthStore.getState().user?.id
 
-        if (userId && minutes > 0) {
+        if (userId && totalSeconds >= 15) {
           await useTaskTimeStore.getState().addEntry({
             taskId: s.taskId,
             boardId: s.boardId ?? undefined,

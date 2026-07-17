@@ -19,6 +19,7 @@ import { createId } from '../../utils/id'
 import { useTaskTrayStore } from '../../store/taskTrayStore'
 import { useSettingsStore } from '../../store/settingsStore'
 import { useAiSchedulerStore } from '../../store/aiSchedulerStore'
+import TaskTimer from './TaskTimer'
 
 const quadrants: { urgent: boolean; important: boolean; labelKey: string; activeClass: string }[] = [
   { urgent: true, important: true, labelKey: 'form.quadrants.urgentImportant', activeClass: 'border-red-400 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
@@ -424,6 +425,19 @@ export default function TaskFormModal({
               {t('common:buttons.edit') || 'Bearbeiten'}
             </button>
           </div>
+
+          {!currentTask.completed && (
+            <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-emerald-700/80 dark:text-emerald-300/80">
+                {t('item.track')}
+              </p>
+              <TaskTimer
+                taskId={currentTask.id}
+                boardId={currentTask.boardId}
+                title={currentTask.title}
+              />
+            </div>
+          )}
 
           {currentTask.description ? (
             <p className="text-sm text-gray-600 dark:text-racing-300 bg-gray-50 dark:bg-racing-950 p-3 rounded-xl whitespace-pre-wrap break-words border border-gray-100 dark:border-racing-850">

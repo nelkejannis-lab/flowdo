@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
-import { Check, ChevronDown, Clock, ListChecks, Lock, Pause } from 'lucide-react'
+import { Check, ChevronDown, ListChecks, Lock } from 'lucide-react'
 import type { Task } from '../../types'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
 import { formatFriendlyDate, isOverdue } from '../../utils/date'
 import PriorityBadge from '../tasks/PriorityBadge'
-import { useTaskTimerStore } from '../../store/taskTimerStore'
+import TaskTimer from '../tasks/TaskTimer'
 
 interface KanbanCardProps {
   task: Task
@@ -17,9 +17,6 @@ export default function KanbanCard({ task, onClick }: KanbanCardProps) {
   const toggleTaskCompleted = useProjectTasksStore((s) => s.toggleTaskCompleted)
   const toggleSubtask = useProjectTasksStore((s) => s.toggleSubtask)
   const blocked = useProjectTasksStore((s) => !task.completed && s.isBlocked(task.id))
-  const timer = useTaskTimerStore()
-  const isTimerActive = timer.taskId === task.id
-  const isTimerRunning = timer.running && isTimerActive
   const [expanded, setExpanded] = useState(false)
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
@@ -53,27 +50,10 @@ export default function KanbanCard({ task, onClick }: KanbanCardProps) {
         >
           {task.completed && <Check size={10} />}
         </button>
-        {!task.completed && task.boardId && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              if (isTimerActive && timer.running) {
-                timer.pause()
-              } else if (isTimerActive) {
-                timer.resume()
-              } else {
-                timer.start(task.id, task.boardId!, task.title)
-              }
-            }}
-            className={`mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full transition-colors ${
-              isTimerActive
-                ? 'bg-cyan-500 text-white hover:bg-cyan-600'
-                : 'bg-gray-100 text-gray-400 hover:bg-gray-200 dark:bg-racing-800'
-            }`}
-            title="Zeit-Tracker"
-          >
-            {isTimerRunning ? <Pause size={8} /> : <Clock size={8} />}
-          </button>
+        {!task.completed && (
+          <span className="mt-0.5">
+            <TaskTimer taskId={task.id} boardId={task.boardId} title={task.title} compact />
+          </span>
         )}
         <span className={`flex-1 font-medium ${task.completed ? 'text-gray-400 line-through' : ''}`}>
           {task.title}
