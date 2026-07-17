@@ -21,6 +21,12 @@ alwaysApply: true
 - **Production:** https://novat.app
 - Implement features, fixes, deploys, EXE builds, and releases **here** unless the user explicitly names another repo.
 
+## Always ship live immediately
+- When a feature/fix is done: **commit → push → deploy novat.app in the same pass**. Do not leave finished work only on disk.
+- Prefer also publishing the NOVAT EXE GitHub release on version bumps.
+- Fresh Vercel build every time (pull → repair `[SENSITIVE]` placeholders → `vercel build --prod` → deploy). Never stale prebuilt alone.
+- User said: „mache alles live immer direkt“ / „push everything live“.
+
 ## life-os / "Nova" repos
 - Do **not** implement in `life-os` / `life-os-review` unless the user **explicitly** asks.
 - Work done there must be **ported into NOVAT** or ignored going forward — never continue shipping Nova/Life OS.
