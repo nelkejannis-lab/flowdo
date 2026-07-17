@@ -146,6 +146,8 @@ interface SocialState {
   posts: Record<string, SocialPost[]>
   stories: Record<string, SocialStory[]>
   loading: boolean
+  dataLoading: boolean
+  dataFetchedAt: Record<string, number>
   error: string | null
   syncingId: string | null
   fetchAccounts: () => Promise<void>
@@ -153,11 +155,14 @@ interface SocialState {
   updateAccount: (accountId: string, input: { username: string; igUserId: string }) => Promise<string | null>
   updateAccessToken: (accountId: string, accessToken: string) => Promise<string | null>
   deleteAccount: (id: string) => Promise<void>
-  fetchAccountData: (accountId: string) => Promise<void>
+  fetchAccountData: (accountId: string, opts?: { force?: boolean }) => Promise<void>
+  fetchAllAccountData: (opts?: { force?: boolean }) => Promise<void>
   syncAccount: (accountId: string) => Promise<string | null>
   shareWithUser: (accountId: string, targetUserId: string) => Promise<string | null>
   unshareWithUser: (accountId: string, targetUserId: string) => Promise<string | null>
 }
+
+const DATA_CACHE_MS = 60_000
 
 export const useSocialStore = create<SocialState>()((set, get) => ({
   accounts: [],
@@ -165,6 +170,8 @@ export const useSocialStore = create<SocialState>()((set, get) => ({
   posts: {},
   stories: {},
   loading: false,
+  dataLoading: false,
+  dataFetchedAt: {},
   error: null,
   syncingId: null,
 
@@ -247,7 +254,11 @@ export const useSocialStore = create<SocialState>()((set, get) => ({
     set((state) => ({ accounts: state.accounts.filter((a) => a.id !== id) }))
   },
 
-  fetchAccountData: async (accountId) => {
+  fetchAccountData: async (accountId, opts) => {
+    const force = opts?.force === true
+    const last = get().dataFetchedAt[accountId] ?? 0
+    if (!force && last > 0 && Date.now() - last < DATA_CACHE_MS) return
+
     const [metricsRes, postsRes, storiesRes] = await Promise.all([
       supabase.from('social_metrics').select('*').eq('account_id', accountId).order('date', { ascending: true }),
       supabase.from('social_posts').select('*').eq('account_id', accountId).order('posted_at', { ascending: false }),
@@ -258,7 +269,19 @@ export const useSocialStore = create<SocialState>()((set, get) => ({
       metrics: { ...state.metrics, [accountId]: ((metricsRes.data ?? []) as unknown as SocialMetricRow[]).map(toMetric) },
       posts: { ...state.posts, [accountId]: ((postsRes.data ?? []) as unknown as SocialPostRow[]).map(toPost) },
       stories: { ...state.stories, [accountId]: ((storiesRes.data ?? []) as unknown as SocialStoryRow[]).map(toStory) },
+      dataFetchedAt: { ...state.dataFetchedAt, [accountId]: Date.now() },
     }))
+  },
+
+  fetchAllAccountData: async (opts) => {
+    const accounts = get().accounts
+    if (!accounts.length) return
+    set({ dataLoading: true })
+    try {
+      await Promise.all(accounts.map((a) => get().fetchAccountData(a.id, opts)))
+    } finally {
+      set({ dataLoading: false })
+    }
   },
 
   syncAccount: async (accountId) => {
@@ -277,7 +300,7 @@ export const useSocialStore = create<SocialState>()((set, get) => ({
       if (res.error) throw new Error(res.error.message ?? 'Synchronisierung fehlgeschlagen')
       if (res.data?.error) throw new Error(res.data.error)
 
-      await Promise.all([get().fetchAccounts(), get().fetchAccountData(accountId)])
+      await Promise.all([get().fetchAccounts(), get().fetchAccountData(accountId, { force: true })])
       set({ syncingId: null })
       if (res.data?.warnings?.length) return `⚠️ ${res.data.warnings[0]}`
       return null

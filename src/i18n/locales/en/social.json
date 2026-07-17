@@ -65,7 +65,7 @@
   "addModal": {
     "title": "Connect Instagram account",
     "usernameLabel": "Instagram username",
-    "usernamePlaceholder": "e.g. mybrandaccount",
+    "usernamePlaceholder": "e.g. febi.bilstein",
     "igUserIdLabel": "Instagram User ID",
     "igUserIdPlaceholder": "e.g. 17841400000000000",
     "accessTokenLabel": "Access token (optional)",

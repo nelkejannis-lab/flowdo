@@ -3,6 +3,13 @@
     "title": "Social Media",
     "addAccount": "Account",
     "emptyState": "Noch kein Instagram-Account verbunden. Füge einen Account hinzu, um Follower, Reichweite und weitere Kennzahlen zu tracken.",
+    "intro": "Übersicht, Trends und umsetzbare Tipps für deine verbundenen Instagram-Accounts.",
+    "introFebi": "Performance & Handlungsempfehlungen für FEBI Bilstein (@febi.bilstein) — basierend auf verbundenen Instagram-Daten.",
+    "period": {
+      "today": "Heute",
+      "week": "Woche",
+      "month": "Monat"
+    },
     "callback": {
       "accessDenied": "Instagram hat den Zugriff verweigert: {{reason}}",
       "noAuthCode": "Kein Autorisierungscode erhalten.",
@@ -65,7 +72,7 @@
   "addModal": {
     "title": "Instagram-Account verbinden",
     "usernameLabel": "Instagram-Benutzername",
-    "usernamePlaceholder": "z. B. meinmarkenaccount",
+    "usernamePlaceholder": "z. B. febi.bilstein",
     "igUserIdLabel": "Instagram User ID",
     "igUserIdPlaceholder": "z. B. 17841400000000000",
     "accessTokenLabel": "Access Token (optional)",
