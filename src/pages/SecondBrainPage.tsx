@@ -136,7 +136,7 @@ export default function SecondBrainPage() {
   // Lock body scroll while the mobile note sheet is open
   useEffect(() => {
     if (!editorOpen) return
-    const mq = window.matchMedia('(max-width: 1023px)')
+    const mq = window.matchMedia('(max-width: 767px)')
     if (!mq.matches) return
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -543,9 +543,9 @@ ${textToSummarize}`
   // Shared toolbar for the create/edit detail pane — compact icon row on mobile
   function Toolbar() {
     const btnBase =
-      'flex h-10 w-10 sm:h-auto sm:w-auto sm:min-h-11 items-center justify-center sm:gap-1.5 rounded-xl sm:px-3 sm:py-2 text-sm font-semibold touch-manipulation'
+      'flex min-h-11 min-w-11 sm:h-auto sm:w-auto sm:min-h-11 items-center justify-center sm:gap-1.5 rounded-xl sm:px-3 sm:py-2 text-sm font-semibold touch-manipulation'
     return (
-      <div className="flex flex-nowrap sm:flex-wrap items-center gap-1.5 sm:gap-2 border-b border-gray-100 dark:border-racing-800 pb-2 sm:pb-3 overflow-x-auto scrollbar-none">
+      <div className="flex flex-nowrap sm:flex-wrap items-center gap-2 sm:gap-2 max-md:border-0 border-b border-gray-100 dark:border-racing-800 pb-2 sm:pb-3 overflow-x-auto scrollbar-none [-webkit-overflow-scrolling:touch]">
         <button
           type="button"
           onClick={insertBulletPoint}
@@ -634,9 +634,9 @@ ${textToSummarize}`
   }
 
   return (
-    <div className={`flex flex-col gap-3 sm:gap-4 h-full min-h-[60vh] sm:min-h-[75vh] pb-[max(0.5rem,env(safe-area-inset-bottom))] ${editorOpen ? 'max-lg:min-h-0 max-lg:pb-0' : ''}`}>
+    <div className={`flex flex-col gap-3 sm:gap-4 h-full min-h-[60vh] sm:min-h-[75vh] max-md:-mx-4 max-md:px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] ${editorOpen ? 'max-md:min-h-0 max-md:pb-0 max-md:mx-0 max-md:px-0' : ''}`}>
       {/* Sticky header: title + section tabs — hidden on mobile while editing */}
-      <div className={`sticky top-0 z-20 -mx-4 px-4 pt-1 pb-3 sm:-mx-0 sm:px-0 bg-white/90 dark:bg-[rgb(var(--surface-0)/0.92)] backdrop-blur-md border-b border-gray-100/80 dark:border-racing-850/80 sm:border-0 sm:static sm:bg-transparent sm:backdrop-blur-none sm:pb-0 sm:pt-0 ${editorOpen ? 'hidden lg:block' : ''}`}>
+      <div className={`sticky top-0 z-20 -mx-4 px-4 pt-1 pb-3 sm:-mx-0 sm:px-0 bg-white/90 dark:bg-[rgb(var(--surface-0)/0.92)] backdrop-blur-md border-b border-gray-100/80 dark:border-racing-850/80 sm:border-0 sm:static sm:bg-transparent sm:backdrop-blur-none sm:pb-0 sm:pt-0 ${editorOpen ? 'max-md:hidden lg:block' : ''}`}>
         <h1 className="text-xl font-semibold sm:text-2xl mb-3">{t('title')}</h1>
         <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2 sm:w-auto">
           <button
@@ -661,7 +661,7 @@ ${textToSummarize}`
       </div>
 
       {/* Invite panel — collapsed by default; fully hidden on mobile while editing */}
-      <div className={`rounded-xl border border-gray-100 bg-white/70 dark:border-racing-850 dark:bg-racing-900/70 overflow-hidden ${editorOpen ? 'hidden lg:block' : ''}`}>
+      <div className={`rounded-xl border border-gray-100 bg-white/70 dark:border-racing-850 dark:bg-racing-900/70 overflow-hidden ${editorOpen ? 'max-md:hidden lg:block' : ''}`}>
         <button
           type="button"
           onClick={() => setInviteOpen((v) => !v)}
@@ -759,9 +759,9 @@ ${textToSummarize}`
       </div>
 
       {activeSection === 'notes' && (
-        <div className={`flex flex-1 flex-col gap-4 min-h-0 lg:flex-row ${editorOpen ? 'max-lg:contents' : ''}`}>
+        <div className={`flex flex-1 flex-col gap-4 min-h-0 lg:flex-row ${editorOpen ? 'max-md:contents' : ''}`}>
           {/* Left pane: search, tabs, list — hidden on mobile when editor is open */}
-          <div className={`flex w-full flex-shrink-0 flex-col gap-3 lg:w-80 ${editorOpen ? 'hidden lg:flex' : 'flex'}`}>
+          <div className={`flex w-full flex-shrink-0 flex-col gap-3 lg:w-80 ${editorOpen ? 'max-md:hidden lg:flex' : 'flex'}`}>
             <div className="flex items-center gap-2">
               <div className="relative flex-1 min-w-0">
                 <input
@@ -829,19 +829,19 @@ ${textToSummarize}`
                   key={page.id}
                   type="button"
                   onClick={() => handleOpenPage(page)}
-                  className={`flex flex-col gap-1.5 rounded-xl border p-3.5 text-left transition-all duration-150 touch-manipulation active:scale-[0.99] ${
+                  className={`flex flex-col gap-2 rounded-xl border p-3.5 max-md:p-4 max-md:gap-2.5 text-left transition-all duration-150 touch-manipulation active:scale-[0.99] ${
                     activePage?.id === page.id
                       ? 'border-accent bg-accent/5'
                       : 'border-gray-100 bg-white hover:border-accent/30 dark:border-racing-850 dark:bg-racing-900'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <h4 className="font-semibold text-sm break-words line-clamp-2 min-w-0">{page.title}</h4>
+                    <h4 className="font-semibold text-sm max-md:text-base break-words line-clamp-2 min-w-0">{page.title}</h4>
                     <span className="flex-shrink-0 text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-black/[0.04] dark:bg-white/[0.05] rounded-full px-2 py-1">
                       {columnTitle(page.columnId)}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-400 dark:text-racing-300 line-clamp-2 leading-relaxed whitespace-pre-wrap">
+                  <p className="text-sm max-md:text-base text-gray-400 dark:text-racing-300 line-clamp-2 max-md:line-clamp-3 leading-relaxed whitespace-pre-wrap">
                     {page.content || '...'}
                   </p>
                   <div className="flex flex-wrap items-center gap-1.5">
@@ -879,74 +879,69 @@ ${textToSummarize}`
           <div
             className={
               editorOpen
-                ? 'fixed inset-0 z-[45] flex flex-col overflow-hidden bg-white dark:bg-racing-900 pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] px-3 sm:px-5 lg:static lg:inset-auto lg:z-auto lg:overflow-y-auto lg:overscroll-contain lg:rounded-2xl lg:border lg:border-gray-100 lg:dark:border-racing-850 lg:bg-white/70 lg:dark:bg-racing-900/70 lg:p-5 lg:pt-5 lg:pb-5 lg:backdrop-blur-apple'
+                ? 'fixed inset-0 z-50 flex flex-col overflow-hidden bg-white dark:bg-racing-900 h-[100dvh] max-md:px-0 pt-[max(0.5rem,env(safe-area-inset-top))] pb-0 sm:px-5 lg:static lg:inset-auto lg:z-auto lg:h-auto lg:overflow-y-auto lg:overscroll-contain lg:rounded-2xl lg:border lg:border-gray-100 lg:dark:border-racing-850 lg:bg-white/70 lg:dark:bg-racing-900/70 lg:p-5 lg:pt-5 lg:pb-5 lg:backdrop-blur-apple'
                 : 'hidden flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-gray-100 dark:border-racing-850 bg-white/70 dark:bg-racing-900/70 p-4 sm:p-5 backdrop-blur-apple lg:flex lg:flex-col'
             }
           >
             {editorOpen && (
-              <div className="flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 lg:gap-4">
-                <button
-                  type="button"
-                  onClick={closeEditor}
-                  className="flex h-10 w-full flex-shrink-0 items-center gap-1.5 rounded-xl px-1 text-sm font-semibold text-accent touch-manipulation lg:hidden"
-                >
-                  <ChevronLeft size={20} />
-                  {t('backToList')}
-                </button>
+              <div className="flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 lg:gap-4 max-md:grid max-md:grid-rows-[auto_auto_1fr_auto] max-md:gap-0 max-md:h-full max-md:overflow-hidden">
                 {isCreating ? (
-                  <div className="flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 lg:gap-4">
-                    <input
-                      autoFocus
-                      type="text"
-                      value={noteTitle}
-                      onChange={(e) => setNoteTitle(e.target.value)}
-                      placeholder={t('editor.titlePlaceholder')}
-                      className="w-full flex-shrink-0 text-xl sm:text-lg font-bold bg-transparent border-b border-gray-100 dark:border-racing-800 focus:border-accent focus:outline-none pb-1.5"
-                    />
-                    <Toolbar />
-                    {/* Meta fields collapsed on mobile to maximize content space */}
-                    <div className="flex-shrink-0 lg:contents">
+                  <div className="flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 lg:gap-4 max-md:contents">
+                    <div className="max-md:flex max-md:flex-shrink-0 max-md:flex-col max-md:border-b max-md:border-gray-100 max-md:px-4 max-md:pb-2 max-md:dark:border-racing-800 lg:contents">
                       <button
                         type="button"
-                        onClick={() => setEditorMetaOpen((v) => !v)}
-                        className="flex min-h-10 w-full items-center justify-between gap-2 rounded-xl border border-gray-100 px-3 py-2 text-sm font-semibold text-gray-500 touch-manipulation dark:border-racing-800 lg:hidden"
+                        onClick={closeEditor}
+                        className="flex min-h-11 w-full flex-shrink-0 items-center gap-1.5 rounded-xl px-1 text-sm font-semibold text-accent touch-manipulation lg:hidden"
                       >
-                        <span>{t('editor.categoryLabel')}</span>
-                        {editorMetaOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        <ChevronLeft size={20} />
+                        {t('backToList')}
                       </button>
-                      <div className={`${editorMetaOpen ? 'flex' : 'hidden'} flex-col gap-2 lg:flex lg:contents`}>
-                        <div className="lg:block">
-                          <label className="mb-1.5 hidden text-xs font-semibold text-gray-400 lg:block">{t('editor.categoryLabel')}</label>
-                          <select
-                            value={createColId}
-                            onChange={(e) => setCreateColId(e.target.value)}
-                            className="w-full min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base focus:border-accent focus:outline-none dark:border-racing-700 font-medium"
-                          >
-                            {columns.map((c) => (
-                              <option key={c.id} value={c.id}>{c.title}</option>
-                            ))}
-                          </select>
+                      <input
+                        autoFocus
+                        type="text"
+                        value={noteTitle}
+                        onChange={(e) => setNoteTitle(e.target.value)}
+                        placeholder={t('editor.titlePlaceholder')}
+                        className="w-full flex-shrink-0 text-base sm:text-lg font-bold bg-transparent border-b border-gray-100 dark:border-racing-800 focus:border-accent focus:outline-none pb-2 max-md:border-0 max-md:px-0 max-md:py-1 max-md:text-lg lg:pb-1.5"
+                      />
+                    </div>
+                    <div className="max-md:flex-shrink-0 max-md:px-4 max-md:py-2 lg:contents">
+                      <Toolbar />
+                    </div>
+                    {/* Scrollable editor body on mobile */}
+                    <div className="flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 max-md:overflow-y-auto max-md:overscroll-contain max-md:px-4 max-md:py-3 lg:gap-4 lg:contents">
+                      {/* Meta fields collapsed on mobile to maximize content space */}
+                      <div className="flex-shrink-0 lg:contents">
+                        <button
+                          type="button"
+                          onClick={() => setEditorMetaOpen((v) => !v)}
+                          className="flex min-h-11 w-full items-center justify-between gap-2 rounded-xl border border-gray-100 px-3 py-2.5 text-sm font-semibold text-gray-500 touch-manipulation dark:border-racing-800 lg:hidden"
+                        >
+                          <span>{t('editor.categoryLabel')}</span>
+                          {editorMetaOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        </button>
+                        <div className={`${editorMetaOpen ? 'flex' : 'hidden'} flex-col gap-2 lg:flex lg:contents`}>
+                          <div className="lg:block">
+                            <label className="mb-1.5 hidden text-xs font-semibold text-gray-400 lg:block">{t('editor.categoryLabel')}</label>
+                            <select
+                              value={createColId}
+                              onChange={(e) => setCreateColId(e.target.value)}
+                              className="w-full min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base focus:border-accent focus:outline-none dark:border-racing-700 font-medium"
+                            >
+                              {columns.map((c) => (
+                                <option key={c.id} value={c.id}>{c.title}</option>
+                              ))}
+                            </select>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <textarea
-                      value={noteContent}
-                      onChange={(e) => setNoteContent(e.target.value)}
-                      placeholder={t('editor.contentPlaceholder')}
-                      className="min-h-0 w-full flex-1 resize-none rounded-xl border border-gray-200 bg-transparent px-3.5 py-3 text-lg leading-relaxed focus:border-accent focus:outline-none dark:border-racing-700 max-lg:min-h-[calc(100dvh-10.5rem)] lg:min-h-[16rem] lg:flex-none lg:text-base"
-                    />
-                    <div className="hidden flex-shrink-0 space-y-3 lg:block">
-                      <BrainChecklist
-                        items={noteChecklist}
-                        onAdd={(text) => setNoteChecklist((prev) => [...prev, { id: createId(), text, done: false }])}
-                        onToggle={(id) => setNoteChecklist((prev) => prev.map((it) => (it.id === id ? { ...it, done: !it.done } : it)))}
-                        onDelete={(id) => setNoteChecklist((prev) => prev.filter((it) => it.id !== id))}
+                      <textarea
+                        value={noteContent}
+                        onChange={(e) => setNoteContent(e.target.value)}
+                        placeholder={t('editor.contentPlaceholder')}
+                        className="min-h-0 w-full flex-1 resize-none rounded-xl border border-gray-200 bg-transparent px-4 py-4 text-base leading-7 focus:border-accent focus:outline-none dark:border-racing-700 max-md:min-h-[45dvh] max-md:flex-none lg:min-h-[16rem] lg:flex-none lg:px-3.5 lg:py-3 lg:text-base lg:leading-relaxed"
                       />
-                      <AudioPlayback />
-                      {aiError && <p className="text-sm text-red-500">{aiError}</p>}
-                    </div>
-                    {editorMetaOpen && (
-                      <div className="flex-shrink-0 space-y-2 overflow-y-auto max-h-[30vh] lg:hidden">
+                      <div className="hidden flex-shrink-0 space-y-3 lg:block">
                         <BrainChecklist
                           items={noteChecklist}
                           onAdd={(text) => setNoteChecklist((prev) => [...prev, { id: createId(), text, done: false }])}
@@ -956,95 +951,120 @@ ${textToSummarize}`
                         <AudioPlayback />
                         {aiError && <p className="text-sm text-red-500">{aiError}</p>}
                       </div>
-                    )}
-                    <div className="flex flex-shrink-0 flex-col-reverse gap-2 sm:flex-row sm:justify-end mt-auto pt-2 border-t border-gray-100 dark:border-racing-800 pb-[max(0.25rem,env(safe-area-inset-bottom))] sm:pb-0">
+                      {editorMetaOpen && (
+                        <div className="flex-shrink-0 space-y-2 overflow-y-auto max-h-[30vh] lg:hidden">
+                          <BrainChecklist
+                            items={noteChecklist}
+                            onAdd={(text) => setNoteChecklist((prev) => [...prev, { id: createId(), text, done: false }])}
+                            onToggle={(id) => setNoteChecklist((prev) => prev.map((it) => (it.id === id ? { ...it, done: !it.done } : it)))}
+                            onDelete={(id) => setNoteChecklist((prev) => prev.filter((it) => it.id !== id))}
+                          />
+                          <AudioPlayback />
+                          {aiError && <p className="text-sm text-red-500">{aiError}</p>}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-shrink-0 flex-col-reverse gap-2 sm:flex-row sm:justify-end mt-auto pt-2 border-t border-gray-100 dark:border-racing-800 max-md:border-t max-md:bg-white max-md:px-4 max-md:py-3 max-md:dark:bg-racing-900 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-0">
                       <button
                         type="button"
                         onClick={() => setIsCreating(false)}
-                        className="min-h-11 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold touch-manipulation hover:bg-gray-50 dark:border-racing-800 dark:hover:bg-racing-800"
+                        className="min-h-12 rounded-xl border border-gray-200 px-4 py-3 text-base font-semibold touch-manipulation hover:bg-gray-50 dark:border-racing-800 dark:hover:bg-racing-800 sm:min-h-11 sm:py-2.5 sm:text-sm"
                       >
                         {t('editor.discard')}
                       </button>
                       <button
                         type="button"
                         onClick={handleSaveNewPage}
-                        className="min-h-11 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent-dark transition-all shadow-sm touch-manipulation"
+                        className="min-h-12 rounded-xl bg-accent px-4 py-3 text-base font-semibold text-white hover:bg-accent-dark transition-all shadow-sm touch-manipulation sm:min-h-11 sm:py-2.5 sm:text-sm"
                       >
                         {t('editor.saveAndCreate')}
                       </button>
                     </div>
                   </div>
                 ) : activePage ? (
-                  <div className="flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 lg:gap-4">
-                    <input
-                      type="text"
-                      value={noteTitle}
-                      onChange={(e) => setNoteTitle(e.target.value)}
-                      placeholder={t('editor.titlePlaceholderEdit')}
-                      className="w-full flex-shrink-0 text-xl sm:text-lg font-bold bg-transparent border-b border-gray-100 dark:border-racing-800 focus:border-accent focus:outline-none pb-1.5"
-                    />
-                    <Toolbar />
-                    <div className="flex-shrink-0 lg:contents">
+                  <div className="flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 lg:gap-4 max-md:contents">
+                    <div className="max-md:flex max-md:flex-shrink-0 max-md:flex-col max-md:border-b max-md:border-gray-100 max-md:px-4 max-md:pb-2 max-md:dark:border-racing-800 lg:contents">
                       <button
                         type="button"
-                        onClick={() => setEditorMetaOpen((v) => !v)}
-                        className="flex min-h-10 w-full items-center justify-between gap-2 rounded-xl border border-gray-100 px-3 py-2 text-sm font-semibold text-gray-500 touch-manipulation dark:border-racing-800 lg:hidden"
+                        onClick={closeEditor}
+                        className="flex min-h-11 w-full flex-shrink-0 items-center gap-1.5 rounded-xl px-1 text-sm font-semibold text-accent touch-manipulation lg:hidden"
                       >
-                        <span>{t('editor.categoryLabel')} · Tags</span>
-                        {editorMetaOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        <ChevronLeft size={20} />
+                        {t('backToList')}
                       </button>
-                      <div className={`${editorMetaOpen ? 'flex' : 'hidden'} flex-col gap-2 lg:flex lg:contents`}>
-                        <div className="lg:block">
-                          <label className="mb-1.5 hidden text-xs font-semibold text-gray-400 lg:block">{t('editor.categoryLabel')}</label>
-                          <select
-                            value={activePage.columnId}
-                            onChange={(e) => {
-                              const colId = e.target.value
-                              updatePage(activePage.id, { columnId: colId })
-                              setActivePage((prev) => (prev ? { ...prev, columnId: colId } : null))
-                            }}
-                            className="w-full min-h-11 max-w-full sm:max-w-xs rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base focus:border-accent focus:outline-none dark:border-racing-700 font-medium"
-                          >
-                            {columns.map((c) => (
-                              <option key={c.id} value={c.id}>{c.title}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:contents">
-                          <input
-                            value={noteTags}
-                            onChange={(e) => setNoteTags(e.target.value)}
-                            placeholder={t('editor.tagsPlaceholder')}
-                            className="min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700 lg:mt-0"
-                          />
-                          <input
-                            value={notePeople}
-                            onChange={(e) => setNotePeople(e.target.value)}
-                            placeholder={t('editor.peoplePlaceholder')}
-                            className="min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700"
-                          />
-                        </div>
-                        {boards.length > 0 && (
-                          <select
-                            value={noteLinkedBoardId}
-                            onChange={(e) => setNoteLinkedBoardId(e.target.value)}
-                            className="w-full min-h-11 max-w-full sm:max-w-xs rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700"
-                          >
-                            <option value="">{t('editor.linkProject')}</option>
-                            {boards.map((b) => (
-                              <option key={b.id} value={b.id}>{b.title}</option>
-                            ))}
-                          </select>
-                        )}
-                      </div>
+                      <input
+                        type="text"
+                        value={noteTitle}
+                        onChange={(e) => setNoteTitle(e.target.value)}
+                        placeholder={t('editor.titlePlaceholderEdit')}
+                        className="w-full flex-shrink-0 text-base sm:text-lg font-bold bg-transparent border-b border-gray-100 dark:border-racing-800 focus:border-accent focus:outline-none pb-2 max-md:border-0 max-md:px-0 max-md:py-1 max-md:text-lg lg:pb-1.5"
+                      />
                     </div>
-                    <textarea
-                      value={noteContent}
-                      onChange={(e) => setNoteContent(e.target.value)}
-                      placeholder={t('editor.contentPlaceholder')}
-                      className="min-h-0 w-full flex-1 resize-none rounded-xl border border-gray-200 bg-transparent px-3.5 py-3 text-lg leading-relaxed focus:border-accent focus:outline-none dark:border-racing-700 max-lg:min-h-[calc(100dvh-10.5rem)] lg:min-h-[16rem] lg:flex-none lg:text-base"
-                    />
-                    <div className="hidden flex-shrink-0 space-y-3 lg:block">
+                    <div className="max-md:flex-shrink-0 max-md:px-4 max-md:py-2 lg:contents">
+                      <Toolbar />
+                    </div>
+                    <div className="flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 max-md:overflow-y-auto max-md:overscroll-contain max-md:px-4 max-md:py-3 lg:gap-4 lg:contents">
+                      <div className="flex-shrink-0 lg:contents">
+                        <button
+                          type="button"
+                          onClick={() => setEditorMetaOpen((v) => !v)}
+                          className="flex min-h-11 w-full items-center justify-between gap-2 rounded-xl border border-gray-100 px-3 py-2.5 text-sm font-semibold text-gray-500 touch-manipulation dark:border-racing-800 lg:hidden"
+                        >
+                          <span>{t('editor.categoryLabel')} · Tags</span>
+                          {editorMetaOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        </button>
+                        <div className={`${editorMetaOpen ? 'flex' : 'hidden'} flex-col gap-2 lg:flex lg:contents`}>
+                          <div className="lg:block">
+                            <label className="mb-1.5 hidden text-xs font-semibold text-gray-400 lg:block">{t('editor.categoryLabel')}</label>
+                            <select
+                              value={activePage.columnId}
+                              onChange={(e) => {
+                                const colId = e.target.value
+                                updatePage(activePage.id, { columnId: colId })
+                                setActivePage((prev) => (prev ? { ...prev, columnId: colId } : null))
+                              }}
+                              className="w-full min-h-11 max-w-full sm:max-w-xs rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base focus:border-accent focus:outline-none dark:border-racing-700 font-medium"
+                            >
+                              {columns.map((c) => (
+                                <option key={c.id} value={c.id}>{c.title}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:contents">
+                            <input
+                              value={noteTags}
+                              onChange={(e) => setNoteTags(e.target.value)}
+                              placeholder={t('editor.tagsPlaceholder')}
+                              className="min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700 lg:mt-0"
+                            />
+                            <input
+                              value={notePeople}
+                              onChange={(e) => setNotePeople(e.target.value)}
+                              placeholder={t('editor.peoplePlaceholder')}
+                              className="min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700"
+                            />
+                          </div>
+                          {boards.length > 0 && (
+                            <select
+                              value={noteLinkedBoardId}
+                              onChange={(e) => setNoteLinkedBoardId(e.target.value)}
+                              className="w-full min-h-11 max-w-full sm:max-w-xs rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700"
+                            >
+                              <option value="">{t('editor.linkProject')}</option>
+                              {boards.map((b) => (
+                                <option key={b.id} value={b.id}>{b.title}</option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+                      </div>
+                      <textarea
+                        value={noteContent}
+                        onChange={(e) => setNoteContent(e.target.value)}
+                        placeholder={t('editor.contentPlaceholder')}
+                        className="min-h-0 w-full flex-1 resize-none rounded-xl border border-gray-200 bg-transparent px-4 py-4 text-base leading-7 focus:border-accent focus:outline-none dark:border-racing-700 max-md:min-h-[45dvh] max-md:flex-none lg:min-h-[16rem] lg:flex-none lg:px-3.5 lg:py-3 lg:text-base lg:leading-relaxed"
+                      />
+                      <div className="hidden flex-shrink-0 space-y-3 lg:block">
                       <BrainChecklist
                         items={activePage.checklist ?? []}
                         onAdd={(text) => {
@@ -1094,51 +1114,52 @@ ${textToSummarize}`
                           </button>
                         </div>
                       )}
-                      {aiError && <p className="text-sm text-red-500">{aiError}</p>}
-                    </div>
-                    {editorMetaOpen && (
-                      <div className="flex-shrink-0 space-y-2 overflow-y-auto max-h-[30vh] lg:hidden">
-                        <BrainChecklist
-                          items={activePage.checklist ?? []}
-                          onAdd={(text) => {
-                            const updated = [...(activePage.checklist ?? []), { id: createId(), text, done: false }]
-                            updatePage(activePage.id, { checklist: updated })
-                            setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
-                          }}
-                          onToggle={(id) => {
-                            const updated = (activePage.checklist ?? []).map((it) => (it.id === id ? { ...it, done: !it.done } : it))
-                            updatePage(activePage.id, { checklist: updated })
-                            setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
-                          }}
-                          onDelete={(id) => {
-                            const updated = (activePage.checklist ?? []).filter((it) => it.id !== id)
-                            updatePage(activePage.id, { checklist: updated })
-                            setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
-                          }}
-                        />
-                        <AudioPlayback
-                          onDelete={() => {
-                            if (confirm(t('audio.confirmDelete'))) {
-                              setAudioUrl(null)
-                              updatePage(activePage.id, { audioBase64: undefined })
-                              setActivePage((prev) => (prev ? { ...prev, audioBase64: undefined } : null))
-                            }
-                          }}
-                        />
-                        {activePage.summary && (
-                          <div className="rounded-xl bg-emerald-50/50 dark:bg-racing-950/40 p-3 border border-emerald-100/50 dark:border-racing-850 flex flex-col gap-2">
-                            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                              <Sparkles size={13} /> {t('editor.aiSummaryTitle')}
-                            </span>
-                            <div className="text-sm leading-relaxed text-gray-700 dark:text-racing-200 whitespace-pre-wrap border-l-2 border-emerald-400 pl-3">
-                              {activePage.summary}
-                            </div>
-                          </div>
-                        )}
                         {aiError && <p className="text-sm text-red-500">{aiError}</p>}
                       </div>
-                    )}
-                    <div className="flex flex-shrink-0 justify-between items-center gap-2 mt-auto pt-2 border-t border-gray-100 dark:border-racing-800 pb-[max(0.25rem,env(safe-area-inset-bottom))] sm:pb-0">
+                      {editorMetaOpen && (
+                        <div className="flex-shrink-0 space-y-2 overflow-y-auto max-h-[30vh] lg:hidden">
+                          <BrainChecklist
+                            items={activePage.checklist ?? []}
+                            onAdd={(text) => {
+                              const updated = [...(activePage.checklist ?? []), { id: createId(), text, done: false }]
+                              updatePage(activePage.id, { checklist: updated })
+                              setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
+                            }}
+                            onToggle={(id) => {
+                              const updated = (activePage.checklist ?? []).map((it) => (it.id === id ? { ...it, done: !it.done } : it))
+                              updatePage(activePage.id, { checklist: updated })
+                              setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
+                            }}
+                            onDelete={(id) => {
+                              const updated = (activePage.checklist ?? []).filter((it) => it.id !== id)
+                              updatePage(activePage.id, { checklist: updated })
+                              setActivePage((prev) => (prev ? { ...prev, checklist: updated } : null))
+                            }}
+                          />
+                          <AudioPlayback
+                            onDelete={() => {
+                              if (confirm(t('audio.confirmDelete'))) {
+                                setAudioUrl(null)
+                                updatePage(activePage.id, { audioBase64: undefined })
+                                setActivePage((prev) => (prev ? { ...prev, audioBase64: undefined } : null))
+                              }
+                            }}
+                          />
+                          {activePage.summary && (
+                            <div className="rounded-xl bg-emerald-50/50 dark:bg-racing-950/40 p-3 border border-emerald-100/50 dark:border-racing-850 flex flex-col gap-2">
+                              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                                <Sparkles size={13} /> {t('editor.aiSummaryTitle')}
+                              </span>
+                              <div className="text-sm leading-relaxed text-gray-700 dark:text-racing-200 whitespace-pre-wrap border-l-2 border-emerald-400 pl-3">
+                                {activePage.summary}
+                              </div>
+                            </div>
+                          )}
+                          {aiError && <p className="text-sm text-red-500">{aiError}</p>}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-shrink-0 justify-between items-center gap-2 mt-auto pt-2 border-t border-gray-100 dark:border-racing-800 max-md:border-t max-md:bg-white max-md:px-4 max-md:py-3 max-md:dark:bg-racing-900 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-0">
                       <button
                         type="button"
                         onClick={() => {
@@ -1147,14 +1168,14 @@ ${textToSummarize}`
                             setActivePage(null)
                           }
                         }}
-                        className="min-h-11 rounded-xl px-3 text-sm font-semibold text-red-500 touch-manipulation"
+                        className="min-h-12 rounded-xl px-4 text-base font-semibold text-red-500 touch-manipulation sm:min-h-11 sm:px-3 sm:text-sm"
                       >
                         {t('editor.delete')}
                       </button>
                       <button
                         type="button"
                         onClick={handleSavePage}
-                        className="min-h-11 rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:bg-accent-dark transition-all shadow-sm touch-manipulation"
+                        className="min-h-12 rounded-xl bg-accent px-5 py-3 text-base font-semibold text-white hover:bg-accent-dark transition-all shadow-sm touch-manipulation sm:min-h-11 sm:py-2.5 sm:text-sm"
                       >
                         {justSaved ? t('editor.saved') : t('editor.save')}
                       </button>
@@ -1174,19 +1195,19 @@ ${textToSummarize}`
       )}
 
       {activeSection === 'moodboard' && (
-        <div className="rounded-2xl border border-gray-100 bg-white/70 p-3 sm:p-4 dark:border-racing-850 dark:bg-racing-900/70">
-          <div className="mb-4 flex flex-col gap-2">
+        <div className="rounded-2xl border border-gray-100 bg-white/70 p-4 sm:p-4 dark:border-racing-850 dark:bg-racing-900/70 max-md:-mx-0">
+          <div className="mb-4 flex flex-col gap-3">
             <input
               value={moodTitle}
               onChange={(e) => setMoodTitle(e.target.value)}
               placeholder={t('moodboardTitlePlaceholder')}
-              className="w-full min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700"
+              className="w-full min-h-12 rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-base dark:border-racing-700"
               autoComplete="off"
             />
             <select
               value={moodType}
               onChange={(e) => setMoodType(e.target.value as MoodInputType)}
-              className="w-full min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700 sm:max-w-xs"
+              className="w-full min-h-12 rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-base dark:border-racing-700 sm:max-w-xs"
             >
               <option value="note">{t('moodboardText')}</option>
               <option value="image">{t('moodboardImage')}</option>
@@ -1194,6 +1215,16 @@ ${textToSummarize}`
               <option value="social">{t('moodboardSocial')}</option>
               <option value="website">{t('moodboardWebsite')}</option>
             </select>
+            {moodType === 'note' ? (
+              <textarea
+                value={moodValue}
+                onChange={(e) => setMoodValue(e.target.value)}
+                placeholder={t('moodboardText')}
+                rows={4}
+                className="w-full min-h-[7rem] rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-base leading-relaxed dark:border-racing-700 md:hidden resize-y"
+                autoComplete="off"
+              />
+            ) : null}
             <input
               value={moodValue}
               onChange={(e) => setMoodValue(e.target.value)}
@@ -1208,7 +1239,7 @@ ${textToSummarize}`
                         ? t('moodboardSocial')
                         : t('moodboardWebsite')
               }
-              className="w-full min-h-11 rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-base dark:border-racing-700"
+              className={`w-full min-h-12 rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-base dark:border-racing-700 ${moodType === 'note' ? 'hidden md:block' : ''}`}
               autoComplete="off"
               autoCapitalize="off"
               autoCorrect="off"
@@ -1216,27 +1247,27 @@ ${textToSummarize}`
             <button
               type="button"
               onClick={() => void addMoodboardItem()}
-              className="min-h-11 w-full rounded-xl bg-accent px-4 text-sm font-semibold text-white touch-manipulation sm:w-auto sm:self-start"
+              className="min-h-12 w-full rounded-xl bg-accent px-4 text-base font-semibold text-white touch-manipulation sm:min-h-11 sm:w-auto sm:self-start sm:text-sm"
             >
               {t('moodboardAdd')}
             </button>
           </div>
           {moodError && <p className="mb-3 text-sm font-semibold text-red-500">{moodError}</p>}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="flex flex-col gap-4 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-3">
             {moodItems.map((item) => (
               <div
                 key={item.id}
-                className="rounded-xl border border-gray-100 bg-white p-3.5 dark:border-racing-800 dark:bg-racing-900 overflow-hidden"
+                className="rounded-xl border border-gray-100 bg-white p-4 max-md:p-5 dark:border-racing-800 dark:bg-racing-900 overflow-hidden"
               >
-                <div className="mb-2 flex items-start justify-between gap-2">
-                  <h4 className="text-sm font-semibold break-words min-w-0 flex-1">{item.title}</h4>
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <h4 className="text-sm max-md:text-base font-semibold break-words min-w-0 flex-1">{item.title}</h4>
                   <button
                     type="button"
                     onClick={() => void deleteMoodItem(item.id)}
-                    className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-red-500 touch-manipulation hover:bg-red-50 dark:hover:bg-red-950/30"
+                    className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl text-red-500 touch-manipulation hover:bg-red-50 dark:hover:bg-red-950/30 sm:h-11 sm:w-11"
                     aria-label={t('editor.delete')}
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={18} />
                   </button>
                 </div>
                 <div className="mb-2 flex items-center gap-1.5">
@@ -1266,13 +1297,13 @@ ${textToSummarize}`
                   </span>
                 </div>
                 {item.type === 'note' && (
-                  <p className="text-sm text-gray-500 whitespace-pre-wrap break-words">{item.textContent}</p>
+                  <p className="text-sm max-md:text-base max-md:leading-relaxed text-gray-500 whitespace-pre-wrap break-words">{item.textContent}</p>
                 )}
                 {item.type === 'image' && item.imageUrl && (
                   <img
                     src={item.imageUrl}
                     alt={item.title}
-                    className="max-h-48 w-full rounded-lg object-cover"
+                    className="max-h-48 max-md:min-h-52 max-md:max-h-80 w-full rounded-lg object-cover"
                     loading="lazy"
                   />
                 )}
@@ -1282,7 +1313,7 @@ ${textToSummarize}`
                       href={item.linkUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="block rounded-xl border border-gray-100 p-3 text-sm dark:border-racing-800 touch-manipulation active:bg-gray-50 dark:active:bg-racing-800"
+                      className="block rounded-xl border border-gray-100 p-4 max-md:p-4 text-sm max-md:text-base dark:border-racing-800 touch-manipulation active:bg-gray-50 dark:active:bg-racing-800"
                     >
                       <div className="mb-1 flex items-center gap-2 min-w-0">
                         {item.metadataThumbnail ? (
@@ -1431,7 +1462,7 @@ function BrainChecklist({
             <button
               type="button"
               onClick={() => onToggle(item.id)}
-              className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors touch-manipulation ${
+              className={`flex h-9 w-9 max-md:h-10 max-md:w-10 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors touch-manipulation ${
                 item.done ? 'border-accent bg-accent text-white' : 'border-gray-300 dark:border-racing-600'
               }`}
               aria-checked={item.done}
