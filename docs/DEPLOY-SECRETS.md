@@ -11,8 +11,11 @@ Until then, ship web manually (Vercel still works from local/ship commits):
 
 ```powershell
 npm run build
+npx vercel pull --yes --environment=production
+npx vercel build --prod
 npx vercel deploy --prebuilt --prod
 # or: .\scripts\deploy-all.ps1
+# Never deploy --prebuilt alone — that ships stale .vercel/output.
 ```
 
 ## Required GitHub Actions secrets (repo `nelkejannis-lab/flowdo`)

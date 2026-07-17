@@ -43,7 +43,7 @@ Without Supabase env vars the app runs in **local-only mode** (localStorage).
 
 ## Deploy
 
-- **Web:** Vercel — prefer `npx vercel deploy --prebuilt --prod` after `npm run build`, or `.\scripts\deploy-all.ps1`
+- **Web:** Vercel — `npm run build` → `npx vercel build --prod` → `npx vercel deploy --prebuilt --prod` (never `--prebuilt` alone), or `.\scripts\deploy-all.ps1`
 - **Desktop:** GitHub Releases via electron-builder (`npm run electron:build`)
 - **CI:** Workflow template is `scripts/github-deploy-workflow.yml`. Enabling `.github/workflows/deploy.yml` requires a token with **workflow** scope — see [docs/DEPLOY-SECRETS.md](docs/DEPLOY-SECRETS.md).
 

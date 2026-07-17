@@ -17,7 +17,12 @@ if ($status) {
 }
 git push origin master
 
-Write-Host "=== 3/4 Vercel (Web) ===" -ForegroundColor Cyan
+Write-Host "=== 3/4 Vercel (Web) — fresh build, never stale .vercel/output ===" -ForegroundColor Cyan
+if (Test-Path .vercel/output) {
+  Remove-Item -Recurse -Force .vercel/output
+}
+npx vercel pull --yes --environment=production
+npx vercel build --prod
 npx vercel deploy --prebuilt --prod
 
 Write-Host "=== 4/4 Electron (Desktop) ===" -ForegroundColor Cyan

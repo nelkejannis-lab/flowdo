@@ -5,7 +5,8 @@ import { Eye, EyeOff, CalendarDays, CheckSquare, Clock, MessageCircle, ArrowRigh
 import { useSettingsStore } from '../store/settingsStore'
 import { useAuthStore } from '../store/authStore'
 import { isSupabaseConfigured } from '../lib/supabase'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { riseTransition, staggerContainer, staggerItem } from '../lib/motion'
 
 const FEATURES = [
   { icon: CheckSquare,  label: 'Tasks & Projects',  sub: 'Lists · Boards · Eisenhower' },
@@ -18,12 +19,13 @@ const FEATURES = [
 const inp = 'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-[14px] text-white placeholder:text-white/30 backdrop-blur-md transition-all duration-300 focus:border-white/30 focus:bg-white/10 focus:outline-none focus:ring-4 focus:ring-white/5'
 
 export default function LoginPage() {
-  const { t, i18n } = useTranslation('auth')
+  const { t } = useTranslation('auth')
   const language = useSettingsStore((s) => s.language)
   const setLanguage = useSettingsStore((s) => s.setLanguage)
   const signIn              = useAuthStore((s) => s.signIn)
   const signUp              = useAuthStore((s) => s.signUp)
   const requestPasswordReset = useAuthStore((s) => s.requestPasswordReset)
+  const reduce = useReducedMotion()
 
   /* mobile-only phase */
   const [phase, setPhase]   = useState<'hero' | 'auth'>('hero')
@@ -66,23 +68,15 @@ export default function LoginPage() {
     } finally { setBusy(false) }
   }
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1, delayChildren: 0.1 }
-    }
-  }
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20, filter: 'blur(10px)' },
-    visible: { 
-      opacity: 1, 
-      y: 0, 
-      filter: 'blur(0px)',
-      transition: { type: 'spring' as const, stiffness: 100, damping: 20 }
-    }
-  }
+  /* Safe tokens only — never filter:blur (can leave login content invisible). */
+  const containerVariants = staggerContainer(reduce)
+  const itemVariants = staggerItem(reduce)
+  const fadeIn = reduce
+    ? { initial: false as const, animate: { opacity: 1, x: 0, y: 0 } }
+    : {
+        initial: { opacity: 0, x: 16, y: 0 },
+        animate: { opacity: 1, x: 0, y: 0 },
+      }
 
   /* ─── auth form (shared desktop + mobile) ─── */
   const AuthForm = (
@@ -102,10 +96,10 @@ export default function LoginPage() {
       <AnimatePresence mode="wait">
         <motion.div
           key={mode}
-          initial={{ opacity: 0, x: 20, filter: 'blur(8px)' }}
-          animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-          exit={{ opacity: 0, x: -20, filter: 'blur(8px)' }}
-          transition={{ duration: 0.3, ease: 'easeOut' }}
+          initial={fadeIn.initial}
+          animate={fadeIn.animate}
+          exit={reduce ? undefined : { opacity: 0, x: -12 }}
+          transition={riseTransition(reduce)}
         >
           {mode === 'forgot' && (
             <p className="mb-6 text-[14px] text-white/50 leading-relaxed">{t('forgotDescription')}</p>
@@ -339,11 +333,11 @@ export default function LoginPage() {
             </motion.div>
           </motion.div>
 
-          {/* Right — auth glass card */}
+          {/* Right — auth glass card — paint visible on first frame (login must never stay opacity:0) */}
           <motion.div 
-            initial={{ opacity: 0, x: 40, filter: 'blur(10px)' }}
-            animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-            transition={{ duration: 0.8, delay: 0.2, type: 'spring' as const, damping: 25 }}
+            initial={reduce ? false : { opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={riseTransition(reduce, 0.08)}
             className="w-[420px] flex-shrink-0 lg:w-[460px]"
           >
             <div className="w-full rounded-[2.5rem] p-10 bg-white/[0.02] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-3xl relative overflow-hidden">
@@ -369,9 +363,10 @@ export default function LoginPage() {
           <AnimatePresence mode="wait">
             {phase === 'hero' && (
               <motion.div 
-                initial={{ opacity: 0 }}
+                initial={reduce ? false : { opacity: 0 }}
                 animate={{ opacity: 1 }}
-                exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
+                exit={reduce ? undefined : { opacity: 0, y: -12 }}
+                transition={riseTransition(reduce)}
                 className="flex flex-1 flex-col items-center justify-between px-6 py-16"
               >
                 {/* top: logo + tagline */}
@@ -414,9 +409,9 @@ export default function LoginPage() {
 
                 {/* CTAs */}
                 <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={reduce ? false : { opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
+                  transition={riseTransition(reduce, 0.12)}
                   className="w-full space-y-3"
                 >
                   <button onClick={() => open('login')}
