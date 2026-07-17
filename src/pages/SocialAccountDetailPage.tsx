@@ -9,7 +9,35 @@ import { useSocialStore } from '../store/socialStore'
 import { supabase } from '../lib/supabase'
 import type { SocialPost } from '../types'
 import { formatFriendlyDateTime } from '../utils/date'
-import { buildPostInsight, fmtCompact, fmtPct } from '../lib/socialInsights'
+import {
+  buildPeriodBenchmarks,
+  buildPostInsight,
+  fmtCompact,
+  fmtPct,
+  scoreTone,
+  type PeriodBenchmarks,
+} from '../lib/socialInsights'
+
+function ScoreBadge({ score, size = 'sm' }: { score: number | null; size?: 'sm' | 'lg' }) {
+  const tone = scoreTone(score)
+  if (tone === 'none' || score == null) return null
+  const colors =
+    tone === 'high'
+      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+      : tone === 'mid'
+        ? 'bg-accent/15 text-accent'
+        : 'bg-amber-500/15 text-amber-700 dark:text-amber-400'
+  const sizing = size === 'lg' ? 'px-2.5 py-1 text-base' : 'px-1.5 py-0.5 text-[11px]'
+  return (
+    <span
+      className={`inline-flex items-baseline gap-0.5 rounded-md font-bold tabular-nums ${colors} ${sizing}`}
+      title="Post-Wertung 1–10"
+    >
+      {score.toFixed(1)}
+      <span className={`font-semibold opacity-60 ${size === 'lg' ? 'text-xs' : 'text-[9px]'}`}>/10</span>
+    </span>
+  )
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -130,8 +158,18 @@ function KpiCard({ label, value, sub, trend, icon, color = '#6366f1', metricKey,
 
 // ── Post Detail Modal ─────────────────────────────────────────────────────────
 
-function PostModal({ post, followers, onClose }: { post: SocialPost; followers: number; onClose: () => void }) {
-  const insight = buildPostInsight(post, followers)
+function PostModal({
+  post,
+  followers,
+  benchmarks,
+  onClose,
+}: {
+  post: SocialPost
+  followers: number
+  benchmarks: PeriodBenchmarks
+  onClose: () => void
+}) {
+  const insight = buildPostInsight(post, followers, benchmarks)
   const typeLabel = insight.formatLabel
   const typeColor =
     post.mediaType === 'VIDEO'
@@ -155,6 +193,7 @@ function PostModal({ post, followers, onClose }: { post: SocialPost; followers: 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <span className={`rounded-md px-2 py-0.5 text-[11px] font-semibold ${typeColor}`}>{typeLabel}</span>
+              <ScoreBadge score={insight.score} size="lg" />
               <span className="text-[11px] text-gray-400">{formatFriendlyDateTime(post.postedAt)}</span>
             </div>
             <p className="mt-1 line-clamp-2 text-sm font-medium text-gray-900 dark:text-white">
@@ -218,7 +257,12 @@ function PostModal({ post, followers, onClose }: { post: SocialPost; followers: 
                     : 'bg-accent/60'
               }`}
             />
-            <p className="text-sm leading-relaxed text-gray-600 dark:text-racing-200">{insight.takeaway}</p>
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Analyse</p>
+              <p className="mt-0.5 text-sm leading-relaxed text-gray-600 dark:text-racing-200">
+                {insight.analysis}
+              </p>
+            </div>
           </div>
 
           {post.permalink && (
@@ -231,6 +275,8 @@ function PostModal({ post, followers, onClose }: { post: SocialPost; followers: 
               <ExternalLink size={14} /> Auf Instagram öffnen
             </a>
           )}
+
+          <p className="text-[10px] leading-relaxed text-gray-400">{insight.formulaNote}</p>
         </div>
       </div>
     </div>
@@ -710,6 +756,7 @@ export default function SocialAccountDetailPage() {
   const accountPosts = posts[accountId] ?? []
   const accountStories = stories[accountId] ?? []
   const followers = latest?.followersCount ?? 0
+  const postBenchmarks = buildPeriodBenchmarks(accountPosts, followers)
 
   // Period comparison helpers
   function periodAvg(key: keyof typeof latest, daysBack: number, span: number) {
@@ -910,7 +957,10 @@ export default function SocialAccountDetailPage() {
             <img src={bestPost.thumbnailUrl ?? bestPost.mediaUrl} alt="" className="h-16 w-16 flex-shrink-0 rounded-xl object-cover" />
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wider text-indigo-500 mb-0.5">🏆 Bester Post</p>
+            <div className="mb-0.5 flex flex-wrap items-center gap-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-indigo-500">🏆 Bester Post</p>
+              <ScoreBadge score={buildPostInsight(bestPost, followers, postBenchmarks).score} />
+            </div>
             <p className="truncate text-sm font-medium">{bestPost.caption ?? 'Kein Caption'}</p>
             <p className="text-xs text-gray-400 mt-0.5">
               {fmt(bestPost.likeCount)} Likes · {fmt(bestPost.commentsCount)} Kommentare · {pct(((bestPost.likeCount ?? 0) + (bestPost.commentsCount ?? 0)) / followers * 100)} Engagement
@@ -939,6 +989,7 @@ export default function SocialAccountDetailPage() {
             <div className="grid grid-cols-3 gap-1 sm:gap-2">
               {accountPosts.map((post) => {
                 const eng = followers > 0 ? ((post.likeCount ?? 0) + (post.commentsCount ?? 0)) / followers * 100 : 0
+                const insight = buildPostInsight(post, followers, postBenchmarks)
                 return (
                   <button key={post.id} onClick={() => setSelectedPost(post)}
                     className="group relative aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-racing-800">
@@ -946,6 +997,11 @@ export default function SocialAccountDetailPage() {
                       ? <img src={post.thumbnailUrl ?? post.mediaUrl} alt="" className="h-full w-full object-cover transition-transform group-hover:scale-105" />
                       : <div className="flex h-full items-center justify-center"><ImageIcon size={24} className="text-gray-400" /></div>
                     }
+                    {insight.score != null && (
+                      <span className="absolute top-1.5 left-1.5 rounded-md bg-black/65 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white">
+                        {insight.score.toFixed(1)}
+                      </span>
+                    )}
                     {post.mediaType === 'VIDEO' && (
                       <div className="absolute top-1.5 right-1.5"><Film size={14} className="text-white drop-shadow" /></div>
                     )}
@@ -959,6 +1015,9 @@ export default function SocialAccountDetailPage() {
                         <span className="flex items-center gap-1"><MessageCircle size={14} /> {fmt(post.commentsCount)}</span>
                       </div>
                       {followers > 0 && <p className="text-xs text-white/80">{pct(eng)} Engagement</p>}
+                      {insight.score != null && (
+                        <p className="text-[11px] font-semibold text-white/90">Score {insight.score.toFixed(1)}/10</p>
+                      )}
                     </div>
                   </button>
                 )
@@ -1157,17 +1216,24 @@ export default function SocialAccountDetailPage() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-green-500">Beste Posts</p>
-                  {topPosts.slice(0, 3).map((p, i) => (
+                  {topPosts.slice(0, 3).map((p, i) => {
+                    const insight = buildPostInsight(p, followers, postBenchmarks)
+                    return (
                     <button key={p.id} onClick={() => setSelectedPost(p)}
                       className="mb-1.5 flex w-full items-center gap-2.5 rounded-xl p-2 text-left hover:bg-gray-50 dark:hover:bg-racing-800">
                       <span className="text-sm font-bold text-green-500">#{i + 1}</span>
                       {(p.thumbnailUrl || p.mediaUrl) && <img src={p.thumbnailUrl ?? p.mediaUrl} alt="" className="h-10 w-10 flex-shrink-0 rounded-lg object-cover" />}
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs text-gray-600 dark:text-gray-300">{p.caption?.slice(0, 40) ?? 'Kein Caption'}…</p>
+                        <div className="flex items-center gap-2">
+                          <p className="min-w-0 flex-1 truncate text-xs text-gray-600 dark:text-gray-300">{p.caption?.slice(0, 40) ?? 'Kein Caption'}…</p>
+                          <ScoreBadge score={insight.score} />
+                        </div>
                         <p className="text-xs font-semibold text-green-600">{fmt(p.likeCount)} Likes · {fmt(p.commentsCount)} Komm.</p>
+                        <p className="mt-0.5 line-clamp-1 text-[10px] text-gray-400">{insight.analysis}</p>
                       </div>
                     </button>
-                  ))}
+                    )
+                  })}
                 </div>
                 <div>
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-red-400">Schwächste Posts</p>
@@ -1363,7 +1429,12 @@ export default function SocialAccountDetailPage() {
 
       {/* Post Modal */}
       {selectedPost && (
-        <PostModal post={selectedPost} followers={followers} onClose={() => setSelectedPost(null)} />
+        <PostModal
+          post={selectedPost}
+          followers={followers}
+          benchmarks={postBenchmarks}
+          onClose={() => setSelectedPost(null)}
+        />
       )}
 
       {/* Edit Modal */}

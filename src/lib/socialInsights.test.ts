@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildPeriodBenchmarks,
   buildPostInsight,
   canGoNextMonth,
   clampSocialRange,
@@ -9,6 +10,7 @@ import {
   monthLabel,
   pickPrimaryAccount,
   resolveSocialRange,
+  scorePostAgainstBenchmarks,
   shiftMonthAnchor,
 } from './socialInsights'
 import type { SocialAccount, SocialMetric, SocialPost } from '../types'
@@ -58,6 +60,7 @@ describe('socialInsights', () => {
     expect(dash.hasSyncedData).toBe(true)
     expect(dash.primarySeriesKind).toBe('reach')
     expect(dash.primarySeries.length).toBeGreaterThanOrEqual(2)
+    expect(dash.benchmarks.postCount).toBe(1)
   })
 
   it('supports custom ranges and clamps to Meta 90-day window', () => {
@@ -94,10 +97,47 @@ describe('socialInsights', () => {
       saved: 20,
       shares: 4,
       reach: 900,
+      postedAt: '2026-07-14T10:00:00.000Z',
     }
     const insight = buildPostInsight(post, 1000)
     expect(insight.engagementRate).toBeCloseTo(9.2, 1)
     expect(insight.takeaway.length).toBeGreaterThan(10)
+    expect(insight.analysis.length).toBeGreaterThan(10)
     expect(insight.strengths.length).toBeGreaterThan(0)
+    expect(insight.score).not.toBeNull()
+    expect(insight.score!).toBeGreaterThanOrEqual(1)
+    expect(insight.score!).toBeLessThanOrEqual(10)
+    expect(insight.formulaNote).toContain('Periodendurchschnitt')
+  })
+
+  it('scores posts relative to period averages', () => {
+    const peers: SocialPost[] = [
+      { id: 'a', mediaId: 'a', likeCount: 20, commentsCount: 2, saved: 2, reach: 200 },
+      { id: 'b', mediaId: 'b', likeCount: 22, commentsCount: 2, saved: 3, reach: 220 },
+      {
+        id: 'star',
+        mediaId: 's',
+        mediaType: 'VIDEO',
+        likeCount: 80,
+        commentsCount: 12,
+        saved: 20,
+        shares: 4,
+        reach: 900,
+        postedAt: '2026-07-15T14:00:00.000Z',
+      },
+    ]
+    const bench = buildPeriodBenchmarks(peers, 1000)
+    expect(bench.avgEngagementRate).toBeGreaterThan(0)
+    const star = scorePostAgainstBenchmarks(peers[2], 1000, bench)
+    const weak = scorePostAgainstBenchmarks(peers[0], 1000, bench)
+    expect(star.score).not.toBeNull()
+    expect(weak.score).not.toBeNull()
+    expect(star.score!).toBeGreaterThan(weak.score!)
+    expect(star.vsPeriodPct).not.toBeNull()
+    expect(star.vsPeriodPct!).toBeGreaterThan(0)
+
+    const insight = buildPostInsight(peers[2], 1000, bench)
+    expect(insight.analysis).toMatch(/über|Durchschnitt|Reel/i)
+    expect(insight.scoreLabel).toBe(insight.score!.toFixed(1))
   })
 })

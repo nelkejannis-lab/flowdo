@@ -84,14 +84,34 @@ export interface KpiExplainer {
   implication: string
 }
 
+/** Period averages used to score a post relatively (real synced posts only). */
+export interface PeriodBenchmarks {
+  postCount: number
+  avgEngagementRate: number | null
+  avgReach: number | null
+  avgSaves: number | null
+  avgCommentRatio: number | null
+}
+
 export interface PostInsight {
   formatLabel: string
   engagementRate: number | null
   reachRate: number | null
   interactions: number
   strengths: string[]
+  /** Short analytical takeaway (German). */
   takeaway: string
+  /** Alias of takeaway — 1–2 aussagekräftige Sätze. */
+  analysis: string
+  /** Post-Wertung 1.0–10.0 vs. Perioden-/Account-Durchschnitt; null wenn keine Daten. */
+  score: number | null
+  /** Display e.g. "7.4". */
+  scoreLabel: string | null
+  /** Engagement vs. Perioden-Ø in % (positiv = über Durchschnitt). */
+  vsPeriodPct: number | null
   tone: 'positive' | 'neutral' | 'action'
+  /** Tiny footnote for UI transparency. */
+  formulaNote: string
 }
 
 export interface SocialRangeResult extends PeriodRange {
@@ -116,6 +136,8 @@ export interface SocialDashboardData {
   primarySeries: { date: string; value: number }[]
   primarySeriesKind: 'reach' | 'engagement'
   topPosts: SocialPost[]
+  /** Benchmarks for period posts — feed into post scoring. */
+  benchmarks: PeriodBenchmarks
   contentMix: ContentMixSlice[]
   bestHour: number | null
   bestDay: number | null
@@ -296,8 +318,242 @@ function formatLabel(mediaType?: string): string {
   return 'Beitrag'
 }
 
-/** Short German takeaway for a single post — real metrics only. */
-export function buildPostInsight(post: SocialPost, followers: number): PostInsight {
+/** Build averages from a peer set (period or account posts). */
+export function buildPeriodBenchmarks(posts: SocialPost[], followers: number): PeriodBenchmarks {
+  if (!posts.length) {
+    return {
+      postCount: 0,
+      avgEngagementRate: null,
+      avgReach: null,
+      avgSaves: null,
+      avgCommentRatio: null,
+    }
+  }
+
+  const engRates = followers > 0 ? posts.map((p) => postEngagementRate(p, followers)) : []
+  const withReach = posts.filter((p) => p.reach != null && p.reach > 0)
+  const withSaves = posts.filter((p) => p.saved != null)
+  const withLikes = posts.filter((p) => (p.likeCount ?? 0) > 0)
+
+  return {
+    postCount: posts.length,
+    avgEngagementRate:
+      engRates.length > 0 ? engRates.reduce((s, v) => s + v, 0) / engRates.length : null,
+    avgReach:
+      withReach.length > 0
+        ? withReach.reduce((s, p) => s + (p.reach ?? 0), 0) / withReach.length
+        : null,
+    avgSaves:
+      withSaves.length > 0
+        ? withSaves.reduce((s, p) => s + (p.saved ?? 0), 0) / withSaves.length
+        : null,
+    avgCommentRatio:
+      withLikes.length > 0
+        ? withLikes.reduce((s, p) => s + (p.commentsCount ?? 0) / Math.max(p.likeCount ?? 1, 1), 0) /
+          withLikes.length
+        : null,
+  }
+}
+
+/**
+ * Map a relative ratio (1 = period average) onto a 1–10 scale.
+ * 0 → 1 · 0.5 → 3.3 · 1 → 5.5 · 1.5 → 7.3 · 2 → 9 · ≥2.5 → 10
+ */
+function ratioToScore(ratio: number): number {
+  if (!Number.isFinite(ratio) || ratio <= 0) return 1
+  if (ratio < 1) return 1 + ratio * 4.5
+  if (ratio < 2) return 5.5 + (ratio - 1) * 3.5
+  return Math.min(10, 9 + (ratio - 2))
+}
+
+function clampScore(n: number): number {
+  return Math.round(Math.min(10, Math.max(1, n)) * 10) / 10
+}
+
+/**
+ * Post-Wertung 1–10 from real metrics vs. period averages.
+ * Weights: Engagement 45% · Reach 25% · Saves 20% · Dialog (Kommentare/Likes) 10%.
+ * Missing components redistribute weight among available signals.
+ */
+export function scorePostAgainstBenchmarks(
+  post: SocialPost,
+  followers: number,
+  bench: PeriodBenchmarks,
+): { score: number | null; vsPeriodPct: number | null } {
+  const likes = post.likeCount ?? 0
+  const comments = post.commentsCount ?? 0
+  const saves = post.saved ?? 0
+  const shares = post.shares ?? 0
+  const interactions = likes + comments + saves + shares
+  if (interactions === 0 && !(post.reach != null && post.reach > 0)) {
+    return { score: null, vsPeriodPct: null }
+  }
+
+  const er = followers > 0 ? ((likes + comments) / followers) * 100 : null
+  const vsPeriodPct =
+    er != null && bench.avgEngagementRate != null && bench.avgEngagementRate > 0
+      ? ((er - bench.avgEngagementRate) / bench.avgEngagementRate) * 100
+      : null
+
+  const parts: { points: number; weight: number }[] = []
+
+  // Engagement (45%)
+  if (er != null) {
+    if (bench.avgEngagementRate != null && bench.avgEngagementRate > 0) {
+      parts.push({ points: ratioToScore(er / bench.avgEngagementRate), weight: 0.45 })
+    } else {
+      // Absolute fallback when no peer set: ~1% ≈ 5, ~3% ≈ 9
+      parts.push({ points: clampScore(er * 2.2 + 2.8), weight: 0.45 })
+    }
+  }
+
+  // Reach (25%)
+  if (post.reach != null && post.reach > 0) {
+    if (bench.avgReach != null && bench.avgReach > 0) {
+      parts.push({ points: ratioToScore(post.reach / bench.avgReach), weight: 0.25 })
+    } else if (followers > 0) {
+      parts.push({ points: clampScore((post.reach / followers) * 8 + 2), weight: 0.25 })
+    }
+  }
+
+  // Saves (20%)
+  if (bench.avgSaves != null && bench.avgSaves > 0) {
+    parts.push({ points: ratioToScore(saves / bench.avgSaves), weight: 0.2 })
+  } else if (saves > 0 && likes > 0) {
+    parts.push({ points: clampScore((saves / likes) * 40 + 3), weight: 0.2 })
+  } else if (saves > 0) {
+    parts.push({ points: clampScore(4 + Math.log10(saves + 1) * 2.5), weight: 0.2 })
+  }
+
+  // Dialog quality (10%): comments/likes vs. period
+  if (likes > 0) {
+    const cr = comments / likes
+    if (bench.avgCommentRatio != null && bench.avgCommentRatio > 0) {
+      parts.push({ points: ratioToScore(cr / bench.avgCommentRatio), weight: 0.1 })
+    } else {
+      parts.push({ points: clampScore(cr * 50 + 3), weight: 0.1 })
+    }
+  }
+
+  if (!parts.length) return { score: null, vsPeriodPct }
+
+  const totalW = parts.reduce((s, p) => s + p.weight, 0)
+  const raw = parts.reduce((s, p) => s + p.points * p.weight, 0) / totalW
+  return { score: clampScore(raw), vsPeriodPct }
+}
+
+const FORMULA_NOTE =
+  'Wertung 1–10 vs. Periodendurchschnitt · ER 45% · Reach 25% · Saves 20% · Dialog 10%'
+
+function timingPhrase(postedAt?: string): string | null {
+  if (!postedAt) return null
+  const d = new Date(postedAt)
+  if (Number.isNaN(d.getTime())) return null
+  return `${DAY_LABELS[d.getDay()]} ${d.getHours()}:00`
+}
+
+function buildAnalyticalTakeaway(opts: {
+  formatLabel: string
+  likes: number
+  comments: number
+  saves: number
+  shares: number
+  reach: number | null | undefined
+  followers: number
+  eng: number | null
+  vsPeriodPct: number | null
+  score: number | null
+  postedAt?: string
+}): { takeaway: string; tone: PostInsight['tone'] } {
+  const {
+    formatLabel: fmt,
+    likes,
+    comments,
+    saves,
+    shares,
+    reach,
+    followers,
+    eng,
+    vsPeriodPct,
+    score,
+    postedAt,
+  } = opts
+
+  const timing = timingPhrase(postedAt)
+  const when = timing ? ` · ${timing}` : ''
+
+  let opener: string
+  let tone: PostInsight['tone'] = 'neutral'
+
+  if (vsPeriodPct != null) {
+    const abs = Math.abs(Math.round(vsPeriodPct))
+    if (vsPeriodPct >= 40) {
+      tone = 'positive'
+      opener = `${fmt} liegt ${abs}% über dem Periodendurchschnitt${when}`
+    } else if (vsPeriodPct >= 10) {
+      tone = 'positive'
+      opener = `${fmt} performt ${abs}% über dem Durchschnitt${when}`
+    } else if (vsPeriodPct <= -40) {
+      tone = 'action'
+      opener = `${fmt} bleibt ${abs}% unter dem Periodendurchschnitt${when}`
+    } else if (vsPeriodPct <= -10) {
+      tone = 'action'
+      opener = `${fmt} leicht unter Durchschnitt (−${abs}%)${when}`
+    } else {
+      opener = `${fmt} im Bereich des Periodendurchschnitts${when}`
+    }
+  } else if (eng != null && eng >= 3) {
+    tone = 'positive'
+    opener = `${fmt} mit starkem Engagement (${fmtPct(eng)})${when}`
+  } else if (likes + comments === 0 && !(reach && reach > 0)) {
+    return {
+      tone: 'neutral',
+      takeaway:
+        'Noch keine Interaktionsdaten für diesen Beitrag — nach dem nächsten Sync erneut prüfen.',
+    }
+  } else {
+    opener = `${fmt} mit ${fmtCompact(likes)} Likes und ${fmtCompact(comments)} Kommentaren${when}`
+  }
+
+  const drivers: string[] = []
+  if (saves > 0 && likes > 0 && saves / likes >= 0.12) {
+    drivers.push(`hohe Speicherquote (${fmtCompact(saves)} Saves)`)
+  } else if (saves >= 10) {
+    drivers.push(`${fmtCompact(saves)} Saves`)
+  }
+  if (likes > 0 && comments / likes >= 0.05) drivers.push('starker Dialog')
+  if (shares > 0) drivers.push(`${fmtCompact(shares)} Shares`)
+  if (reach != null && reach > 0 && followers > 0 && reach / followers >= 0.25) {
+    drivers.push(`Reach ${fmtCompact(reach)}`)
+  }
+
+  let closer: string
+  if (drivers.length > 0 && (score == null || score >= 5.5)) {
+    tone = tone === 'action' ? 'neutral' : 'positive'
+    closer = ` Was zieht: ${drivers.slice(0, 2).join(' und ')} — Format als Vorlage nutzen.`
+  } else if (score != null && score < 4.5) {
+    tone = 'action'
+    closer =
+      saves === 0 && comments === 0
+        ? ' Hook und eine konkrete Frage in der Caption können Interaktionen heben.'
+        : ' Reach und Saves pushen: klarer Nutzen in den ersten Zeilen.'
+  } else if (fmt === 'Reel / Video') {
+    closer = ' In den ersten 60 Minuten aktiv auf Kommentare antworten.'
+  } else if (drivers.length > 0) {
+    closer = ` Signal: ${drivers[0]} — ähnliche Themen testen.`
+  } else {
+    closer = ' Solide Basis — bei verwandten Themen Karussell oder Reel gegenprüfen.'
+  }
+
+  return { takeaway: `${opener}.${closer}`, tone }
+}
+
+/** Short German analysis + 1–10 Wertung for a single post — real metrics only. */
+export function buildPostInsight(
+  post: SocialPost,
+  followers: number,
+  benchmarks?: PeriodBenchmarks | null,
+): PostInsight {
   const likes = post.likeCount ?? 0
   const comments = post.commentsCount ?? 0
   const saves = post.saved ?? 0
@@ -305,8 +561,22 @@ export function buildPostInsight(post: SocialPost, followers: number): PostInsig
   const interactions = post.totalInteractions ?? likes + comments + saves + shares
   const eng = followers > 0 ? ((likes + comments) / followers) * 100 : null
   const reachRate = post.reach != null && followers > 0 ? (post.reach / followers) * 100 : null
+  const bench = benchmarks ?? {
+    postCount: 0,
+    avgEngagementRate: null,
+    avgReach: null,
+    avgSaves: null,
+    avgCommentRatio: null,
+  }
+
+  const { score, vsPeriodPct } = scorePostAgainstBenchmarks(post, followers, bench)
 
   const strengths: string[] = []
+  if (score != null) strengths.push(`Score ${score.toFixed(1)}`)
+  if (vsPeriodPct != null && Math.abs(vsPeriodPct) >= 5) {
+    const signed = vsPeriodPct >= 0 ? `+${Math.round(vsPeriodPct)}%` : `${Math.round(vsPeriodPct)}%`
+    strengths.push(`${signed} vs. Ø`)
+  }
   if (saves > 0 && (followers <= 0 || saves / Math.max(followers, 1) >= 0.005 || saves >= 10)) {
     strengths.push(`${fmtCompact(saves)} Saves`)
   }
@@ -317,44 +587,42 @@ export function buildPostInsight(post: SocialPost, followers: number): PostInsig
   if (post.reach != null && post.reach > 0) strengths.push(`${fmtCompact(post.reach)} Reach`)
   if (eng != null && eng >= 3) strengths.push(`${fmtPct(eng)} Engagement`)
 
-  let tone: PostInsight['tone'] = 'neutral'
-  let takeaway: string
-
-  if (eng != null && eng >= 3) {
-    tone = 'positive'
-    takeaway =
-      saves > likes * 0.1
-        ? 'Hohes Engagement und viele Saves — Format und Caption als Vorlage nutzen.'
-        : 'Überdurchschnittliches Engagement — Hook und Timing wiederholen.'
-  } else if (eng != null && eng < 1 && (likes + comments) > 0) {
-    tone = 'action'
-    takeaway = 'Engagement unter 1% — stärkere erste Zeile und eine konkrete Frage in der Caption.'
-  } else if (saves > 0 && saves >= likes * 0.15) {
-    tone = 'positive'
-    takeaway = 'Viele Saves relativ zu Likes — Tutorial-/Checklisten-Stil funktioniert hier.'
-  } else if (post.reach != null && followers > 0 && post.reach / followers < 0.1 && interactions > 0) {
-    tone = 'action'
-    takeaway = 'Reichweite niedrig vs. Follower — Shares und Saves fördern organische Verteilung.'
-  } else if (interactions === 0 && likes === 0) {
-    tone = 'neutral'
-    takeaway = 'Noch keine Interaktionsdaten für diesen Beitrag — nach dem nächsten Sync erneut prüfen.'
-  } else {
-    tone = 'neutral'
-    takeaway =
-      formatLabel(post.mediaType) === 'Reel / Video'
-        ? 'Solide Basis — in den ersten 60 Minuten aktiv auf Kommentare antworten.'
-        : 'Solide Werte — bei ähnlichen Themen Karussell oder Reel testen.'
-  }
+  const { takeaway, tone } = buildAnalyticalTakeaway({
+    formatLabel: formatLabel(post.mediaType),
+    likes,
+    comments,
+    saves,
+    shares,
+    reach: post.reach,
+    followers,
+    eng,
+    vsPeriodPct,
+    score,
+    postedAt: post.postedAt,
+  })
 
   return {
     formatLabel: formatLabel(post.mediaType),
     engagementRate: eng,
     reachRate,
     interactions,
-    strengths: strengths.slice(0, 3),
+    strengths: strengths.slice(0, 4),
     takeaway,
+    analysis: takeaway,
+    score,
+    scoreLabel: score != null ? score.toFixed(1) : null,
+    vsPeriodPct,
     tone,
+    formulaNote: FORMULA_NOTE,
   }
+}
+
+/** CSS-ish tone for score badge: high / mid / low. */
+export function scoreTone(score: number | null): 'high' | 'mid' | 'low' | 'none' {
+  if (score == null) return 'none'
+  if (score >= 7.5) return 'high'
+  if (score >= 5) return 'mid'
+  return 'low'
 }
 
 function buildKpiExplainers(kpis: SocialOverviewKpis): KpiExplainer[] {
@@ -625,7 +893,9 @@ export function computeSocialDashboard(
     .sort((a, b) => engagementScore(b) - engagementScore(a))
     .slice(0, 5)
 
-  const contentMix = buildContentMix(periodPosts.length ? periodPosts : posts.slice(0, 24), followers ?? 0)
+  const peerPosts = periodPosts.length ? periodPosts : posts.slice(0, 24)
+  const contentMix = buildContentMix(peerPosts, followers ?? 0)
+  const benchmarks = buildPeriodBenchmarks(peerPosts, followers ?? 0)
   const { bestHour, bestDay } = bestPostingSlots(posts)
 
   const kpis: SocialOverviewKpis = {
@@ -650,7 +920,7 @@ export function computeSocialDashboard(
     contentMix,
     bestHour,
     bestDay,
-    periodPosts: periodPosts.length ? periodPosts : posts.slice(0, 24),
+    periodPosts: peerPosts,
     period,
     rangeLabel: range.label,
   })
@@ -669,6 +939,7 @@ export function computeSocialDashboard(
     primarySeries,
     primarySeriesKind,
     topPosts,
+    benchmarks,
     contentMix,
     bestHour,
     bestDay,

@@ -32,7 +32,9 @@ import {
   META_INSIGHTS_MAX_DAYS,
   monthLabel,
   pickPrimaryAccount,
+  scoreTone,
   shiftMonthAnchor,
+  type PeriodBenchmarks,
   type SocialPeriod,
 } from '../lib/socialInsights'
 import type { SocialAccount, SocialPost } from '../types'
@@ -41,6 +43,33 @@ const IG_APP_ID = '1960989051209185'
 const IG_REDIRECT_URI = 'https://novat.app/instagram-callback'
 const IG_SCOPES = 'instagram_business_basic,instagram_business_manage_insights,instagram_business_content_publish'
 const ACCENT = 'rgb(var(--accent))'
+
+function ScoreBadge({
+  score,
+  size = 'sm',
+}: {
+  score: number | null
+  size?: 'sm' | 'lg'
+}) {
+  const tone = scoreTone(score)
+  if (tone === 'none' || score == null) return null
+  const colors =
+    tone === 'high'
+      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+      : tone === 'mid'
+        ? 'bg-accent/15 text-accent'
+        : 'bg-amber-500/15 text-amber-700 dark:text-amber-400'
+  const sizing = size === 'lg' ? 'px-2.5 py-1 text-base' : 'px-1.5 py-0.5 text-[11px]'
+  return (
+    <span
+      className={`inline-flex items-baseline gap-0.5 rounded-md font-bold tabular-nums ${colors} ${sizing}`}
+      title="Post-Wertung 1–10"
+    >
+      {score.toFixed(1)}
+      <span className={`font-semibold opacity-60 ${size === 'lg' ? 'text-xs' : 'text-[9px]'}`}>/10</span>
+    </span>
+  )
+}
 
 function buildInstagramOAuthUrl() {
   const url = new URL('https://www.instagram.com/oauth/authorize')
@@ -180,13 +209,15 @@ function AccountChip({
 function PostInsightModal({
   post,
   followers,
+  benchmarks,
   onClose,
 }: {
   post: SocialPost
   followers: number
+  benchmarks: PeriodBenchmarks
   onClose: () => void
 }) {
-  const insight = buildPostInsight(post, followers)
+  const insight = buildPostInsight(post, followers, benchmarks)
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
@@ -201,7 +232,10 @@ function PostInsightModal({
             />
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-gray-400">{insight.formatLabel}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs font-medium text-gray-400">{insight.formatLabel}</p>
+              <ScoreBadge score={insight.score} size="lg" />
+            </div>
             <p className="mt-0.5 line-clamp-2 text-sm font-medium text-gray-900 dark:text-white">
               {post.caption?.slice(0, 120) || 'Ohne Caption'}
             </p>
@@ -273,7 +307,12 @@ function PostInsightModal({
                     : 'bg-accent/60'
               }`}
             />
-            <p className="text-sm leading-relaxed text-gray-600 dark:text-racing-200">{insight.takeaway}</p>
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Analyse</p>
+              <p className="mt-0.5 text-sm leading-relaxed text-gray-600 dark:text-racing-200">
+                {insight.analysis}
+              </p>
+            </div>
           </div>
 
           {post.permalink && (
@@ -286,6 +325,8 @@ function PostInsightModal({
               <ExternalLink size={14} /> Auf Instagram öffnen
             </a>
           )}
+
+          <p className="text-[10px] leading-relaxed text-gray-400">{insight.formulaNote}</p>
         </div>
       </div>
     </div>
@@ -296,14 +337,16 @@ function TopPostRow({
   post,
   rank,
   followers,
+  benchmarks,
   onOpen,
 }: {
   post: SocialPost
   rank: number
   followers: number
+  benchmarks: PeriodBenchmarks
   onOpen: () => void
 }) {
-  const insight = buildPostInsight(post, followers)
+  const insight = buildPostInsight(post, followers, benchmarks)
   const typeIcon =
     post.mediaType === 'VIDEO' ? (
       <Film size={12} />
@@ -328,9 +371,12 @@ function TopPostRow({
         />
       )}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-gray-800 dark:text-racing-100">
-          {post.caption?.slice(0, 72) || 'Ohne Caption'}
-        </p>
+        <div className="flex items-start gap-2">
+          <p className="min-w-0 flex-1 truncate text-sm font-medium text-gray-800 dark:text-racing-100">
+            {post.caption?.slice(0, 72) || 'Ohne Caption'}
+          </p>
+          <ScoreBadge score={insight.score} />
+        </div>
         <p className="mt-0.5 flex flex-wrap items-center gap-2.5 text-xs text-gray-500">
           <span className="inline-flex items-center gap-1 text-gray-400">{typeIcon}</span>
           <span className="inline-flex items-center gap-1">
@@ -348,7 +394,7 @@ function TopPostRow({
             <span className="tabular-nums">{fmtPct(insight.engagementRate)}</span>
           )}
         </p>
-        <p className="mt-1 line-clamp-1 text-[11px] text-gray-400">{insight.takeaway}</p>
+        <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-gray-400">{insight.analysis}</p>
       </div>
     </button>
   )
@@ -806,7 +852,7 @@ export default function SocialMediaPage() {
                 <div className="bento-card p-5 sm:p-6 lg:col-span-3">
                   <h2 className="mb-1 text-sm font-semibold text-gray-900 dark:text-white">Beste Posts</h2>
                   <p className="mb-3 text-xs text-gray-400">
-                    Nach Engagement — tippen für Post-Insights
+                    Nach Engagement · Wertung vs. Periodendurchschnitt — tippen für Analyse
                   </p>
                   {dashboard.topPosts.length === 0 ? (
                     <p className="py-10 text-center text-sm text-gray-400">Keine Posts in diesem Zeitraum.</p>
@@ -818,6 +864,7 @@ export default function SocialMediaPage() {
                           post={p}
                           rank={i + 1}
                           followers={dashboard.kpis.followers ?? 0}
+                          benchmarks={dashboard.benchmarks}
                           onOpen={() => setSelectedPost(p)}
                         />
                       ))}
@@ -868,6 +915,15 @@ export default function SocialMediaPage() {
         <PostInsightModal
           post={selectedPost}
           followers={dashboard?.kpis.followers ?? 0}
+          benchmarks={
+            dashboard?.benchmarks ?? {
+              postCount: 0,
+              avgEngagementRate: null,
+              avgReach: null,
+              avgSaves: null,
+              avgCommentRatio: null,
+            }
+          }
           onClose={() => setSelectedPost(null)}
         />
       )}
