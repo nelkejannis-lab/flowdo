@@ -2,12 +2,11 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { DndContext, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
-import { ArrowLeft, Building2, Check, ChevronDown, ChevronRight, ChevronLeft, Globe, MessageSquare, Plus, Settings, UserPlus, Users, X, Trello, List, Calendar } from 'lucide-react'
+import { ArrowLeft, Building2, Check, ChevronDown, ChevronRight, ChevronLeft, Globe, LayoutDashboard, MessageSquare, Plus, Settings, UserPlus, Users, X, Trello, List, Calendar } from 'lucide-react'
 import { useBoardsStore } from '../store/boardsStore'
 import { useBoardInvitesStore } from '../store/boardInvitesStore'
 import { useProjectTasksStore } from '../store/projectTasksStore'
-import ProjectTimeReport from '../components/boards/ProjectTimeReport'
-import ProjectEvaluationPanel from '../components/boards/ProjectEvaluationPanel'
+import ProjectDashboard from '../components/boards/ProjectDashboard'
 import { useFriendsStore } from '../store/friendsStore'
 import { useAuthStore } from '../store/authStore'
 import { useCommentsStore } from '../store/commentsStore'
@@ -379,8 +378,8 @@ export default function BoardDetailPage() {
               activeView === 'overview' ? 'bg-accent text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
             }`}
           >
-            <Users size={13} />
-            {t('detail.overview')}
+            <LayoutDashboard size={13} />
+            {t('detail.dashboard')}
           </button>
           <button
             onClick={() => setActiveView('calendar')}
@@ -488,10 +487,15 @@ export default function BoardDetailPage() {
           )}
 
           {activeView === 'overview' && (
-            <>
-              <ProjectTimeReport board={board} tasks={tasks} onOpenSettings={() => setShowSettings(true)} />
-              <ProjectEvaluationPanel board={board} tasks={tasks} />
-            </>
+            <ProjectDashboard
+              board={board}
+              tasks={tasks}
+              progressFilter={progressFilter}
+              onOpenSettings={() => setShowSettings(true)}
+              onAddTask={() => setNewTaskColumnId(board.columns[0]?.id ?? '')}
+              onTaskClick={(task) => setEditingTask(task)}
+              onSwitchToBoard={() => setActiveView('board')}
+            />
           )}
 
           {activeView === 'calendar' && (
