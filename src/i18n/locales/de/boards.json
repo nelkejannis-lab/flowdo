@@ -52,6 +52,11 @@
     "filterMine": "Nur ich",
     "overview": "Übersicht",
     "dashboard": "Dashboard",
+    "tabDashboard": "Dashboard",
+    "tabBoard": "Board",
+    "tabCalendar": "Kalender",
+    "tabList": "Liste",
+    "tabTimeline": "Zeitstrahl",
     "searchColleagues": "Kollegen suchen…",
     "hideCompleted": "Erledigte ausblenden",
     "addColumn": "Spalte hinzufügen",
@@ -147,7 +152,8 @@
     "calendarHint": "Klicke auf einen Tag, um eine neue Aufgabe für diesen Tag hinzuzufügen.",
     "addPlaceholder": "Todo hinzufügen…",
     "empty": "Keine Todos. Füge oben einen hinzu.",
-    "noTasksInColumn": "Keine Aufgaben in dieser Spalte"
+    "noTasksInColumn": "Keine Aufgaben in dieser Spalte",
+    "today": "Heute"
   },
   "taskForm": {
     "editTask": "Aufgabe bearbeiten",
@@ -185,6 +191,18 @@
     "actual": "Ist-Zeit",
     "variance": "Abweichung",
     "completion": "Fortschritt"
+  },
+  "timeline": {
+    "week": "Woche",
+    "month": "Monat",
+    "today": "Heute",
+    "taskColumn": "Aufgabe",
+    "emptyTitle": "Keine Aufgaben mit Termin",
+    "emptyHint": "Setze Fälligkeitsdaten in Aufgaben oder ziehe offene Aufgaben auf den Zeitstrahl.",
+    "dragHint": "Ziehe Balken horizontal, um Termine zu verschieben. Klick öffnet die Aufgabe.",
+    "undatedTitle": "Ohne Termin",
+    "undatedHint": "Ziehe eine Aufgabe auf einen Tag unten oder klicke, um ein Datum zu setzen.",
+    "dropToSchedule": "Auf Tag ablegen"
   },
   "projectDashboard": {
     "title": "Projekt-Dashboard",

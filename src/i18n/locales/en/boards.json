@@ -52,6 +52,11 @@
     "filterMine": "Only me",
     "overview": "Overview",
     "dashboard": "Dashboard",
+    "tabDashboard": "Dashboard",
+    "tabBoard": "Board",
+    "tabCalendar": "Calendar",
+    "tabList": "List",
+    "tabTimeline": "Timeline",
     "searchColleagues": "Search colleagues…",
     "hideCompleted": "Hide completed",
     "addColumn": "Add column",
@@ -147,7 +152,8 @@
     "calendarHint": "Click a day to add a new task for that day.",
     "addPlaceholder": "Add todo…",
     "empty": "No todos. Add one above.",
-    "noTasksInColumn": "No tasks in this column"
+    "noTasksInColumn": "No tasks in this column",
+    "today": "Today"
   },
   "taskForm": {
     "editTask": "Edit task",
@@ -185,6 +191,18 @@
     "actual": "Actual time",
     "variance": "Variance",
     "completion": "Progress"
+  },
+  "timeline": {
+    "week": "Week",
+    "month": "Month",
+    "today": "Today",
+    "taskColumn": "Task",
+    "emptyTitle": "No tasks with dates",
+    "emptyHint": "Set due dates on tasks or drag open tasks onto the timeline.",
+    "dragHint": "Drag bars horizontally to reschedule. Click to open the task.",
+    "undatedTitle": "Undated",
+    "undatedHint": "Drag a task onto a day below or click to set a date.",
+    "dropToSchedule": "Drop on day"
   },
   "projectDashboard": {
     "title": "Project dashboard",

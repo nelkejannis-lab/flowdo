@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { DndContext, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
-import { ArrowLeft, Building2, Check, ChevronDown, ChevronRight, ChevronLeft, Globe, LayoutDashboard, MessageSquare, Plus, Settings, UserPlus, Users, X, Trello, List, Calendar } from 'lucide-react'
+import { ArrowLeft, Building2, Check, ChevronDown, ChevronRight, ChevronLeft, Globe, LayoutDashboard, MessageSquare, Plus, Settings, UserPlus, Users, X, Trello, List, Calendar, GanttChart } from 'lucide-react'
 import { useBoardsStore } from '../store/boardsStore'
 import { useBoardInvitesStore } from '../store/boardInvitesStore'
 import { useProjectTasksStore } from '../store/projectTasksStore'
 import ProjectDashboard from '../components/boards/ProjectDashboard'
+import ProjectTimeline from '../components/boards/ProjectTimeline'
 import { useFriendsStore } from '../store/friendsStore'
 import { useAuthStore } from '../store/authStore'
 import { useCommentsStore } from '../store/commentsStore'
@@ -24,6 +25,8 @@ import MonthView from '../components/calendar/MonthView'
 import TaskItem from '../components/tasks/TaskItem'
 
 type ProgressFilter = 'all' | 'mine'
+
+type ProjectView = 'overview' | 'board' | 'calendar' | 'list' | 'timeline'
 
 export default function BoardDetailPage() {
   const { t, i18n } = useTranslation('boards')
@@ -53,7 +56,7 @@ export default function BoardDetailPage() {
   const deleteTask = useProjectTasksStore((s) => s.deleteTask)
   const toggleTaskCompleted = useProjectTasksStore((s) => s.toggleTaskCompleted)
 
-  const [activeView, setActiveView] = useState<'board' | 'list' | 'calendar' | 'overview'>('board')
+  const [activeView, setActiveView] = useState<ProjectView>('overview')
   const [calendarDate, setCalendarDate] = useState(new Date())
   const [newTaskDate, setNewTaskDate] = useState<string | null>(null)
 
@@ -355,31 +358,22 @@ export default function BoardDetailPage() {
         {/* Left: View Switcher */}
         <div className="flex items-center gap-1 rounded-lg border border-gray-200 p-1 dark:border-racing-700 bg-white dark:bg-racing-900">
           <button
-            onClick={() => setActiveView('board')}
-            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-              activeView === 'board' ? 'bg-accent text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
-            }`}
-          >
-            <Trello size={13} />
-            Board
-          </button>
-          <button
-            onClick={() => setActiveView('list')}
-            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-              activeView === 'list' ? 'bg-accent text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
-            }`}
-          >
-            <List size={13} />
-            Liste
-          </button>
-          <button
             onClick={() => setActiveView('overview')}
             className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
               activeView === 'overview' ? 'bg-accent text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
             }`}
           >
             <LayoutDashboard size={13} />
-            {t('detail.dashboard')}
+            {t('detail.tabDashboard')}
+          </button>
+          <button
+            onClick={() => setActiveView('board')}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              activeView === 'board' ? 'bg-accent text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
+            }`}
+          >
+            <Trello size={13} />
+            {t('detail.tabBoard')}
           </button>
           <button
             onClick={() => setActiveView('calendar')}
@@ -388,7 +382,25 @@ export default function BoardDetailPage() {
             }`}
           >
             <Calendar size={13} />
-            Kalender
+            {t('detail.tabCalendar')}
+          </button>
+          <button
+            onClick={() => setActiveView('list')}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              activeView === 'list' ? 'bg-accent text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
+            }`}
+          >
+            <List size={13} />
+            {t('detail.tabList')}
+          </button>
+          <button
+            onClick={() => setActiveView('timeline')}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              activeView === 'timeline' ? 'bg-accent text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-racing-800'
+            }`}
+          >
+            <GanttChart size={13} />
+            {t('detail.tabTimeline')}
           </button>
         </div>
 
@@ -498,6 +510,15 @@ export default function BoardDetailPage() {
             />
           )}
 
+          {activeView === 'timeline' && (
+            <ProjectTimeline
+              board={board}
+              tasks={visibleTasks}
+              onTaskClick={(task) => setEditingTask(task)}
+              onUpdateTask={updateTask}
+            />
+          )}
+
           {activeView === 'calendar' && (
             <div className="space-y-4 rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
               <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -521,7 +542,7 @@ export default function BoardDetailPage() {
                     onClick={() => setCalendarDate(new Date())}
                     className="ml-2 rounded-lg border border-gray-200 px-3 py-1.5 text-xs hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800"
                   >
-                    Heute
+                    {t('todos.today')}
                   </button>
                 </div>
                 <p className="text-xs text-gray-400">{t('todos.calendarHint')}</p>
