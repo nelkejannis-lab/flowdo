@@ -4,7 +4,8 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "close": "Close",
-    "maximize": "Maximize"
+    "maximize": "Maximize",
+    "edit": "Edit"
   },
   "project": "Project",
   "inbox": "Inbox",

@@ -44,6 +44,21 @@
     "tracked": "{{time}} erfasst",
     "trackedShort": "erfasst"
   },
+  "manualTime": {
+    "title": "Zeit nachtragen",
+    "hours": "Std.",
+    "minutes": "Min.",
+    "date": "Datum",
+    "add": "Eintrag hinzufügen",
+    "total": "Gesamt: {{time}}",
+    "empty": "Noch keine Zeiteinträge.",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "manualNote": "Manuell",
+    "timerEntry": "Timer"
+  },
   "form": {
     "titleNew": "Neue Aufgabe",
     "titleEdit": "Aufgabe bearbeiten",

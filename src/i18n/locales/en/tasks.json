@@ -44,6 +44,21 @@
     "tracked": "{{time}} tracked",
     "trackedShort": "tracked"
   },
+  "manualTime": {
+    "title": "Log time manually",
+    "hours": "Hours",
+    "minutes": "Min.",
+    "date": "Date",
+    "add": "Add entry",
+    "total": "Total: {{time}}",
+    "empty": "No time entries yet.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "manualNote": "Manual",
+    "timerEntry": "Timer"
+  },
   "form": {
     "titleNew": "New task",
     "titleEdit": "Edit task",

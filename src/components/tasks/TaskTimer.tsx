@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useTaskTimerStore } from '../../store/taskTimerStore'
 import { useTaskTimeStore } from '../../store/taskTimeStore'
 import { formatHM } from '../../utils/worktime'
+import TaskManualTimeLog from './TaskManualTimeLog'
 
 interface TaskTimerProps {
   taskId: string
@@ -124,46 +125,49 @@ export default function TaskTimer({
 
   return (
     <div
-      className={`flex flex-wrap items-center gap-2 ${className}`}
+      className={className}
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
     >
-      {(loggedMinutes > 0 || isActive) && (
-        <span
-          className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 font-mono text-xs font-semibold tabular-nums text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
-          title={t('item.tracked', { time: formatHM(loggedMinutes) })}
-        >
-          <Clock size={12} />
-          {isActive ? formatLive(liveSeconds) : formatHM(loggedMinutes)}
-          {!isActive && loggedMinutes > 0 && (
-            <span className="font-sans text-[10px] font-medium opacity-70">{t('item.trackedShort')}</span>
-          )}
-        </span>
-      )}
-      <button
-        type="button"
-        onClick={(e) => void handleToggle(e)}
-        className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${
-          isActive
-            ? 'bg-emerald-500 text-white hover:bg-emerald-600'
-            : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300'
-        }`}
-        title={toggleLabel}
-      >
-        {isRunning ? <Pause size={12} /> : <Play size={12} />}
-        {toggleLabel}
-      </button>
-      {isActive && (
+      <div className="flex flex-wrap items-center gap-2">
+        {(loggedMinutes > 0 || isActive) && (
+          <span
+            className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 font-mono text-xs font-semibold tabular-nums text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+            title={t('item.tracked', { time: formatHM(loggedMinutes) })}
+          >
+            <Clock size={12} />
+            {isActive ? formatLive(liveSeconds) : formatHM(loggedMinutes)}
+            {!isActive && loggedMinutes > 0 && (
+              <span className="font-sans text-[10px] font-medium opacity-70">{t('item.trackedShort')}</span>
+            )}
+          </span>
+        )}
         <button
           type="button"
-          onClick={(e) => void handleStop(e)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300"
-          title={t('item.stopTimer')}
+          onClick={(e) => void handleToggle(e)}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+            isActive
+              ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+              : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300'
+          }`}
+          title={toggleLabel}
         >
-          <Square size={11} />
-          {t('item.stopTimer')}
+          {isRunning ? <Pause size={12} /> : <Play size={12} />}
+          {toggleLabel}
         </button>
-      )}
+        {isActive && (
+          <button
+            type="button"
+            onClick={(e) => void handleStop(e)}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300"
+            title={t('item.stopTimer')}
+          >
+            <Square size={11} />
+            {t('item.stopTimer')}
+          </button>
+        )}
+      </div>
+      <TaskManualTimeLog taskId={taskId} boardId={boardId} />
     </div>
   )
 }
