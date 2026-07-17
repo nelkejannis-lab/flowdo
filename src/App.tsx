@@ -152,11 +152,19 @@ export default function App() {
   }
 
   if (isSupabaseConfigured && loading) {
-    return <BootLoader label={t('loading')} />
+    return (
+      <ErrorBoundary fullScreen>
+        <BootLoader label={t('loading')} dark />
+      </ErrorBoundary>
+    )
   }
 
   if (isSupabaseConfigured && !session) {
-    return <LoginPage />
+    return (
+      <ErrorBoundary fullScreen>
+        <LoginPage />
+      </ErrorBoundary>
+    )
   }
 
   return (

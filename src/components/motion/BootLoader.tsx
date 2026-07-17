@@ -3,11 +3,24 @@ import { riseFade, riseTransition } from '../../lib/motion'
 import Logo from '../layout/Logo'
 
 /** Short first-paint loader — logo rise-fade, not a splash screen. */
-export default function BootLoader({ label }: { label: string }) {
+export default function BootLoader({
+  label,
+  dark = false,
+}: {
+  label: string
+  /** Match login screen while auth is restoring a session. */
+  dark?: boolean
+}) {
   const reduce = useReducedMotion()
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[rgb(var(--surface-0))] text-gray-400">
+    <div
+      className={
+        dark
+          ? 'flex min-h-screen flex-col items-center justify-center gap-4 bg-black text-white/50'
+          : 'flex min-h-screen flex-col items-center justify-center gap-4 bg-[rgb(var(--surface-0))] text-gray-400'
+      }
+    >
       <motion.div
         initial={reduce ? false : riseFade.hidden}
         animate={riseFade.visible}

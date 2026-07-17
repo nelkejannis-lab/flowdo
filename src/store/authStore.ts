@@ -60,12 +60,42 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   loading: true,
 
   init: () => {
-    supabase.auth.getSession().then(({ data }) => {
-      set({ session: data.session, user: data.session?.user ?? null, loading: false })
-      if (data.session?.user) get().fetchProfile()
-    })
+    let settled = false
+    const finish = (session: Session | null) => {
+      if (settled) return
+      settled = true
+      set({
+        session,
+        user: session?.user ?? null,
+        loading: false,
+      })
+      if (session?.user) get().fetchProfile()
+    }
+
+    const timeout =
+      typeof window !== 'undefined'
+        ? window.setTimeout(() => {
+            console.warn('[NOVAT] Auth session check timed out — showing login')
+            finish(null)
+          }, 8000)
+        : undefined
+
+    supabase.auth
+      .getSession()
+      .then(({ data, error }) => {
+        if (error) console.error('[NOVAT] getSession failed:', error.message)
+        finish(data.session)
+      })
+      .catch((err) => {
+        console.error('[NOVAT] getSession error:', err)
+        finish(null)
+      })
+      .finally(() => {
+        if (timeout !== undefined) window.clearTimeout(timeout)
+      })
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      settled = true
       set({ session, user: session?.user ?? null, loading: false })
       if (session?.user) {
         get().fetchProfile()
@@ -74,9 +104,10 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       }
     })
 
-    const unsubscribeProfile = get().subscribeToProfile()
+    let unsubscribeProfile = get().subscribeToProfile()
 
     return () => {
+      if (timeout !== undefined) window.clearTimeout(timeout)
       listener.subscription.unsubscribe()
       unsubscribeProfile()
     }
