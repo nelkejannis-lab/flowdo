@@ -23,7 +23,7 @@ import {
   PanelLeft,
   BarChart3,
 } from 'lucide-react'
-import { useSettingsStore, type NavItemKey } from '../../store/settingsStore'
+import { useSettingsStore, DEFAULT_PINNED_NAV_ITEMS, type NavItemKey } from '../../store/settingsStore'
 import { isSupabaseConfigured } from '../../lib/supabase'
 import { NAV_PATHS } from './navConfig'
 
@@ -47,7 +47,7 @@ const RAIL_ICONS: Partial<Record<NavItemKey, React.ReactNode>> = {
   statistiken: <BarChart3 size={20} strokeWidth={1.5} />,
 }
 
-const DEFAULT_RAIL: NavItemKey[] = ['dashboard', 'statistiken', 'tasks', 'calendar', 'termine', 'projekte', 'worktime', 'meetings']
+const DEFAULT_RAIL: NavItemKey[] = ['dashboard', ...DEFAULT_PINNED_NAV_ITEMS]
 const MAX_RAIL_ITEMS = 10
 
 interface IconRailProps {

@@ -56,6 +56,36 @@ export const DEFAULT_NAV_ORDER: NavItemKey[] = [
   'projekte',
 ]
 
+/** Default icon-rail pins (dashboard is always prepended by IconRail). */
+export const DEFAULT_PINNED_NAV_ITEMS: NavItemKey[] = [
+  'statistiken',
+  'tasks',
+  'calendar',
+  'projekte',
+  'termine',
+  'worktime',
+  'meetings',
+]
+
+/** Insert Projekte into an existing pin list when missing (one-time migration). */
+export function ensureProjekteInPins(pins: NavItemKey[]): NavItemKey[] {
+  const cleaned = pins.filter((k) => k !== 'dashboard' && (k as string) !== 'pomodoro')
+  if (cleaned.includes('projekte')) return cleaned
+  const afterCalendar = cleaned.indexOf('calendar')
+  if (afterCalendar >= 0) {
+    const next = [...cleaned]
+    next.splice(afterCalendar + 1, 0, 'projekte')
+    return next
+  }
+  const afterTasks = cleaned.indexOf('tasks')
+  if (afterTasks >= 0) {
+    const next = [...cleaned]
+    next.splice(afterTasks + 1, 0, 'projekte')
+    return next
+  }
+  return [...cleaned, 'projekte']
+}
+
 // Items that can never be hidden
 export const NAV_ALWAYS_VISIBLE: NavItemKey[] = ['dashboard', 'calendar']
 
@@ -206,7 +236,7 @@ export const useSettingsStore = create<SettingsState>()(
       dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY },
       navOrder: [...DEFAULT_NAV_ORDER],
       navVisibility: { ...DEFAULT_NAV_VISIBILITY },
-      pinnedNavItems: [],
+      pinnedNavItems: [...DEFAULT_PINNED_NAV_ITEMS],
       colorLabels: { ...DEFAULT_COLOR_LABELS },
       notifyAppointments: true,
       notifyChat: true,
@@ -343,7 +373,7 @@ export const useSettingsStore = create<SettingsState>()(
           dashboardVisibility: { ...DEFAULT_DASHBOARD_VISIBILITY },
           navOrder: [...DEFAULT_NAV_ORDER],
           navVisibility: { ...DEFAULT_NAV_VISIBILITY },
-          pinnedNavItems: [],
+          pinnedNavItems: [...DEFAULT_PINNED_NAV_ITEMS],
           colorLabels: { ...DEFAULT_COLOR_LABELS },
           notifyAppointments: true,
           notifyChat: true,
@@ -386,7 +416,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'flowdo-settings',
-      version: 17,
+      version: 18,
       migrate: (persisted, version) => {
         const legacy = persisted as LegacyState & Partial<SettingsState>
         if (version < 1) {
@@ -410,7 +440,13 @@ export const useSettingsStore = create<SettingsState>()(
         delete (navVisibility as Record<string, boolean>).pomodoro
         // Memory (WhatsApp capture inbox) should stay discoverable in the sidebar
         if (version < 15) navVisibility.memory = true
-        const pinnedNavItems = stripPomodoro(((legacy as any).pinnedNavItems ?? []) as NavItemKey[])
+        let pinnedNavItems = stripPomodoro(((legacy as any).pinnedNavItems ?? []) as NavItemKey[])
+        if (version < 18) {
+          pinnedNavItems =
+            pinnedNavItems.length === 0
+              ? [...DEFAULT_PINNED_NAV_ITEMS]
+              : ensureProjekteInPins(pinnedNavItems)
+        }
         return {
           ...legacy,
           language: legacy.language ?? 'de',
@@ -438,7 +474,7 @@ export const useSettingsStore = create<SettingsState>()(
       onRehydrateStorage: () => (state) => {
         if (!state) return
         if (!state.navOrder?.length) state.navOrder = [...DEFAULT_NAV_ORDER]
-        if (!state.pinnedNavItems) state.pinnedNavItems = []
+        if (!state.pinnedNavItems?.length) state.pinnedNavItems = [...DEFAULT_PINNED_NAV_ITEMS]
         if (!state.dashboardWidgetOrder?.length) state.dashboardWidgetOrder = [...DEFAULT_DASHBOARD_WIDGET_ORDER]
         state.dashboardSectionOrder = normalizeDashboardSectionOrder(state.dashboardSectionOrder)
         state.dashboardVisibility = { ...DEFAULT_DASHBOARD_VISIBILITY, ...state.dashboardVisibility }
