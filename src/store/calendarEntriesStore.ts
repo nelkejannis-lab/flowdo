@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { supabase } from '../lib/supabase'
-import type { CalendarEntry, CalendarEntryInvitee, CalendarEntryType } from '../types'
+import type { CalendarEntry, CalendarEntryBoard, CalendarEntryInvitee, CalendarEntryType } from '../types'
 import { extractSeriesId, occurrenceKey, parseCalendarEntryId } from '../utils/calendarEntry'
 import { useCalendarConnectionsStore } from './calendarConnectionsStore'
 
@@ -20,8 +20,10 @@ interface CalendarEntryRow {
   meeting_link: string | null
   external_id: string | null
   external_provider: string | null
+  board_id: string | null
   created_at: string
   owner: CalendarEntryInvitee | CalendarEntryInvitee[] | null
+  board: CalendarEntryBoard | CalendarEntryBoard[] | null
   calendar_entry_invites: { user: CalendarEntryInvitee | CalendarEntryInvitee[] }[] | null
 }
 
@@ -35,6 +37,7 @@ export interface NewCalendarEntryInput {
   endTime?: string
   color: string
   invitedUserIds: string[]
+  boardId?: string
   recurrence?: CalendarEntry['recurrence']
   meetingLink?: string
 }
@@ -75,6 +78,8 @@ function toEntry(row: CalendarEntryRow & { recurrence?: string | null }): Calend
     endTime: row.end_time ? row.end_time.slice(0, 5) : undefined,
     color: row.color,
     invitees: (row.calendar_entry_invites ?? []).map((i) => single(i.user)).filter(Boolean),
+    boardId: row.board_id ?? undefined,
+    board: row.board ? single(row.board) : undefined,
     createdAt: row.created_at,
     recurrence: (row.recurrence ?? undefined) as CalendarEntry['recurrence'],
     completed: row.completed ?? false,
@@ -131,7 +136,12 @@ async function syncTerminToTeams(
   return result.error
 }
 
-async function setInvites(entryId: string, userIds: string[]): Promise<string | null> {
+async function setInvites(
+  entryId: string,
+  userIds: string[],
+  previousIds: string[] = [],
+  notifyNew = false,
+): Promise<string | null> {
   const { error: delErr } = await supabase.from('calendar_entry_invites').delete().eq('entry_id', entryId)
   if (delErr) return delErr.message
   if (userIds.length > 0) {
@@ -139,6 +149,21 @@ async function setInvites(entryId: string, userIds: string[]): Promise<string | 
       .from('calendar_entry_invites')
       .insert(userIds.map((userId) => ({ entry_id: entryId, user_id: userId })))
     if (insErr) return insErr.message
+  }
+  if (notifyNew && userIds.length > 0) {
+    const prev = new Set(previousIds)
+    const newlyAdded = userIds.filter((id) => !prev.has(id))
+    if (newlyAdded.length > 0) {
+      const { data: userData } = await supabase.auth.getUser()
+      const inviterId = userData.user?.id
+      if (inviterId) {
+        await supabase.rpc('notify_calendar_invites', {
+          p_entry_id: entryId,
+          p_inviter_id: inviterId,
+          p_user_ids: newlyAdded,
+        })
+      }
+    }
   }
   return null
 }
@@ -158,7 +183,7 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()(
 
         const { data, error } = await supabase
           .from('calendar_entries')
-          .select('*, owner:profiles!calendar_entries_owner_id_fkey(*), calendar_entry_invites(user:profiles(*))')
+          .select('*, owner:profiles!calendar_entries_owner_id_fkey(*), board:boards(id, title, color), calendar_entry_invites(user:profiles(*))')
           .order('date', { ascending: true })
 
         if (error) {
@@ -205,6 +230,7 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()(
             color: input.color,
             recurrence: input.recurrence ?? null,
             meeting_link: input.meetingLink ?? null,
+            board_id: input.boardId ?? null,
           })
           .select('id')
           .single()
@@ -215,7 +241,7 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()(
         }
 
         if (input.invitedUserIds.length > 0) {
-          const inviteErr = await setInvites(data.id, input.invitedUserIds)
+          const inviteErr = await setInvites(data.id, input.invitedUserIds, [], true)
           if (inviteErr) console.error('[addEntry] setInvites error:', inviteErr)
         }
 
@@ -250,12 +276,14 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()(
             color: input.color,
             recurrence: input.recurrence ?? null,
             meeting_link: input.meetingLink ?? null,
+            board_id: input.boardId ?? null,
           })
           .eq('id', dbId)
 
         if (error) return error.message
 
-        await setInvites(dbId, input.invitedUserIds)
+        const previousInviteeIds = existing?.invitees.map((i) => i.id) ?? []
+        await setInvites(dbId, input.invitedUserIds, previousInviteeIds, true)
 
         const teamsErr = await syncTerminToTeams('update', {
           id: dbId,

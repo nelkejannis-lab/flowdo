@@ -291,6 +291,12 @@ export interface CalendarEntryInvitee {
   badge?: string | null
 }
 
+export interface CalendarEntryBoard {
+  id: string
+  title: string
+  color: string
+}
+
 export interface CalendarEntry {
   id: string
   ownerId: string
@@ -304,6 +310,8 @@ export interface CalendarEntry {
   endTime?: string // HH:MM
   color: string
   invitees: CalendarEntryInvitee[]
+  boardId?: string
+  board?: CalendarEntryBoard
   createdAt: string
   recurrence?: 'daily' | 'weekly' | 'monthly' | 'yearly'
   completed?: boolean

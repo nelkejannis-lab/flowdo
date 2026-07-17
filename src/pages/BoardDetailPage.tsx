@@ -15,10 +15,12 @@ import KanbanColumn from '../components/boards/KanbanColumn'
 import BoardSettingsModal from '../components/boards/BoardSettingsModal'
 import ProjectTaskFormModal from '../components/boards/ProjectTaskFormModal'
 import CommentSection from '../components/shared/CommentSection'
-import type { Task } from '../types'
+import CalendarEntryFormModal from '../components/calendar/CalendarEntryFormModal'
+import type { CalendarEntry, Task } from '../types'
 import { formatFriendlyDate, isOverdue, toISODate } from '../utils/date'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { useSettingsStore } from '../store/settingsStore'
+import { useCalendarEntriesStore } from '../store/calendarEntriesStore'
 import { format, addMonths, subMonths } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
 import MonthView from '../components/calendar/MonthView'
@@ -59,6 +61,12 @@ export default function BoardDetailPage() {
   const [activeView, setActiveView] = useState<ProjectView>('overview')
   const [calendarDate, setCalendarDate] = useState(new Date())
   const [newTaskDate, setNewTaskDate] = useState<string | null>(null)
+  const [showEntryForm, setShowEntryForm] = useState(false)
+  const [editingEntry, setEditingEntry] = useState<CalendarEntry | null>(null)
+  const [entryFormDate, setEntryFormDate] = useState<string | undefined>()
+
+  const calendarEntries = useCalendarEntriesStore((s) => s.entries)
+  const fetchCalendarEntries = useCalendarEntriesStore((s) => s.fetchEntries)
 
   const [showSettings, setShowSettings] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
@@ -93,8 +101,14 @@ export default function BoardDetailPage() {
   }, [boardId, subscribeToBoard])
 
   useEffect(() => {
+    if (isSupabaseConfigured) fetchCalendarEntries()
+  }, [fetchCalendarEntries])
+
+  useEffect(() => {
     fetchFriends()
   }, [fetchFriends])
+
+  const projectCalendarEntries = calendarEntries.filter((e) => e.boardId === boardId && e.type === 'termin')
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -545,20 +559,37 @@ export default function BoardDetailPage() {
                     {t('todos.today')}
                   </button>
                 </div>
-                <p className="text-xs text-gray-400">{t('todos.calendarHint')}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-gray-400">{t('todos.calendarHint')}</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingEntry(null)
+                      setEntryFormDate(toISODate(new Date()))
+                      setShowEntryForm(true)
+                    }}
+                    className="flex items-center gap-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark"
+                  >
+                    <Plus size={14} />
+                    {t('detail.addMeeting', { defaultValue: 'Termin' })}
+                  </button>
+                </div>
               </div>
               <MonthView
                 currentDate={calendarDate}
                 tasks={kanbanTasks.filter((t) => t.dueDate)}
                 events={[]}
-                entries={[]}
+                entries={projectCalendarEntries}
                 onDayClick={(date) => {
                   setNewTaskDate(toISODate(date))
                   setNewTaskColumnId(board.columns[0]?.id || '')
                 }}
                 onTaskClick={(task) => setEditingTask(task)}
                 onEventClick={() => {}}
-                onEntryClick={() => {}}
+                onEntryClick={(entry) => {
+                  setEditingEntry(entry)
+                  setShowEntryForm(true)
+                }}
               />
             </div>
           )}
@@ -697,6 +728,18 @@ export default function BoardDetailPage() {
           onClose={() => {
             setNewTaskColumnId(null)
             setNewTaskDate(null)
+          }}
+        />
+      )}
+      {showEntryForm && (
+        <CalendarEntryFormModal
+          entry={editingEntry ?? undefined}
+          defaultDate={entryFormDate}
+          defaultBoardId={boardId}
+          onClose={() => {
+            setShowEntryForm(false)
+            setEditingEntry(null)
+            setEntryFormDate(undefined)
           }}
         />
       )}

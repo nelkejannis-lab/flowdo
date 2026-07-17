@@ -23,6 +23,7 @@ export interface NotePage {
   audioDuration?: number
   createdAt: string
   updatedAt: string
+  sharedWithMe?: boolean
 }
 
 export interface NoteColumn {
@@ -114,15 +115,18 @@ export const useBrainStore = create<BrainState>()(
 
         set({ loading: true })
 
-        const [colsRes, pagesRes] = await Promise.all([
+        const [colsRes, pagesRes, sharedRes] = await Promise.all([
           supabase.from('brain_columns').select('*').eq('owner_id', userId).order('position', { ascending: true }),
-          supabase.from('brain_pages').select('*').eq('owner_id', userId).order('updated_at', { ascending: false })
+          supabase.from('brain_pages').select('*').eq('owner_id', userId).order('updated_at', { ascending: false }),
+          supabase.from('creative_board_item_shares').select('item_id').eq('user_id', userId).eq('item_type', 'note'),
         ])
 
         if (colsRes.error || pagesRes.error) {
           set({ loading: false })
           return
         }
+
+        const sharedNoteIds = new Set((sharedRes.data ?? []).map((r: { item_id: string }) => r.item_id))
 
         let syncedCols: NoteColumn[] = (colsRes.data ?? []).map((c: any) => ({
           id: c.id,
@@ -143,8 +147,35 @@ export const useBrainStore = create<BrainState>()(
           audioBase64: p.audio_base64 ?? undefined,
           audioDuration: p.audio_duration ?? undefined,
           createdAt: p.created_at,
-          updatedAt: p.updated_at
+          updatedAt: p.updated_at,
+          sharedWithMe: false,
         }))
+
+        if (sharedNoteIds.size > 0) {
+          const { data: sharedPagesData } = await supabase
+            .from('brain_pages')
+            .select('*')
+            .in('id', [...sharedNoteIds])
+          for (const p of sharedPagesData ?? []) {
+            if (syncedPages.some((sp) => sp.id === p.id)) continue
+            syncedPages.push({
+              id: p.id,
+              columnId: p.column_id,
+              title: p.title,
+              content: p.content,
+              summary: p.summary ?? undefined,
+              checklist: p.checklist ?? [],
+              tags: p.tags ?? [],
+              people: p.people ?? [],
+              linkedBoardId: p.linked_board_id ?? undefined,
+              audioBase64: p.audio_base64 ?? undefined,
+              audioDuration: p.audio_duration ?? undefined,
+              createdAt: p.created_at,
+              updatedAt: p.updated_at,
+              sharedWithMe: true,
+            })
+          }
+        }
 
         // If user has no columns in DB yet, upload current local columns
         if (syncedCols.length === 0) {

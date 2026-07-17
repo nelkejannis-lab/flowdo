@@ -3,6 +3,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { createId } from '../utils/id'
 
 export type CreativeInviteRole = 'owner' | 'editor' | 'viewer'
+export type CreativeItemType = 'note' | 'moodboard'
 export type MoodboardItemType = 'note' | 'image' | 'link' | 'video' | 'social' | 'website'
 
 export interface MoodboardItem {
@@ -19,6 +20,7 @@ export interface MoodboardItem {
   position: number
   createdAt: string
   updatedAt: string
+  sharedWithMe?: boolean
 }
 
 export interface CreativeBoardInvite {
@@ -26,6 +28,18 @@ export interface CreativeBoardInvite {
   fromUserId: string
   toUserId: string
   role: CreativeInviteRole
+  status: 'pending' | 'accepted' | 'declined'
+  createdAt: string
+  fromUser?: { id: string; display_name: string; username: string; avatar_color: string }
+}
+
+export interface CreativeBoardItemInvite {
+  id: string
+  itemType: CreativeItemType
+  itemId: string
+  itemTitle?: string
+  fromUserId: string
+  toUserId: string
   status: 'pending' | 'accepted' | 'declined'
   createdAt: string
   fromUser?: { id: string; display_name: string; username: string; avatar_color: string }
@@ -42,16 +56,21 @@ export interface CreativeBoardMember {
 interface CreativeBoardState {
   moodItems: MoodboardItem[]
   incomingInvites: CreativeBoardInvite[]
+  incomingItemInvites: CreativeBoardItemInvite[]
   members: CreativeBoardMember[]
   fetchMoodItems: () => Promise<void>
-  addMoodItem: (input: Omit<MoodboardItem, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>) => Promise<void>
+  addMoodItem: (input: Omit<MoodboardItem, 'id' | 'ownerId' | 'createdAt' | 'updatedAt' | 'sharedWithMe'>) => Promise<void>
   updateMoodItem: (id: string, updates: Partial<MoodboardItem>) => Promise<void>
   deleteMoodItem: (id: string) => Promise<void>
   searchProfiles: (query: string) => Promise<Array<{ id: string; display_name: string; username: string; avatar_color: string }>>
   inviteToCreativeBoard: (toUserId: string, role: CreativeInviteRole) => Promise<string | null>
+  inviteToItem: (itemType: CreativeItemType, itemId: string, toUserId: string) => Promise<string | null>
   fetchIncomingInvites: () => Promise<void>
+  fetchIncomingItemInvites: () => Promise<void>
   acceptInvite: (inviteId: string) => Promise<string | null>
+  acceptItemInvite: (inviteId: string) => Promise<string | null>
   declineInvite: (inviteId: string) => Promise<void>
+  declineItemInvite: (inviteId: string) => Promise<void>
   fetchMembers: () => Promise<void>
 }
 
@@ -64,6 +83,7 @@ async function getUserId(): Promise<string | null> {
 export const useCreativeBoardStore = create<CreativeBoardState>()((set, get) => ({
   moodItems: [],
   incomingInvites: [],
+  incomingItemInvites: [],
   members: [],
 
   fetchMoodItems: async () => {
@@ -89,6 +109,7 @@ export const useCreativeBoardStore = create<CreativeBoardState>()((set, get) => 
         position: r.position ?? 0,
         createdAt: r.created_at,
         updatedAt: r.updated_at,
+        sharedWithMe: r.owner_id !== userId,
       })),
     })
   },
@@ -186,6 +207,29 @@ export const useCreativeBoardStore = create<CreativeBoardState>()((set, get) => 
     return error ? error.message : null
   },
 
+  inviteToItem: async (itemType, itemId, toUserId) => {
+    const fromUserId = await getUserId()
+    if (!fromUserId) return 'Nicht angemeldet'
+    const { data: existing } = await supabase
+      .from('creative_board_item_invites')
+      .select('id')
+      .eq('from_user_id', fromUserId)
+      .eq('to_user_id', toUserId)
+      .eq('item_type', itemType)
+      .eq('item_id', itemId)
+      .eq('status', 'pending')
+      .maybeSingle()
+    if (existing) return 'Einladung bereits ausstehend'
+    const { error } = await supabase.from('creative_board_item_invites').insert({
+      from_user_id: fromUserId,
+      to_user_id: toUserId,
+      item_type: itemType,
+      item_id: itemId,
+      status: 'pending',
+    })
+    return error ? error.message : null
+  },
+
   fetchIncomingInvites: async () => {
     const userId = await getUserId()
     if (!userId) return
@@ -209,6 +253,41 @@ export const useCreativeBoardStore = create<CreativeBoardState>()((set, get) => 
     })
   },
 
+  fetchIncomingItemInvites: async () => {
+    const userId = await getUserId()
+    if (!userId) return
+    const { data } = await supabase
+      .from('creative_board_item_invites')
+      .select('id, item_type, item_id, from_user_id, to_user_id, status, created_at, from_user:profiles!creative_board_item_invites_from_user_id_fkey(id, display_name, username, avatar_color)')
+      .eq('to_user_id', userId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+    const rows = (data ?? []) as any[]
+    const invites: CreativeBoardItemInvite[] = []
+    for (const r of rows) {
+      let itemTitle = r.item_id
+      if (r.item_type === 'note') {
+        const { data: page } = await supabase.from('brain_pages').select('title').eq('id', r.item_id).maybeSingle()
+        itemTitle = page?.title ?? itemTitle
+      } else {
+        const { data: mood } = await supabase.from('creative_moodboard_items').select('title').eq('id', r.item_id).maybeSingle()
+        itemTitle = mood?.title ?? itemTitle
+      }
+      invites.push({
+        id: r.id,
+        itemType: r.item_type,
+        itemId: r.item_id,
+        itemTitle,
+        fromUserId: r.from_user_id,
+        toUserId: r.to_user_id,
+        status: r.status,
+        createdAt: r.created_at,
+        fromUser: Array.isArray(r.from_user) ? r.from_user[0] : r.from_user,
+      })
+    }
+    set({ incomingItemInvites: invites })
+  },
+
   acceptInvite: async (inviteId) => {
     const invite = get().incomingInvites.find((i) => i.id === inviteId)
     if (!invite) return null
@@ -223,9 +302,25 @@ export const useCreativeBoardStore = create<CreativeBoardState>()((set, get) => 
     return null
   },
 
+  acceptItemInvite: async (inviteId) => {
+    const { error } = await supabase
+      .from('creative_board_item_invites')
+      .update({ status: 'accepted' })
+      .eq('id', inviteId)
+    if (error) return error.message
+    set((s) => ({ incomingItemInvites: s.incomingItemInvites.filter((i) => i.id !== inviteId) }))
+    await get().fetchMoodItems()
+    return null
+  },
+
   declineInvite: async (inviteId) => {
     await supabase.from('creative_board_invites').update({ status: 'declined' }).eq('id', inviteId)
     set((s) => ({ incomingInvites: s.incomingInvites.filter((i) => i.id !== inviteId) }))
+  },
+
+  declineItemInvite: async (inviteId) => {
+    await supabase.from('creative_board_item_invites').update({ status: 'declined' }).eq('id', inviteId)
+    set((s) => ({ incomingItemInvites: s.incomingItemInvites.filter((i) => i.id !== inviteId) }))
   },
 
   fetchMembers: async () => {

@@ -115,9 +115,13 @@
     "meetingLinkPlaceholder": "https://… (optional)",
     "joinMeeting": "Beitreten",
     "descriptionPlaceholder": "Beschreibung (optional)",
-    "inviteColleagues": "Einladen",
-    "searchColleagues": "Kollegen suchen…",
+    "inviteColleagues": "Teilnehmer einladen",
+    "searchColleagues": "NOVAT-Nutzer suchen…",
     "wholeTeam": "Alle Kollegen",
+    "orgMembers": "Organisation",
+    "assignProject": "Projekt zuordnen",
+    "noProject": "Kein Projekt",
+    "invitedAttendees": "Eingeladen",
     "color": "Farbe",
     "colorLabelPlaceholder": "Bezeichnung eingeben…",
     "recurrence": {
@@ -132,7 +136,8 @@
     "save": "Speichern",
     "create": "Erstellen",
     "creating": "Wird erstellt…",
-    "createSeries": "Serie erstellen"
+    "createSeries": "Serie erstellen",
+    "exportPdf": "PDF exportieren"
   },
   "agenda": {
     "overviewLabel": "Tagesübersicht",

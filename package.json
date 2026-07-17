@@ -1,7 +1,7 @@
 {
   "name": "workorganizer",
   "private": true,
-  "version": "1.0.34",
+  "version": "1.0.35",
   "description": "NOVAT Work Organizer (formerly Mooncrew)",
   "author": "NOVAT",
   "type": "module",
@@ -68,6 +68,7 @@
     "framer-motion": "^12.42.0",
     "i18next": "^26.3.1",
     "i18next-browser-languagedetector": "^8.2.1",
+    "jspdf": "^4.2.1",
     "lucide-react": "^0.453.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

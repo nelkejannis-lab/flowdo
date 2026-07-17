@@ -4,6 +4,7 @@ import { de, enUS } from 'date-fns/locale'
 import { useTranslation } from 'react-i18next'
 import { Plus, Check, Clock, Calendar, CheckSquare, Square, Trash2, ArrowRight, GripVertical, ChevronDown, ListChecks } from 'lucide-react'
 import type { CalendarEntry, CalendarEvent, Task, CalendarEntryType } from '../../types'
+import CalendarEntryBoardBadge from './CalendarEntryBoardBadge'
 import { entryTypeIcon } from '../../utils/calendarEntry'
 import { useTasksStore } from '../../store/tasksStore'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
@@ -213,6 +214,7 @@ export default function DailyAgendaPanel({
                             {isEntry ? entryTypeIcon[item.type as CalendarEntryType] : '📅'}
                           </span>
                           <p className="font-semibold text-gray-800 dark:text-racing-100 truncate">{item.title}</p>
+                          {isEntry && <CalendarEntryBoardBadge board={item.board} className="flex-shrink-0" />}
                         </div>
                         <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-400">
                           <Clock size={11} />

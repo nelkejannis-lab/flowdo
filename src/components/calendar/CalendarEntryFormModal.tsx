@@ -10,11 +10,14 @@ import { useFriendsStore } from '../../store/friendsStore'
 import { useAuthStore } from '../../store/authStore'
 import { useSettingsStore } from '../../store/settingsStore'
 import { useTeamsStore } from '../../store/teamsStore'
+import { useBoardsStore } from '../../store/boardsStore'
+import { useOrganizationStore } from '../../store/organizationStore'
 import { isSupabaseConfigured } from '../../lib/supabase'
 import type { CalendarEntry, CalendarEntryType, CalendarEvent } from '../../types'
 import { parseCalendarEntryId, seriesTag } from '../../utils/calendarEntry'
 import { createId } from '../../utils/id'
 import { todayISO } from '../../utils/date'
+import { exportCalendarEntryAsPdf } from '../../utils/pdfExport'
 
 type Kind = 'event' | CalendarEntryType
 
@@ -28,6 +31,7 @@ interface CalendarEntryFormModalProps {
   defaultTitle?: string
   defaultDescription?: string
   defaultInvitedUserIds?: string[]
+  defaultBoardId?: string
   onClose: () => void
 }
 
@@ -63,9 +67,10 @@ export default function CalendarEntryFormModal({
   defaultTitle,
   defaultDescription,
   defaultInvitedUserIds,
+  defaultBoardId,
   onClose,
 }: CalendarEntryFormModalProps) {
-  const { t } = useTranslation('calendar')
+  const { t, i18n } = useTranslation('calendar')
   const typeOptions: { kind: Kind; label: string; icon: typeof CalendarClock }[] = [
     { kind: 'termin', label: t('form.types.termin'), icon: typeIcons.termin },
     { kind: 'reise', label: t('form.types.reise'), icon: typeIcons.reise },
@@ -83,6 +88,10 @@ export default function CalendarEntryFormModal({
   const fetchFriends = useFriendsStore((s) => s.fetchAll)
   const teams = useTeamsStore((s) => s.teams)
   const fetchTeams = useTeamsStore((s) => s.fetch)
+  const boards = useBoardsStore((s) => s.boards)
+  const fetchBoards = useBoardsStore((s) => s.fetchBoards)
+  const orgMembers = useOrganizationStore((s) => s.members)
+  const fetchOrganization = useOrganizationStore((s) => s.fetch)
   const currentUserId = useAuthStore((s) => s.user?.id)
   const colorLabels = useSettingsStore((s) => s.colorLabels ?? {})
   const setColorLabel = useSettingsStore((s) => s.setColorLabel)
@@ -98,11 +107,10 @@ export default function CalendarEntryFormModal({
   const [endTime, setEndTime] = useState(entry?.endTime ?? defaultEndTime ?? '')
   const [description, setDescription] = useState(editing?.description ?? defaultDescription ?? '')
   const [color, setColor] = useState(editing?.color ?? defaultColors.termin)
-  const [invitedUserIds, setInvitedUserIds] = useState<string[]>(() => {
-    const existing = entry?.invitees.map((i) => i.id) ?? defaultInvitedUserIds ?? []
-    if (!entry && currentUserId && !existing.includes(currentUserId)) return [currentUserId, ...existing]
-    return existing
-  })
+  const [invitedUserIds, setInvitedUserIds] = useState<string[]>(
+    () => entry?.invitees.map((i) => i.id) ?? defaultInvitedUserIds ?? [],
+  )
+  const [boardId, setBoardId] = useState<string>(entry?.boardId ?? defaultBoardId ?? '')
   const [recurrenceWeeks, setRecurrenceWeeks] = useState<RecurrenceWeeks>(0)
   const [entryRecurrence, setEntryRecurrence] = useState<CalendarEntry['recurrence']>(entry?.recurrence)
   const [meetingLink, setMeetingLink] = useState(entry?.meetingLink ?? '')
@@ -112,8 +120,15 @@ export default function CalendarEntryFormModal({
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (isSupabaseConfigured && !editing) { fetchFriends(); fetchTeams() }
-  }, [fetchFriends, fetchTeams, editing])
+    if (isSupabaseConfigured) {
+      fetchBoards()
+      if (!editing) {
+        fetchFriends()
+        fetchTeams()
+        fetchOrganization()
+      }
+    }
+  }, [fetchFriends, fetchTeams, fetchBoards, fetchOrganization, editing])
 
   useEffect(() => {
     if (!editing && kind !== 'event') {
@@ -125,7 +140,32 @@ export default function CalendarEntryFormModal({
   }, [kind, editing])
 
   function toggleInvitee(userId: string) {
+    if (userId === currentUserId) return
     setInvitedUserIds((ids) => (ids.includes(userId) ? ids.filter((id) => id !== userId) : [...ids, userId]))
+  }
+
+  function inviteeLabel(userId: string): string {
+    const fromEntry = entry?.invitees.find((i) => i.id === userId)
+    if (fromEntry) return fromEntry.display_name
+    const fromFriend = friends.find((f) => f.profile.id === userId)?.profile
+    if (fromFriend) return fromFriend.display_name
+    const fromOrg = orgMembers.find((m) => m.userId === userId)
+    if (fromOrg) return fromOrg.profile.display_name
+    const fromSearch = colleagueResults.find((p) => p.id === userId)
+    if (fromSearch) return fromSearch.display_name
+    return userId
+  }
+
+  function inviteeColor(userId: string): string {
+    const fromEntry = entry?.invitees.find((i) => i.id === userId)
+    if (fromEntry) return fromEntry.avatar_color
+    const fromFriend = friends.find((f) => f.profile.id === userId)?.profile
+    if (fromFriend) return fromFriend.avatar_color
+    const fromOrg = orgMembers.find((m) => m.userId === userId)
+    if (fromOrg) return fromOrg.profile.avatar_color
+    const fromSearch = colleagueResults.find((p) => p.id === userId)
+    if (fromSearch) return fromSearch.avatar_color
+    return '#888'
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -167,7 +207,8 @@ export default function CalendarEntryFormModal({
       startTime: startTime || undefined,
       endTime: endTime || undefined,
       color,
-      invitedUserIds,
+      invitedUserIds: invitedUserIds.filter((id) => id !== currentUserId),
+      boardId: boardId || undefined,
       recurrence: entryRecurrence,
       meetingLink: meetingLink.trim() || undefined,
     }
@@ -222,6 +263,34 @@ export default function CalendarEntryFormModal({
   }
 
   const showRecurrence = !editing && (kind === 'termin' || kind === 'reise')
+
+  function buildExportEntry(): CalendarEntry {
+    const normalizedEndDate = endDate && endDate > date ? endDate : undefined
+    const selectedBoard = boardId ? boards.find((b) => b.id === boardId) : undefined
+    return {
+      id: entry?.id ?? '',
+      ownerId: entry?.ownerId ?? currentUserId ?? '',
+      type: kind as CalendarEntryType,
+      title: title.trim() || t('form.titleEdit'),
+      description: description.trim() || undefined,
+      date,
+      endDate: normalizedEndDate,
+      startTime: startTime || undefined,
+      endTime: endTime || undefined,
+      color,
+      invitees: invitedUserIds.map((id) => ({
+        id,
+        username: '',
+        display_name: inviteeLabel(id),
+        avatar_color: inviteeColor(id),
+      })),
+      boardId: boardId || entry?.boardId,
+      board: entry?.board ?? (selectedBoard ? { id: selectedBoard.id, title: selectedBoard.title, color: selectedBoard.color } : undefined),
+      createdAt: entry?.createdAt ?? new Date().toISOString(),
+      recurrence: entryRecurrence,
+      meetingLink: meetingLink.trim() || undefined,
+    }
+  }
 
   return (
     <Modal title={editing ? t('form.titleEdit') : t('form.titleAdd')} onClose={onClose}>
@@ -378,11 +447,194 @@ export default function CalendarEntryFormModal({
           className="rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
         />
 
-        {kind !== 'event' && isSupabaseConfigured && (friends.length > 0 || teams.length > 0) && (
+        {kind === 'termin' && isSupabaseConfigured && (
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.assignProject')}</label>
+            <select
+              value={boardId}
+              onChange={(e) => setBoardId(e.target.value)}
+              className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+            >
+              <option value="">{t('form.noProject')}</option>
+              {boards.map((b) => (
+                <option key={b.id} value={b.id}>{b.title}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {kind === 'termin' && isSupabaseConfigured && (
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.inviteColleagues')}</label>
+            {invitedUserIds.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                {invitedUserIds.map((userId) => (
+                  <button
+                    key={userId}
+                    type="button"
+                    onClick={() => toggleInvitee(userId)}
+                    className="inline-flex items-center gap-1 rounded-full border border-accent bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent"
+                  >
+                    <span
+                      className="flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-white"
+                      style={{ backgroundColor: inviteeColor(userId) }}
+                    >
+                      {inviteeLabel(userId)[0]?.toUpperCase()}
+                    </span>
+                    {inviteeLabel(userId)}
+                    <span className="text-accent/70">×</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="flex flex-wrap gap-2">
+              {friends.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const allIds = friends.map((f) => f.profile.id).filter((id) => id !== currentUserId)
+                    const allSelected = allIds.every((id) => invitedUserIds.includes(id))
+                    setInvitedUserIds(allSelected ? [] : allIds)
+                  }}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                    friends.filter((f) => f.profile.id !== currentUserId).every((f) => invitedUserIds.includes(f.profile.id))
+                      ? 'border-accent bg-accent/10 text-accent'
+                      : 'border-gray-200 text-gray-500 hover:border-gray-300 dark:border-racing-700 dark:text-racing-200'
+                  }`}
+                >
+                  {t('form.wholeTeam')}
+                </button>
+              )}
+              {orgMembers.filter((m) => m.userId !== currentUserId).length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const orgIds = orgMembers.map((m) => m.userId).filter((id) => id !== currentUserId)
+                    const allSelected = orgIds.every((id) => invitedUserIds.includes(id))
+                    setInvitedUserIds(allSelected ? [] : orgIds)
+                  }}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                    orgMembers.filter((m) => m.userId !== currentUserId).every((m) => invitedUserIds.includes(m.userId))
+                      ? 'border-accent bg-accent/10 text-accent'
+                      : 'border-gray-200 text-gray-500 hover:border-gray-300 dark:border-racing-700 dark:text-racing-200'
+                  }`}
+                >
+                  {t('form.orgMembers')}
+                </button>
+              )}
+              {teams.map((team) => {
+                const memberIds = team.members.map((m) => m.id).filter((id) => id !== currentUserId)
+                const allIn = memberIds.length > 0 && memberIds.every((id) => invitedUserIds.includes(id))
+                return (
+                  <button
+                    type="button"
+                    key={team.id}
+                    onClick={() => {
+                      if (allIn) {
+                        setInvitedUserIds((ids) => ids.filter((id) => !memberIds.includes(id)))
+                      } else {
+                        setInvitedUserIds((ids) => [...new Set([...ids, ...memberIds])])
+                      }
+                    }}
+                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                      allIn
+                        ? 'border-accent bg-accent/10 text-accent'
+                        : 'border-gray-200 text-gray-500 hover:border-gray-300 dark:border-racing-700 dark:text-racing-200'
+                    }`}
+                  >
+                    👥 {team.name}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="mt-2">
+              <input
+                value={colleagueSearch}
+                onChange={async (e) => {
+                  const q = e.target.value
+                  setColleagueSearch(q)
+                  if (q.length >= 2) {
+                    const results = await searchAllProfiles(q)
+                    setColleagueResults(
+                      results
+                        .filter((p) => p.id !== currentUserId)
+                        .map((p) => ({ id: p.id, display_name: p.display_name, avatar_color: p.avatar_color })),
+                    )
+                  } else setColleagueResults([])
+                }}
+                placeholder={t('form.searchColleagues')}
+                className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-xs dark:border-racing-700"
+              />
+              {colleagueResults.length > 0 && (
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {colleagueResults.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => toggleInvitee(p.id)}
+                      className={`rounded-full border px-2 py-0.5 text-xs ${
+                        invitedUserIds.includes(p.id) ? 'border-accent bg-accent/10 text-accent' : 'border-gray-200 text-gray-500'
+                      }`}
+                    >
+                      {p.display_name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {orgMembers.filter((m) => m.userId !== currentUserId).length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {orgMembers
+                  .filter((m) => m.userId !== currentUserId)
+                  .map((m) => {
+                    const active = invitedUserIds.includes(m.userId)
+                    return (
+                      <button
+                        type="button"
+                        key={m.userId}
+                        onClick={() => toggleInvitee(m.userId)}
+                        className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                          active
+                            ? 'border-accent bg-accent/10 text-accent'
+                            : 'border-gray-200 text-gray-500 hover:border-gray-300 dark:border-racing-700 dark:text-racing-200'
+                        }`}
+                      >
+                        {m.profile.display_name}
+                      </button>
+                    )
+                  })}
+              </div>
+            )}
+            {friends.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {friends
+                  .filter((f) => f.profile.id !== currentUserId)
+                  .map((f) => {
+                    const active = invitedUserIds.includes(f.profile.id)
+                    return (
+                      <button
+                        type="button"
+                        key={f.profile.id}
+                        onClick={() => toggleInvitee(f.profile.id)}
+                        className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                          active
+                            ? 'border-accent bg-accent/10 text-accent'
+                            : 'border-gray-200 text-gray-500 hover:border-gray-300 dark:border-racing-700 dark:text-racing-200'
+                        }`}
+                      >
+                        {f.profile.display_name}
+                      </button>
+                    )
+                  })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {(kind === 'reise' || kind === 'urlaub') && isSupabaseConfigured && (friends.length > 0 || teams.length > 0) && (
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-500">{t('form.inviteColleagues')}</label>
             <div className="flex flex-wrap gap-2">
-              {/* Ganzes Team */}
               {friends.length > 0 && (
                 <button
                   type="button"
@@ -400,7 +652,6 @@ export default function CalendarEntryFormModal({
                   {t('form.wholeTeam')}
                 </button>
               )}
-              {/* Teams als Gruppe */}
               {teams.map((team) => {
                 const memberIds = team.members.map((m) => m.id)
                 const allIn = memberIds.length > 0 && memberIds.every((id) => invitedUserIds.includes(id))
@@ -426,7 +677,6 @@ export default function CalendarEntryFormModal({
                 )
               })}
             </div>
-            {/* Kollegen-Suche (alle Nutzer) */}
             <div className="mt-2">
               <input
                 value={colleagueSearch}
@@ -452,7 +702,6 @@ export default function CalendarEntryFormModal({
                 </div>
               )}
             </div>
-            {/* Einzelne Kollegen */}
             {friends.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-2">
                 {friends.map((f) => {
@@ -537,19 +786,31 @@ export default function CalendarEntryFormModal({
         {error && <p className="text-sm text-red-500">{error}</p>}
 
         <div className="mt-2 flex items-center justify-between">
-          {editing && isOwner ? (
-            <button
-              type="button"
-              onClick={handleDelete}
-              className="text-sm font-medium text-red-500 hover:underline"
-            >
-              {t('form.delete')}
-            </button>
-          ) : editing && !isOwner ? (
-            <span className="text-xs text-gray-400">{t('ownerOnly')}</span>
-          ) : (
-            <span />
-          )}
+          <div className="flex items-center gap-3">
+            {editing && isOwner ? (
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="text-sm font-medium text-red-500 hover:underline"
+              >
+                {t('form.delete')}
+              </button>
+            ) : editing && !isOwner ? (
+              <span className="text-xs text-gray-400">{t('ownerOnly')}</span>
+            ) : null}
+            {entry && kind !== 'event' && (
+              <button
+                type="button"
+                onClick={() => {
+                  const projectName = entry.board?.title ?? (boardId ? boards.find((b) => b.id === boardId)?.title : undefined)
+                  void exportCalendarEntryAsPdf(buildExportEntry(), i18n.language, projectName)
+                }}
+                className="text-sm font-medium text-accent hover:underline"
+              >
+                {t('form.exportPdf')}
+              </button>
+            )}
+          </div>
           <button
             type="submit"
             disabled={saving || (!!editing && !isOwner)}

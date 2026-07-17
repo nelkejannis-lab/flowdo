@@ -13,6 +13,7 @@ import { de, enUS } from 'date-fns/locale'
 import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import type { CalendarEntry, CalendarEvent, Task } from '../../types'
+import CalendarEntryBoardBadge from './CalendarEntryBoardBadge'
 import { toISODate } from '../../utils/date'
 import { eachEntryDate, eachEventDate } from '../../utils/events'
 import { entryTypeIcon } from '../../utils/calendarEntry'
@@ -87,7 +88,9 @@ export default function MonthView({ currentDate, selectedDate, tasks, events, en
       endTime: draggingEntry.endTime,
       color: draggingEntry.color,
       invitedUserIds: draggingEntry.invitees.map((i) => i.id),
+      boardId: draggingEntry.boardId,
       recurrence: draggingEntry.recurrence,
+      meetingLink: draggingEntry.meetingLink,
     })
     setDraggingEntry(null)
     setDragOverDate(null)
@@ -175,6 +178,7 @@ export default function MonthView({ currentDate, selectedDate, tasks, events, en
                       style={{ backgroundColor: entry.color }}
                     >
                       <span className="truncate">{entryTypeIcon[entry.type]} {entry.title}</span>
+                      {entry.board && <CalendarEntryBoardBadge board={entry.board} className="flex-shrink-0 scale-90" />}
                       {entry.invitees.length > 0 && (
                         <span className="flex flex-shrink-0 -space-x-1">
                           {entry.invitees.slice(0, 3).map((inv) => (

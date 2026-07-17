@@ -12,6 +12,7 @@ import { translateMeeting } from '../lib/aiService'
 import { useTasksStore } from '../store/tasksStore'
 import TaskFormModal from '../components/tasks/TaskFormModal'
 import { countWords, copyMeetingMarkdown, downloadMeetingMarkdown } from '../utils/meetingExport'
+import { exportMeetingAsPdf } from '../utils/pdfExport'
 
 type MeetingSort = 'date-desc' | 'date-asc' | 'title'
 
@@ -281,6 +282,12 @@ export default function MeetingsPage() {
                   className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1 text-xs font-semibold text-gray-600 hover:border-accent hover:text-accent dark:border-racing-700 dark:text-gray-300"
                 >
                   <Download size={12} /> {t('downloadMarkdown')}
+                </button>
+                <button
+                  onClick={() => void exportMeetingAsPdf(selectedMeeting, i18n.language)}
+                  className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1 text-xs font-semibold text-gray-600 hover:border-accent hover:text-accent dark:border-racing-700 dark:text-gray-300"
+                >
+                  <Download size={12} /> {t('exportPdf')}
                 </button>
                 <button
                   onClick={() => void handleShareLink()}

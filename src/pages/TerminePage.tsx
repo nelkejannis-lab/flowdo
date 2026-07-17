@@ -8,6 +8,7 @@ import { isSupabaseConfigured } from '../lib/supabase'
 import { entryTypeIcon, entryTypeLabel } from '../utils/calendarEntry'
 import { todayISO } from '../utils/date'
 import CalendarEntryFormModal from '../components/calendar/CalendarEntryFormModal'
+import CalendarEntryBoardBadge from '../components/calendar/CalendarEntryBoardBadge'
 import type { CalendarEntry } from '../types'
 
 type Filter = 'upcoming' | 'past' | 'all'
@@ -92,7 +93,15 @@ export default function TerminePage() {
             {(entry.startTime || entry.endTime) && (
               <> · {entry.startTime ?? ''}{entry.endTime ? ` – ${entry.endTime}` : ''}</>
             )}
+            {entry.invitees.length > 0 && (
+              <> · {entry.invitees.map((i) => i.display_name).join(', ')}</>
+            )}
           </p>
+          {entry.board && (
+            <div className="mt-1">
+              <CalendarEntryBoardBadge board={entry.board} />
+            </div>
+          )}
         </div>
         {isToday && (
           <span className="flex-shrink-0 rounded-full bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent">
