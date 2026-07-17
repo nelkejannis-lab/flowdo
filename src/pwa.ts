@@ -12,6 +12,9 @@ export function registerPwaUpdates() {
 
   const updateSW = registerSW({
     immediate: true,
+    onRegisterError(error) {
+      console.warn('[NOVAT] Service worker registration failed:', error)
+    },
     onNeedRefresh() {
       const t = i18n.getFixedT(null, 'layout')
       useToastStore.getState().show({

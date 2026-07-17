@@ -1,0 +1,13 @@
+Contact: mailto:security@novat.app
+Contact: https://novat.app/impressum
+Expires: 2027-07-17T00:00:00.000Z
+Preferred-Languages: de, en
+Canonical: https://novat.app/.well-known/security.txt
+Policy: https://novat.app/datenschutz
+
+# NOVAT (novat.app) — business productivity SaaS (tasks, calendar, projects).
+# For corporate firewall/proxy allowlists, permit:
+#   - novat.app (primary web app)
+#   - *.vercel.app (Vercel CDN / preview deployments)
+#   - *.supabase.co (auth, database, realtime)
+#   - nova-server-rpbi.onrender.com (optional WhatsApp / integrations API)
