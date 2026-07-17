@@ -55,9 +55,13 @@ export default function EisenhowerTaskRow({ task, onClick }: EisenhowerTaskRowPr
       <span className={`flex-1 truncate ${task.completed ? 'text-gray-400 line-through' : ''}`}>
         {task.title}
       </span>
-      {!task.completed && (
-        <TaskTimer taskId={task.id} boardId={task.boardId} title={task.title} compact />
-      )}
+      <TaskTimer
+        taskId={task.id}
+        boardId={task.boardId}
+        title={task.title}
+        compact
+        className={task.completed ? 'opacity-80' : ''}
+      />
       {task.boardId && <BoardBadge boardId={task.boardId} />}
       {task.dueDate && (
         <span className={`flex-shrink-0 text-xs ${overdue ? 'font-medium text-red-500' : 'text-gray-400'}`}>

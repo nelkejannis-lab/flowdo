@@ -261,9 +261,7 @@ export default function TodayHero({
                           )}
                         </span>
                       </button>
-                      {!tk.completed && (
-                        <TaskTimer taskId={tk.id} boardId={tk.boardId} title={tk.title} compact />
-                      )}
+                      <TaskTimer taskId={tk.id} boardId={tk.boardId} title={tk.title} compact />
                     </div>
                   </li>
                 )

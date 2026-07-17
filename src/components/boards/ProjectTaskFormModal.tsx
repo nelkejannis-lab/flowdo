@@ -207,18 +207,20 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
             </button>
           </div>
 
-          {!currentTask.completed && (
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3 dark:border-emerald-900/40 dark:bg-emerald-950/20">
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-emerald-700/80 dark:text-emerald-300/80">
-                {t('tasks:item.track')}
-              </p>
-              <TaskTimer
-                taskId={currentTask.id}
-                boardId={currentTask.boardId ?? board.id}
-                title={currentTask.title}
-              />
-            </div>
-          )}
+          <div
+            className={`rounded-xl border border-emerald-100 bg-emerald-50/60 p-3 dark:border-emerald-900/40 dark:bg-emerald-950/20 ${
+              currentTask.completed ? 'opacity-90' : ''
+            }`}
+          >
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-emerald-700/80 dark:text-emerald-300/80">
+              {t('tasks:item.track')}
+            </p>
+            <TaskTimer
+              taskId={currentTask.id}
+              boardId={currentTask.boardId ?? board.id}
+              title={currentTask.title}
+            />
+          </div>
 
           {currentTask.description ? (
             <p className="text-sm text-gray-600 dark:text-racing-300 bg-gray-50 dark:bg-racing-950 p-3 rounded-xl whitespace-pre-wrap break-words border border-gray-100 dark:border-racing-850">

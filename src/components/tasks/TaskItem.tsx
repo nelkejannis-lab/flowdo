@@ -119,14 +119,13 @@ export default function TaskItem({ task, onClick, showBoard = true, priorityRank
               </span>
             )}
             <PriorityBadge priority={task.priority} />
-            {!task.completed && (
-              <TaskTimer
-                taskId={task.id}
-                boardId={task.boardId}
-                title={task.title}
-                compact
-              />
-            )}
+            <TaskTimer
+              taskId={task.id}
+              boardId={task.boardId}
+              title={task.title}
+              compact
+              className={task.completed ? 'opacity-80' : ''}
+            />
             {showBoard && task.boardId && <BoardBadge boardId={task.boardId} />}
             {task.tags.map((tag) => (
               <span key={tag} className="hidden sm:inline-block rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:bg-racing-800 dark:text-racing-200">

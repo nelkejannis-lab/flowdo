@@ -50,11 +50,9 @@ export default function KanbanCard({ task, onClick }: KanbanCardProps) {
         >
           {task.completed && <Check size={10} />}
         </button>
-        {!task.completed && (
-          <span className="mt-0.5">
-            <TaskTimer taskId={task.id} boardId={task.boardId} title={task.title} compact />
-          </span>
-        )}
+        <span className={`mt-0.5 ${task.completed ? 'opacity-80' : ''}`}>
+          <TaskTimer taskId={task.id} boardId={task.boardId} title={task.title} compact />
+        </span>
         <span className={`flex-1 font-medium ${task.completed ? 'text-gray-400 line-through' : ''}`}>
           {task.title}
         </span>

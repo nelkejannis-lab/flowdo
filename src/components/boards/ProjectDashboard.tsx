@@ -663,9 +663,13 @@ export default function ProjectDashboard({
                         <span className="text-xs font-mono font-semibold tabular-nums">{formatHM(mins)}</span>
                       </td>
                       <td className="px-4 py-2.5">
-                        {!tk.completed && (
-                          <TaskTimer taskId={tk.id} boardId={board.id} title={tk.title} compact />
-                        )}
+                        <TaskTimer
+                          taskId={tk.id}
+                          boardId={board.id}
+                          title={tk.title}
+                          compact
+                          className={tk.completed ? 'opacity-80' : ''}
+                        />
                       </td>
                     </tr>
                   )
