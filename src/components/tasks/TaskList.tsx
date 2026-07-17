@@ -152,7 +152,7 @@ export default function TaskList({ tasks, groupByDate = false, emptyMessage, fla
     )
   }
 
-  const visibleActive = activeTasks.slice(0, visibleCount)
+  const visibleActive = useManualOrder ? activeTasks : activeTasks.slice(0, visibleCount)
 
   return (
     <div className="flex flex-col gap-4">
@@ -185,7 +185,7 @@ export default function TaskList({ tasks, groupByDate = false, emptyMessage, fla
         </DndContext>
       )}
 
-      {!groupByDate && activeTasks.length > visibleCount && (
+      {!groupByDate && !useManualOrder && activeTasks.length > visibleCount && (
         <button
           onClick={() => setVisibleCount((c) => c + 20)}
           className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-racing-200"

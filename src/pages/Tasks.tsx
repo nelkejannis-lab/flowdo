@@ -131,7 +131,7 @@ export default function TasksPage() {
     filtered = allTasks.filter((t) => !t.completed && t.someday)
     title = t(titleKeys.someday)
   } else if (smartList === 'priority') {
-    filtered = allTasks.filter((t) => !t.completed && !t.boardId)
+    filtered = allTasks.filter((t) => !t.completed)
     title = t(titleKeys.priority)
   } else if (smartList === 'tracked') {
     title = t(titleKeys.tracked)
@@ -191,7 +191,7 @@ export default function TasksPage() {
     }
   }, [filterForPills, selectedProject])
 
-  let displayTasks = filtered.filter((t) => !isSnoozed(t))
+  let displayTasks = smartList === 'priority' ? filtered : filtered.filter((t) => !isSnoozed(t))
   if (searchQuery.trim()) {
     const q = searchQuery.toLowerCase().trim()
     displayTasks = displayTasks.filter(
