@@ -8,7 +8,9 @@
     "period": {
       "today": "Today",
       "week": "Week",
-      "month": "Month"
+      "month": "Month",
+      "months": "Months",
+      "custom": "Range"
     },
     "callback": {
       "accessDenied": "Instagram denied access: {{reason}}",

@@ -9,6 +9,7 @@ import { useSocialStore } from '../store/socialStore'
 import { supabase } from '../lib/supabase'
 import type { SocialPost } from '../types'
 import { formatFriendlyDateTime } from '../utils/date'
+import { buildPostInsight, fmtCompact, fmtPct } from '../lib/socialInsights'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -130,136 +131,106 @@ function KpiCard({ label, value, sub, trend, icon, color = '#6366f1', metricKey,
 // ── Post Detail Modal ─────────────────────────────────────────────────────────
 
 function PostModal({ post, followers, onClose }: { post: SocialPost; followers: number; onClose: () => void }) {
-  const engagement = followers > 0 && post.likeCount !== undefined && post.commentsCount !== undefined
-    ? ((post.likeCount + post.commentsCount) / followers) * 100
-    : undefined
-
-  const { score, grade, color: scoreColor, tips: scoreTips } = calcPostScore(post, followers)
-  const captionStats = analyzeCaptionStyle(post.caption ?? '')
-  const typeLabel = post.mediaType === 'VIDEO' ? 'Reel/Video' : post.mediaType === 'CAROUSEL_ALBUM' ? 'Karussell' : 'Bild'
-  const typeColor = post.mediaType === 'VIDEO' ? 'bg-purple-100 text-purple-700' : post.mediaType === 'CAROUSEL_ALBUM' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+  const insight = buildPostInsight(post, followers)
+  const typeLabel = insight.formatLabel
+  const typeColor =
+    post.mediaType === 'VIDEO'
+      ? 'bg-accent/10 text-accent'
+      : post.mediaType === 'CAROUSEL_ALBUM'
+        ? 'bg-gray-100 text-gray-600 dark:bg-racing-800 dark:text-racing-200'
+        : 'bg-gray-100 text-gray-600 dark:bg-racing-800 dark:text-racing-200'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-racing-900 max-h-[90vh]">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3 dark:border-racing-800">
-          <div className="flex items-center gap-2">
-            <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${typeColor}`}>{typeLabel}</span>
-            <span className="text-xs text-gray-400">{formatFriendlyDateTime(post.postedAt)}</span>
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 flex w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-racing-900 max-h-[90vh]">
+        <div className="flex items-start gap-3 border-b border-gray-100 px-5 py-4 dark:border-racing-800">
+          {(post.thumbnailUrl || post.mediaUrl) && (
+            <img
+              src={post.thumbnailUrl ?? post.mediaUrl}
+              alt=""
+              className="h-14 w-14 flex-shrink-0 rounded-xl object-cover"
+            />
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`rounded-md px-2 py-0.5 text-[11px] font-semibold ${typeColor}`}>{typeLabel}</span>
+              <span className="text-[11px] text-gray-400">{formatFriendlyDateTime(post.postedAt)}</span>
+            </div>
+            <p className="mt-1 line-clamp-2 text-sm font-medium text-gray-900 dark:text-white">
+              {post.caption?.slice(0, 120) || 'Ohne Caption'}
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            {post.permalink && (
-              <a href={post.permalink} target="_blank" rel="noreferrer"
-                className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium hover:bg-gray-50 dark:border-racing-700 dark:hover:bg-racing-800">
-                <ExternalLink size={12} /> Auf Instagram
-              </a>
-            )}
-            <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-racing-800"><X size={18} /></button>
-          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-racing-800"
+          >
+            <X size={18} />
+          </button>
         </div>
 
-        <div className="overflow-y-auto">
-          <div className="flex flex-col sm:flex-row">
-            {/* Image */}
-            {(post.thumbnailUrl || post.mediaUrl) && (
-              <div className="relative flex-shrink-0 bg-black sm:w-56">
-                <img src={post.thumbnailUrl ?? post.mediaUrl} alt="" className="h-56 w-full object-cover sm:h-full" />
-                {post.mediaType === 'VIDEO' && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Film size={40} className="text-white/80 drop-shadow" />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Stats */}
-            <div className="flex flex-1 flex-col gap-4 p-5">
-              {/* Post Score */}
-              <div className="flex items-center gap-3 rounded-xl p-3" style={{ background: `${scoreColor}15`, border: `1px solid ${scoreColor}40` }}>
-                <div className="relative h-14 w-14 flex-shrink-0">
-                  <svg viewBox="0 0 36 36" className="h-14 w-14 -rotate-90">
-                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="currentColor" strokeOpacity="0.1" strokeWidth="3" />
-                    <circle cx="18" cy="18" r="15.9" fill="none" stroke={scoreColor} strokeWidth="3"
-                      strokeDasharray={`${score} 100`} strokeLinecap="round" />
-                  </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-sm font-bold" style={{ color: scoreColor }}>{score}</span>
-                </div>
-                <div>
-                  <p className="font-bold" style={{ color: scoreColor }}>{grade}</p>
-                  <p className="text-xs text-gray-500">Post-Performance Score</p>
-                </div>
-              </div>
-
-              {/* Main metrics */}
-              <div className="grid grid-cols-2 gap-2">
-                <Stat icon={<Heart size={14} className="text-red-400" />} label="Likes" value={fmt(post.likeCount)} />
-                <Stat icon={<MessageCircle size={14} className="text-blue-400" />} label="Kommentare" value={fmt(post.commentsCount)} />
-                <Stat icon={<TrendingUp size={14} className="text-green-400" />} label="Reichweite" value={fmt(post.reach)} />
-                <Stat icon={<Bookmark size={14} className="text-yellow-500" />} label="Gespeichert" value={fmt(post.saved)} />
-                <Stat icon={<Share2 size={14} className="text-purple-400" />} label="Geteilt" value={fmt(post.shares)} />
-                <Stat icon={<Heart size={14} className="text-pink-400" />} label="Interaktionen" value={fmt(post.totalInteractions)} />
-              </div>
-
-              {/* Rates */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-xl bg-indigo-50 p-3 dark:bg-indigo-900/20">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-indigo-500">Engagement Rate</p>
-                  <p className="text-xl font-bold text-indigo-700 dark:text-indigo-300">{pct(engagement)}</p>
-                  <p className="text-[10px] text-indigo-400">Likes+Komm. / Follower</p>
-                </div>
-                {post.reach !== undefined && followers > 0 && (
-                  <div className="rounded-xl bg-green-50 p-3 dark:bg-green-900/20">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-green-500">Reichweiten-Rate</p>
-                    <p className="text-xl font-bold text-green-700 dark:text-green-300">{pct((post.reach / followers) * 100)}</p>
-                    <p className="text-[10px] text-green-400">Reichweite / Follower</p>
-                  </div>
-                )}
-              </div>
+        <div className="space-y-4 overflow-y-auto px-5 py-4">
+          <div className="grid grid-cols-3 gap-2">
+            <div className="rounded-xl bg-gray-50 px-3 py-2.5 dark:bg-racing-800/80">
+              <p className="text-[10px] text-gray-400">Likes</p>
+              <p className="text-sm font-semibold tabular-nums">{fmtCompact(post.likeCount)}</p>
+            </div>
+            <div className="rounded-xl bg-gray-50 px-3 py-2.5 dark:bg-racing-800/80">
+              <p className="text-[10px] text-gray-400">Kommentare</p>
+              <p className="text-sm font-semibold tabular-nums">{fmtCompact(post.commentsCount)}</p>
+            </div>
+            <div className="rounded-xl bg-gray-50 px-3 py-2.5 dark:bg-racing-800/80">
+              <p className="text-[10px] text-gray-400">Saves</p>
+              <p className="text-sm font-semibold tabular-nums">{fmtCompact(post.saved)}</p>
+            </div>
+            <div className="rounded-xl bg-gray-50 px-3 py-2.5 dark:bg-racing-800/80">
+              <p className="text-[10px] text-gray-400">Shares</p>
+              <p className="text-sm font-semibold tabular-nums">{fmtCompact(post.shares)}</p>
+            </div>
+            <div className="rounded-xl bg-gray-50 px-3 py-2.5 dark:bg-racing-800/80">
+              <p className="text-[10px] text-gray-400">Reichweite</p>
+              <p className="text-sm font-semibold tabular-nums">{fmtCompact(post.reach)}</p>
+            </div>
+            <div className="rounded-xl bg-gray-50 px-3 py-2.5 dark:bg-racing-800/80">
+              <p className="text-[10px] text-gray-400">Engagement</p>
+              <p className="text-sm font-semibold tabular-nums">{fmtPct(insight.engagementRate)}</p>
             </div>
           </div>
 
-          {/* Caption + Tips */}
-          <div className="border-t border-gray-100 p-5 dark:border-racing-800 space-y-4">
-            {/* Caption */}
-            {post.caption && (
-              <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">Caption-Analyse</p>
-                <div className="grid grid-cols-3 gap-2 mb-3">
-                  {captionStats.map((s, i) => (
-                    <div key={i} className="rounded-lg bg-gray-50 p-2 text-center dark:bg-racing-800">
-                      <p className="text-[10px] text-gray-400">{s.label}</p>
-                      <p className="text-sm font-bold" style={{ color: s.color }}>{s.value}</p>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs leading-relaxed text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-racing-800 rounded-xl p-3 line-clamp-4">{post.caption}</p>
-              </div>
-            )}
-
-            {/* Improvement tips */}
-            {scoreTips.length > 0 && (
-              <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-amber-500">💡 Verbesserungstipps für diesen Post</p>
-                <ul className="space-y-1.5">
-                  {scoreTips.map((tip, i) => (
-                    <li key={i} className="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
-                      <span className="mt-0.5 flex-shrink-0">→</span>{tip}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Caption formula tip */}
-            <div className="rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 p-3 dark:from-indigo-900/20 dark:to-purple-900/20">
-              <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-1">📖 Perfekte Caption-Formel</p>
-              <p className="text-xs text-indigo-700 dark:text-indigo-300 leading-relaxed">
-                <strong>Hook</strong> (1 starker Satz) → <strong>Wert</strong> (2–4 Sätze mit echtem Mehrwert) → <strong>Frage/CTA</strong> ("Was denkst du?" oder "Link in Bio") → <strong>Hashtags</strong> (5–10 nischige)
-              </p>
+          {insight.strengths.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {insight.strengths.map((s) => (
+                <span key={s} className="rounded-md bg-accent/10 px-2 py-0.5 text-[11px] font-medium text-accent">
+                  {s}
+                </span>
+              ))}
             </div>
+          )}
+
+          <div className="flex gap-2.5">
+            <span
+              className={`mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full ${
+                insight.tone === 'action'
+                  ? 'bg-amber-500'
+                  : insight.tone === 'positive'
+                    ? 'bg-emerald-500'
+                    : 'bg-accent/60'
+              }`}
+            />
+            <p className="text-sm leading-relaxed text-gray-600 dark:text-racing-200">{insight.takeaway}</p>
           </div>
+
+          {post.permalink && (
+            <a
+              href={post.permalink}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:underline"
+            >
+              <ExternalLink size={14} /> Auf Instagram öffnen
+            </a>
+          )}
         </div>
       </div>
     </div>
@@ -686,63 +657,6 @@ function MetricExplainer({ metricKey, label, onClose }: { metricKey: string; lab
       </div>
     </div>
   )
-}
-
-// ── Post Score ────────────────────────────────────────────────────────────────
-function calcPostScore(post: SocialPost, followers: number): { score: number; grade: string; color: string; tips: string[] } {
-  const tips: string[] = []
-  let score = 0
-
-  const eng = followers > 0 ? ((post.likeCount ?? 0) + (post.commentsCount ?? 0)) / followers * 100 : 0
-  if (eng >= 6) score += 30
-  else if (eng >= 3) score += 20
-  else if (eng >= 1) score += 10
-  else tips.push('Engagement-Rate unter 1% — stelle eine Frage am Ende der Caption.')
-
-  const saveRate = followers > 0 && post.saved ? post.saved / followers * 100 : 0
-  if (saveRate >= 2) score += 25
-  else if (saveRate >= 0.5) score += 15
-  else if (post.saved === undefined) score += 0
-  else tips.push('Wenige Saves — füge Mehrwert hinzu: Listen, Tutorials, Checklisten.')
-
-  const shareRate = followers > 0 && post.shares ? post.shares / followers * 100 : 0
-  if (shareRate >= 1) score += 25
-  else if (shareRate >= 0.2) score += 10
-  else if (post.shares !== undefined) tips.push('Wenige Shares — nutze relatable oder überraschende Inhalte.')
-
-  const caption = post.caption ?? ''
-  const hashtagCount = (caption.match(/#\w+/g) ?? []).length
-  if (hashtagCount >= 5 && hashtagCount <= 12) score += 10
-  else if (hashtagCount > 0) score += 5
-  else tips.push('Keine Hashtags — 5–10 nischige Hashtags können Reichweite um 20–30% steigern.')
-
-  if (caption.length > 50) score += 10
-  else if (caption.length > 0) { score += 5; tips.push('Caption sehr kurz — längere Captions mit Hook + Wert + Frage performen besser.') }
-  else tips.push('Kein Caption — ein starker Text-Hook erhöht die Verweildauer und Kommentare.')
-
-  const grade = score >= 80 ? '🏆 Exzellent' : score >= 60 ? '⭐ Gut' : score >= 40 ? '📈 Ausbaubar' : '💡 Lernpotenzial'
-  const color = score >= 80 ? '#10b981' : score >= 60 ? '#6366f1' : score >= 40 ? '#f59e0b' : '#f43f5e'
-
-  return { score: Math.min(score, 100), grade, color, tips }
-}
-
-function analyzeCaptionStyle(caption: string): { label: string; value: string; color: string }[] {
-  if (!caption) return []
-  const hashtags = (caption.match(/#\w+/g) ?? []).length
-  const emojis = (caption.match(/\p{Extended_Pictographic}/gu) ?? []).length
-  const words = caption.trim().split(/\s+/).length
-  const hasQuestion = /\?/.test(caption)
-  const hasCTA = /link in bio|mehr dazu|jetzt|klick|schreib|kommentier|teil|save|sichern/i.test(caption)
-  const lines = caption.split('\n').length
-
-  return [
-    { label: 'Wörter', value: words.toString(), color: words > 30 ? '#10b981' : '#f59e0b' },
-    { label: 'Hashtags', value: hashtags.toString(), color: hashtags >= 5 && hashtags <= 12 ? '#10b981' : hashtags > 0 ? '#f59e0b' : '#f43f5e' },
-    { label: 'Emojis', value: emojis.toString(), color: emojis >= 2 && emojis <= 8 ? '#10b981' : emojis > 0 ? '#f59e0b' : '#6b7280' },
-    { label: 'Frage?', value: hasQuestion ? '✓ Ja' : '✗ Nein', color: hasQuestion ? '#10b981' : '#f43f5e' },
-    { label: 'CTA', value: hasCTA ? '✓ Ja' : '✗ Nein', color: hasCTA ? '#10b981' : '#f43f5e' },
-    { label: 'Absätze', value: lines.toString(), color: lines > 2 ? '#10b981' : '#f59e0b' },
-  ]
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────

@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildPostInsight,
+  canGoNextMonth,
+  clampSocialRange,
   computeSocialDashboard,
   isFebiAccount,
+  META_INSIGHTS_MAX_DAYS,
+  monthLabel,
   pickPrimaryAccount,
+  resolveSocialRange,
+  shiftMonthAnchor,
 } from './socialInsights'
 import type { SocialAccount, SocialMetric, SocialPost } from '../types'
 
@@ -39,14 +46,58 @@ describe('socialInsights', () => {
         saved: 8,
       },
     ]
-    const dash = computeSocialDashboard(account, metrics, posts, 'week', new Date('2026-07-17T12:00:00'))
+    const dash = computeSocialDashboard(account, metrics, posts, 'week', {
+      now: new Date('2026-07-17T12:00:00'),
+    })
     expect(dash.kpis.followers).toBe(1005)
     expect(dash.kpis.reach).toBe(250)
     expect(dash.kpis.postsInPeriod).toBe(1)
     expect(dash.insights.length).toBeGreaterThan(0)
     expect(dash.insights.length).toBeLessThanOrEqual(3)
+    expect(dash.kpiExplainers.length).toBeGreaterThan(0)
     expect(dash.hasSyncedData).toBe(true)
     expect(dash.primarySeriesKind).toBe('reach')
     expect(dash.primarySeries.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('supports custom ranges and clamps to Meta 90-day window', () => {
+    const now = new Date('2026-07-17T12:00:00')
+    const range = clampSocialRange('2025-01-01', '2026-07-17', now)
+    expect(range.clamped).toBe(true)
+    expect(range.warning).toBeTruthy()
+    const span =
+      (new Date(range.endISO).getTime() - new Date(range.startISO).getTime()) / 86_400_000 + 1
+    expect(span).toBeLessThanOrEqual(META_INSIGHTS_MAX_DAYS)
+  })
+
+  it('navigates months and disables future next', () => {
+    const now = new Date('2026-07-17T12:00:00')
+    const july = '2026-07-01'
+    expect(monthLabel(july).toLowerCase()).toContain('juli')
+    expect(shiftMonthAnchor(july, -1)).toBe('2026-06-01')
+    expect(canGoNextMonth(july, now)).toBe(false)
+    expect(canGoNextMonth('2026-06-01', now)).toBe(true)
+
+    const range = resolveSocialRange('monthNav', { monthAnchor: '2026-06-01', now })
+    expect(range.startISO).toBe('2026-06-01')
+    expect(range.endISO).toBe('2026-06-30')
+    expect(range.label.toLowerCase()).toContain('juni')
+  })
+
+  it('builds post-level insights from real metrics', () => {
+    const post: SocialPost = {
+      id: 'p1',
+      mediaId: 'm1',
+      mediaType: 'VIDEO',
+      likeCount: 80,
+      commentsCount: 12,
+      saved: 20,
+      shares: 4,
+      reach: 900,
+    }
+    const insight = buildPostInsight(post, 1000)
+    expect(insight.engagementRate).toBeCloseTo(9.2, 1)
+    expect(insight.takeaway.length).toBeGreaterThan(10)
+    expect(insight.strengths.length).toBeGreaterThan(0)
   })
 })
