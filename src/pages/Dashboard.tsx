@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { differenceInCalendarDays, format, parseISO, addDays, startOfWeek, isSameDay } from 'date-fns'
+import { differenceInCalendarDays, format, parseISO, addDays, startOfWeek, isSameDay, isMonday } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
 import { Plus, CalendarClock, Loader2, Check, X, Sparkles, Flame, BarChart3 } from 'lucide-react'
 import type { Task, CalendarEntry } from '../types'
@@ -29,6 +29,11 @@ import OfficePromptModal from '../components/office/OfficePromptModal'
 import OnboardingPermissions from '../components/dashboard/OnboardingPermissions'
 import OnboardingWizard from '../components/onboarding/OnboardingWizard'
 import MorningReportModal from '../components/dashboard/MorningReportModal'
+import PriorityPlanModal from '../components/dashboard/PriorityPlanModal'
+import EveningReportModal from '../components/dashboard/EveningReportModal'
+import JournalModal from '../components/dashboard/JournalModal'
+import DayTimeTimeline from '../components/worktime/DayTimeTimeline'
+import Modal from '../components/layout/Modal'
 import TodayHero from '../components/dashboard/TodayHero'
 import WeeklyInsightCard from '../components/dashboard/WeeklyInsightCard'
 import { DayCapacityWidget, WeekOverviewWidget } from '../components/dashboard/FocusWidgets'
@@ -36,6 +41,8 @@ import DashboardCustomizePanel from '../components/dashboard/DashboardCustomizeP
 import DashboardSectionHeader from '../components/dashboard/DashboardSectionHeader'
 import TaskTimer from '../components/tasks/TaskTimer'
 import { useSettingsStore } from '../store/settingsStore'
+import { usePriorityPlanStore, weekKey } from '../store/priorityPlanStore'
+import { useTaskTimeStore } from '../store/taskTimeStore'
 import {
   buildDashboardLayoutBlocks,
   normalizeDashboardSectionOrder,
@@ -105,13 +112,93 @@ export default function Dashboard() {
   } | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [showWeekEntries, setShowWeekEntries] = useState(true)
-  const [showMorningReport, setShowMorningReport] = useState(() => {
-    const hour = new Date().getHours()
-    const today = new Date().toISOString().slice(0, 10)
-    const dismissed = localStorage.getItem('morningReportDismissed')
-    return hour >= 5 && hour < 12 && dismissed !== today
-  })
+  const [showMorningReport, setShowMorningReport] = useState(false)
+  const [showDayPriority, setShowDayPriority] = useState(false)
+  const [showWeekPriority, setShowWeekPriority] = useState(false)
+  const [showEveningReport, setShowEveningReport] = useState(false)
+  const [showJournal, setShowJournal] = useState(false)
+  const [showTimeTimeline, setShowTimeTimeline] = useState(false)
+  const dayOrders = usePriorityPlanStore((s) => s.dayOrders)
+  const weekOrders = usePriorityPlanStore((s) => s.weekOrders)
+  const dayConfirmed = usePriorityPlanStore((s) => s.dayConfirmed)
+  const weekConfirmed = usePriorityPlanStore((s) => s.weekConfirmed)
+  const setDayOrder = usePriorityPlanStore((s) => s.setDayOrder)
+  const setWeekOrder = usePriorityPlanStore((s) => s.setWeekOrder)
+  const confirmDay = usePriorityPlanStore((s) => s.confirmDay)
+  const confirmWeek = usePriorityPlanStore((s) => s.confirmWeek)
+  const setTomorrowTop3 = usePriorityPlanStore((s) => s.setTomorrowTop3)
+  const applyOrder = usePriorityPlanStore((s) => s.applyOrder)
+  const tomorrowTop3 = usePriorityPlanStore((s) => s.tomorrowTop3)
+  const taskTimeEntries = useTaskTimeStore((s) => s.entries)
+  const fetchTaskTime = useTaskTimeStore((s) => s.fetchForUser)
+  const wasRunningRef = useRef(false)
   const sectionOrder = useSettingsStore((s) => normalizeDashboardSectionOrder(s.dashboardSectionOrder))
+
+  // Daily ritual: week prio (Mon) → day prio → morning briefing → evening wrap-up
+  useEffect(() => {
+    const hour = new Date().getHours()
+    const today = todayISO()
+    const wk = weekKey()
+    const morningDismissed = localStorage.getItem('morningReportDismissed')
+    const eveningDismissed = localStorage.getItem('eveningReportDismissed')
+    const journalDismissed = localStorage.getItem('journalDismissed')
+    const openToday = [...tasks, ...myProjectTasks].filter(
+      (tk) => !tk.completed && (isDueToday(tk.dueDate) || isOverdue(tk.dueDate)),
+    )
+    const openWeek = [...tasks, ...myProjectTasks].filter(
+      (tk) => !tk.completed && isDueThisWeek(tk.dueDate) && !isOverdue(tk.dueDate),
+    )
+
+    if (
+      isMonday(new Date()) &&
+      !weekConfirmed[wk] &&
+      localStorage.getItem('weekPrioritySkipped') !== wk &&
+      openWeek.length > 0
+    ) {
+      setShowWeekPriority(true)
+      return
+    }
+    if (
+      hour >= 5 &&
+      hour < 14 &&
+      !dayConfirmed[today] &&
+      localStorage.getItem('dayPrioritySkipped') !== today &&
+      openToday.length > 0
+    ) {
+      setShowDayPriority(true)
+      return
+    }
+    if (hour >= 5 && hour < 12 && morningDismissed !== today) {
+      setShowMorningReport(true)
+      return
+    }
+    if (hour >= 17 && hour < 19 && eveningDismissed !== today) {
+      setShowEveningReport(true)
+      return
+    }
+    if (hour >= 19 && journalDismissed !== today) {
+      if (eveningDismissed !== today) {
+        setShowEveningReport(true)
+        return
+      }
+      setShowJournal(true)
+    }
+  }, [dayConfirmed, weekConfirmed, tasks, myProjectTasks])
+
+  useEffect(() => {
+    if (isSupabaseConfigured) void fetchTaskTime()
+  }, [fetchTaskTime])
+
+  // Open evening wrap-up after clock-out
+  useEffect(() => {
+    if (wasRunningRef.current && !isRunning) {
+      const today = todayISO()
+      if (localStorage.getItem('eveningReportDismissed') !== today) {
+        setShowEveningReport(true)
+      }
+    }
+    wasRunningRef.current = isRunning
+  }, [isRunning])
 
   const [, workTimeTick] = useState(0)
   useEffect(() => {
@@ -300,10 +387,16 @@ export default function Dashboard() {
     [allTasks, weekDayLoads],
   )
 
-  const todayTodos = sortByEisenhower(todayOpenTasks)
+  const todayTodos = applyOrder(sortByEisenhower(todayOpenTasks), dayOrders[today] ?? tomorrowTop3[today])
+  const weekTasksOrdered = applyOrder(weekTasks, weekOrders[weekKey()])
 
   const tasksCompletedToday = allTasks.filter((tk) => tk.completed && isCompletedToday(tk.completedAt)).length
+  const tasksDoneTodayList = allTasks.filter((tk) => tk.completed && isCompletedToday(tk.completedAt))
   const tasksTotalToday = tasksCompletedToday + todayOpenTasks.length
+  const taskMinutesToday = taskTimeEntries.filter((e) => e.date === today).reduce((s, e) => s + e.minutes, 0)
+  const suggestedTomorrow = sortByEisenhower(
+    allTasks.filter((tk) => !tk.completed && (isDueThisWeek(tk.dueDate) || isOverdue(tk.dueDate) || !tk.dueDate)),
+  ).slice(0, 5)
   const meetingsHeldToday = calendarEntries.filter((e) => {
     const isToday = e.date === today
     const isMultiDaySpanningToday = e.date < today && e.endDate && e.endDate >= today
@@ -330,10 +423,59 @@ export default function Dashboard() {
   return (
     <div>
       <OfficePromptModal />
-      {showMorningReport && (
+      {showWeekPriority && (
+        <PriorityPlanModal
+          mode="week"
+          tasks={weekTasksOrdered.length ? weekTasksOrdered : weekTasks}
+          initialOrder={weekOrders[weekKey()]}
+          onSave={(ids) => {
+            const wk = weekKey()
+            setWeekOrder(wk, ids)
+            confirmWeek(wk)
+            setShowWeekPriority(false)
+            const today = todayISO()
+            if (!dayConfirmed[today] && todayOpenTasks.length > 0) setShowDayPriority(true)
+            else if (localStorage.getItem('morningReportDismissed') !== today) setShowMorningReport(true)
+          }}
+          onSkip={() => {
+            localStorage.setItem('weekPrioritySkipped', weekKey())
+            setShowWeekPriority(false)
+            const today = todayISO()
+            if (!dayConfirmed[today] && todayOpenTasks.length > 0) setShowDayPriority(true)
+            else if (localStorage.getItem('morningReportDismissed') !== today) setShowMorningReport(true)
+          }}
+          onClose={() => {
+            localStorage.setItem('weekPrioritySkipped', weekKey())
+            setShowWeekPriority(false)
+          }}
+        />
+      )}
+      {showDayPriority && (
+        <PriorityPlanModal
+          mode="day"
+          tasks={todayOpenTasks}
+          initialOrder={dayOrders[today] ?? tomorrowTop3[today]}
+          onSave={(ids) => {
+            setDayOrder(today, ids)
+            confirmDay(today)
+            setShowDayPriority(false)
+            if (localStorage.getItem('morningReportDismissed') !== today) setShowMorningReport(true)
+          }}
+          onSkip={() => {
+            localStorage.setItem('dayPrioritySkipped', today)
+            setShowDayPriority(false)
+            if (localStorage.getItem('morningReportDismissed') !== today) setShowMorningReport(true)
+          }}
+          onClose={() => {
+            localStorage.setItem('dayPrioritySkipped', today)
+            setShowDayPriority(false)
+          }}
+        />
+      )}
+      {showMorningReport && !showDayPriority && !showWeekPriority && (
         <MorningReportModal
-          todayTasks={todayOpenTasks}
-          weekTasks={weekTasks}
+          todayTasks={todayTodos}
+          weekTasks={weekTasksOrdered}
           todayEntries={todayEntries}
           weekEntries={weekEntries}
           capacityPercent={capacityPercent}
@@ -341,11 +483,52 @@ export default function Dashboard() {
           targetLabel={formatHM(targetMin)}
           colleagues={colleagues}
           onPlanDay={() => setShowAiDayPlanner(true)}
+          onPrioritize={() => {
+            if (isMonday(new Date()) && !weekConfirmed[weekKey()]) setShowWeekPriority(true)
+            else setShowDayPriority(true)
+          }}
           onClose={() => {
             setShowMorningReport(false)
-            localStorage.setItem('morningReportDismissed', new Date().toISOString().slice(0, 10))
+            localStorage.setItem('morningReportDismissed', today)
           }}
         />
+      )}
+      {showEveningReport && !showDayPriority && !showWeekPriority && !showMorningReport && (
+        <EveningReportModal
+          doneTasks={tasksDoneTodayList}
+          openTasks={todayOpenTasks}
+          workedLabel={formatHM(workedMin)}
+          taskMinutesLabel={taskMinutesToday > 0 ? formatHM(taskMinutesToday) : undefined}
+          suggestedTop3={suggestedTomorrow}
+          onConfirmTop3={(ids) => {
+            const tomorrow = format(addDays(new Date(), 1), 'yyyy-MM-dd')
+            setTomorrowTop3(tomorrow, ids)
+            localStorage.setItem('eveningReportDismissed', today)
+          }}
+          onOpenTimeline={() => setShowTimeTimeline(true)}
+          onOpenJournal={() => setShowJournal(true)}
+          onClose={() => {
+            setShowEveningReport(false)
+            localStorage.setItem('eveningReportDismissed', today)
+            if (new Date().getHours() >= 19 && localStorage.getItem('journalDismissed') !== today) {
+              setShowJournal(true)
+            }
+          }}
+        />
+      )}
+      {showJournal && !showEveningReport && !showDayPriority && !showWeekPriority && !showMorningReport && (
+        <JournalModal
+          onClose={() => {
+            setShowJournal(false)
+            localStorage.setItem('journalDismissed', today)
+          }}
+          onSaved={() => localStorage.setItem('journalDismissed', today)}
+        />
+      )}
+      {showTimeTimeline && (
+        <Modal title="Wo war meine Zeit?" onClose={() => setShowTimeTimeline(false)} widthClass="max-w-lg">
+          <DayTimeTimeline initialDate={today} compact />
+        </Modal>
       )}
       {!onboardingTourDone && <OnboardingWizard />}
       {!onboardingPermissionsDone && <OnboardingPermissions />}
@@ -575,6 +758,10 @@ export default function Dashboard() {
                   doneStats={doneStats}
                   onPlanDay={() => setShowAiDayPlanner(true)}
                   onOpenBriefing={() => setShowMorningReport(true)}
+                  onPrioritizeDay={() => setShowDayPriority(true)}
+                  onOpenEvening={() => setShowEveningReport(true)}
+                  onOpenTimeline={() => setShowTimeTimeline(true)}
+                  onOpenJournal={() => setShowJournal(true)}
                   onToggleTodo={(tk) => {
                     if (tk.boardId) toggleProjectTaskCompleted(tk.id)
                     else toggleTaskCompleted(tk.id)
@@ -603,7 +790,7 @@ export default function Dashboard() {
               {id === 'weekOverview' && (
                 <WeekOverviewWidget tasks={allTasks} entries={calendarEntries} />
               )}
-              {id === 'dueThisWeek' && (weekTasks.length > 0 || weekEntries.length > 0) && (
+              {id === 'dueThisWeek' && (weekTasksOrdered.length > 0 || weekEntries.length > 0) && (
                 <div>
                   <DashboardSectionHeader
                     title={t('sections.dueThisWeek')}

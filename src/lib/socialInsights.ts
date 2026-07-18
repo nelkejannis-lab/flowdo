@@ -948,4 +948,52 @@ export function computeSocialDashboard(
   }
 }
 
+export interface NextContentSuggestion {
+  title: string
+  tip: string
+  formatLabel: string | null
+  bestSlot: string | null
+  basedOnScore: number | null
+}
+
+/** Actionable German tip from scores / mix / best slots — for Social overview. */
+export function suggestNextContent(dashboard: SocialDashboardData): NextContentSuggestion | null {
+  if (!dashboard.hasSyncedData) return null
+
+  const topFormat = [...dashboard.contentMix].sort((a, b) => b.avgEngagement - a.avgEngagement)[0]
+  const weakFormat = [...dashboard.contentMix]
+    .filter((c) => c.count > 0)
+    .sort((a, b) => a.avgEngagement - b.avgEngagement)[0]
+  const topPost = dashboard.topPosts[0]
+  const topInsight = topPost
+    ? scorePostAgainstBenchmarks(topPost, dashboard.kpis.followers ?? 0, dashboard.benchmarks)
+    : null
+
+  const slot =
+    dashboard.bestDay != null && dashboard.bestHour != null
+      ? `${DAY_LABELS[dashboard.bestDay]} · ${String(dashboard.bestHour).padStart(2, '0')}:00`
+      : dashboard.bestHour != null
+        ? `gegen ${String(dashboard.bestHour).padStart(2, '0')}:00`
+        : null
+
+  let tip: string
+  if (topFormat && topFormat.avgEngagement > 0 && weakFormat && weakFormat.key !== topFormat.key && weakFormat.count >= 2) {
+    tip = `Nächster Beitrag: eher ${topFormat.label} statt ${weakFormat.label}. ${slot ? `Am besten ${slot}.` : 'Halte Caption kurz und CTA klar.'}`
+  } else if (topFormat && topFormat.count > 0) {
+    tip = `Bau auf ${topFormat.label} — aktuell stärkstes Format. ${slot ? `Plane den Post für ${slot}.` : 'Wiederhole Hook und erste Sekunde der Top-Posts.'}`
+  } else if (slot) {
+    tip = `Poste als Nächstes im Slot ${slot}. Nutze einen klaren Hook in den ersten 3 Sekunden / Zeilen.`
+  } else {
+    tip = 'Sync ein paar Posts, dann schlägt NOVAT Format und Slot konkret vor.'
+  }
+
+  return {
+    title: 'Nächster Content',
+    tip,
+    formatLabel: topFormat?.label ?? null,
+    bestSlot: slot,
+    basedOnScore: topInsight?.score ?? null,
+  }
+}
+
 export { DAY_LABELS }

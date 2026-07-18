@@ -37,6 +37,7 @@ interface BrainState {
   loading: boolean
   fetchAll: () => Promise<void>
   addColumn: (title: string) => void
+  ensureColumn: (id: string, title: string) => string
   updateColumn: (id: string, title: string) => void
   deleteColumn: (id: string) => void
   addPage: (columnId: string, title: string, content: string, checklist?: NoteChecklistItem[]) => void
@@ -50,9 +51,10 @@ interface BrainState {
 
 const DEFAULT_COLUMNS: NoteColumn[] = [
   { id: 'notes', title: 'Notizen', position: 0 },
-  { id: 'meetings', title: 'Meetings', position: 1 },
-  { id: 'ideas', title: 'Ideen & Entwürfe', position: 2 },
-  { id: 'summaries', title: 'Zusammenfassungen', position: 3 },
+  { id: 'journal', title: 'Journal', position: 1 },
+  { id: 'meetings', title: 'Meetings', position: 2 },
+  { id: 'ideas', title: 'Ideen & Entwürfe', position: 3 },
+  { id: 'summaries', title: 'Zusammenfassungen', position: 4 },
 ]
 
 async function getUserId(): Promise<string | null> {
@@ -181,6 +183,21 @@ export const useBrainStore = create<BrainState>()(
           })
           return { columns: [...state.columns, newCol] }
         }),
+
+      ensureColumn: (id, title) => {
+        const existing = get().columns.find((c) => c.id === id || c.title.toLowerCase() === title.toLowerCase())
+        if (existing) return existing.id
+        const newCol: NoteColumn = {
+          id,
+          title,
+          position: get().columns.length,
+        }
+        set((state) => ({ columns: [...state.columns, newCol] }))
+        void getUserId().then((userId) => {
+          if (userId) void syncColumn(newCol, userId)
+        })
+        return id
+      },
 
       updateColumn: (id, title) =>
         set((state) => {

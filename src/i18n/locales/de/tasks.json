@@ -150,7 +150,7 @@
       "deletedTask": "Gelöschte Aufgabe"
     },
     "inbox": {
-      "allDone": "Alles erledigt. Keine neuen Benachrichtigungen.",
+      "allDone": "Alles erledigt. Keine offenen Punkte.",
       "birthdaysToday": "Geburtstage heute",
       "congratulated": "Gratuliert!",
       "notifications": "Benachrichtigungen",
@@ -158,10 +158,15 @@
       "projectInvites": "Projekteinladungen",
       "teamInvites": "Team-Einladungen",
       "taskInvites": "Aufgaben-Einladungen",
+      "brainInvites": "Second-Brain-Einladungen",
+      "dueOverdue": "Fällig & überfällig",
+      "meetingsToday": "Termine heute",
       "from": "von {{name}}",
       "due": "fällig {{date}}",
       "accept": "Annehmen",
-      "decline": "Ablehnen"
+      "decline": "Ablehnen",
+      "openTask": "Öffnen",
+      "viewCalendar": "Kalender"
     }
   }
 }

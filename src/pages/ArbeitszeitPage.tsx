@@ -8,8 +8,10 @@ import WorkWeekView from '../components/worktime/WorkWeekView'
 import WorkMonthView from '../components/worktime/WorkMonthView'
 import AbsenceManager from '../components/worktime/AbsenceManager'
 import AbsenceApprovals from '../components/worktime/AbsenceApprovals'
+import DayTimeTimeline from '../components/worktime/DayTimeTimeline'
 import Modal from '../components/layout/Modal'
 import { useWorkTimeStore } from '../store/workTimeStore'
+import { useTaskTimeStore } from '../store/taskTimeStore'
 import { isSupabaseConfigured } from '../lib/supabase'
 
 function WorkTimeSettingsModal({ onClose }: { onClose: () => void }) {
@@ -67,10 +69,14 @@ export default function ArbeitszeitPage() {
   const [view, setView] = useState<'week' | 'month'>('week')
   const fetchAll = useWorkTimeStore((s) => s.fetchAll)
   const subscribeToWorkTime = useWorkTimeStore((s) => s.subscribeToWorkTime)
+  const fetchTaskTime = useTaskTimeStore((s) => s.fetchForUser)
 
   useEffect(() => {
-    if (isSupabaseConfigured) fetchAll()
-  }, [fetchAll])
+    if (isSupabaseConfigured) {
+      fetchAll()
+      void fetchTaskTime()
+    }
+  }, [fetchAll, fetchTaskTime])
 
   useEffect(() => {
     if (!isSupabaseConfigured) return
@@ -117,6 +123,7 @@ export default function ArbeitszeitPage() {
           {view === 'week' ? <WorkWeekView /> : <WorkMonthView />}
         </div>
         <div className="lg:col-start-1 lg:row-start-2 flex flex-col gap-4">
+          <DayTimeTimeline />
           <StampLog />
           <AbsenceManager />
           <AbsenceApprovals />

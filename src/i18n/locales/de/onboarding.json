@@ -3,10 +3,31 @@
   "back": "Zurück",
   "next": "Weiter",
   "finish": "Los geht's!",
+  "roles": {
+    "title": "Wie nutzt du NOVAT?",
+    "desc": "Wir blenden die passenden Bereiche ein — du kannst das jederzeit ändern.",
+    "solo": {
+      "label": "Solo",
+      "desc": "Fokus auf Aufgaben, Kalender und Arbeitszeit — schlank und klar."
+    },
+    "team": {
+      "label": "Team",
+      "desc": "Projekte, Chat und gemeinsame Boards stehen im Vordergrund."
+    },
+    "social": {
+      "label": "Social",
+      "desc": "Social Insights und Content-Planung zuerst — Tasks bleiben greifbar."
+    }
+  },
   "steps": {
     "welcome": {
       "title": "Willkommen bei NOVAT",
       "desc": "Dein All-in-One Tool für Aufgaben, Projekte, Kalender und Arbeitszeit — für dich und dein Team.",
+      "example": ""
+    },
+    "role": {
+      "title": "Dein Modus",
+      "desc": "Wähle Solo, Team oder Social — NOVAT richtet Navigation und Features danach aus.",
       "example": ""
     },
     "capture": {

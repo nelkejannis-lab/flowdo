@@ -3,10 +3,31 @@
   "back": "Back",
   "next": "Next",
   "finish": "Let's go!",
+  "roles": {
+    "title": "How will you use NOVAT?",
+    "desc": "We'll surface the right areas — you can change this anytime.",
+    "solo": {
+      "label": "Solo",
+      "desc": "Focus on tasks, calendar and work time — lean and clear."
+    },
+    "team": {
+      "label": "Team",
+      "desc": "Projects, chat and shared boards front and center."
+    },
+    "social": {
+      "label": "Social",
+      "desc": "Social insights and content planning first — tasks stay handy."
+    }
+  },
   "steps": {
     "welcome": {
       "title": "Welcome to NOVAT",
       "desc": "Your all-in-one tool for tasks, projects, calendar and time tracking — for you and your team.",
+      "example": ""
+    },
+    "role": {
+      "title": "Your mode",
+      "desc": "Pick Solo, Team or Social — NOVAT tunes navigation and features accordingly.",
       "example": ""
     },
     "capture": {

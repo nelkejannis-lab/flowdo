@@ -28,6 +28,7 @@ import {
   DAY_LABELS,
   fmtCompact,
   fmtPct,
+  suggestNextContent,
   isFebiAccount,
   META_INSIGHTS_MAX_DAYS,
   monthLabel,
@@ -847,6 +848,22 @@ export default function SocialMediaPage() {
                 </div>
                 <AreaChart data={dashboard.primarySeries} />
               </div>
+
+              {(() => {
+                const next = suggestNextContent(dashboard)
+                if (!next) return null
+                return (
+                  <div className="bento-card mb-6 border-l-4 border-l-accent p-5 sm:p-6">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-accent">{next.title}</p>
+                    <p className="mt-1.5 text-sm leading-relaxed text-gray-800 dark:text-racing-100">{next.tip}</p>
+                    <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-gray-400">
+                      {next.formatLabel && <span>Format: {next.formatLabel}</span>}
+                      {next.bestSlot && <span>· Slot: {next.bestSlot}</span>}
+                      {next.basedOnScore != null && <span>· Top-Score: {next.basedOnScore}/10</span>}
+                    </div>
+                  </div>
+                )
+              })()}
 
               <div className="grid gap-5 lg:grid-cols-5">
                 <div className="bento-card p-5 sm:p-6 lg:col-span-3">

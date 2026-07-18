@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Archive, AtSign, Bell, Check, HelpCircle, Plus, Trello, X, Search, Loader2, SlidersHorizontal, Grid2x2, ListOrdered } from 'lucide-react'
+import { Archive, AtSign, Bell, Check, HelpCircle, Plus, Trello, X, Search, Loader2, SlidersHorizontal, Grid2x2, ListOrdered, AlertCircle, CalendarDays, Brain } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTasksStore } from '../store/tasksStore'
 import { useTaskSharesStore } from '../store/taskSharesStore'
@@ -21,6 +21,7 @@ import { formatFriendlyDate, isDueThisWeek, isDueToday, isOverdue, todayISO, par
 import { useAiSchedulerStore } from '../store/aiSchedulerStore'
 import { useQuickTaskModalStore } from '../store/quickTaskModalStore'
 import { useTaskTimeStore } from '../store/taskTimeStore'
+import { useCreativeBoardStore } from '../store/creativeBoardStore'
 
 const titleKeys: Record<string, string> = {
   today: 'page.titles.today',
@@ -54,6 +55,10 @@ export default function TasksPage() {
   const fetchTeamInvites = useTeamInvitesStore((s) => s.fetchIncoming)
   const acceptTeamInvite = useTeamInvitesStore((s) => s.acceptInvite)
   const declineTeamInvite = useTeamInvitesStore((s) => s.declineInvite)
+  const brainInvites = useCreativeBoardStore((s) => s.incomingInvites)
+  const fetchBrainInvites = useCreativeBoardStore((s) => s.fetchIncomingInvites)
+  const acceptBrainInvite = useCreativeBoardStore((s) => s.acceptInvite)
+  const declineBrainInvite = useCreativeBoardStore((s) => s.declineInvite)
   const notifications = useNotificationsStore((s) => s.notifications)
   const fetchNotifications = useNotificationsStore((s) => s.fetch)
   const markRead = useNotificationsStore((s) => s.markRead)
@@ -86,8 +91,9 @@ export default function TasksPage() {
       fetchBoardInvites()
       fetchTeamInvites()
       fetchNotifications()
+      void fetchBrainInvites()
     }
-  }, [fetchIncoming, fetchBoardInvites, fetchNotifications, smartList])
+  }, [fetchIncoming, fetchBoardInvites, fetchNotifications, fetchTeamInvites, fetchBrainInvites, smartList])
 
   useEffect(() => {
     if (isSupabaseConfigured) {
@@ -559,9 +565,138 @@ export default function TasksPage() {
         </div>
       ) : smartList === 'inbox' ? (
         <div>
-          {boardInvites.length === 0 && teamInvites.length === 0 && incoming.length === 0 && notifications.filter((n) => !n.read || n.type === 'birthday').length === 0 && (
+          {(() => {
+            const dueOverdue = [...tasks, ...myProjectTasks]
+              .filter((tk) => !tk.completed && (isDueToday(tk.dueDate) || isOverdue(tk.dueDate)))
+              .slice(0, 12)
+            const meetingsToday = calendarEntries.filter((e) => {
+              const isToday = e.date === today
+              const spanning = e.date < today && e.endDate && e.endDate >= today
+              return isToday || !!spanning
+            }).slice(0, 8)
+            const inboxEmpty =
+              boardInvites.length === 0 &&
+              teamInvites.length === 0 &&
+              incoming.length === 0 &&
+              brainInvites.length === 0 &&
+              dueOverdue.length === 0 &&
+              meetingsToday.length === 0 &&
+              filtered.length === 0 &&
+              notifications.filter((n) => !n.read || n.type === 'birthday').length === 0
+            return (
+              <>
+          {inboxEmpty && (
             <p className="py-12 text-center text-sm text-gray-400">{t('page.inbox.allDone')}</p>
           )}
+
+          {dueOverdue.length > 0 && (
+            <div className="mb-6">
+              <h2 className="mb-3 flex items-center gap-2 text-base font-semibold">
+                <AlertCircle size={16} className="text-amber-500" />
+                {t('page.inbox.dueOverdue')}
+              </h2>
+              <div className="flex flex-col gap-2">
+                {dueOverdue.map((tk) => (
+                  <div
+                    key={tk.id}
+                    className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 dark:border-racing-800 dark:bg-racing-900"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{tk.title}</p>
+                      <p className="text-xs text-gray-400">
+                        {isOverdue(tk.dueDate)
+                          ? t('dateGroups.overdue')
+                          : t('dateGroups.today')}
+                        {tk.dueDate ? ` · ${formatFriendlyDate(tk.dueDate)}` : ''}
+                      </p>
+                    </div>
+                    <Link
+                      to="/tasks/today"
+                      className="flex-shrink-0 rounded-lg bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent hover:bg-accent/20"
+                    >
+                      {t('page.inbox.openTask')}
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {meetingsToday.length > 0 && (
+            <div className="mb-6">
+              <h2 className="mb-3 flex items-center gap-2 text-base font-semibold">
+                <CalendarDays size={16} className="text-accent" />
+                {t('page.inbox.meetingsToday')}
+              </h2>
+              <div className="flex flex-col gap-2">
+                {meetingsToday.map((e) => (
+                  <div
+                    key={e.id}
+                    className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 dark:border-racing-800 dark:bg-racing-900"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{e.title}</p>
+                      <p className="text-xs text-gray-400">
+                        {e.startTime ?? '–'}
+                        {e.endTime ? `–${e.endTime}` : ''}
+                      </p>
+                    </div>
+                    <Link
+                      to="/calendar"
+                      className="flex-shrink-0 rounded-lg bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent hover:bg-accent/20"
+                    >
+                      {t('page.inbox.viewCalendar')}
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {brainInvites.length > 0 && (
+            <div className="mb-6">
+              <h2 className="mb-3 flex items-center gap-2 text-base font-semibold">
+                <Brain size={16} className="text-accent" />
+                {t('page.inbox.brainInvites')}
+              </h2>
+              <div className="flex flex-col gap-2">
+                {brainInvites.map((invite) => (
+                  <div
+                    key={invite.id}
+                    className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 dark:border-racing-800 dark:bg-racing-900"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">
+                        {invite.fromUser?.display_name ?? 'Second Brain'}
+                      </p>
+                      <p className="truncate text-xs text-gray-400">
+                        {t('page.inbox.from', {
+                          name: invite.fromUser?.display_name ?? '–',
+                        })}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => acceptBrainInvite(invite.id)}
+                      className="flex items-center gap-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white"
+                    >
+                      <Check size={14} /> {t('page.inbox.accept')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => declineBrainInvite(invite.id)}
+                      className="flex items-center gap-1 rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-600 dark:bg-racing-800"
+                    >
+                      <X size={14} /> {t('page.inbox.decline')}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+              </>
+            )
+          })()}
 
           {notifications.filter((n) => n.type === 'birthday').length > 0 && (
             <div className="mb-6">

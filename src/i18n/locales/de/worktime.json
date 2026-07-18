@@ -112,6 +112,15 @@
     "approve": "Genehmigen",
     "reject": "Ablehnen"
   },
+  "timeline": {
+    "title": "Wo war meine Zeit?",
+    "subtitle": "Arbeitszeit und Aufgabenzeit an einem Tag",
+    "prev": "Vorheriger Tag",
+    "next": "Nächster Tag",
+    "work": "Auslastung",
+    "tasks": "Aufgabenzeit",
+    "empty": "Keine Stempelungen oder Aufgabenzeit an diesem Tag."
+  },
   "overview": {
     "totalOvertime": "Überstunden gesamt",
     "overtimeInDays": "Überstunden in Tagen",

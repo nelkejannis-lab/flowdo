@@ -77,6 +77,10 @@ interface Props {
   doneStats: DoneStats
   onPlanDay?: () => void
   onOpenBriefing?: () => void
+  onPrioritizeDay?: () => void
+  onOpenEvening?: () => void
+  onOpenTimeline?: () => void
+  onOpenJournal?: () => void
   onToggleTodo?: (task: TodayTodo) => void
   onOpenTodo?: (task: TodayTodo) => void
 }
@@ -95,6 +99,10 @@ export default function TodayHero({
   doneStats,
   onPlanDay,
   onOpenBriefing,
+  onPrioritizeDay,
+  onOpenEvening,
+  onOpenTimeline,
+  onOpenJournal,
   onToggleTodo,
   onOpenTodo,
 }: Props) {
@@ -159,6 +167,15 @@ export default function TodayHero({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {onPrioritizeDay && (
+            <button
+              type="button"
+              onClick={onPrioritizeDay}
+              className="rounded-full border border-gray-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-95 dark:border-racing-700 dark:bg-racing-800 dark:text-racing-100"
+            >
+              {t('morningReport.actionPrioritize')}
+            </button>
+          )}
           {onOpenBriefing && (
             <button
               type="button"
@@ -166,6 +183,33 @@ export default function TodayHero({
               className="rounded-full border border-gray-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-95 dark:border-racing-700 dark:bg-racing-800 dark:text-racing-100"
             >
               {t('focus.openBriefing')}
+            </button>
+          )}
+          {onOpenEvening && (
+            <button
+              type="button"
+              onClick={onOpenEvening}
+              className="rounded-full border border-gray-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-95 dark:border-racing-700 dark:bg-racing-800 dark:text-racing-100"
+            >
+              {t('eveningReport.title')}
+            </button>
+          )}
+          {onOpenJournal && (
+            <button
+              type="button"
+              onClick={onOpenJournal}
+              className="rounded-full border border-gray-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-95 dark:border-racing-700 dark:bg-racing-800 dark:text-racing-100"
+            >
+              {t('journal.title')}
+            </button>
+          )}
+          {onOpenTimeline && (
+            <button
+              type="button"
+              onClick={onOpenTimeline}
+              className="rounded-full border border-gray-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-95 dark:border-racing-700 dark:bg-racing-800 dark:text-racing-100"
+            >
+              {t('eveningReport.whereWasTime')}
             </button>
           )}
 

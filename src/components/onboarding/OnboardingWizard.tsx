@@ -2,11 +2,24 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ChevronRight, ChevronLeft, Sparkles, CalendarDays, Clock, Trello, Settings } from 'lucide-react'
-import { useSettingsStore } from '../../store/settingsStore'
+import {
+  X,
+  ChevronRight,
+  ChevronLeft,
+  Sparkles,
+  CalendarDays,
+  Clock,
+  Trello,
+  Settings,
+  User,
+  Users,
+  Instagram,
+} from 'lucide-react'
+import { useSettingsStore, type ProductRole } from '../../store/settingsStore'
 
 const STEPS = [
   { key: 'welcome', icon: Sparkles },
+  { key: 'role', icon: User },
   { key: 'capture', icon: Sparkles },
   { key: 'calendar', icon: CalendarDays },
   { key: 'projects', icon: Trello },
@@ -14,20 +27,32 @@ const STEPS = [
   { key: 'settings', icon: Settings },
 ] as const
 
+const ROLES: { id: ProductRole; icon: typeof User }[] = [
+  { id: 'solo', icon: User },
+  { id: 'team', icon: Users },
+  { id: 'social', icon: Instagram },
+]
+
 export default function OnboardingWizard() {
   const { t } = useTranslation('onboarding')
   const navigate = useNavigate()
   const setOnboardingTourDone = useSettingsStore((s) => s.setOnboardingTourDone)
+  const setProductRole = useSettingsStore((s) => s.setProductRole)
+  const productRole = useSettingsStore((s) => s.productRole)
   const [step, setStep] = useState(0)
+  const [role, setRole] = useState<ProductRole | null>(productRole)
   const current = STEPS[step]
   const Icon = current.icon
   const isLast = step === STEPS.length - 1
+  const isRoleStep = current.key === 'role'
 
   function finish() {
+    if (role) setProductRole(role)
     setOnboardingTourDone()
   }
 
   function next() {
+    if (isRoleStep && role) setProductRole(role)
     if (isLast) {
       finish()
       navigate('/einstellungen?tab=anleitung')
@@ -35,6 +60,8 @@ export default function OnboardingWizard() {
       setStep((s) => s + 1)
     }
   }
+
+  const canNext = !isRoleStep || !!role
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
@@ -81,6 +108,41 @@ export default function OnboardingWizard() {
                 {t(`steps.${current.key}.example`)}
               </p>
             )}
+
+            {isRoleStep && (
+              <div className="mt-4 grid gap-2">
+                {ROLES.map((r) => {
+                  const RoleIcon = r.icon
+                  const active = role === r.id
+                  return (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => setRole(r.id)}
+                      className={`flex items-start gap-3 rounded-2xl border px-3.5 py-3 text-left transition ${
+                        active
+                          ? 'border-accent bg-accent/10'
+                          : 'border-gray-200 hover:border-gray-300 dark:border-racing-700 dark:hover:border-racing-600'
+                      }`}
+                    >
+                      <span
+                        className={`mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${
+                          active ? 'bg-accent text-white' : 'bg-gray-100 text-gray-500 dark:bg-racing-800'
+                        }`}
+                      >
+                        <RoleIcon size={18} />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold">{t(`roles.${r.id}.label`)}</span>
+                        <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
+                          {t(`roles.${r.id}.desc`)}
+                        </span>
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
 
@@ -106,7 +168,8 @@ export default function OnboardingWizard() {
             <button
               type="button"
               onClick={next}
-              className="flex items-center gap-1 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark"
+              disabled={!canNext}
+              className="flex items-center gap-1 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-40"
             >
               {isLast ? t('finish') : t('next')}
               {!isLast && <ChevronRight size={16} />}

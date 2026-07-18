@@ -37,6 +37,7 @@ interface Props {
   colleagues?: Colleague[]
   onClose: () => void
   onPlanDay?: () => void
+  onPrioritize?: () => void
 }
 
 const priorityDot: Record<string, string> = {
@@ -56,6 +57,7 @@ export default function MorningReportModal({
   colleagues = [],
   onClose,
   onPlanDay,
+  onPrioritize,
 }: Props) {
   const { t, i18n } = useTranslation('dashboard')
   const dateLocale = i18n.language === 'en' ? enUS : de
@@ -220,6 +222,19 @@ export default function MorningReportModal({
         {/* Quick actions */}
         <div className="border-t border-black/[0.05] p-4 dark:border-white/[0.06] sm:p-5">
           <div className="mb-3 flex flex-wrap gap-2">
+            {onPrioritize && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose()
+                  onPrioritize()
+                }}
+                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-accent/25 hover:brightness-110"
+              >
+                <CheckSquare size={15} strokeWidth={1.6} />
+                {t('morningReport.actionPrioritize')}
+              </button>
+            )}
             {onPlanDay && (
               <button
                 type="button"
@@ -227,7 +242,7 @@ export default function MorningReportModal({
                   onClose()
                   onPlanDay()
                 }}
-                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-accent/25 hover:brightness-110"
+                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-racing-700 dark:bg-racing-800 dark:text-racing-100"
               >
                 <Sparkles size={15} strokeWidth={1.6} />
                 {t('morningReport.actionPlan')}

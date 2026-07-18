@@ -15,6 +15,7 @@ export { DEFAULT_DASHBOARD_SECTION_ORDER }
 
 export type Mode = 'light' | 'dark'
 export type Language = 'de' | 'en'
+export type ProductRole = 'solo' | 'team' | 'social'
 export type FeatureKey = 'calendar' | 'eisenhower' | 'worktime' | 'aiScheduler' | 'chat' | 'friends' | 'social' | 'weather'
 
 export type NavItemKey =
@@ -170,6 +171,7 @@ interface SettingsState {
   appointmentReminderMinutes: number
   onboardingPermissionsDone: boolean
   onboardingTourDone: boolean
+  productRole: ProductRole | null
   weatherCity: string
   weatherCoords: WeatherCoords
   weatherGpsAsked: boolean
@@ -197,6 +199,7 @@ interface SettingsState {
   setOnboardingPermissionsDone: () => void
   setOnboardingTourDone: () => void
   resetOnboardingTour: () => void
+  setProductRole: (role: ProductRole) => void
   setNavOrder: (order: NavItemKey[]) => void
   toggleNavItem: (key: NavItemKey) => void
   togglePinnedNavItem: (key: NavItemKey) => void
@@ -244,6 +247,7 @@ export const useSettingsStore = create<SettingsState>()(
       appointmentReminderMinutes: 15,
       onboardingPermissionsDone: false,
       onboardingTourDone: false,
+      productRole: null,
       weatherCity: DEFAULT_WEATHER_CITY,
       weatherCoords: { ...DEFAULT_WEATHER_COORDS },
       weatherGpsAsked: false,
@@ -278,6 +282,41 @@ export const useSettingsStore = create<SettingsState>()(
       setOnboardingPermissionsDone: () => set({ onboardingPermissionsDone: true }),
       setOnboardingTourDone: () => set({ onboardingTourDone: true }),
       resetOnboardingTour: () => set({ onboardingTourDone: false }),
+      setProductRole: (role) =>
+        set((s) => {
+          const featureVisibility = { ...s.featureVisibility }
+          const navVisibility = { ...s.navVisibility }
+          if (role === 'solo') {
+            featureVisibility.chat = false
+            featureVisibility.friends = false
+            featureVisibility.social = false
+            navVisibility.chat = false
+            navVisibility.friends = false
+            navVisibility.social = false
+            navVisibility.projekte = true
+            navVisibility.worktime = true
+            navVisibility.tasks = true
+          } else if (role === 'team') {
+            featureVisibility.chat = true
+            featureVisibility.friends = true
+            featureVisibility.social = false
+            navVisibility.chat = true
+            navVisibility.friends = true
+            navVisibility.social = false
+            navVisibility.projekte = true
+            navVisibility.meetings = true
+          } else {
+            featureVisibility.social = true
+            featureVisibility.chat = false
+            featureVisibility.friends = false
+            navVisibility.social = true
+            navVisibility.chat = false
+            navVisibility.friends = false
+            navVisibility.tasks = true
+            navVisibility.statistiken = true
+          }
+          return { productRole: role, featureVisibility, navVisibility }
+        }),
       setNavOrder: (navOrder) => set({ navOrder }),
       toggleNavItem: (key) =>
         set((s) => ({
@@ -347,6 +386,7 @@ export const useSettingsStore = create<SettingsState>()(
           appointmentReminderMinutes: settings.appointmentReminderMinutes ?? state.appointmentReminderMinutes,
           onboardingPermissionsDone: settings.onboardingPermissionsDone ?? state.onboardingPermissionsDone,
           onboardingTourDone: settings.onboardingTourDone ?? state.onboardingTourDone,
+          productRole: settings.productRole ?? state.productRole,
           weatherCity: settings.weatherCity ?? state.weatherCity,
           weatherCoords: settings.weatherCoords ?? state.weatherCoords,
           weatherGpsAsked: settings.weatherGpsAsked ?? state.weatherGpsAsked,
@@ -380,7 +420,8 @@ export const useSettingsStore = create<SettingsState>()(
           notifyTasks: true,
           appointmentReminderMinutes: 15,
           onboardingPermissionsDone: false,
-      onboardingTourDone: false,
+          onboardingTourDone: false,
+          productRole: null,
           weatherCity: DEFAULT_WEATHER_CITY,
           weatherCoords: { ...DEFAULT_WEATHER_COORDS },
           weatherGpsAsked: false,
@@ -416,7 +457,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'flowdo-settings',
-      version: 18,
+      version: 19,
       migrate: (persisted, version) => {
         const legacy = persisted as LegacyState & Partial<SettingsState>
         if (version < 1) {
@@ -459,6 +500,7 @@ export const useSettingsStore = create<SettingsState>()(
           colorLabels: { ...DEFAULT_COLOR_LABELS, ...(legacy as any).colorLabels },
           onboardingPermissionsDone: legacy.onboardingPermissionsDone ?? false,
           onboardingTourDone: (legacy as any).onboardingTourDone ?? false,
+          productRole: (legacy as any).productRole ?? null,
           weatherCity: hasCustomCity ? city : DEFAULT_WEATHER_CITY,
           weatherCoords: (legacy as any).weatherCoords ?? { ...DEFAULT_WEATHER_COORDS },
           dashboardWidgetOrder: (legacy as any).dashboardWidgetOrder ?? [...DEFAULT_DASHBOARD_WIDGET_ORDER],
@@ -479,6 +521,7 @@ export const useSettingsStore = create<SettingsState>()(
         state.dashboardSectionOrder = normalizeDashboardSectionOrder(state.dashboardSectionOrder)
         state.dashboardVisibility = { ...DEFAULT_DASHBOARD_VISIBILITY, ...state.dashboardVisibility }
         if (!state.dailyAgendaOrder) state.dailyAgendaOrder = {}
+        if (state.productRole === undefined) state.productRole = null
         if (typeof state.menuCollapsed !== 'boolean') state.menuCollapsed = true
         if (state.language) i18n.changeLanguage(state.language)
       },
@@ -503,6 +546,7 @@ export function getSettingsPayload(state: any) {
     appointmentReminderMinutes: state.appointmentReminderMinutes,
     onboardingPermissionsDone: state.onboardingPermissionsDone,
     onboardingTourDone: state.onboardingTourDone,
+    productRole: state.productRole,
     weatherCity: state.weatherCity,
     weatherCoords: state.weatherCoords,
     weatherGpsAsked: state.weatherGpsAsked,

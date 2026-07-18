@@ -112,6 +112,15 @@
     "approve": "Approve",
     "reject": "Reject"
   },
+  "timeline": {
+    "title": "Where did my time go?",
+    "subtitle": "Work time and task time in one day",
+    "prev": "Previous day",
+    "next": "Next day",
+    "work": "Work load",
+    "tasks": "Task time",
+    "empty": "No punches or task time on this day."
+  },
   "overview": {
     "totalOvertime": "Total overtime",
     "overtimeInDays": "Overtime in days",

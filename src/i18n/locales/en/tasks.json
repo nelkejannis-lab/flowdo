@@ -151,7 +151,7 @@
       "deletedTask": "Deleted task"
     },
     "inbox": {
-      "allDone": "All done. No new notifications.",
+      "allDone": "All done. Nothing open.",
       "birthdaysToday": "Birthdays today",
       "congratulated": "Congratulated!",
       "notifications": "Notifications",
@@ -159,10 +159,15 @@
       "projectInvites": "Project invites",
       "teamInvites": "Team invites",
       "taskInvites": "Task invites",
+      "brainInvites": "Second Brain invites",
+      "dueOverdue": "Due & overdue",
+      "meetingsToday": "Meetings today",
       "from": "from {{name}}",
       "due": "due {{date}}",
       "accept": "Accept",
-      "decline": "Decline"
+      "decline": "Decline",
+      "openTask": "Open",
+      "viewCalendar": "Calendar"
     }
   }
 }
