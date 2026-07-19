@@ -189,7 +189,14 @@ interface SettingsState {
   dailyAgendaOrder: Record<string, string[]>
   /** When true, full menu drawer is hidden — top bar + pins give primary nav */
   menuCollapsed: boolean
+  /** Opt-in: morning (~07:30) + evening (~19:00) WhatsApp digests */
+  whatsappDailyDigest: boolean
+  morningBriefingTime: string
+  eveningDebriefingTime: string
   setMode: (mode: Mode) => void
+  setWhatsappDailyDigest: (v: boolean) => void
+  setMorningBriefingTime: (v: string) => void
+  setEveningDebriefingTime: (v: string) => void
   togglePinkAccent: () => void
   setLanguage: (language: Language) => void
   toggleFeature: (key: FeatureKey) => void
@@ -264,7 +271,13 @@ export const useSettingsStore = create<SettingsState>()(
       dashboardSectionOrder: [...DEFAULT_DASHBOARD_SECTION_ORDER],
       dailyAgendaOrder: {},
       menuCollapsed: true,
+      whatsappDailyDigest: false,
+      morningBriefingTime: '07:30',
+      eveningDebriefingTime: '19:00',
       setMode: (mode) => set({ mode }),
+      setWhatsappDailyDigest: (v) => set({ whatsappDailyDigest: v }),
+      setMorningBriefingTime: (v) => set({ morningBriefingTime: v }),
+      setEveningDebriefingTime: (v) => set({ eveningDebriefingTime: v }),
       togglePinkAccent: () => set((s) => ({ pinkAccent: !s.pinkAccent })),
       setMenuCollapsed: (menuCollapsed) => set({ menuCollapsed }),
       toggleMenuCollapsed: () => set((s) => ({ menuCollapsed: !s.menuCollapsed })),
@@ -405,6 +418,9 @@ export const useSettingsStore = create<SettingsState>()(
           ),
           dailyAgendaOrder: settings.dailyAgendaOrder ?? state.dailyAgendaOrder,
           menuCollapsed: settings.menuCollapsed ?? state.menuCollapsed,
+          whatsappDailyDigest: settings.whatsappDailyDigest ?? state.whatsappDailyDigest,
+          morningBriefingTime: settings.morningBriefingTime ?? state.morningBriefingTime,
+          eveningDebriefingTime: settings.eveningDebriefingTime ?? state.eveningDebriefingTime,
         }))
       },
       resetSettings: () => {
@@ -438,6 +454,9 @@ export const useSettingsStore = create<SettingsState>()(
           dashboardSectionOrder: [...DEFAULT_DASHBOARD_SECTION_ORDER],
           dailyAgendaOrder: {},
           menuCollapsed: true,
+          whatsappDailyDigest: false,
+          morningBriefingTime: '07:30',
+          eveningDebriefingTime: '19:00',
         })
       },
       syncNow: () => {
@@ -445,7 +464,7 @@ export const useSettingsStore = create<SettingsState>()(
         const auth = useAuthStore.getState()
         const userId = auth.user?.id
         if (!userId) return
-        const payload = getSettingsPayload(state)
+        const payload = mergeSettingsForSync(getSettingsPayload(state), auth.profile?.settings)
         supabase.from('profiles').update({ settings: payload }).eq('id', userId).then(({ error }) => {
           if (!error && auth.profile) {
             useAuthStore.setState({
@@ -460,7 +479,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'flowdo-settings',
-      version: 19,
+      version: 20,
       migrate: (persisted, version) => {
         const legacy = persisted as LegacyState & Partial<SettingsState>
         if (version < 1) {
@@ -514,6 +533,9 @@ export const useSettingsStore = create<SettingsState>()(
           blurOutOfOfficeForOthers: (legacy as any).blurOutOfOfficeForOthers ?? true,
           calendarDepartmentFilter: (legacy as any).calendarDepartmentFilter ?? true,
           requireTaskEstimate: (legacy as any).requireTaskEstimate ?? false,
+          whatsappDailyDigest: (legacy as any).whatsappDailyDigest ?? false,
+          morningBriefingTime: (legacy as any).morningBriefingTime ?? '07:30',
+          eveningDebriefingTime: (legacy as any).eveningDebriefingTime ?? '19:00',
         }
       },
       onRehydrateStorage: () => (state) => {
@@ -526,6 +548,9 @@ export const useSettingsStore = create<SettingsState>()(
         if (!state.dailyAgendaOrder) state.dailyAgendaOrder = {}
         if (state.productRole === undefined) state.productRole = null
         if (typeof state.menuCollapsed !== 'boolean') state.menuCollapsed = true
+        if (typeof state.whatsappDailyDigest !== 'boolean') state.whatsappDailyDigest = false
+        if (!state.morningBriefingTime) state.morningBriefingTime = '07:30'
+        if (!state.eveningDebriefingTime) state.eveningDebriefingTime = '19:00'
         if (state.language) i18n.changeLanguage(state.language)
       },
     }
@@ -563,7 +588,23 @@ export function getSettingsPayload(state: any) {
     dashboardSectionOrder: normalizeDashboardSectionOrder(state.dashboardSectionOrder),
     dailyAgendaOrder: state.dailyAgendaOrder,
     menuCollapsed: state.menuCollapsed,
+    whatsappDailyDigest: state.whatsappDailyDigest,
+    morningBriefingTime: state.morningBriefingTime,
+    eveningDebriefingTime: state.eveningDebriefingTime,
   }
+}
+
+/** Keep server-managed keys (WhatsApp log, priority plan, vault paths, …) when syncing UI settings. */
+export function mergeSettingsForSync(
+  payload: Record<string, unknown>,
+  existing: Record<string, unknown> | null | undefined,
+) {
+  if (!existing || typeof existing !== 'object') return payload
+  const preserved: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(existing)) {
+    if (!(key in payload)) preserved[key] = value
+  }
+  return { ...preserved, ...payload }
 }
 
 // Sync listener
@@ -574,7 +615,7 @@ useSettingsStore.subscribe((state) => {
   const profile = auth.profile
   if (!userId || !profile) return
 
-  const payload = getSettingsPayload(state)
+  const payload = mergeSettingsForSync(getSettingsPayload(state), profile.settings)
   const profileSettings = profile.settings
 
   // Skip syncing if settings haven't changed from the database version
