@@ -87,7 +87,7 @@
     "weekTitle": "Wochenbeginn — Prioritäten",
     "weekSubtitle": "Lege fest, in welcher Reihenfolge du die Woche angehst.",
     "empty": "Keine offenen Aufgaben zum Sortieren.",
-    "hint": "Ziehen zum Umsortieren — Nummer 1 zuerst.",
+    "hint": "Ziehe die Zeile per Drag & Drop — Nummer 1 zuerst.",
     "save": "Reihenfolge speichern",
     "later": "Später",
     "close": "Schließen"

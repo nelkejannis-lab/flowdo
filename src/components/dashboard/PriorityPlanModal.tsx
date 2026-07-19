@@ -59,23 +59,21 @@ function SortableRow({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-2 rounded-2xl bg-black/[0.03] px-2.5 py-2.5 dark:bg-white/[0.04]"
+      className={`flex items-center gap-2 rounded-2xl bg-black/[0.03] px-2.5 py-2.5 touch-none cursor-grab active:cursor-grabbing dark:bg-white/[0.04] ${
+        isDragging ? 'z-10 shadow-lg ring-2 ring-accent/30' : ''
+      }`}
+      {...attributes}
+      {...listeners}
     >
-      <button
-        type="button"
+      <span
         className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-accent/15 text-xs font-bold tabular-nums text-accent"
-        aria-label={`#${rank}`}
+        aria-hidden
       >
         {rank}
-      </button>
-      <button
-        type="button"
-        className="flex-shrink-0 cursor-grab touch-none p-1 text-gray-300 hover:text-gray-500 active:cursor-grabbing dark:text-racing-600"
-        {...attributes}
-        {...listeners}
-      >
+      </span>
+      <span className="flex-shrink-0 text-gray-300 dark:text-racing-600" aria-hidden>
         <GripVertical size={16} />
-      </button>
+      </span>
       <span
         className={`h-2 w-2 flex-shrink-0 rounded-full ${priorityDot[task.priority ?? ''] ?? 'bg-gray-400'}`}
       />

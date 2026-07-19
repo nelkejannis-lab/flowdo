@@ -87,7 +87,7 @@
     "weekTitle": "Week start — priorities",
     "weekSubtitle": "Decide the order you'll tackle this week.",
     "empty": "No open tasks to sort.",
-    "hint": "Drag to reorder — number 1 first.",
+    "hint": "Drag the whole row to reorder — number 1 first.",
     "save": "Save order",
     "later": "Later",
     "close": "Close"

@@ -22,6 +22,7 @@ import { useAiSchedulerStore } from '../store/aiSchedulerStore'
 import { useQuickTaskModalStore } from '../store/quickTaskModalStore'
 import { useTaskTimeStore } from '../store/taskTimeStore'
 import { useCreativeBoardStore } from '../store/creativeBoardStore'
+import { usePriorityPlanStore, weekKey } from '../store/priorityPlanStore'
 
 const titleKeys: Record<string, string> = {
   today: 'page.titles.today',
@@ -72,6 +73,12 @@ export default function TasksPage() {
   const [selectedProject, setSelectedProject] = useState<string | null>(null)
   const [showFilterMenu, setShowFilterMenu] = useState(false)
   const openQuickTaskModal = useQuickTaskModalStore((s) => s.open)
+  const weekOrders = usePriorityPlanStore((s) => s.weekOrders)
+  const setWeekOrder = usePriorityPlanStore((s) => s.setWeekOrder)
+  const confirmWeek = usePriorityPlanStore((s) => s.confirmWeek)
+  const applyOrder = usePriorityPlanStore((s) => s.applyOrder)
+  const wk = weekKey()
+  const weekPriorityOrder = weekOrders[wk]
   const [quickInput, setQuickInput] = useState('')
   const [parsingTask, setParsingTask] = useState(false)
   const timeEntries = useTaskTimeStore((s) => s.entries)
@@ -137,7 +144,12 @@ export default function TasksPage() {
     filtered = allTasks.filter((t) => !t.completed && t.someday)
     title = t(titleKeys.someday)
   } else if (smartList === 'priority') {
-    filtered = allTasks.filter((t) => !t.completed)
+    // Wochen-Prioritäten: offene Aufgaben der Woche (wie „Woche“, nur offen)
+    filtered = allTasks.filter(
+      (t) =>
+        !t.completed &&
+        (isOverdue(t.dueDate) || isDueToday(t.dueDate) || isDueThisWeek(t.dueDate)),
+    )
     title = t(titleKeys.priority)
   } else if (smartList === 'tracked') {
     title = t(titleKeys.tracked)
@@ -198,6 +210,9 @@ export default function TasksPage() {
   }, [filterForPills, selectedProject])
 
   let displayTasks = smartList === 'priority' ? filtered : filtered.filter((t) => !isSnoozed(t))
+  if (smartList === 'priority') {
+    displayTasks = applyOrder(displayTasks, weekPriorityOrder)
+  }
   if (searchQuery.trim()) {
     const q = searchQuery.toLowerCase().trim()
     displayTasks = displayTasks.filter(
@@ -335,6 +350,17 @@ export default function TasksPage() {
             {t('page.tabs.tasks')}
           </Link>
           <Link
+            to="/tasks/priority"
+            className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+              smartList === 'priority'
+                ? 'border-accent text-accent'
+                : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-racing-200'
+            }`}
+          >
+            <ListOrdered size={14} />
+            {t('page.tabs.priority')}
+          </Link>
+          <Link
             to="/tasks/today"
             className={`border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
               smartList === 'today'
@@ -353,17 +379,6 @@ export default function TasksPage() {
             }`}
           >
             {t('page.tabs.week')}
-          </Link>
-          <Link
-            to="/tasks/priority"
-            className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
-              smartList === 'priority'
-                ? 'border-accent text-accent'
-                : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-racing-200'
-            }`}
-          >
-            <ListOrdered size={14} />
-            {t('page.tabs.priority')}
           </Link>
           <Link
             to="/tasks/completed"
@@ -907,8 +922,26 @@ export default function TasksPage() {
             flat={smartList === 'completed'}
             showPriorityNumbers={smartList === 'priority'}
             useManualOrder={smartList === 'priority'}
-            emptyMessage={smartList === 'completed' ? t('page.noCompletedTasks') : t('list.noTasks')}
+            orderedIds={smartList === 'priority' ? weekPriorityOrder : undefined}
+            onReorder={
+              smartList === 'priority'
+                ? (ids) => {
+                    setWeekOrder(wk, ids)
+                    confirmWeek(wk)
+                  }
+                : undefined
+            }
+            emptyMessage={
+              smartList === 'completed'
+                ? t('page.noCompletedTasks')
+                : smartList === 'priority'
+                  ? t('page.priorityEmpty')
+                  : t('list.noTasks')
+            }
           />
+          {smartList === 'priority' && displayTasks.filter((x) => !x.completed).length > 0 && (
+            <p className="mt-3 text-center text-[11px] text-gray-400">{t('page.priorityDragHint')}</p>
+          )}
         </>
       )}
 

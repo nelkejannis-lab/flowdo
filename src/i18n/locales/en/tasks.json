@@ -128,20 +128,21 @@
       "inbox": "Inbox",
       "completed": "Done",
       "someday": "Someday",
-      "priority": "Priority list",
+      "priority": "Week priorities",
       "tracked": "Tracked Tasks"
     },
     "tabs": {
-      "tasks": "All Active",
+      "tasks": "All",
       "today": "Today",
       "week": "Week",
-      "priority": "Priority",
+      "priority": "Priorities",
       "someday": "Someday",
       "completed": "Done",
-      "matrix": "Matrix"
-      ,
+      "matrix": "Matrix",
       "tracked": "Tracked"
     },
+    "priorityEmpty": "No open tasks for this week.",
+    "priorityDragHint": "Drag and drop tasks to set this week’s priority order.",
     "tracked": {
       "from": "From",
       "to": "To",

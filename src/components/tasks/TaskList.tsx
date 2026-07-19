@@ -35,6 +35,10 @@ interface TaskListProps {
   flat?: boolean
   showPriorityNumbers?: boolean
   useManualOrder?: boolean
+  /** When set, drag-reorder calls this instead of the global tasks store order */
+  onReorder?: (orderedIds: string[]) => void
+  /** Preferred display order (e.g. week priority plan) */
+  orderedIds?: string[]
 }
 
 // Maps the German labels returned by dateGroupLabel()/dateGroupOrder to translation keys.
@@ -49,26 +53,38 @@ const dateGroupLabelKeys: Record<string, string> = {
 }
 
 function SortableTaskItem({ task, onClick, priorityRank }: { task: Task; onClick: () => void; priorityRank?: number }) {
-  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-1">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-1 rounded-xl touch-none ${isDragging ? 'z-10 shadow-lg ring-2 ring-accent/25' : ''}`}
+    >
       <div
-        ref={setActivatorNodeRef}
+        className="flex-shrink-0 cursor-grab p-1 text-gray-300 hover:text-gray-500 active:cursor-grabbing dark:text-racing-600"
         {...attributes}
         {...listeners}
-        className="flex-shrink-0 cursor-grab touch-none p-1 text-gray-300 hover:text-gray-500 active:cursor-grabbing dark:text-racing-600"
       >
         <GripVertical size={16} />
       </div>
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1 cursor-grab active:cursor-grabbing" {...listeners}>
         <TaskItem task={task} onClick={onClick} priorityRank={priorityRank} />
       </div>
     </div>
   )
 }
 
-export default function TaskList({ tasks, groupByDate = false, emptyMessage, flat = false, showPriorityNumbers = false, useManualOrder = false }: TaskListProps) {
+export default function TaskList({
+  tasks,
+  groupByDate = false,
+  emptyMessage,
+  flat = false,
+  showPriorityNumbers = false,
+  useManualOrder = false,
+  onReorder,
+  orderedIds,
+}: TaskListProps) {
   const { t } = useTranslation('tasks')
   const resolvedEmptyMessage = emptyMessage ?? t('list.noTasks')
   const [editingTask, setEditingTask] = useState<Task | null>(null)
@@ -83,12 +99,13 @@ export default function TaskList({ tasks, groupByDate = false, emptyMessage, fla
 
   const activeTasks = useMemo(() => {
     const open = tasks.filter((t) => !t.completed)
-    if (useManualOrder && taskOrder.length > 0) {
-      const orderMap = new Map(taskOrder.map((id, i) => [id, i]))
+    const orderSource = orderedIds?.length ? orderedIds : useManualOrder ? taskOrder : null
+    if (orderSource && orderSource.length > 0) {
+      const orderMap = new Map(orderSource.map((id, i) => [id, i]))
       return [...open].sort((a, b) => (orderMap.get(a.id) ?? Infinity) - (orderMap.get(b.id) ?? Infinity))
     }
     return [...open].sort((a, b) => (a.dueDate ?? '9999-12-31').localeCompare(b.dueDate ?? '9999-12-31'))
-  }, [tasks, useManualOrder, taskOrder])
+  }, [tasks, useManualOrder, taskOrder, orderedIds])
   const completedTasks = useMemo(
     () =>
       tasks
@@ -130,7 +147,8 @@ export default function TaskList({ tasks, groupByDate = false, emptyMessage, fla
     const newIndex = flatActive.indexOf(over.id as string)
     if (oldIndex === -1 || newIndex === -1) return
     const newOrder = arrayMove(flatActive, oldIndex, newIndex)
-    reorderTasks(newOrder)
+    if (onReorder) onReorder(newOrder)
+    else reorderTasks(newOrder)
   }
 
   if (tasks.length === 0) {
