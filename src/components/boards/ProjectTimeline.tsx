@@ -19,7 +19,7 @@ import {
   subWeeks,
 } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
-import { Calendar, ChevronLeft, ChevronRight, GripHorizontal } from 'lucide-react'
+import { Calendar, ChevronLeft, ChevronRight, GripHorizontal, Lock } from 'lucide-react'
 import type { Board, BoardColumn, Task } from '../../types'
 import { AvatarStack } from '../dashboard/FocusVisuals'
 import { toISODate } from '../../utils/date'
@@ -98,6 +98,14 @@ function taskAssignees(task: Task): { id: string; name: string; color: string }[
     return [{ id: task.assignee.id, name: task.assignee.display_name, color: task.assignee.avatar_color }]
   }
   return []
+}
+
+function isTaskBlocked(task: Task, all: Task[]): boolean {
+  if (task.completed || !task.dependsOn?.length) return false
+  return task.dependsOn.some((depId) => {
+    const dep = all.find((t) => t.id === depId)
+    return dep ? !dep.completed : false
+  })
 }
 
 const DAY_W = 44
@@ -344,6 +352,7 @@ export default function ProjectTimeline({
               const isDragging = dragging?.taskId === task.id
               const assignees = taskAssignees(task)
               const statusLabel = taskStatusLabel(task, board.columns, t)
+              const blocked = isTaskBlocked(task, tasks)
               const overdue =
                 task.dueDate &&
                 !task.completed &&
@@ -356,9 +365,10 @@ export default function ProjectTimeline({
                     type="button"
                     onClick={() => onTaskClick(task)}
                     style={{ width: TASK_COL_W }}
-                    className="flex-shrink-0 truncate px-2 py-2.5 text-left text-xs font-medium hover:text-accent"
+                    className="flex flex-shrink-0 items-center gap-1 truncate px-2 py-2.5 text-left text-xs font-medium hover:text-accent"
                   >
-                    {task.title}
+                    {blocked && <Lock size={10} className="flex-shrink-0 text-amber-500" />}
+                    <span className="truncate">{task.title}</span>
                   </button>
                   <div className="relative flex-shrink-0" style={{ width: gridWidth, height: 52 }}>
                     {/* Dashed grid lines */}
@@ -380,12 +390,38 @@ export default function ProjectTimeline({
                         style={{ left: `${((todayOffset + 0.5) / totalDays) * 100}%` }}
                       />
                     )}
+                    {/* Thin connector from first incomplete predecessor (same board span) */}
+                    {blocked &&
+                      barStyle &&
+                      (task.dependsOn ?? []).slice(0, 1).map((depId) => {
+                        const dep = datedTasks.find((tk) => tk.id === depId)
+                        const depBar = dep ? getBarStyle(dep) : null
+                        if (!depBar || !barStyle.left) return null
+                        const depRight =
+                          typeof depBar.left === 'string' && typeof depBar.width === 'string'
+                            ? parseFloat(depBar.left) + parseFloat(depBar.width)
+                            : null
+                        const taskLeft = typeof barStyle.left === 'string' ? parseFloat(barStyle.left) : null
+                        if (depRight === null || taskLeft === null || taskLeft <= depRight) return null
+                        return (
+                          <div
+                            key={`link-${depId}`}
+                            className="pointer-events-none absolute top-1/2 z-[5] h-px -translate-y-1/2 bg-amber-400/70"
+                            style={{
+                              left: `${depRight}%`,
+                              width: `${taskLeft - depRight}%`,
+                            }}
+                          />
+                        )
+                      })}
                     {/* Bar pill */}
                     {barStyle && (
                       <div
-                        className={`absolute top-2 flex h-9 cursor-grab items-center gap-1.5 rounded-xl border border-gray-100/80 bg-white px-2.5 text-[10px] font-medium shadow-apple-sm transition-shadow active:cursor-grabbing dark:border-racing-700 dark:bg-racing-800 ${
-                          task.completed ? 'opacity-60' : ''
-                        } ${overdue ? 'ring-1 ring-red-400/50' : ''} ${
+                        className={`absolute top-2 flex h-9 cursor-grab items-center gap-1.5 rounded-xl border bg-white px-2.5 text-[10px] font-medium shadow-apple-sm transition-shadow active:cursor-grabbing dark:bg-racing-800 ${
+                          blocked
+                            ? 'border-amber-300/80 dark:border-amber-500/40'
+                            : 'border-gray-100/80 dark:border-racing-700'
+                        } ${task.completed ? 'opacity-60' : ''} ${overdue ? 'ring-1 ring-red-400/50' : ''} ${
                           isDragging ? 'z-30 -rotate-2 scale-[1.02] shadow-apple-lg' : 'hover:shadow-apple-md'
                         }`}
                         style={{
@@ -403,8 +439,16 @@ export default function ProjectTimeline({
                           <p className="truncate text-[11px] font-semibold text-gray-800 dark:text-racing-50">
                             {task.title}
                           </p>
-                          <p className="truncate text-[9px] text-gray-400">{statusLabel}</p>
+                          <p className="truncate text-[9px] text-gray-400">
+                            {blocked ? t('timeline.blocked') : statusLabel}
+                          </p>
                         </div>
+                        {blocked && (
+                          <span className="flex flex-shrink-0 items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
+                            <Lock size={8} />
+                            {t('timeline.blockedBadge')}
+                          </span>
+                        )}
                         {assignees.length > 0 && (
                           <div className="flex-shrink-0 scale-75">
                             <AvatarStack people={assignees} max={2} />
@@ -414,7 +458,7 @@ export default function ProjectTimeline({
                           className="absolute bottom-0 left-0 h-0.5 rounded-b-xl"
                           style={{
                             width: `${taskProgress(task, board.columns)}%`,
-                            backgroundColor: task.completed ? '#9CA3AF' : board.color,
+                            backgroundColor: task.completed ? '#9CA3AF' : blocked ? '#F59E0B' : board.color,
                           }}
                         />
                       </div>

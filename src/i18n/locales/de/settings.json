@@ -27,6 +27,10 @@
         "label": "Dein Tag",
         "desc": "Hero mit To-dos, Kapazität und Kurzaktionen"
       },
+      "timeToday": {
+        "label": "Zeit heute",
+        "desc": "Stempelungen und Aufgabenzeit als Tageszeitstrahl"
+      },
       "weekFocus": {
         "label": "Woche im Fokus",
         "desc": "Wochenfortschritt und Wins"
@@ -38,6 +42,10 @@
       "weekOverview": {
         "label": "Wochenüberblick",
         "desc": "Aufgaben & Termine pro Tag"
+      },
+      "teamWeek": {
+        "label": "Team diese Woche",
+        "desc": "Offene Projektaufgaben und Last vs. Kapazität"
       },
       "dueThisWeek": {
         "label": "Diese Woche fällig",

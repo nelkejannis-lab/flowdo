@@ -103,10 +103,13 @@
     "budget": "{{percent}}% des Zeit-Budgets genutzt"
   },
   "workload": {
-    "title": "Team-Auslastung",
+    "title": "Team diese Woche",
     "open": "{{count}} offen",
     "estimated": "{{time}} geplant",
-    "logged": "{{time}} gebucht"
+    "logged": "{{time}} gebucht",
+    "weekDue": "{{count}} fällig diese Woche",
+    "capacityHint": "Kapazität {{hours}}h/Woche",
+    "openWorktime": "Zur Arbeitszeit"
   },
   "milestones": {
     "title": "Meilensteine",
@@ -180,6 +183,7 @@
     "statusNote": "Status-Notiz",
     "statusNotePlaceholder": "z. B. Warte auf Rückmeldung von …",
     "dependsOn": "Blockiert durch",
+    "dependsOnHint": "Optional: Vorgänger wählen, die zuerst erledigt sein müssen.",
     "addDependency": "Abhängigkeit hinzufügen…",
     "delete": "Löschen",
     "save": "Speichern",
@@ -203,7 +207,9 @@
     "dragHint": "Ziehe Balken horizontal, um Termine zu verschieben. Klick öffnet die Aufgabe.",
     "undatedTitle": "Ohne Termin",
     "undatedHint": "Ziehe eine Aufgabe auf einen Tag unten oder klicke, um ein Datum zu setzen.",
-    "dropToSchedule": "Auf Tag ablegen"
+    "dropToSchedule": "Auf Tag ablegen",
+    "blocked": "Blockiert durch Vorgänger",
+    "blockedBadge": "blockiert"
   },
   "projectDashboard": {
     "title": "Projekt-Dashboard",

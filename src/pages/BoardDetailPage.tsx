@@ -89,7 +89,6 @@ export default function BoardDetailPage() {
   }, [boards.length, fetchBoards])
 
   const subscribeToBoard = useProjectTasksStore((s) => s.subscribeToBoard)
-  const isBlocked = useProjectTasksStore((s) => s.isBlocked)
 
   useEffect(() => {
     if (boardId) fetchTasks(boardId)

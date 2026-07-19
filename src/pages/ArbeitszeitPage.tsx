@@ -9,6 +9,7 @@ import WorkMonthView from '../components/worktime/WorkMonthView'
 import AbsenceManager from '../components/worktime/AbsenceManager'
 import AbsenceApprovals from '../components/worktime/AbsenceApprovals'
 import DayTimeTimeline from '../components/worktime/DayTimeTimeline'
+import TeamWeekWorkload from '../components/boards/TeamWeekWorkload'
 import Modal from '../components/layout/Modal'
 import { useWorkTimeStore } from '../store/workTimeStore'
 import { useTaskTimeStore } from '../store/taskTimeStore'
@@ -97,6 +98,10 @@ export default function ArbeitszeitPage() {
 
       <div className="mb-6">
         <OvertimeOverview />
+      </div>
+
+      <div className="mb-6">
+        <TeamWeekWorkload />
       </div>
 
       {/* On mobile the source order applies (Stempeluhr → Wochen-/Monatsansicht → Stempel-Protokoll

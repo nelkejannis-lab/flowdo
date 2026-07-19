@@ -36,6 +36,7 @@ import PriorityBadge from '../tasks/PriorityBadge'
 import TaskTimer from '../tasks/TaskTimer'
 import ProjectTimeReport from './ProjectTimeReport'
 import ProjectTimeline from './ProjectTimeline'
+import ProjectWorkload from './ProjectWorkload'
 import { formatFriendlyDate, isOverdue, todayISO } from '../../utils/date'
 import { formatHM } from '../../utils/worktime'
 
@@ -469,6 +470,10 @@ export default function ProjectDashboard({
                 ))}
               </div>
             )}
+          </div>
+
+          <div className={cardClass()}>
+            <ProjectWorkload board={board} tasks={visibleTasks} byTask={summary.byTask} compact />
           </div>
         </div>
       </div>

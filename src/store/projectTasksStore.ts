@@ -203,8 +203,8 @@ export const useProjectTasksStore = create<ProjectTasksState>()(
         }
 
         const ids = allRows.map((r) => r.id)
-        const assigneeMap = await fetchAssigneesMap(ids)
-        const myTasks = allRows.map((row) => toTask(row, undefined, assigneeMap[row.id]))
+        const [depMap, assigneeMap] = await Promise.all([fetchDependencyMap(ids), fetchAssigneesMap(ids)])
+        const myTasks = allRows.map((row) => toTask(row, depMap[row.id], assigneeMap[row.id]))
         set({ myTasks })
       },
 
@@ -352,6 +352,7 @@ export const useProjectTasksStore = create<ProjectTasksState>()(
         const task = get().tasks.find((t) => t.id === id) ?? get().myTasks.find((t) => t.id === id)
         if (!task) return
         const completed = !task.completed
+        // Completing while blocked is allowed (light warn lives in UI), but we still proceed.
         const completedAt = completed ? new Date().toISOString() : undefined
         const updates: Partial<Task> = { completed, completedAt }
 

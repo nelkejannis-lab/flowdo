@@ -4,6 +4,7 @@ import { Moon, X, CheckCircle2, Clock, ArrowRight, Sparkles } from 'lucide-react
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
+import DayTimeTimeline from '../worktime/DayTimeTimeline'
 
 interface DoneTask {
   id: string
@@ -43,6 +44,7 @@ export default function EveningReportModal({
   const dateLocale = i18n.language === 'en' ? enUS : de
   const dayLabel = format(new Date(), 'EEEE, d. MMMM', { locale: dateLocale })
   const [picked, setPicked] = useState<string[]>(() => suggestedTop3.slice(0, 3).map((tk) => tk.id))
+  const [showTimeline, setShowTimeline] = useState(true)
 
   const candidates = useMemo(() => {
     const ids = new Set(suggestedTop3.map((tk) => tk.id))
@@ -123,6 +125,20 @@ export default function EveningReportModal({
               </ul>
             </section>
           )}
+
+          <section className="rounded-2xl border border-gray-100 p-3 dark:border-racing-800">
+            <button
+              type="button"
+              onClick={() => setShowTimeline((v) => !v)}
+              className="mb-2 flex w-full items-center gap-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-400"
+            >
+              <Clock size={12} /> {t('eveningReport.timeToday')}
+              <span className="ml-auto text-[10px] font-medium normal-case tracking-normal text-accent">
+                {showTimeline ? t('eveningReport.hideTimeline') : t('eveningReport.showTimeline')}
+              </span>
+            </button>
+            {showTimeline && <DayTimeTimeline compact />}
+          </section>
 
           <section>
             <h3 className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">

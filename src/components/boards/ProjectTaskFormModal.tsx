@@ -68,6 +68,7 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
   const [statusNote, setStatusNote] = useState(task?.statusNote ?? '')
   const [newSubtask, setNewSubtask] = useState('')
   const [localSubtasks, setLocalSubtasks] = useState<string[]>([])
+  const [pendingDependsOn, setPendingDependsOn] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [attachments, setAttachments] = useState<Attachment[]>(task?.attachments ?? [])
@@ -138,6 +139,9 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
       if (result.id) {
         for (const s of localSubtasks) {
           await addSubtask(result.id, s)
+        }
+        for (const depId of pendingDependsOn) {
+          await addDependency(result.id, depId)
         }
       }
     }
@@ -627,6 +631,50 @@ export default function ProjectTaskFormModal({ board, task, defaultColumnId, def
               <option value="">{t('taskForm.addDependency')}</option>
               {allBoardTasks
                 .filter((bt) => bt.id !== task.id && !(task.dependsOn ?? []).includes(bt.id))
+                .map((bt) => (
+                  <option key={bt.id} value={bt.id}>
+                    {bt.title}
+                  </option>
+                ))}
+            </select>
+          </div>
+        )}
+
+        {!task && allBoardTasks.length > 0 && (
+          <div>
+            <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-gray-500">
+              <Lock size={12} />
+              {t('taskForm.dependsOn')}
+            </label>
+            <p className="mb-1.5 text-[11px] text-gray-400">{t('taskForm.dependsOnHint')}</p>
+            <div className="flex flex-col gap-1">
+              {pendingDependsOn.map((depId) => {
+                const dep = allBoardTasks.find((bt) => bt.id === depId)
+                if (!dep) return null
+                return (
+                  <div key={depId} className="flex items-center gap-2 rounded-lg border border-gray-200 px-2 py-1.5 text-sm dark:border-racing-700">
+                    <span className="flex-1">{dep.title}</span>
+                    <button
+                      type="button"
+                      onClick={() => setPendingDependsOn((ids) => ids.filter((id) => id !== depId))}
+                      className="text-gray-300 hover:text-red-500"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+            <select
+              value=""
+              onChange={(e) => {
+                if (e.target.value) setPendingDependsOn((ids) => [...ids, e.target.value])
+              }}
+              className="mt-2 w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+            >
+              <option value="">{t('taskForm.addDependency')}</option>
+              {allBoardTasks
+                .filter((bt) => !pendingDependsOn.includes(bt.id))
                 .map((bt) => (
                   <option key={bt.id} value={bt.id}>
                     {bt.title}

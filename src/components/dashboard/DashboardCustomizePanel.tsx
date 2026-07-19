@@ -35,12 +35,14 @@ import { useSettingsStore, type DashboardWidget } from '../../store/settingsStor
 
 const SECTION_I18N_KEY: Record<DashboardSectionId, string> = {
   todayHero: 'customize.sections.todayHero',
+  timeToday: 'customize.sections.timeToday',
   weekFocus: 'customize.sections.weekFocus',
   weather: 'customize.sections.weather',
   dayPlan: 'customize.sections.dayPlan',
   topPriority: 'customize.sections.topPriority',
   dayCapacity: 'customize.sections.dayCapacity',
   weekOverview: 'customize.sections.weekOverview',
+  teamWeek: 'customize.sections.teamWeek',
   dueThisWeek: 'customize.sections.dueThisWeek',
   workoffice: 'customize.sections.workoffice',
   stats: 'customize.sections.stats',

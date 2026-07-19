@@ -38,6 +38,7 @@ import TodayHero from '../components/dashboard/TodayHero'
 import WeeklyInsightCard from '../components/dashboard/WeeklyInsightCard'
 import { DayCapacityWidget, WeekOverviewWidget } from '../components/dashboard/FocusWidgets'
 import DashboardCustomizePanel from '../components/dashboard/DashboardCustomizePanel'
+import TeamWeekWorkload from '../components/boards/TeamWeekWorkload'
 import DashboardSectionHeader from '../components/dashboard/DashboardSectionHeader'
 import TaskTimer from '../components/tasks/TaskTimer'
 import { useSettingsStore } from '../store/settingsStore'
@@ -526,7 +527,7 @@ export default function Dashboard() {
         />
       )}
       {showTimeTimeline && (
-        <Modal title="Wo war meine Zeit?" onClose={() => setShowTimeTimeline(false)} widthClass="max-w-lg">
+        <Modal title="Zeit heute" onClose={() => setShowTimeTimeline(false)} widthClass="max-w-lg">
           <DayTimeTimeline initialDate={today} compact />
         </Modal>
       )}
@@ -769,6 +770,12 @@ export default function Dashboard() {
                   onOpenTodo={(tk) => setEditingTask(tk as typeof allTasks[number])}
                 />
               )}
+              {id === 'timeToday' && (
+                <div className="bento-card p-4 sm:p-5">
+                  <DayTimeTimeline initialDate={today} compact />
+                </div>
+              )}
+              {id === 'teamWeek' && <TeamWeekWorkload showLink />}
               {id === 'weekFocus' && (
                 <WeeklyInsightCard insight={weeklyInsight} onAiRefresh={() => setShowWeekReport(true)} />
               )}

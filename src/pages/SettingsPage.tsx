@@ -1260,9 +1260,11 @@ function SidebarOrderSection({ navOrder, setNavOrder, navVisibility, toggleNavIt
 function getDashWidgets(t: (key: string) => string): { key: DashboardWidget; icon: React.ReactNode; label: string; desc: string }[] {
   return [
     { key: 'todayHero',        icon: <LayoutDashboard size={16} />, label: t('dashboardWidgets.items.todayHero.label'), desc: t('dashboardWidgets.items.todayHero.desc') },
+    { key: 'timeToday',        icon: <Clock size={16} />,       label: t('dashboardWidgets.items.timeToday.label'), desc: t('dashboardWidgets.items.timeToday.desc') },
     { key: 'weekFocus',        icon: <TrendingUp size={16} />,  label: t('dashboardWidgets.items.weekFocus.label'), desc: t('dashboardWidgets.items.weekFocus.desc') },
     { key: 'dayCapacity',      icon: <Timer size={16} />,       label: t('dashboardWidgets.items.dayCapacity.label'), desc: t('dashboardWidgets.items.dayCapacity.desc') },
     { key: 'weekOverview',     icon: <CalendarDays size={16} />,label: t('dashboardWidgets.items.weekOverview.label'), desc: t('dashboardWidgets.items.weekOverview.desc') },
+    { key: 'teamWeek',         icon: <Users size={16} />,       label: t('dashboardWidgets.items.teamWeek.label'), desc: t('dashboardWidgets.items.teamWeek.desc') },
     { key: 'dueThisWeek',      icon: <CheckSquare size={16} />, label: t('dashboardWidgets.items.dueThisWeek.label'), desc: t('dashboardWidgets.items.dueThisWeek.desc') },
     { key: 'stats',            icon: <BarChart2 size={16} />,   label: t('dashboardWidgets.items.stats.label'),     desc: t('dashboardWidgets.items.stats.desc') },
     { key: 'topPriority',      icon: <TrendingUp size={16} />,  label: t('dashboardWidgets.items.topPriority.label'), desc: t('dashboardWidgets.items.topPriority.desc') },

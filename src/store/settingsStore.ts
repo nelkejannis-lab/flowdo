@@ -125,6 +125,7 @@ export type DashboardWidget =
   | 'stats' | 'todayTasks' | 'upcomingDeadlines' | 'nextEvents' | 'projectsOverview'
   | 'workoffice' | 'topPriority' | 'dayPlan' | 'weather'
   | 'todayHero' | 'weekFocus' | 'dayCapacity' | 'weekOverview' | 'dueThisWeek'
+  | 'timeToday' | 'teamWeek'
 
 export const DEFAULT_DASHBOARD_VISIBILITY: Record<DashboardWidget, boolean> = {
   stats: true,
@@ -141,6 +142,8 @@ export const DEFAULT_DASHBOARD_VISIBILITY: Record<DashboardWidget, boolean> = {
   dayCapacity: true,
   weekOverview: true,
   dueThisWeek: true,
+  timeToday: true,
+  teamWeek: true,
 }
 
 export const DEFAULT_DASHBOARD_WIDGET_ORDER = ['workoffice', 'stats_week', 'stats_projects']

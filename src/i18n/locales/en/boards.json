@@ -103,10 +103,13 @@
     "budget": "{{percent}}% of time budget used"
   },
   "workload": {
-    "title": "Team workload",
+    "title": "Team this week",
     "open": "{{count}} open",
     "estimated": "{{time}} planned",
-    "logged": "{{time}} logged"
+    "logged": "{{time}} logged",
+    "weekDue": "{{count}} due this week",
+    "capacityHint": "Capacity {{hours}}h/week",
+    "openWorktime": "Open work time"
   },
   "milestones": {
     "title": "Milestones",
@@ -180,6 +183,7 @@
     "statusNote": "Status note",
     "statusNotePlaceholder": "e.g. Waiting for reply from …",
     "dependsOn": "Blocked by",
+    "dependsOnHint": "Optional: pick predecessors that must be done first.",
     "addDependency": "Add dependency…",
     "delete": "Delete",
     "save": "Save",
@@ -203,7 +207,9 @@
     "dragHint": "Drag bars horizontally to reschedule. Click to open the task.",
     "undatedTitle": "Undated",
     "undatedHint": "Drag a task onto a day below or click to set a date.",
-    "dropToSchedule": "Drop on day"
+    "dropToSchedule": "Drop on day",
+    "blocked": "Blocked by predecessor",
+    "blockedBadge": "blocked"
   },
   "projectDashboard": {
     "title": "Project dashboard",

@@ -27,6 +27,10 @@
         "label": "Your day",
         "desc": "Hero with to-dos, capacity and quick actions"
       },
+      "timeToday": {
+        "label": "Time today",
+        "desc": "Punches and task time as a day timeline"
+      },
       "weekFocus": {
         "label": "Week in focus",
         "desc": "Week progress and wins"
@@ -38,6 +42,10 @@
       "weekOverview": {
         "label": "Week overview",
         "desc": "Tasks & events per day"
+      },
+      "teamWeek": {
+        "label": "Team this week",
+        "desc": "Open project tasks and load vs capacity"
       },
       "dueThisWeek": {
         "label": "Due this week",

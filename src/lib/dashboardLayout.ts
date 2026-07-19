@@ -5,6 +5,7 @@
 
 export type DashboardSectionId =
   | 'todayHero'
+  | 'timeToday'
   | 'weekFocus'
   | 'weather'
   | 'dayPlan'
@@ -17,16 +18,19 @@ export type DashboardSectionId =
   | 'upcomingDeadlines'
   | 'nextEvents'
   | 'projectsOverview'
+  | 'teamWeek'
 
 /** Visual default matching the current NOVAT dashboard. */
 export const DEFAULT_DASHBOARD_SECTION_ORDER: DashboardSectionId[] = [
   'todayHero',
+  'timeToday',
   'weekFocus',
   'weather',
   'dayPlan',
   'topPriority',
   'dayCapacity',
   'weekOverview',
+  'teamWeek',
   'dueThisWeek',
   'workoffice',
   'stats',

@@ -42,11 +42,18 @@ export default function KanbanCard({ task, onClick }: KanbanCardProps) {
         <button
           onClick={(e) => {
             e.stopPropagation()
+            if (!task.completed && blocked) {
+              const ok = window.confirm(
+                'Diese Aufgabe ist noch blockiert (Vorgänger offen). Trotzdem als erledigt markieren?',
+              )
+              if (!ok) return
+            }
             toggleTaskCompleted(task.id)
           }}
           className={`mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 ${
-            task.completed ? 'border-accent bg-accent text-white' : 'border-gray-300 dark:border-racing-600'
+            task.completed ? 'border-accent bg-accent text-white' : blocked ? 'border-amber-400' : 'border-gray-300 dark:border-racing-600'
           }`}
+          title={blocked ? 'Blockiert durch offene Vorgänger' : undefined}
         >
           {task.completed && <Check size={10} />}
         </button>
