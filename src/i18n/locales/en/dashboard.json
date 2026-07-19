@@ -281,6 +281,22 @@
     "backToInput": "← Back",
     "importSelected": "Import {{count}}"
   },
+  "dayPacker": {
+    "title": "Plan day",
+    "subtitle": "Your priorities are packed in order into free time slots between calendar events.",
+    "estimatesGate": "{{count}} to-dos are missing a time estimate — add durations, then the day will be planned.",
+    "estimatesHint": "Once every duration is set, the preview appears automatically.",
+    "estimatesRequired": "Please enter a duration in minutes for every task.",
+    "continuePlan": "Continue to plan",
+    "previewHint": "Preview: tasks packed into free slots in priority order.",
+    "noTasks": "No open tasks for today. Set priorities or due dates first.",
+    "noFreeSlots": "No free slots in the workday — meetings fill the day.",
+    "overflow": "{{count}} task(s) did not fit:",
+    "apply": "Schedule {{count}}",
+    "cancel": "Cancel",
+    "minutesShort": "min",
+    "errorGeneric": "Could not plan the day."
+  },
   "weatherWidget": {
     "conditions": {
       "clear": "Clear",

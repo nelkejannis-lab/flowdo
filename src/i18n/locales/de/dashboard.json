@@ -282,6 +282,22 @@
     "backToInput": "← Zurück",
     "importSelected": "{{count}} importieren"
   },
+  "dayPacker": {
+    "title": "Tag planen",
+    "subtitle": "Deine Prioritäten werden der Reihe nach in die freien Zeitslots zwischen Terminen gelegt.",
+    "estimatesGate": "{{count}} To-dos ohne Zeitangabe — bitte Dauer ergänzen, dann wird der Tag geplant.",
+    "estimatesHint": "Sobald alle Dauern gesetzt sind, erscheint die Vorschau automatisch.",
+    "estimatesRequired": "Bitte für jede Aufgabe eine Dauer in Minuten angeben.",
+    "continuePlan": "Weiter zum Plan",
+    "previewHint": "Vorschau: Aufgaben in Prioritätsreihenfolge in freie Slots gepackt.",
+    "noTasks": "Keine offenen Aufgaben für heute. Setze zuerst Prioritäten oder Due Dates.",
+    "noFreeSlots": "Keine freien Zeitslots im Arbeitstag — Termine füllen den Tag.",
+    "overflow": "{{count}} Aufgabe(n) passen nicht mehr in den Tag:",
+    "apply": "{{count}} einplanen",
+    "cancel": "Abbrechen",
+    "minutesShort": "Min.",
+    "errorGeneric": "Tag konnte nicht geplant werden."
+  },
   "weatherWidget": {
     "conditions": {
       "clear": "Klar",

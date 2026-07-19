@@ -1,230 +1,336 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Sparkles, Check, Loader2, Clock, Flame, Star } from 'lucide-react'
+import { Check, Clock, Loader2, AlertCircle, CalendarClock } from 'lucide-react'
 import Modal from '../layout/Modal'
-import { useAiSchedulerStore, type PlannedTaskItem } from '../../store/aiSchedulerStore'
 import { useTasksStore } from '../../store/tasksStore'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
 import { useBoardsStore } from '../../store/boardsStore'
 import { useCalendarEntriesStore } from '../../store/calendarEntriesStore'
 import { useDayPlanStore, type DayPlanItem } from '../../store/dayPlanStore'
+import { usePriorityPlanStore } from '../../store/priorityPlanStore'
+import { useWorkTimeStore } from '../../store/workTimeStore'
 import { expandRecurringEntries } from '../../utils/recurrence'
-import { todayISO } from '../../utils/date'
+import { todayISO, isDueToday, isOverdue } from '../../utils/date'
+import {
+  packTasksIntoFreeSlots,
+  parseHHMM,
+  type MinuteRange,
+  type PackableTask,
+  type PackedPlacement,
+} from '../../lib/daySlotPacker'
+import type { Task } from '../../types'
 
-function addMinutes(time: string, minutes: number): string {
-  const [h, m] = time.split(':').map(Number)
-  const total = h * 60 + m + minutes
-  const hh = Math.floor((total % (24 * 60)) / 60)
-  const mm = total % 60
-  return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`
+const WORK_START_DEFAULT = 9 * 60
+const BUFFER_MIN = 5
+
+function eisenhowerRank(t: { urgent: boolean; important: boolean; priority: string }): number {
+  if (t.urgent && t.important) return 0
+  if (!t.urgent && t.important) return 1
+  if (t.urgent && !t.important) return 2
+  return 3
+}
+
+const priorityRank: Record<string, number> = { high: 0, medium: 1, low: 2 }
+
+function sortByEisenhower<T extends { urgent: boolean; important: boolean; priority: string }>(arr: T[]): T[] {
+  return [...arr].sort(
+    (a, b) =>
+      eisenhowerRank(a) - eisenhowerRank(b) ||
+      (priorityRank[a.priority] ?? 1) - (priorityRank[b.priority] ?? 1),
+  )
+}
+
+function isProjectTask(task: Task, projectIds: Set<string>): boolean {
+  return Boolean(task.boardId) || projectIds.has(task.id)
 }
 
 interface AiDayPlannerModalProps {
   onClose: () => void
 }
 
-interface PlannedItemState extends PlannedTaskItem {
-  id: string
-  included: boolean
-}
+type Step = 'estimates' | 'preview' | 'empty'
 
 export default function AiDayPlannerModal({ onClose }: AiDayPlannerModalProps) {
   const { t } = useTranslation('dashboard')
-  const planDay = useAiSchedulerStore((s) => s.planDay)
-  const tasks = useTasksStore((s) => s.tasks)
+  const personalTasks = useTasksStore((s) => s.tasks)
+  const updatePersonal = useTasksStore((s) => s.updateTask)
   const myProjectTasks = useProjectTasksStore((s) => s.myTasks)
+  const updateProject = useProjectTasksStore((s) => s.updateTask)
   const boards = useBoardsStore((s) => s.boards)
   const calendarEntries = useCalendarEntriesStore((s) => s.entries)
   const hiddenOccurrences = useCalendarEntriesStore((s) => s.hiddenOccurrences)
-  const appendDayPlanItems = useDayPlanStore((s) => s.appendItems)
-
-  const [input, setInput] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [items, setItems] = useState<PlannedItemState[] | null>(null)
-  const [importing, setImporting] = useState(false)
+  const setDayPlanItems = useDayPlanStore((s) => s.setItems)
+  const dayOrders = usePriorityPlanStore((s) => s.dayOrders)
+  const tomorrowTop3 = usePriorityPlanStore((s) => s.tomorrowTop3)
+  const applyOrder = usePriorityPlanStore((s) => s.applyOrder)
+  const weekdayHours = useWorkTimeStore((s) => s.settings.weekdayHours)
 
   const today = todayISO()
+  const projectIdSet = useMemo(() => new Set(myProjectTasks.map((tk) => tk.id)), [myProjectTasks])
 
-  async function handleGenerate() {
-    if (!input.trim() || loading) return
-    setLoading(true)
+  const orderedOpen = useMemo(() => {
+    const all = [...personalTasks, ...myProjectTasks]
+    const open = all.filter((tk) => !tk.completed && (isDueToday(tk.dueDate) || isOverdue(tk.dueDate)))
+    return applyOrder(sortByEisenhower(open), dayOrders[today] ?? tomorrowTop3[today])
+  }, [personalTasks, myProjectTasks, applyOrder, dayOrders, tomorrowTop3, today])
+
+  const [estimates, setEstimates] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {}
+    for (const tk of orderedOpen) {
+      if (tk.estimatedMinutes && tk.estimatedMinutes > 0) {
+        init[tk.id] = String(tk.estimatedMinutes)
+      } else {
+        init[tk.id] = ''
+      }
+    }
+    return init
+  })
+  const [applying, setApplying] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const missingEstimateIds = useMemo(
+    () =>
+      orderedOpen
+        .filter((tk) => {
+          const raw = estimates[tk.id]
+          const n = Number(raw)
+          return !raw?.trim() || !Number.isFinite(n) || n <= 0
+        })
+        .map((tk) => tk.id),
+    [orderedOpen, estimates],
+  )
+
+  const workWindow = useMemo((): MinuteRange => {
+    const hours = weekdayHours && weekdayHours > 0 ? weekdayHours : 8
+    return { start: WORK_START_DEFAULT, end: WORK_START_DEFAULT + Math.round(hours * 60) }
+  }, [weekdayHours])
+
+  const busyRanges = useMemo((): MinuteRange[] => {
+    const todaysEntries = expandRecurringEntries(
+      calendarEntries,
+      today,
+      today,
+      new Set(hiddenOccurrences),
+    ).filter((e) => (e.endDate ? e.date <= today && e.endDate >= today : e.date === today))
+
+    const ranges: MinuteRange[] = []
+    for (const e of todaysEntries) {
+      const start = e.startTime ? parseHHMM(e.startTime) : null
+      const end = e.endTime ? parseHHMM(e.endTime) : start != null ? start + 30 : null
+      if (start == null || end == null || end <= start) continue
+      ranges.push({ start, end })
+    }
+    return ranges
+  }, [calendarEntries, hiddenOccurrences, today])
+
+  const packResult = useMemo(() => {
+    if (missingEstimateIds.length > 0 || orderedOpen.length === 0) {
+      return { placements: [] as PackedPlacement[], overflow: [] as PackableTask[] }
+    }
+    const packable: PackableTask[] = orderedOpen.map((tk) => {
+      const mins = Math.max(5, Math.round(Number(estimates[tk.id])))
+      const board = tk.boardId ? boards.find((b) => b.id === tk.boardId) : undefined
+      return {
+        id: tk.id,
+        title: tk.title,
+        estimatedMinutes: mins,
+        projectId: tk.boardId ?? null,
+        projectName: board?.title,
+      }
+    })
+    return packTasksIntoFreeSlots(packable, workWindow, busyRanges, { bufferMin: BUFFER_MIN })
+  }, [missingEstimateIds.length, orderedOpen, estimates, boards, workWindow, busyRanges])
+
+  const step: Step =
+    orderedOpen.length === 0 ? 'empty' : missingEstimateIds.length > 0 ? 'estimates' : 'preview'
+
+  async function handleApplyPlan() {
+    if (packResult.placements.length === 0) return
+    setApplying(true)
     setError(null)
     try {
-      const todaysEntries = expandRecurringEntries(calendarEntries, today, today, new Set(hiddenOccurrences)).filter((e) =>
-        e.endDate ? e.date <= today && e.endDate >= today : e.date === today
-      )
-      const todaysTasks = [...tasks, ...myProjectTasks].filter((t) => !t.completed && t.dueDate === today)
-
-      const planned = await planDay(input, {
-        boards: boards.map((b) => ({ id: b.id, title: b.title })),
-        busyEntries: todaysEntries.map((e) => ({ title: e.title, startTime: e.startTime, endTime: e.endTime })),
-        existingTasks: todaysTasks.map((t) => ({ title: t.title, startTime: t.startTime, estimatedMinutes: t.estimatedMinutes })),
-      })
-
-      setItems(planned.map((p, i) => ({ ...p, id: `${Date.now()}-${i}`, included: true })))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('aiPlanner.errorGeneric'))
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  function toggleItem(id: string) {
-    setItems((prev) => prev?.map((it) => (it.id === id ? { ...it, included: !it.included } : it)) ?? null)
-  }
-
-  function handleImport() {
-    if (!items) return
-    const selected = items.filter((it) => it.included)
-    if (selected.length === 0) return
-    setImporting(true)
-    try {
-      const planItems: DayPlanItem[] = selected.map((it, i) => ({
-        id: `${Date.now()}-${i}`,
-        title: it.title,
-        startTime: it.startTime ?? null,
-        endTime: it.startTime && it.estimatedMinutes ? addMinutes(it.startTime, it.estimatedMinutes) : null,
-        projectId: it.projectId ?? null,
-      }))
-      appendDayPlanItems(today, planItems)
-
-      const addPersonal = useTasksStore.getState().addTask
-      const addProject = useProjectTasksStore.getState().addTask
-      for (const it of selected) {
-        const base = {
-          title: it.title,
-          dueDate: today,
-          startTime: it.startTime ?? undefined,
-          estimatedMinutes: it.estimatedMinutes ?? undefined,
-          priority: it.priority,
-          urgent: it.urgent,
-          important: it.important,
-        }
-        if (it.projectId) {
-          void addProject({ ...base, boardId: it.projectId })
-        } else {
-          addPersonal(base)
+      // Ensure estimates are saved (in case user edited on preview — they can't, but keep consistent)
+      for (const p of packResult.placements) {
+        const tk = orderedOpen.find((x) => x.id === p.id)
+        if (!tk) continue
+        if (tk.estimatedMinutes !== p.estimatedMinutes) {
+          if (isProjectTask(tk, projectIdSet)) {
+            await updateProject(tk.id, { estimatedMinutes: p.estimatedMinutes })
+          } else {
+            updatePersonal(tk.id, { estimatedMinutes: p.estimatedMinutes })
+          }
         }
       }
+
+      for (const p of packResult.placements) {
+        const tk = orderedOpen.find((x) => x.id === p.id)
+        if (!tk) continue
+        const patch = { startTime: p.startTime, estimatedMinutes: p.estimatedMinutes }
+        if (isProjectTask(tk, projectIdSet)) {
+          await updateProject(tk.id, patch)
+        } else {
+          updatePersonal(tk.id, patch)
+        }
+      }
+
+      const planItems: DayPlanItem[] = packResult.placements.map((p) => ({
+        id: p.id,
+        title: p.title,
+        startTime: p.startTime,
+        endTime: p.endTime,
+        projectId: p.projectId ?? null,
+      }))
+      setDayPlanItems(today, planItems)
       onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('dayPacker.errorGeneric'))
     } finally {
-      setImporting(false)
+      setApplying(false)
     }
   }
 
-  return (
-    <Modal title="" onClose={onClose} widthClass="max-w-lg">
-      <div className="flex flex-col gap-4">
-        <div className="-mx-6 -mt-2 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 px-5 py-4 text-white">
-          <div className="flex items-center gap-2">
-            <Sparkles size={18} />
-            <h2 className="text-base font-bold">{t('aiPlanner.title')}</h2>
-          </div>
-          <p className="mt-1 text-xs text-white/80">{t('aiPlanner.subtitle')}</p>
-        </div>
+  const missingTasks = orderedOpen.filter((tk) => missingEstimateIds.includes(tk.id))
 
-        {!items && (
+  return (
+    <Modal title={t('dayPacker.title')} onClose={onClose} widthClass="max-w-lg">
+      <div className="flex flex-col gap-4">
+        <p className="text-sm text-gray-500 dark:text-racing-400">{t('dayPacker.subtitle')}</p>
+
+        {step === 'empty' && (
+          <p className="rounded-xl bg-gray-50 px-4 py-6 text-center text-sm text-gray-500 dark:bg-racing-800/50 dark:text-racing-300">
+            {t('dayPacker.noTasks')}
+          </p>
+        )}
+
+        {step === 'estimates' && (
           <>
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={t('aiPlanner.placeholder')}
-              rows={4}
-              autoFocus
-              disabled={loading}
-              className="rounded-xl border border-gray-200 bg-transparent px-3 py-2.5 text-sm focus:border-accent focus:outline-none disabled:opacity-60 dark:border-racing-700"
-            />
+            <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900 dark:border-amber-800/50 dark:bg-amber-950/40 dark:text-amber-100">
+              <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
+              <span>{t('dayPacker.estimatesGate', { count: missingTasks.length })}</span>
+            </div>
+
+            <div className="flex max-h-[50vh] flex-col gap-2 overflow-y-auto">
+              {orderedOpen.map((tk, idx) => {
+                const needs = missingEstimateIds.includes(tk.id)
+                const board = tk.boardId ? boards.find((b) => b.id === tk.boardId) : undefined
+                return (
+                  <div
+                    key={tk.id}
+                    className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 ${
+                      needs
+                        ? 'border-amber-300 bg-amber-50/50 dark:border-amber-700/60 dark:bg-amber-950/20'
+                        : 'border-gray-100 dark:border-racing-700'
+                    }`}
+                  >
+                    <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-accent/15 text-[11px] font-bold text-accent">
+                      {idx + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{tk.title}</p>
+                      {board && (
+                        <p className="truncate text-[11px] text-gray-400" style={{ color: board.color }}>
+                          {board.title}
+                        </p>
+                      )}
+                    </div>
+                    <label className="flex items-center gap-1.5 text-xs text-gray-500">
+                      <input
+                        type="number"
+                        min={5}
+                        step={5}
+                        value={estimates[tk.id] ?? ''}
+                        onChange={(e) => setEstimates((prev) => ({ ...prev, [tk.id]: e.target.value }))}
+                        placeholder="—"
+                        className="w-16 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm tabular-nums focus:border-accent focus:outline-none dark:border-racing-600 dark:bg-racing-900"
+                      />
+                      {t('dayPacker.minutesShort')}
+                    </label>
+                  </div>
+                )
+              })}
+            </div>
+
+            <p className="text-xs text-gray-400">{t('dayPacker.estimatesHint')}</p>
             {error && <p className="text-sm text-red-500">{error}</p>}
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase tracking-wide text-gray-400">{t('aiPlanner.poweredBy')}</span>
+
+            <div className="flex justify-end">
               <button
                 type="button"
-                onClick={handleGenerate}
-                disabled={!input.trim() || loading}
-                className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:brightness-110 disabled:opacity-50"
+                onClick={onClose}
+                className="rounded-xl px-4 py-2.5 text-sm font-medium text-gray-500 hover:bg-gray-50 dark:hover:bg-racing-800"
               >
-                {loading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                {loading ? t('aiPlanner.generating') : t('aiPlanner.generate')}
+                {t('dayPacker.cancel')}
               </button>
             </div>
           </>
         )}
 
-        {items && (
+        {step === 'preview' && (
           <>
-            {items.length === 0 ? (
-              <p className="py-6 text-center text-sm text-gray-400">{t('aiPlanner.noItems')}</p>
+            <div className="flex items-start gap-2 rounded-xl border border-accent/20 bg-accent/5 px-3 py-2.5 text-sm text-gray-700 dark:text-racing-200">
+              <CalendarClock size={16} className="mt-0.5 flex-shrink-0 text-accent" />
+              <span>{t('dayPacker.previewHint')}</span>
+            </div>
+
+            {packResult.placements.length === 0 ? (
+              <p className="py-4 text-center text-sm text-gray-400">{t('dayPacker.noFreeSlots')}</p>
             ) : (
-              <div className="flex max-h-[50vh] flex-col gap-2 overflow-y-auto">
-                {items.map((it) => {
-                  const board = it.projectId ? boards.find((b) => b.id === it.projectId) : undefined
-                  return (
-                    <button
-                      key={it.id}
-                      type="button"
-                      onClick={() => toggleItem(it.id)}
-                      className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-colors ${
-                        it.included
-                          ? 'border-accent/40 bg-accent/5 dark:bg-accent/10'
-                          : 'border-gray-200 opacity-50 dark:border-racing-700'
-                      }`}
-                    >
-                      <span
-                        className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 ${
-                          it.included ? 'border-accent bg-accent text-white' : 'border-gray-300 dark:border-racing-600'
-                        }`}
-                      >
-                        {it.included && <Check size={12} />}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium">{it.title}</p>
-                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-400">
-                          {it.startTime && (
-                            <span className="flex items-center gap-1">
-                              <Clock size={11} /> {it.startTime}
-                            </span>
-                          )}
-                          {it.estimatedMinutes && <span>{it.estimatedMinutes} {t('aiPlanner.minutesShort')}</span>}
-                          {it.urgent && (
-                            <span className="flex items-center gap-1 text-red-500">
-                              <Flame size={11} /> {t('aiPlanner.urgent')}
-                            </span>
-                          )}
-                          {it.important && (
-                            <span className="flex items-center gap-1 text-amber-500">
-                              <Star size={11} /> {t('aiPlanner.important')}
-                            </span>
-                          )}
-                          {board && (
-                            <span className="rounded-full px-2 py-0.5 text-white" style={{ backgroundColor: board.color }}>
-                              {board.title}
-                            </span>
-                          )}
-                        </div>
+              <div className="flex max-h-[45vh] flex-col gap-2 overflow-y-auto">
+                {packResult.placements.map((p, idx) => (
+                  <div
+                    key={p.id}
+                    className="flex items-start gap-3 rounded-xl border border-gray-100 px-3 py-2.5 dark:border-racing-700"
+                  >
+                    <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-accent/15 text-[11px] font-bold text-accent">
+                      {idx + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">{p.title}</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                        <span className="inline-flex items-center gap-1">
+                          <Clock size={11} />
+                          {p.startTime} – {p.endTime}
+                        </span>
+                        <span>
+                          {p.estimatedMinutes} {t('dayPacker.minutesShort')}
+                        </span>
+                        {p.projectName && <span>{p.projectName}</span>}
                       </div>
-                    </button>
-                  )
-                })}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
 
-            <div className="flex items-center justify-between">
+            {packResult.overflow.length > 0 && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800/50 dark:bg-amber-950/40 dark:text-amber-100">
+                {t('dayPacker.overflow', { count: packResult.overflow.length })}
+                <ul className="mt-1 list-inside list-disc">
+                  {packResult.overflow.map((o) => (
+                    <li key={o.id}>{o.title}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {error && <p className="text-sm text-red-500">{error}</p>}
+
+            <div className="flex justify-end gap-2">
               <button
                 type="button"
-                onClick={() => setItems(null)}
-                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-racing-200"
+                onClick={onClose}
+                className="rounded-xl px-4 py-2.5 text-sm font-medium text-gray-500 hover:bg-gray-50 dark:hover:bg-racing-800"
               >
-                {t('aiPlanner.backToInput')}
+                {t('dayPacker.cancel')}
               </button>
               <button
                 type="button"
-                onClick={handleImport}
-                disabled={importing || items.every((it) => !it.included)}
-                className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-50"
+                onClick={() => void handleApplyPlan()}
+                disabled={applying || packResult.placements.length === 0}
+                className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-50"
               >
-                {importing ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-                {t('aiPlanner.importSelected', { count: items.filter((it) => it.included).length })}
+                {applying ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                {t('dayPacker.apply', { count: packResult.placements.length })}
               </button>
             </div>
           </>

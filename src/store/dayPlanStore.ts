@@ -11,6 +11,7 @@ export interface DayPlanItem {
 
 interface DayPlanState {
   plans: Record<string, DayPlanItem[]>
+  setItems: (date: string, items: DayPlanItem[]) => void
   appendItems: (date: string, items: DayPlanItem[]) => void
   addItem: (date: string, item: DayPlanItem) => void
   updateItem: (date: string, id: string, patch: Partial<DayPlanItem>) => void
@@ -25,6 +26,8 @@ export const useDayPlanStore = create<DayPlanState>()(
   persist(
     (set) => ({
       plans: {},
+      setItems: (date, items) =>
+        set((s) => ({ plans: { ...s.plans, [date]: sortByStartTime(items) } })),
       appendItems: (date, items) =>
         set((s) => ({ plans: { ...s.plans, [date]: sortByStartTime([...(s.plans[date] ?? []), ...items]) } })),
       addItem: (date, item) =>
