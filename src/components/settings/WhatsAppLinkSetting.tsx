@@ -32,9 +32,11 @@ export default function WhatsAppLinkSetting() {
   const profile = useAuthStore((s) => s.profile)
   const isAdmin = !!(profile?.is_admin || profile?.app_role === 'admin')
   const whatsappDailyDigest = useSettingsStore((s) => s.whatsappDailyDigest)
+  const whatsappJournalPrompt = useSettingsStore((s) => s.whatsappJournalPrompt)
   const morningBriefingTime = useSettingsStore((s) => s.morningBriefingTime)
   const eveningDebriefingTime = useSettingsStore((s) => s.eveningDebriefingTime)
   const setWhatsappDailyDigest = useSettingsStore((s) => s.setWhatsappDailyDigest)
+  const setWhatsappJournalPrompt = useSettingsStore((s) => s.setWhatsappJournalPrompt)
   const setMorningBriefingTime = useSettingsStore((s) => s.setMorningBriefingTime)
   const setEveningDebriefingTime = useSettingsStore((s) => s.setEveningDebriefingTime)
 
@@ -270,47 +272,67 @@ export default function WhatsAppLinkSetting() {
       </div>
 
       {state?.linked && (
-        <div className="rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-racing-800 dark:bg-racing-950/40">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-sm font-medium">{t('whatsapp.digestTitle')}</p>
-              <p className="mt-1 text-xs text-gray-500 dark:text-racing-300">{t('whatsapp.digestHint')}</p>
+        <div className="space-y-3">
+          <div className="rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-racing-800 dark:bg-racing-950/40">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{t('whatsapp.digestTitle')}</p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-racing-300">{t('whatsapp.digestHint')}</p>
+              </div>
+              <label className="flex shrink-0 cursor-pointer items-center gap-2 text-xs font-medium">
+                <input
+                  type="checkbox"
+                  checked={whatsappDailyDigest}
+                  onChange={(e) => setWhatsappDailyDigest(e.target.checked)}
+                  className="rounded border-gray-300 text-accent focus:ring-accent"
+                />
+                {t('whatsapp.digestToggle')}
+              </label>
             </div>
-            <label className="flex shrink-0 cursor-pointer items-center gap-2 text-xs font-medium">
-              <input
-                type="checkbox"
-                checked={whatsappDailyDigest}
-                onChange={(e) => setWhatsappDailyDigest(e.target.checked)}
-                className="rounded border-gray-300 text-accent focus:ring-accent"
-              />
-              {t('whatsapp.digestToggle')}
-            </label>
+            {whatsappDailyDigest && (
+              <div className="mt-3 flex flex-wrap gap-3">
+                <label className="flex flex-col gap-1 text-[11px] text-gray-500 dark:text-racing-300">
+                  {t('whatsapp.morningTime')}
+                  <input
+                    type="time"
+                    value={morningBriefingTime || '07:30'}
+                    onChange={(e) => setMorningBriefingTime(e.target.value || '07:30')}
+                    className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-800 dark:border-racing-700 dark:bg-racing-900 dark:text-racing-100"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-[11px] text-gray-500 dark:text-racing-300">
+                  {t('whatsapp.eveningTime')}
+                  <input
+                    type="time"
+                    value={eveningDebriefingTime || '19:00'}
+                    onChange={(e) => setEveningDebriefingTime(e.target.value || '19:00')}
+                    className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-800 dark:border-racing-700 dark:bg-racing-900 dark:text-racing-100"
+                  />
+                </label>
+              </div>
+            )}
+            {sandboxOn && (
+              <p className="mt-3 text-[11px] text-amber-800/80 dark:text-amber-200/70">{t('whatsapp.digestSandboxNote')}</p>
+            )}
           </div>
-          {whatsappDailyDigest && (
-            <div className="mt-3 flex flex-wrap gap-3">
-              <label className="flex flex-col gap-1 text-[11px] text-gray-500 dark:text-racing-300">
-                {t('whatsapp.morningTime')}
+
+          <div className="rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-racing-800 dark:bg-racing-950/40">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{t('whatsapp.journalTitle')}</p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-racing-300">{t('whatsapp.journalHint')}</p>
+              </div>
+              <label className="flex shrink-0 cursor-pointer items-center gap-2 text-xs font-medium">
                 <input
-                  type="time"
-                  value={morningBriefingTime || '07:30'}
-                  onChange={(e) => setMorningBriefingTime(e.target.value || '07:30')}
-                  className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-800 dark:border-racing-700 dark:bg-racing-900 dark:text-racing-100"
+                  type="checkbox"
+                  checked={whatsappJournalPrompt}
+                  onChange={(e) => setWhatsappJournalPrompt(e.target.checked)}
+                  className="rounded border-gray-300 text-accent focus:ring-accent"
                 />
-              </label>
-              <label className="flex flex-col gap-1 text-[11px] text-gray-500 dark:text-racing-300">
-                {t('whatsapp.eveningTime')}
-                <input
-                  type="time"
-                  value={eveningDebriefingTime || '19:00'}
-                  onChange={(e) => setEveningDebriefingTime(e.target.value || '19:00')}
-                  className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-800 dark:border-racing-700 dark:bg-racing-900 dark:text-racing-100"
-                />
+                {t('whatsapp.digestToggle')}
               </label>
             </div>
-          )}
-          {sandboxOn && (
-            <p className="mt-3 text-[11px] text-amber-800/80 dark:text-amber-200/70">{t('whatsapp.digestSandboxNote')}</p>
-          )}
+          </div>
         </div>
       )}
 

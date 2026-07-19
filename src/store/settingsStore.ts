@@ -191,12 +191,28 @@ interface SettingsState {
   menuCollapsed: boolean
   /** Opt-in: morning (~07:30) + evening (~19:00) WhatsApp digests */
   whatsappDailyDigest: boolean
+  /** Opt-in: WhatsApp evening journal nudge (separate from digests) */
+  whatsappJournalPrompt: boolean
   morningBriefingTime: string
   eveningDebriefingTime: string
+  /** Auto-prompt rituals (manual access stays available when off) */
+  ritualWeekPriority: boolean
+  ritualDayPriority: boolean
+  ritualMorningBriefing: boolean
+  ritualEveningWrapUp: boolean
+  ritualMorgenTop3: boolean
+  ritualJournal: boolean
   setMode: (mode: Mode) => void
   setWhatsappDailyDigest: (v: boolean) => void
+  setWhatsappJournalPrompt: (v: boolean) => void
   setMorningBriefingTime: (v: string) => void
   setEveningDebriefingTime: (v: string) => void
+  setRitualWeekPriority: (v: boolean) => void
+  setRitualDayPriority: (v: boolean) => void
+  setRitualMorningBriefing: (v: boolean) => void
+  setRitualEveningWrapUp: (v: boolean) => void
+  setRitualMorgenTop3: (v: boolean) => void
+  setRitualJournal: (v: boolean) => void
   togglePinkAccent: () => void
   setLanguage: (language: Language) => void
   toggleFeature: (key: FeatureKey) => void
@@ -272,12 +288,26 @@ export const useSettingsStore = create<SettingsState>()(
       dailyAgendaOrder: {},
       menuCollapsed: true,
       whatsappDailyDigest: false,
+      whatsappJournalPrompt: false,
       morningBriefingTime: '07:30',
       eveningDebriefingTime: '19:00',
+      ritualWeekPriority: true,
+      ritualDayPriority: true,
+      ritualMorningBriefing: true,
+      ritualEveningWrapUp: true,
+      ritualMorgenTop3: true,
+      ritualJournal: true,
       setMode: (mode) => set({ mode }),
       setWhatsappDailyDigest: (v) => set({ whatsappDailyDigest: v }),
+      setWhatsappJournalPrompt: (v) => set({ whatsappJournalPrompt: v }),
       setMorningBriefingTime: (v) => set({ morningBriefingTime: v }),
       setEveningDebriefingTime: (v) => set({ eveningDebriefingTime: v }),
+      setRitualWeekPriority: (v) => set({ ritualWeekPriority: v }),
+      setRitualDayPriority: (v) => set({ ritualDayPriority: v }),
+      setRitualMorningBriefing: (v) => set({ ritualMorningBriefing: v }),
+      setRitualEveningWrapUp: (v) => set({ ritualEveningWrapUp: v }),
+      setRitualMorgenTop3: (v) => set({ ritualMorgenTop3: v }),
+      setRitualJournal: (v) => set({ ritualJournal: v }),
       togglePinkAccent: () => set((s) => ({ pinkAccent: !s.pinkAccent })),
       setMenuCollapsed: (menuCollapsed) => set({ menuCollapsed }),
       toggleMenuCollapsed: () => set((s) => ({ menuCollapsed: !s.menuCollapsed })),
@@ -419,8 +449,20 @@ export const useSettingsStore = create<SettingsState>()(
           dailyAgendaOrder: settings.dailyAgendaOrder ?? state.dailyAgendaOrder,
           menuCollapsed: settings.menuCollapsed ?? state.menuCollapsed,
           whatsappDailyDigest: settings.whatsappDailyDigest ?? state.whatsappDailyDigest,
+          whatsappJournalPrompt:
+            typeof settings.whatsappJournalPrompt === 'boolean'
+              ? settings.whatsappJournalPrompt
+              : typeof settings.whatsappDailyDigest === 'boolean'
+                ? settings.whatsappDailyDigest
+                : state.whatsappJournalPrompt,
           morningBriefingTime: settings.morningBriefingTime ?? state.morningBriefingTime,
           eveningDebriefingTime: settings.eveningDebriefingTime ?? state.eveningDebriefingTime,
+          ritualWeekPriority: settings.ritualWeekPriority ?? state.ritualWeekPriority,
+          ritualDayPriority: settings.ritualDayPriority ?? state.ritualDayPriority,
+          ritualMorningBriefing: settings.ritualMorningBriefing ?? state.ritualMorningBriefing,
+          ritualEveningWrapUp: settings.ritualEveningWrapUp ?? state.ritualEveningWrapUp,
+          ritualMorgenTop3: settings.ritualMorgenTop3 ?? state.ritualMorgenTop3,
+          ritualJournal: settings.ritualJournal ?? state.ritualJournal,
         }))
       },
       resetSettings: () => {
@@ -455,8 +497,15 @@ export const useSettingsStore = create<SettingsState>()(
           dailyAgendaOrder: {},
           menuCollapsed: true,
           whatsappDailyDigest: false,
+          whatsappJournalPrompt: false,
           morningBriefingTime: '07:30',
           eveningDebriefingTime: '19:00',
+          ritualWeekPriority: true,
+          ritualDayPriority: true,
+          ritualMorningBriefing: true,
+          ritualEveningWrapUp: true,
+          ritualMorgenTop3: true,
+          ritualJournal: true,
         })
       },
       syncNow: () => {
@@ -479,7 +528,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'flowdo-settings',
-      version: 20,
+      version: 21,
       migrate: (persisted, version) => {
         const legacy = persisted as LegacyState & Partial<SettingsState>
         if (version < 1) {
@@ -510,6 +559,14 @@ export const useSettingsStore = create<SettingsState>()(
               ? [...DEFAULT_PINNED_NAV_ITEMS]
               : ensureProjekteInPins(pinnedNavItems)
         }
+        const digestOn = (legacy as any).whatsappDailyDigest ?? false
+        // Journal WhatsApp was previously bundled with digests — keep on for existing opt-ins
+        const journalWa =
+          typeof (legacy as any).whatsappJournalPrompt === 'boolean'
+            ? (legacy as any).whatsappJournalPrompt
+            : version < 21
+              ? !!digestOn
+              : false
         return {
           ...legacy,
           language: legacy.language ?? 'de',
@@ -533,9 +590,16 @@ export const useSettingsStore = create<SettingsState>()(
           blurOutOfOfficeForOthers: (legacy as any).blurOutOfOfficeForOthers ?? true,
           calendarDepartmentFilter: (legacy as any).calendarDepartmentFilter ?? true,
           requireTaskEstimate: (legacy as any).requireTaskEstimate ?? false,
-          whatsappDailyDigest: (legacy as any).whatsappDailyDigest ?? false,
+          whatsappDailyDigest: digestOn,
+          whatsappJournalPrompt: journalWa,
           morningBriefingTime: (legacy as any).morningBriefingTime ?? '07:30',
           eveningDebriefingTime: (legacy as any).eveningDebriefingTime ?? '19:00',
+          ritualWeekPriority: (legacy as any).ritualWeekPriority ?? true,
+          ritualDayPriority: (legacy as any).ritualDayPriority ?? true,
+          ritualMorningBriefing: (legacy as any).ritualMorningBriefing ?? true,
+          ritualEveningWrapUp: (legacy as any).ritualEveningWrapUp ?? true,
+          ritualMorgenTop3: (legacy as any).ritualMorgenTop3 ?? true,
+          ritualJournal: (legacy as any).ritualJournal ?? true,
         }
       },
       onRehydrateStorage: () => (state) => {
@@ -549,8 +613,17 @@ export const useSettingsStore = create<SettingsState>()(
         if (state.productRole === undefined) state.productRole = null
         if (typeof state.menuCollapsed !== 'boolean') state.menuCollapsed = true
         if (typeof state.whatsappDailyDigest !== 'boolean') state.whatsappDailyDigest = false
+        if (typeof state.whatsappJournalPrompt !== 'boolean') {
+          state.whatsappJournalPrompt = !!state.whatsappDailyDigest
+        }
         if (!state.morningBriefingTime) state.morningBriefingTime = '07:30'
         if (!state.eveningDebriefingTime) state.eveningDebriefingTime = '19:00'
+        if (typeof state.ritualWeekPriority !== 'boolean') state.ritualWeekPriority = true
+        if (typeof state.ritualDayPriority !== 'boolean') state.ritualDayPriority = true
+        if (typeof state.ritualMorningBriefing !== 'boolean') state.ritualMorningBriefing = true
+        if (typeof state.ritualEveningWrapUp !== 'boolean') state.ritualEveningWrapUp = true
+        if (typeof state.ritualMorgenTop3 !== 'boolean') state.ritualMorgenTop3 = true
+        if (typeof state.ritualJournal !== 'boolean') state.ritualJournal = true
         if (state.language) i18n.changeLanguage(state.language)
       },
     }
@@ -589,8 +662,15 @@ export function getSettingsPayload(state: any) {
     dailyAgendaOrder: state.dailyAgendaOrder,
     menuCollapsed: state.menuCollapsed,
     whatsappDailyDigest: state.whatsappDailyDigest,
+    whatsappJournalPrompt: state.whatsappJournalPrompt,
     morningBriefingTime: state.morningBriefingTime,
     eveningDebriefingTime: state.eveningDebriefingTime,
+    ritualWeekPriority: state.ritualWeekPriority,
+    ritualDayPriority: state.ritualDayPriority,
+    ritualMorningBriefing: state.ritualMorningBriefing,
+    ritualEveningWrapUp: state.ritualEveningWrapUp,
+    ritualMorgenTop3: state.ritualMorgenTop3,
+    ritualJournal: state.ritualJournal,
   }
 }
 

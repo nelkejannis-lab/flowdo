@@ -39,6 +39,8 @@ interface Props {
   workedLabel: string
   taskMinutesLabel?: string
   suggestedTop3: OpenTask[]
+  /** When false, hide Morgen Top-3 picker (setting: ritualMorgenTop3) */
+  showMorgenTop3?: boolean
   onConfirmTop3: (ids: string[]) => void
   onClose: () => void
   onOpenTimeline?: () => void
@@ -104,6 +106,7 @@ export default function EveningReportModal({
   workedLabel,
   taskMinutesLabel,
   suggestedTop3,
+  showMorgenTop3 = true,
   onConfirmTop3,
   onClose,
   onOpenTimeline,
@@ -258,42 +261,44 @@ export default function EveningReportModal({
             {showTimeline && <DayTimeTimeline compact />}
           </section>
 
-          <section>
-            <h3 className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-              <Sparkles size={12} /> {t('eveningReport.tomorrowTop3')}
-            </h3>
-            <p className="mb-2 text-xs text-gray-400">{t('eveningReport.tomorrowHint')}</p>
-            {candidates.length === 0 ? (
-              <p className="rounded-2xl bg-black/[0.03] px-3 py-3 text-sm text-gray-400 dark:bg-white/[0.04]">
-                {t('eveningReport.noOpen')}
-              </p>
-            ) : (
-              <>
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                  <SortableContext items={displayIds} strategy={verticalListSortingStrategy}>
-                    <div className="space-y-1.5">
-                      {displayIds.map((id) => {
-                        const tk = byId.get(id)
-                        if (!tk) return null
-                        const active = picked.includes(tk.id)
-                        const rank = active ? picked.indexOf(tk.id) + 1 : null
-                        return (
-                          <SortableTop3Row
-                            key={tk.id}
-                            task={tk}
-                            rank={rank}
-                            active={active}
-                            onToggle={() => toggle(tk.id)}
-                          />
-                        )
-                      })}
-                    </div>
-                  </SortableContext>
-                </DndContext>
-                <p className="mt-2 text-[11px] text-gray-400">{t('eveningReport.dragHint')}</p>
-              </>
-            )}
-          </section>
+          {showMorgenTop3 && (
+            <section>
+              <h3 className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                <Sparkles size={12} /> {t('eveningReport.tomorrowTop3')}
+              </h3>
+              <p className="mb-2 text-xs text-gray-400">{t('eveningReport.tomorrowHint')}</p>
+              {candidates.length === 0 ? (
+                <p className="rounded-2xl bg-black/[0.03] px-3 py-3 text-sm text-gray-400 dark:bg-white/[0.04]">
+                  {t('eveningReport.noOpen')}
+                </p>
+              ) : (
+                <>
+                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <SortableContext items={displayIds} strategy={verticalListSortingStrategy}>
+                      <div className="space-y-1.5">
+                        {displayIds.map((id) => {
+                          const tk = byId.get(id)
+                          if (!tk) return null
+                          const active = picked.includes(tk.id)
+                          const rank = active ? picked.indexOf(tk.id) + 1 : null
+                          return (
+                            <SortableTop3Row
+                              key={tk.id}
+                              task={tk}
+                              rank={rank}
+                              active={active}
+                              onToggle={() => toggle(tk.id)}
+                            />
+                          )
+                        })}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
+                  <p className="mt-2 text-[11px] text-gray-400">{t('eveningReport.dragHint')}</p>
+                </>
+              )}
+            </section>
+          )}
         </div>
 
         <div className="border-t border-black/[0.05] p-4 dark:border-white/[0.06] sm:p-5">
@@ -302,7 +307,7 @@ export default function EveningReportModal({
               <button
                 type="button"
                 onClick={() => {
-                  onConfirmTop3(picked)
+                  if (showMorgenTop3) onConfirmTop3(picked)
                   onClose()
                   onOpenJournal()
                 }}
@@ -337,7 +342,7 @@ export default function EveningReportModal({
           <button
             type="button"
             onClick={() => {
-              onConfirmTop3(picked)
+              if (showMorgenTop3) onConfirmTop3(picked)
               onClose()
               if (onOpenJournal && new Date().getHours() >= 19) onOpenJournal()
             }}

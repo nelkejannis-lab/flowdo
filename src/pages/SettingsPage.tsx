@@ -22,6 +22,7 @@ import { requestPermission, canNotify } from '../utils/notifications'
 import { SHORTCUTS } from '../hooks/useKeyboardShortcuts'
 import SettingsGuideTab from '../components/settings/SettingsGuideTab'
 import WhatsAppLinkSetting from '../components/settings/WhatsAppLinkSetting'
+import DailyRitualsSettings from '../components/settings/DailyRitualsSettings'
 import type { WorkProfile } from '../types'
 
 type SettingsTab = 'profil' | 'verbindungen' | 'funktionen' | 'datenschutz' | 'tastenkuerzel' | 'arbeitszeit' | 'anleitung'
@@ -631,6 +632,8 @@ export default function SettingsPage() {
 
       {activeTab === 'funktionen' && (
         <div className="flex flex-col gap-4">
+          <DailyRitualsSettings />
+
           {/* Sidebar Reihenfolge */}
           <SidebarOrderSection navOrder={navOrder} setNavOrder={setNavOrder} navVisibility={navVisibility} toggleNavItem={toggleNavItem} />
 
