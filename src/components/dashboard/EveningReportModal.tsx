@@ -1,9 +1,25 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Moon, X, CheckCircle2, Clock, ArrowRight, Sparkles } from 'lucide-react'
+import { Moon, X, CheckCircle2, Clock, ArrowRight, Sparkles, GripVertical } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import DayTimeTimeline from '../worktime/DayTimeTimeline'
 
 interface DoneTask {
@@ -29,6 +45,59 @@ interface Props {
   onOpenJournal?: () => void
 }
 
+function SortableTop3Row({
+  task,
+  rank,
+  active,
+  onToggle,
+}: {
+  task: OpenTask
+  rank: number | null
+  active: boolean
+  onToggle: () => void
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: task.id,
+  })
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.45 : active ? 1 : 0.55,
+  }
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      onClick={onToggle}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onToggle()
+        }
+      }}
+      className={`flex w-full cursor-grab items-center gap-3 rounded-2xl px-3 py-2.5 text-left touch-none transition active:cursor-grabbing ${
+        active
+          ? 'bg-accent/15 ring-1 ring-accent/40'
+          : 'bg-black/[0.03] dark:bg-white/[0.04]'
+      } ${isDragging ? 'z-10 shadow-lg ring-2 ring-accent/30' : ''}`}
+      {...attributes}
+      {...listeners}
+    >
+      <span
+        className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+          active ? 'bg-accent text-white' : 'bg-gray-200 text-gray-500 dark:bg-racing-700'
+        }`}
+      >
+        {rank ?? '·'}
+      </span>
+      <span className="flex-shrink-0 text-gray-300 dark:text-racing-600" aria-hidden>
+        <GripVertical size={16} />
+      </span>
+      <span className="truncate text-sm font-medium">{task.title}</span>
+    </div>
+  )
+}
+
 export default function EveningReportModal({
   doneTasks,
   openTasks,
@@ -45,6 +114,12 @@ export default function EveningReportModal({
   const dayLabel = format(new Date(), 'EEEE, d. MMMM', { locale: dateLocale })
   const [picked, setPicked] = useState<string[]>(() => suggestedTop3.slice(0, 3).map((tk) => tk.id))
   const [showTimeline, setShowTimeline] = useState(true)
+  const didDragRef = useRef(false)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
+  )
 
   const candidates = useMemo(() => {
     const ids = new Set(suggestedTop3.map((tk) => tk.id))
@@ -52,12 +127,55 @@ export default function EveningReportModal({
     return [...suggestedTop3, ...rest].slice(0, 8)
   }, [suggestedTop3, openTasks])
 
+  const byId = useMemo(() => new Map(candidates.map((tk) => [tk.id, tk])), [candidates])
+
+  const displayIds = useMemo(() => {
+    const rest = candidates.map((tk) => tk.id).filter((id) => !picked.includes(id))
+    return [...picked.filter((id) => byId.has(id)), ...rest]
+  }, [picked, candidates, byId])
+
   function toggle(id: string) {
+    if (didDragRef.current) {
+      didDragRef.current = false
+      return
+    }
     setPicked((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id)
       if (prev.length >= 3) return [...prev.slice(1), id]
       return [...prev, id]
     })
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (over && active.id !== over.id) {
+      didDragRef.current = true
+      const activeId = String(active.id)
+      const overId = String(over.id)
+
+      setPicked((prev) => {
+        const rest = candidates.map((tk) => tk.id).filter((id) => !prev.includes(id))
+        const display = [...prev.filter((id) => byId.has(id)), ...rest]
+        const oldIndex = display.indexOf(activeId)
+        const newIndex = display.indexOf(overId)
+        if (oldIndex < 0 || newIndex < 0) return prev
+
+        const next = arrayMove(display, oldIndex, newIndex)
+        const wasPicked = prev.includes(activeId)
+        const prevTopLen = prev.filter((id) => byId.has(id)).length
+
+        let topCount = prevTopLen
+        if (!wasPicked && newIndex < Math.max(prevTopLen, 1) && prevTopLen < 3) {
+          topCount = prevTopLen + 1
+        } else if (!wasPicked && newIndex < prevTopLen) {
+          topCount = Math.min(3, Math.max(prevTopLen, newIndex + 1))
+        } else if (wasPicked && newIndex >= prevTopLen) {
+          topCount = Math.max(0, prevTopLen - 1)
+        }
+
+        return next.slice(0, topCount)
+      })
+    }
   }
 
   return (
@@ -150,33 +268,30 @@ export default function EveningReportModal({
                 {t('eveningReport.noOpen')}
               </p>
             ) : (
-              <div className="space-y-1.5">
-                {candidates.map((tk) => {
-                  const active = picked.includes(tk.id)
-                  const rank = active ? picked.indexOf(tk.id) + 1 : null
-                  return (
-                    <button
-                      key={tk.id}
-                      type="button"
-                      onClick={() => toggle(tk.id)}
-                      className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition ${
-                        active
-                          ? 'bg-accent/15 ring-1 ring-accent/40'
-                          : 'bg-black/[0.03] dark:bg-white/[0.04]'
-                      }`}
-                    >
-                      <span
-                        className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-                          active ? 'bg-accent text-white' : 'bg-gray-200 text-gray-500 dark:bg-racing-700'
-                        }`}
-                      >
-                        {rank ?? '·'}
-                      </span>
-                      <span className="truncate text-sm font-medium">{tk.title}</span>
-                    </button>
-                  )
-                })}
-              </div>
+              <>
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={displayIds} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-1.5">
+                      {displayIds.map((id) => {
+                        const tk = byId.get(id)
+                        if (!tk) return null
+                        const active = picked.includes(tk.id)
+                        const rank = active ? picked.indexOf(tk.id) + 1 : null
+                        return (
+                          <SortableTop3Row
+                            key={tk.id}
+                            task={tk}
+                            rank={rank}
+                            active={active}
+                            onToggle={() => toggle(tk.id)}
+                          />
+                        )
+                      })}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+                <p className="mt-2 text-[11px] text-gray-400">{t('eveningReport.dragHint')}</p>
+              </>
             )}
           </section>
         </div>
