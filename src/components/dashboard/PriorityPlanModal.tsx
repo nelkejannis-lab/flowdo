@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -12,42 +12,19 @@ import {
   SortableContext,
   useSortable,
   verticalListSortingStrategy,
-  arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { ChevronDown, ChevronUp, GripVertical, X, ListOrdered, CalendarRange } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-
-export interface PriorityPlanTask {
-  id: string
-  title: string
-  priority?: string
-  dueDate?: string
-}
-
-interface Props {
-  mode: 'day' | 'week'
-  tasks: PriorityPlanTask[]
-  initialOrder?: string[]
-  onSave: (orderedIds: string[]) => void
-  onClose: () => void
-  onSkip?: () => void
-}
+import {
+  usePriorityPlanStore,
+  type PriorityPlanModalTask,
+} from '../../store/priorityPlanStore'
 
 const priorityDot: Record<string, string> = {
   high: 'bg-red-500',
   medium: 'bg-amber-500',
   low: 'bg-sky-400',
-}
-
-function seedOrder(tasks: PriorityPlanTask[], initialOrder?: string[]): string[] {
-  if (!initialOrder?.length) return tasks.map((tk) => tk.id)
-  const ids = new Set(tasks.map((tk) => tk.id))
-  const ordered = initialOrder.filter((id) => ids.has(id))
-  for (const tk of tasks) {
-    if (!ordered.includes(tk.id)) ordered.push(tk.id)
-  }
-  return ordered
 }
 
 function SortableRow({
@@ -60,7 +37,7 @@ function SortableRow({
   moveUpLabel,
   moveDownLabel,
 }: {
-  task: PriorityPlanTask
+  task: PriorityPlanModalTask
   rank: number
   canMoveUp: boolean
   canMoveDown: boolean
@@ -74,7 +51,7 @@ function SortableRow({
   })
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: isDragging ? transition : undefined,
     opacity: isDragging ? 0.45 : 1,
   }
   return (
@@ -137,66 +114,49 @@ function SortableRow({
   )
 }
 
-export default function PriorityPlanModal({
-  mode,
-  tasks,
-  initialOrder,
-  onSave,
-  onClose,
-  onSkip,
-}: Props) {
+interface Props {
+  onSave: (orderedIds: string[]) => void
+  onClose: () => void
+  onSkip?: () => void
+}
+
+/** Priority reorder UI — order lives in priorityPlanStore.modalDraft (not local React state). */
+export default function PriorityPlanModal({ onSave, onClose, onSkip }: Props) {
   const { t } = useTranslation('dashboard')
+  const draft = usePriorityPlanStore((s) => s.modalDraft)
+  const moveItem = usePriorityPlanStore((s) => s.movePriorityModalItem)
+  const reorderDrag = usePriorityPlanStore((s) => s.reorderPriorityModalDrag)
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
   )
 
-  // Snapshot at open: Dashboard re-renders every second (work timer / store churn).
-  // Never re-sync from props — that was resetting drag/arrow order.
-  const [frozenTasks] = useState(() =>
-    tasks.map((tk) => ({
-      id: tk.id,
-      title: tk.title,
-      priority: tk.priority,
-      dueDate: tk.dueDate,
-    })),
+  const byId = useMemo(
+    () => new Map((draft?.tasks ?? []).map((tk) => [tk.id, tk])),
+    [draft?.tasks],
   )
-  const [order, setOrder] = useState(() => seedOrder(frozenTasks, initialOrder))
+  const orderedTasks = useMemo(() => {
+    if (!draft) return []
+    return draft.order.map((id) => byId.get(id)).filter(Boolean) as PriorityPlanModalTask[]
+  }, [draft, byId])
 
-  const byId = useMemo(() => new Map(frozenTasks.map((tk) => [tk.id, tk])), [frozenTasks])
-  const orderedTasks = useMemo(
-    () => order.map((id) => byId.get(id)).filter(Boolean) as PriorityPlanTask[],
-    [order, byId],
-  )
+  if (!draft) return null
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
     if (!over || active.id === over.id) return
-    setOrder((prev) => {
-      const oldIndex = prev.indexOf(String(active.id))
-      const newIndex = prev.indexOf(String(over.id))
-      if (oldIndex < 0 || newIndex < 0) return prev
-      return arrayMove(prev, oldIndex, newIndex)
-    })
-  }
-
-  function move(id: string, delta: -1 | 1) {
-    setOrder((prev) => {
-      const i = prev.indexOf(id)
-      const j = i + delta
-      if (i < 0 || j < 0 || j >= prev.length) return prev
-      return arrayMove(prev, i, j)
-    })
+    reorderDrag(String(active.id), String(over.id))
   }
 
   const title =
-    mode === 'day' ? t('priorityPlan.dayTitle') : t('priorityPlan.weekTitle')
+    draft.mode === 'day' ? t('priorityPlan.dayTitle') : t('priorityPlan.weekTitle')
   const subtitle =
-    mode === 'day' ? t('priorityPlan.daySubtitle') : t('priorityPlan.weekSubtitle')
-  const Icon = mode === 'day' ? ListOrdered : CalendarRange
+    draft.mode === 'day' ? t('priorityPlan.daySubtitle') : t('priorityPlan.weekSubtitle')
+  const Icon = draft.mode === 'day' ? ListOrdered : CalendarRange
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-3 backdrop-blur-[3px] sm:items-center sm:p-6">
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/45 p-3 backdrop-blur-[3px] sm:items-center sm:p-6">
       <div className="bento-card relative flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden dark:shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
         <div className="relative overflow-hidden px-5 pb-3 pt-5 sm:px-6">
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent/15 via-transparent to-transparent" />
@@ -225,8 +185,13 @@ export default function PriorityPlanModal({
               {t('priorityPlan.empty')}
             </p>
           ) : (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={order} strategy={verticalListSortingStrategy}>
+            <DndContext
+              id={draft.scopeKey}
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext items={draft.order} strategy={verticalListSortingStrategy}>
                 <div className="space-y-1.5">
                   {orderedTasks.map((tk, idx) => (
                     <SortableRow
@@ -235,8 +200,8 @@ export default function PriorityPlanModal({
                       rank={idx + 1}
                       canMoveUp={idx > 0}
                       canMoveDown={idx < orderedTasks.length - 1}
-                      onMoveUp={() => move(tk.id, -1)}
-                      onMoveDown={() => move(tk.id, 1)}
+                      onMoveUp={() => moveItem(tk.id, -1)}
+                      onMoveDown={() => moveItem(tk.id, 1)}
                       moveUpLabel={t('customize.moveUp')}
                       moveDownLabel={t('customize.moveDown')}
                     />
@@ -259,7 +224,7 @@ export default function PriorityPlanModal({
             </button>
             <button
               type="button"
-              onClick={() => onSave(order)}
+              onClick={() => onSave(draft.order)}
               disabled={orderedTasks.length === 0}
               className="flex-[1.4] rounded-full bg-accent py-2.5 text-sm font-semibold text-white shadow-sm shadow-accent/25 hover:brightness-110 disabled:opacity-40"
             >

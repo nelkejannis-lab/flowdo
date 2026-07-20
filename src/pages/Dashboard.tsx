@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react'
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { differenceInCalendarDays, format, parseISO, addDays, startOfWeek, isSameDay, isMonday } from 'date-fns'
 import { de, enUS } from 'date-fns/locale'
@@ -29,7 +29,6 @@ import OfficePromptModal from '../components/office/OfficePromptModal'
 import OnboardingPermissions from '../components/dashboard/OnboardingPermissions'
 import OnboardingWizard from '../components/onboarding/OnboardingWizard'
 import MorningReportModal from '../components/dashboard/MorningReportModal'
-import PriorityPlanModal from '../components/dashboard/PriorityPlanModal'
 import EveningReportModal from '../components/dashboard/EveningReportModal'
 import JournalModal from '../components/dashboard/JournalModal'
 import DayTimeTimeline from '../components/worktime/DayTimeTimeline'
@@ -114,8 +113,6 @@ export default function Dashboard() {
   const [isEditing, setIsEditing] = useState(false)
   const [showWeekEntries, setShowWeekEntries] = useState(true)
   const [showMorningReport, setShowMorningReport] = useState(false)
-  const [showDayPriority, setShowDayPriority] = useState(false)
-  const [showWeekPriority, setShowWeekPriority] = useState(false)
   const [showEveningReport, setShowEveningReport] = useState(false)
   const [showJournal, setShowJournal] = useState(false)
   const [showTimeTimeline, setShowTimeTimeline] = useState(false)
@@ -123,13 +120,11 @@ export default function Dashboard() {
   const weekOrders = usePriorityPlanStore((s) => s.weekOrders)
   const dayConfirmed = usePriorityPlanStore((s) => s.dayConfirmed)
   const weekConfirmed = usePriorityPlanStore((s) => s.weekConfirmed)
-  const setDayOrder = usePriorityPlanStore((s) => s.setDayOrder)
-  const setWeekOrder = usePriorityPlanStore((s) => s.setWeekOrder)
-  const confirmDay = usePriorityPlanStore((s) => s.confirmDay)
-  const confirmWeek = usePriorityPlanStore((s) => s.confirmWeek)
   const setTomorrowTop3 = usePriorityPlanStore((s) => s.setTomorrowTop3)
   const applyOrder = usePriorityPlanStore((s) => s.applyOrder)
   const tomorrowTop3 = usePriorityPlanStore((s) => s.tomorrowTop3)
+  const openPriorityModal = usePriorityPlanStore((s) => s.openPriorityModal)
+  const priorityModalOpen = usePriorityPlanStore((s) => !!s.modalDraft)
   const taskTimeEntries = useTaskTimeStore((s) => s.entries)
   const fetchTaskTime = useTaskTimeStore((s) => s.fetchForUser)
   const wasRunningRef = useRef(false)
@@ -140,71 +135,6 @@ export default function Dashboard() {
   const ritualEveningWrapUp = useSettingsStore((s) => s.ritualEveningWrapUp)
   const ritualMorgenTop3 = useSettingsStore((s) => s.ritualMorgenTop3)
   const ritualJournal = useSettingsStore((s) => s.ritualJournal)
-
-  // Daily ritual: week prio (Mon) → day prio → morning briefing → evening wrap-up
-  useEffect(() => {
-    const hour = new Date().getHours()
-    const today = todayISO()
-    const wk = weekKey()
-    const morningDismissed = localStorage.getItem('morningReportDismissed')
-    const eveningDismissed = localStorage.getItem('eveningReportDismissed')
-    const journalDismissed = localStorage.getItem('journalDismissed')
-    const openToday = [...tasks, ...myProjectTasks].filter(
-      (tk) => !tk.completed && (isDueToday(tk.dueDate) || isOverdue(tk.dueDate)),
-    )
-    const openWeek = [...tasks, ...myProjectTasks].filter(
-      (tk) => !tk.completed && isDueThisWeek(tk.dueDate) && !isOverdue(tk.dueDate),
-    )
-
-    if (
-      ritualWeekPriority &&
-      isMonday(new Date()) &&
-      !weekConfirmed[wk] &&
-      localStorage.getItem('weekPrioritySkipped') !== wk &&
-      openWeek.length > 0
-    ) {
-      setShowWeekPriority(true)
-      return
-    }
-    if (
-      ritualDayPriority &&
-      hour >= 5 &&
-      hour < 14 &&
-      !dayConfirmed[today] &&
-      localStorage.getItem('dayPrioritySkipped') !== today &&
-      openToday.length > 0
-    ) {
-      setShowDayPriority(true)
-      return
-    }
-    if (ritualMorningBriefing && hour >= 5 && hour < 12 && morningDismissed !== today) {
-      setShowMorningReport(true)
-      return
-    }
-    if (ritualEveningWrapUp && hour >= 17 && hour < 19 && eveningDismissed !== today) {
-      setShowEveningReport(true)
-      return
-    }
-    if (hour >= 19) {
-      if (ritualEveningWrapUp && eveningDismissed !== today) {
-        setShowEveningReport(true)
-        return
-      }
-      if (ritualJournal && journalDismissed !== today) {
-        setShowJournal(true)
-      }
-    }
-  }, [
-    dayConfirmed,
-    weekConfirmed,
-    tasks,
-    myProjectTasks,
-    ritualWeekPriority,
-    ritualDayPriority,
-    ritualMorningBriefing,
-    ritualEveningWrapUp,
-    ritualJournal,
-  ])
 
   useEffect(() => {
     if (isSupabaseConfigured) void fetchTaskTime()
@@ -414,6 +344,114 @@ export default function Dashboard() {
   const todayTodos = applyOrder(sortByEisenhower(todayOpenTasks), dayOrders[today] ?? tomorrowTop3[today])
   const weekTasksOrdered = applyOrder(weekTasks, weekOrders[weekKey()])
 
+  const openWeekPriorityModal = useCallback(() => {
+    const wk = weekKey()
+    const source = weekTasksOrdered.length ? weekTasksOrdered : weekTasks
+    openPriorityModal({
+      mode: 'week',
+      scopeKey: `week:${wk}`,
+      tasks: source.map((tk) => ({
+        id: tk.id,
+        title: tk.title,
+        priority: tk.priority,
+        dueDate: tk.dueDate,
+      })),
+      initialOrder: weekOrders[wk],
+    })
+  }, [openPriorityModal, weekTasksOrdered, weekTasks, weekOrders])
+
+  const openDayPriorityModal = useCallback(() => {
+    if (todayOpenTasks.length === 0) return
+    openPriorityModal({
+      mode: 'day',
+      scopeKey: `day:${today}`,
+      tasks: todayOpenTasks.map((tk) => ({
+        id: tk.id,
+        title: tk.title,
+        priority: tk.priority,
+        dueDate: tk.dueDate,
+      })),
+      initialOrder: dayOrders[today] ?? tomorrowTop3[today],
+    })
+  }, [openPriorityModal, today, todayOpenTasks, dayOrders, tomorrowTop3])
+
+  useEffect(() => {
+    const onDayPriority = () => openDayPriorityModal()
+    const onMorningReport = () => setShowMorningReport(true)
+    window.addEventListener('novat:open-day-priority', onDayPriority)
+    window.addEventListener('novat:open-morning-report', onMorningReport)
+    return () => {
+      window.removeEventListener('novat:open-day-priority', onDayPriority)
+      window.removeEventListener('novat:open-morning-report', onMorningReport)
+    }
+  }, [openDayPriorityModal])
+
+  // Daily ritual: week prio (Mon) → day prio → morning briefing → evening wrap-up
+  useEffect(() => {
+    if (priorityModalOpen) return
+    const hour = new Date().getHours()
+    const morningDismissed = localStorage.getItem('morningReportDismissed')
+    const eveningDismissed = localStorage.getItem('eveningReportDismissed')
+    const journalDismissed = localStorage.getItem('journalDismissed')
+    const wk = weekKey()
+    const openWeek = allTasks.filter(
+      (tk) => !tk.completed && isDueThisWeek(tk.dueDate) && !isOverdue(tk.dueDate),
+    )
+
+    if (
+      ritualWeekPriority &&
+      isMonday(new Date()) &&
+      !weekConfirmed[wk] &&
+      localStorage.getItem('weekPrioritySkipped') !== wk &&
+      openWeek.length > 0
+    ) {
+      openWeekPriorityModal()
+      return
+    }
+    if (
+      ritualDayPriority &&
+      hour >= 5 &&
+      hour < 14 &&
+      !dayConfirmed[today] &&
+      localStorage.getItem('dayPrioritySkipped') !== today &&
+      todayOpenTasks.length > 0
+    ) {
+      openDayPriorityModal()
+      return
+    }
+    if (ritualMorningBriefing && hour >= 5 && hour < 12 && morningDismissed !== today) {
+      setShowMorningReport(true)
+      return
+    }
+    if (ritualEveningWrapUp && hour >= 17 && hour < 19 && eveningDismissed !== today) {
+      setShowEveningReport(true)
+      return
+    }
+    if (hour >= 19) {
+      if (ritualEveningWrapUp && eveningDismissed !== today) {
+        setShowEveningReport(true)
+        return
+      }
+      if (ritualJournal && journalDismissed !== today) {
+        setShowJournal(true)
+      }
+    }
+  }, [
+    priorityModalOpen,
+    dayConfirmed,
+    weekConfirmed,
+    allTasks,
+    todayOpenTasks.length,
+    today,
+    ritualWeekPriority,
+    ritualDayPriority,
+    ritualMorningBriefing,
+    ritualEveningWrapUp,
+    ritualJournal,
+    openWeekPriorityModal,
+    openDayPriorityModal,
+  ])
+
   const tasksCompletedToday = allTasks.filter((tk) => tk.completed && isCompletedToday(tk.completedAt)).length
   const tasksDoneTodayList = allTasks.filter((tk) => tk.completed && isCompletedToday(tk.completedAt))
   const tasksTotalToday = tasksCompletedToday + todayOpenTasks.length
@@ -447,58 +485,7 @@ export default function Dashboard() {
   return (
     <div>
       <OfficePromptModal />
-      {showWeekPriority && (
-        <PriorityPlanModal
-          key={`week-priority-${weekKey()}`}
-          mode="week"
-          tasks={weekTasksOrdered.length ? weekTasksOrdered : weekTasks}
-          initialOrder={weekOrders[weekKey()]}
-          onSave={(ids) => {
-            const wk = weekKey()
-            setWeekOrder(wk, ids)
-            confirmWeek(wk)
-            setShowWeekPriority(false)
-            const today = todayISO()
-            if (ritualDayPriority && !dayConfirmed[today] && todayOpenTasks.length > 0) setShowDayPriority(true)
-            else if (ritualMorningBriefing && localStorage.getItem('morningReportDismissed') !== today) setShowMorningReport(true)
-          }}
-          onSkip={() => {
-            localStorage.setItem('weekPrioritySkipped', weekKey())
-            setShowWeekPriority(false)
-            const today = todayISO()
-            if (ritualDayPriority && !dayConfirmed[today] && todayOpenTasks.length > 0) setShowDayPriority(true)
-            else if (ritualMorningBriefing && localStorage.getItem('morningReportDismissed') !== today) setShowMorningReport(true)
-          }}
-          onClose={() => {
-            localStorage.setItem('weekPrioritySkipped', weekKey())
-            setShowWeekPriority(false)
-          }}
-        />
-      )}
-      {showDayPriority && (
-        <PriorityPlanModal
-          key={`day-priority-${today}`}
-          mode="day"
-          tasks={todayOpenTasks}
-          initialOrder={dayOrders[today] ?? tomorrowTop3[today]}
-          onSave={(ids) => {
-            setDayOrder(today, ids)
-            confirmDay(today)
-            setShowDayPriority(false)
-            if (ritualMorningBriefing && localStorage.getItem('morningReportDismissed') !== today) setShowMorningReport(true)
-          }}
-          onSkip={() => {
-            localStorage.setItem('dayPrioritySkipped', today)
-            setShowDayPriority(false)
-            if (ritualMorningBriefing && localStorage.getItem('morningReportDismissed') !== today) setShowMorningReport(true)
-          }}
-          onClose={() => {
-            localStorage.setItem('dayPrioritySkipped', today)
-            setShowDayPriority(false)
-          }}
-        />
-      )}
-      {showMorningReport && !showDayPriority && !showWeekPriority && (
+      {showMorningReport && !priorityModalOpen && (
         <MorningReportModal
           todayTasks={todayTodos}
           weekTasks={weekTasksOrdered}
@@ -510,8 +497,8 @@ export default function Dashboard() {
           colleagues={colleagues}
           onPlanDay={() => setShowAiDayPlanner(true)}
           onPrioritize={() => {
-            if (ritualWeekPriority && isMonday(new Date()) && !weekConfirmed[weekKey()]) setShowWeekPriority(true)
-            else if (ritualDayPriority) setShowDayPriority(true)
+            if (ritualWeekPriority && isMonday(new Date()) && !weekConfirmed[weekKey()]) openWeekPriorityModal()
+            else if (ritualDayPriority) openDayPriorityModal()
           }}
           onClose={() => {
             setShowMorningReport(false)
@@ -519,7 +506,7 @@ export default function Dashboard() {
           }}
         />
       )}
-      {showEveningReport && !showDayPriority && !showWeekPriority && !showMorningReport && (
+      {showEveningReport && !priorityModalOpen && !showMorningReport && (
         <EveningReportModal
           doneTasks={tasksDoneTodayList}
           openTasks={todayOpenTasks}
@@ -547,7 +534,7 @@ export default function Dashboard() {
           }}
         />
       )}
-      {showJournal && !showEveningReport && !showDayPriority && !showWeekPriority && !showMorningReport && (
+      {showJournal && !showEveningReport && !priorityModalOpen && !showMorningReport && (
         <JournalModal
           onClose={() => {
             setShowJournal(false)
@@ -789,7 +776,7 @@ export default function Dashboard() {
                   doneStats={doneStats}
                   onPlanDay={() => setShowAiDayPlanner(true)}
                   onOpenBriefing={() => setShowMorningReport(true)}
-                  onPrioritizeDay={() => setShowDayPriority(true)}
+                  onPrioritizeDay={openDayPriorityModal}
                   onOpenEvening={() => setShowEveningReport(true)}
                   onOpenTimeline={() => setShowTimeTimeline(true)}
                   onOpenJournal={() => setShowJournal(true)}

@@ -10,6 +10,7 @@ import ToastContainer from './ToastContainer'
 import AiChatPanel from '../ai/AiChatPanel'
 import ErrorBoundary from './ErrorBoundary'
 import AppUpdater from './AppUpdater'
+import PriorityPlanModalHost from '../dashboard/PriorityPlanModalHost'
 import PageTransition from '../motion/PageTransition'
 import { ShellChrome, ShellMain } from '../motion/ShellEntrance'
 import { useSettingsStore } from '../../store/settingsStore'
@@ -94,6 +95,7 @@ export default function Layout() {
         <MobileBottomNav />
       </motion.div>
       <ToastContainer />
+      <PriorityPlanModalHost />
       <AiChatPanel />
     </ErrorBoundary>
   )
