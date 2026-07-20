@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { useEffect, useState, type ReactNode } from 'react'
 import {
   CalendarDays,
-  Flame,
   ArrowRight,
   Sparkles,
   CheckCircle2,
@@ -14,8 +13,6 @@ import {
   Clock,
   ListTodo,
 } from 'lucide-react'
-import { format, parseISO } from 'date-fns'
-import { de, enUS } from 'date-fns/locale'
 import { DonutChart, ProgressTrack, AvatarStack } from './FocusVisuals'
 import type { DayReadinessResult } from '../../lib/dayReadiness'
 import { useWorkTimeStore } from '../../store/workTimeStore'
@@ -40,11 +37,12 @@ interface PriorityTask {
   priority: string
 }
 
-interface NextEvent {
+interface DayEvent {
   id: string
   title: string
   startTime?: string
-  date?: string
+  endTime?: string
+  durationMin: number
 }
 
 interface Colleague {
@@ -65,7 +63,7 @@ interface DoneStats {
 
 interface Props {
   dayLabel: string
-  nextEvent?: NextEvent | null
+  todayEvents?: DayEvent[]
   priorities: PriorityTask[]
   todayTodos: TodayTodo[]
   capacityPercent: number
@@ -87,7 +85,7 @@ interface Props {
 
 export default function TodayHero({
   dayLabel,
-  nextEvent,
+  todayEvents = [],
   priorities,
   todayTodos,
   capacityPercent,
@@ -106,8 +104,7 @@ export default function TodayHero({
   onToggleTodo,
   onOpenTodo,
 }: Props) {
-  const { t, i18n } = useTranslation('dashboard')
-  const dateLocale = i18n.language === 'en' ? enUS : de
+  const { t } = useTranslation('dashboard')
 
   const capped = Math.min(100, Math.max(0, capacityPercent))
   const free = Math.max(0, 100 - capped)
@@ -432,74 +429,67 @@ export default function TodayHero({
         </div>
       </div>
 
-      {/* Mobile story strip */}
-      <div className="mt-5 -mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1 lg:hidden scrollbar-none">
-        <StoryCard label={t('focus.nextEvent')} icon={<CalendarDays size={14} className="text-accent" />}>
-          {nextEvent ? (
-            <>
-              {nextEvent.startTime && (
-                <p className="text-sm font-bold tabular-nums text-accent">{nextEvent.startTime}</p>
-              )}
-              <p className="text-sm font-semibold leading-snug">{nextEvent.title}</p>
-              {nextEvent.date && (
-                <p className="text-xs text-gray-400">
-                  {format(parseISO(nextEvent.date), 'EEE, d. MMM', { locale: dateLocale })}
-                </p>
-              )}
-            </>
-          ) : (
-            <p className="text-sm text-gray-400">{t('focus.noNextEvent')}</p>
-          )}
-          <Link to="/calendar" className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-accent">
-            {t('calendar')} <ArrowRight size={11} />
-          </Link>
-        </StoryCard>
-
-        {priorities.length > 0 && (
-          <StoryCard label={t('focus.topPriorities')} icon={<Flame size={14} className="text-red-500" />}>
-            <ul className="flex flex-col gap-1.5">
-              {priorities.slice(0, 3).map((tk, i) => (
-                <li key={tk.id} className="flex gap-2 text-sm font-medium">
-                  <span className="text-accent">{i + 1}.</span>
-                  <span className="line-clamp-2">{tk.title}</span>
-                </li>
-              ))}
-            </ul>
-            <Link to="/eisenhower" className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-accent">
-              {t('sections.manageEisenhower')} <ArrowRight size={11} />
-            </Link>
-          </StoryCard>
-        )}
-      </div>
-
-      {/* Desktop: next event */}
-      <div className="mt-5 hidden lg:block">
-        <div className="bento-card-sm flex flex-col gap-2 p-4">
+      {/* Termine heute — horizontal */}
+      <div className="mt-5">
+        <div className="mb-2 flex items-baseline justify-between gap-2">
           <span className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-            <span className="h-3 w-0.5 rounded-full bg-accent/70" aria-hidden />
-            {t('focus.nextEvent')}
+            <span className="h-3.5 w-1 rounded-full bg-accent/70" aria-hidden />
+            {t('focus.todayEvents')}
           </span>
-          {nextEvent ? (
-            <>
-              <div className="flex items-center gap-2 text-accent">
-                <CalendarDays size={16} strokeWidth={1.6} />
-                {nextEvent.startTime && <span className="text-sm font-bold tabular-nums">{nextEvent.startTime}</span>}
-              </div>
-              <p className="text-base font-semibold leading-snug">{nextEvent.title}</p>
-            </>
-          ) : (
-            <p className="text-sm text-gray-400">{t('focus.noNextEvent')}</p>
+          {todayEvents.length > 0 && (
+            <span className="text-[11px] tabular-nums text-gray-400">
+              {t('focus.todayEventsCount', { count: todayEvents.length })}
+            </span>
           )}
-          <Link
-            to="/calendar"
-            className="mt-auto inline-flex items-center gap-1 pt-2 text-xs font-semibold text-accent hover:underline"
-          >
-            {t('calendar')} <ArrowRight size={12} />
-          </Link>
         </div>
+
+        {todayEvents.length === 0 ? (
+          <p className="text-sm text-gray-400">{t('focus.noEventsToday')}</p>
+        ) : (
+          <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1 scrollbar-none">
+            {todayEvents.map((ev) => (
+              <div
+                key={ev.id}
+                className="bento-card-sm flex w-[min(100%,220px)] min-w-[168px] shrink-0 snap-start flex-col gap-1.5 p-3.5 sm:min-w-[180px]"
+              >
+                <div className="flex items-center gap-2 text-accent">
+                  <CalendarDays size={14} strokeWidth={1.6} className="flex-shrink-0" />
+                  {ev.startTime ? (
+                    <span className="text-xs font-bold tabular-nums leading-none">
+                      {ev.endTime ? `${ev.startTime} – ${ev.endTime}` : ev.startTime}
+                    </span>
+                  ) : (
+                    <span className="text-xs font-semibold">{t('focus.allDay')}</span>
+                  )}
+                </div>
+                {ev.durationMin > 0 && (
+                  <span className="inline-flex w-fit rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-accent">
+                    {formatEventDuration(ev.durationMin, t)}
+                  </span>
+                )}
+                <p className="line-clamp-2 text-sm font-semibold leading-snug">{ev.title}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <Link
+          to="/calendar"
+          className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-accent hover:underline"
+        >
+          {t('calendar')} <ArrowRight size={12} />
+        </Link>
       </div>
     </section>
   )
+}
+
+function formatEventDuration(minutes: number, t: (key: string, opts?: Record<string, unknown>) => string): string {
+  if (minutes < 60) return t('focus.durationMinutes', { count: minutes })
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  if (m === 0) return t('focus.durationHours', { count: h })
+  return t('focus.durationHoursMinutes', { hours: h, minutes: m })
 }
 
 function formatBreakElapsed(totalSeconds: number): string {
@@ -535,26 +525,6 @@ function MetricTile({
           {detail && <p className="mt-0.5 text-xs text-gray-500 dark:text-racing-300">{detail}</p>}
         </div>
       </div>
-    </div>
-  )
-}
-
-function StoryCard({
-  label,
-  icon,
-  children,
-}: {
-  label: string
-  icon: ReactNode
-  children: ReactNode
-}) {
-  return (
-    <div className="bento-card-sm w-[78vw] max-w-[280px] shrink-0 snap-center p-4">
-      <p className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-        {icon}
-        {label}
-      </p>
-      {children}
     </div>
   )
 }

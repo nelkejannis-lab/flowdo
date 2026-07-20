@@ -266,6 +266,31 @@ export default function Dashboard() {
     ? { id: todayEntries[0].id, title: todayEntries[0].title, startTime: todayEntries[0].startTime ?? undefined, date: todayEntries[0].date }
     : null
 
+  const todaySchedule = calendarEntries
+    .filter((e) => {
+      const isToday = e.date === today
+      const isMultiDaySpanningToday = e.date < today && e.endDate && e.endDate >= today
+      return isToday || isMultiDaySpanningToday
+    })
+    .sort((a, b) => (a.startTime ?? '99:99').localeCompare(b.startTime ?? '99:99'))
+    .map((e) => {
+      let durationMin = 0
+      if (e.startTime && e.endTime) {
+        const [sh, sm] = e.startTime.split(':').map(Number)
+        const [eh, em] = e.endTime.split(':').map(Number)
+        durationMin = Math.max(5, eh * 60 + em - (sh * 60 + sm))
+      } else if (e.startTime) {
+        durationMin = 30
+      }
+      return {
+        id: e.id,
+        title: e.title,
+        startTime: e.startTime,
+        endTime: e.endTime,
+        durationMin,
+      }
+    })
+
   const todayWork = workEntries[today]
   const liveAnchor = isOnBreak && breakStartedAt ? new Date(breakStartedAt).getTime() : Date.now()
   const liveMin = isRunning && runningStartedAt ? (liveAnchor - new Date(runningStartedAt).getTime()) / 60000 : 0
@@ -764,7 +789,7 @@ export default function Dashboard() {
               {id === 'todayHero' && (
                 <TodayHero
                   dayLabel={dayLabel}
-                  nextEvent={nextEvent}
+                  todayEvents={todaySchedule}
                   priorities={topPriorities}
                   todayTodos={todayTodos}
                   capacityPercent={capacityPercent}
