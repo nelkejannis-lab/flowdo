@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { ChevronDown, GripVertical } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { ChevronDown, ChevronUp, GripVertical } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { Task } from '../../types'
 import { dateGroupLabel, dateGroupOrder } from '../../utils/date'
@@ -92,20 +92,36 @@ export default function TaskList({
   const toggleHideCompletedTasks = useSettingsStore((s) => s.toggleHideCompletedTasks)
   const showCompleted = !hideCompletedTasks
   const [visibleCount, setVisibleCount] = useState(20)
+  /** Optimistic order so drag/arrows don't snap back before parent store updates. */
+  const [localOrder, setLocalOrder] = useState<string[] | null>(null)
   const boards = useBoardsStore((s) => s.boards)
   const reorderTasks = useTasksStore((s) => s.reorderTasks)
   const taskOrder = useTasksStore((s) => s.taskOrder ?? [])
   const editingBoard = editingTask?.boardId ? boards.find((b) => b.id === editingTask.boardId) : undefined
 
+  useEffect(() => {
+    if (!orderedIds?.length || !localOrder?.length) return
+    if (orderedIds.length === localOrder.length && orderedIds.every((id, i) => id === localOrder[i])) {
+      setLocalOrder(null)
+    }
+  }, [orderedIds, localOrder])
+
   const activeTasks = useMemo(() => {
     const open = tasks.filter((t) => !t.completed)
-    const orderSource = orderedIds?.length ? orderedIds : useManualOrder ? taskOrder : null
+    const orderSource =
+      localOrder?.length
+        ? localOrder
+        : orderedIds?.length
+          ? orderedIds
+          : useManualOrder
+            ? taskOrder
+            : null
     if (orderSource && orderSource.length > 0) {
       const orderMap = new Map(orderSource.map((id, i) => [id, i]))
       return [...open].sort((a, b) => (orderMap.get(a.id) ?? Infinity) - (orderMap.get(b.id) ?? Infinity))
     }
     return [...open].sort((a, b) => (a.dueDate ?? '9999-12-31').localeCompare(b.dueDate ?? '9999-12-31'))
-  }, [tasks, useManualOrder, taskOrder, orderedIds])
+  }, [tasks, useManualOrder, taskOrder, orderedIds, localOrder])
   const completedTasks = useMemo(
     () =>
       tasks
@@ -139,6 +155,12 @@ export default function TaskList({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
 
+  function commitOrder(newOrder: string[]) {
+    if (onReorder || useManualOrder) setLocalOrder(newOrder)
+    if (onReorder) onReorder(newOrder)
+    else reorderTasks(newOrder)
+  }
+
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
     if (!over || active.id === over.id) return
@@ -146,9 +168,15 @@ export default function TaskList({
     const oldIndex = flatActive.indexOf(active.id as string)
     const newIndex = flatActive.indexOf(over.id as string)
     if (oldIndex === -1 || newIndex === -1) return
-    const newOrder = arrayMove(flatActive, oldIndex, newIndex)
-    if (onReorder) onReorder(newOrder)
-    else reorderTasks(newOrder)
+    commitOrder(arrayMove(flatActive, oldIndex, newIndex))
+  }
+
+  function moveTask(id: string, delta: -1 | 1) {
+    const flatActive = activeTasks.map((t) => t.id)
+    const i = flatActive.indexOf(id)
+    const j = i + delta
+    if (i < 0 || j < 0 || j >= flatActive.length) return
+    commitOrder(arrayMove(flatActive, i, j))
   }
 
   if (tasks.length === 0) {
@@ -196,7 +224,37 @@ export default function TaskList({
           <SortableContext items={visibleActive.map((t) => t.id)} strategy={verticalListSortingStrategy}>
             <div className="flex flex-col gap-2">
               {visibleActive.map((task, idx) => (
-                <SortableTaskItem key={task.id} task={task} onClick={() => setEditingTask(task)} priorityRank={showPriorityNumbers ? idx + 1 : undefined} />
+                <div key={task.id} className="flex items-center gap-1">
+                  <div className="min-w-0 flex-1">
+                    <SortableTaskItem
+                      task={task}
+                      onClick={() => setEditingTask(task)}
+                      priorityRank={showPriorityNumbers ? idx + 1 : undefined}
+                    />
+                  </div>
+                  {showPriorityNumbers && (
+                    <div className="flex flex-shrink-0 flex-col gap-0.5">
+                      <button
+                        type="button"
+                        disabled={idx === 0}
+                        onClick={() => moveTask(task.id, -1)}
+                        className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:bg-black/[0.05] hover:text-gray-600 disabled:opacity-25 dark:hover:bg-white/10"
+                        aria-label="Nach oben"
+                      >
+                        <ChevronUp size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={idx >= visibleActive.length - 1}
+                        onClick={() => moveTask(task.id, 1)}
+                        className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:bg-black/[0.05] hover:text-gray-600 disabled:opacity-25 dark:hover:bg-white/10"
+                        aria-label="Nach unten"
+                      >
+                        <ChevronDown size={15} />
+                      </button>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           </SortableContext>

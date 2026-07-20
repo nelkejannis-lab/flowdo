@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -15,7 +15,7 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, X, ListOrdered, CalendarRange } from 'lucide-react'
+import { ChevronDown, ChevronUp, GripVertical, X, ListOrdered, CalendarRange } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 export interface PriorityPlanTask {
@@ -40,6 +40,21 @@ const priorityDot: Record<string, string> = {
   low: 'bg-sky-400',
 }
 
+function seedOrder(tasks: PriorityPlanTask[], initialOrder?: string[]): string[] {
+  if (!initialOrder?.length) return tasks.map((tk) => tk.id)
+  const ids = new Set(tasks.map((tk) => tk.id))
+  const ordered = initialOrder.filter((id) => ids.has(id))
+  for (const tk of tasks) {
+    if (!ordered.includes(tk.id)) ordered.push(tk.id)
+  }
+  return ordered
+}
+
+/** Stable key for task membership (add/remove), ignores array identity. */
+function taskIdsKey(tasks: PriorityPlanTask[]): string {
+  return tasks.map((tk) => tk.id).join('\0')
+}
+
 function SortableRow({
   task,
   rank,
@@ -59,20 +74,24 @@ function SortableRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-2 rounded-2xl bg-black/[0.03] px-2.5 py-2.5 touch-none cursor-grab active:cursor-grabbing dark:bg-white/[0.04] ${
+      className={`flex items-center gap-2 rounded-2xl bg-black/[0.03] px-2.5 py-2.5 touch-none dark:bg-white/[0.04] ${
         isDragging ? 'z-10 shadow-lg ring-2 ring-accent/30' : ''
       }`}
-      {...attributes}
-      {...listeners}
     >
+      <button
+        type="button"
+        className="flex-shrink-0 cursor-grab p-0.5 text-gray-300 active:cursor-grabbing dark:text-racing-600"
+        aria-label="Drag"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical size={16} />
+      </button>
       <span
         className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-accent/15 text-xs font-bold tabular-nums text-accent"
         aria-hidden
       >
         {rank}
-      </span>
-      <span className="flex-shrink-0 text-gray-300 dark:text-racing-600" aria-hidden>
-        <GripVertical size={16} />
       </span>
       <span
         className={`h-2 w-2 flex-shrink-0 rounded-full ${priorityDot[task.priority ?? ''] ?? 'bg-gray-400'}`}
@@ -96,21 +115,16 @@ export default function PriorityPlanModal({
     useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
   )
 
-  const seeded = useMemo(() => {
-    if (!initialOrder?.length) return tasks.map((tk) => tk.id)
-    const ids = new Set(tasks.map((tk) => tk.id))
-    const ordered = initialOrder.filter((id) => ids.has(id))
-    for (const tk of tasks) {
-      if (!ordered.includes(tk.id)) ordered.push(tk.id)
-    }
-    return ordered
-  }, [tasks, initialOrder])
+  const idsKey = taskIdsKey(tasks)
+  const [order, setOrder] = useState<string[]>(() => seedOrder(tasks, initialOrder))
+  const seededForIds = useRef(idsKey)
 
-  const [order, setOrder] = useState<string[]>(seeded)
-
+  // Re-seed only when the set of task ids changes — not on every parent re-render.
   useEffect(() => {
-    setOrder(seeded)
-  }, [seeded])
+    if (seededForIds.current === idsKey) return
+    seededForIds.current = idsKey
+    setOrder(seedOrder(tasks, initialOrder))
+  }, [idsKey, tasks, initialOrder])
 
   const byId = useMemo(() => new Map(tasks.map((tk) => [tk.id, tk])), [tasks])
   const orderedTasks = order.map((id) => byId.get(id)).filter(Boolean) as PriorityPlanTask[]
@@ -126,11 +140,12 @@ export default function PriorityPlanModal({
     })
   }
 
-  function moveUp(id: string) {
+  function move(id: string, delta: -1 | 1) {
     setOrder((prev) => {
       const i = prev.indexOf(id)
-      if (i <= 0) return prev
-      return arrayMove(prev, i, i - 1)
+      const j = i + delta
+      if (i < 0 || j < 0 || j >= prev.length) return prev
+      return arrayMove(prev, i, j)
     })
   }
 
@@ -174,17 +189,30 @@ export default function PriorityPlanModal({
               <SortableContext items={order} strategy={verticalListSortingStrategy}>
                 <div className="space-y-1.5">
                   {orderedTasks.map((tk, idx) => (
-                    <div key={tk.id} className="group relative">
-                      <SortableRow task={tk} rank={idx + 1} />
-                      {idx > 0 && (
+                    <div key={tk.id} className="flex items-center gap-1">
+                      <div className="min-w-0 flex-1">
+                        <SortableRow task={tk} rank={idx + 1} />
+                      </div>
+                      <div className="flex flex-shrink-0 flex-col gap-0.5">
                         <button
                           type="button"
-                          onClick={() => moveUp(tk.id)}
-                          className="absolute right-2 top-1/2 hidden -translate-y-1/2 rounded-lg px-2 py-1 text-[10px] font-semibold text-accent hover:bg-accent/10 sm:group-hover:block"
+                          disabled={idx === 0}
+                          onClick={() => move(tk.id, -1)}
+                          className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-500 hover:bg-black/[0.05] disabled:opacity-25 dark:hover:bg-white/10"
+                          aria-label={t('customize.moveUp')}
                         >
-                          ↑
+                          <ChevronUp size={15} />
                         </button>
-                      )}
+                        <button
+                          type="button"
+                          disabled={idx >= orderedTasks.length - 1}
+                          onClick={() => move(tk.id, 1)}
+                          className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-500 hover:bg-black/[0.05] disabled:opacity-25 dark:hover:bg-white/10"
+                          aria-label={t('customize.moveDown')}
+                        >
+                          <ChevronDown size={15} />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
