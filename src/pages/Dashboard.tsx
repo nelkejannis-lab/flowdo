@@ -449,6 +449,7 @@ export default function Dashboard() {
       <OfficePromptModal />
       {showWeekPriority && (
         <PriorityPlanModal
+          key={`week-priority-${weekKey()}`}
           mode="week"
           tasks={weekTasksOrdered.length ? weekTasksOrdered : weekTasks}
           initialOrder={weekOrders[weekKey()]}
@@ -476,6 +477,7 @@ export default function Dashboard() {
       )}
       {showDayPriority && (
         <PriorityPlanModal
+          key={`day-priority-${today}`}
           mode="day"
           tasks={todayOpenTasks}
           initialOrder={dayOrders[today] ?? tomorrowTop3[today]}

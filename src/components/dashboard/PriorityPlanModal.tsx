@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -50,17 +50,24 @@ function seedOrder(tasks: PriorityPlanTask[], initialOrder?: string[]): string[]
   return ordered
 }
 
-/** Stable key for task membership (add/remove), ignores array identity. */
-function taskIdsKey(tasks: PriorityPlanTask[]): string {
-  return tasks.map((tk) => tk.id).join('\0')
-}
-
 function SortableRow({
   task,
   rank,
+  canMoveUp,
+  canMoveDown,
+  onMoveUp,
+  onMoveDown,
+  moveUpLabel,
+  moveDownLabel,
 }: {
   task: PriorityPlanTask
   rank: number
+  canMoveUp: boolean
+  canMoveDown: boolean
+  onMoveUp: () => void
+  onMoveDown: () => void
+  moveUpLabel: string
+  moveDownLabel: string
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
@@ -74,29 +81,58 @@ function SortableRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-2 rounded-2xl bg-black/[0.03] px-2.5 py-2.5 touch-none dark:bg-white/[0.04] ${
+      className={`flex items-center gap-1 rounded-2xl bg-black/[0.03] py-1 pl-2 pr-1 touch-none dark:bg-white/[0.04] ${
         isDragging ? 'z-10 shadow-lg ring-2 ring-accent/30' : ''
       }`}
     >
       <button
         type="button"
-        className="flex-shrink-0 cursor-grab p-0.5 text-gray-300 active:cursor-grabbing dark:text-racing-600"
-        aria-label="Drag"
+        className="flex min-w-0 flex-1 cursor-grab items-center gap-2 py-1.5 active:cursor-grabbing"
         {...attributes}
         {...listeners}
       >
-        <GripVertical size={16} />
+        <span className="flex-shrink-0 text-gray-300 dark:text-racing-600" aria-hidden>
+          <GripVertical size={16} />
+        </span>
+        <span
+          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-accent/15 text-xs font-bold tabular-nums text-accent"
+          aria-hidden
+        >
+          {rank}
+        </span>
+        <span
+          className={`h-2 w-2 flex-shrink-0 rounded-full ${priorityDot[task.priority ?? ''] ?? 'bg-gray-400'}`}
+        />
+        <span className="min-w-0 flex-1 truncate text-left text-sm font-medium">{task.title}</span>
       </button>
-      <span
-        className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-accent/15 text-xs font-bold tabular-nums text-accent"
-        aria-hidden
-      >
-        {rank}
-      </span>
-      <span
-        className={`h-2 w-2 flex-shrink-0 rounded-full ${priorityDot[task.priority ?? ''] ?? 'bg-gray-400'}`}
-      />
-      <span className="min-w-0 flex-1 truncate text-sm font-medium">{task.title}</span>
+      <div className="flex flex-shrink-0 flex-col gap-0.5">
+        <button
+          type="button"
+          disabled={!canMoveUp}
+          onClick={(e) => {
+            e.stopPropagation()
+            onMoveUp()
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-500 hover:bg-black/[0.05] disabled:opacity-25 dark:hover:bg-white/10"
+          aria-label={moveUpLabel}
+        >
+          <ChevronUp size={15} />
+        </button>
+        <button
+          type="button"
+          disabled={!canMoveDown}
+          onClick={(e) => {
+            e.stopPropagation()
+            onMoveDown()
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-500 hover:bg-black/[0.05] disabled:opacity-25 dark:hover:bg-white/10"
+          aria-label={moveDownLabel}
+        >
+          <ChevronDown size={15} />
+        </button>
+      </div>
     </div>
   )
 }
@@ -115,19 +151,23 @@ export default function PriorityPlanModal({
     useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
   )
 
-  const idsKey = taskIdsKey(tasks)
-  const [order, setOrder] = useState<string[]>(() => seedOrder(tasks, initialOrder))
-  const seededForIds = useRef(idsKey)
+  // Snapshot at open: Dashboard re-renders every second (work timer / store churn).
+  // Never re-sync from props — that was resetting drag/arrow order.
+  const [frozenTasks] = useState(() =>
+    tasks.map((tk) => ({
+      id: tk.id,
+      title: tk.title,
+      priority: tk.priority,
+      dueDate: tk.dueDate,
+    })),
+  )
+  const [order, setOrder] = useState(() => seedOrder(frozenTasks, initialOrder))
 
-  // Re-seed only when the set of task ids changes — not on every parent re-render.
-  useEffect(() => {
-    if (seededForIds.current === idsKey) return
-    seededForIds.current = idsKey
-    setOrder(seedOrder(tasks, initialOrder))
-  }, [idsKey, tasks, initialOrder])
-
-  const byId = useMemo(() => new Map(tasks.map((tk) => [tk.id, tk])), [tasks])
-  const orderedTasks = order.map((id) => byId.get(id)).filter(Boolean) as PriorityPlanTask[]
+  const byId = useMemo(() => new Map(frozenTasks.map((tk) => [tk.id, tk])), [frozenTasks])
+  const orderedTasks = useMemo(
+    () => order.map((id) => byId.get(id)).filter(Boolean) as PriorityPlanTask[],
+    [order, byId],
+  )
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
@@ -189,31 +229,17 @@ export default function PriorityPlanModal({
               <SortableContext items={order} strategy={verticalListSortingStrategy}>
                 <div className="space-y-1.5">
                   {orderedTasks.map((tk, idx) => (
-                    <div key={tk.id} className="flex items-center gap-1">
-                      <div className="min-w-0 flex-1">
-                        <SortableRow task={tk} rank={idx + 1} />
-                      </div>
-                      <div className="flex flex-shrink-0 flex-col gap-0.5">
-                        <button
-                          type="button"
-                          disabled={idx === 0}
-                          onClick={() => move(tk.id, -1)}
-                          className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-500 hover:bg-black/[0.05] disabled:opacity-25 dark:hover:bg-white/10"
-                          aria-label={t('customize.moveUp')}
-                        >
-                          <ChevronUp size={15} />
-                        </button>
-                        <button
-                          type="button"
-                          disabled={idx >= orderedTasks.length - 1}
-                          onClick={() => move(tk.id, 1)}
-                          className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-500 hover:bg-black/[0.05] disabled:opacity-25 dark:hover:bg-white/10"
-                          aria-label={t('customize.moveDown')}
-                        >
-                          <ChevronDown size={15} />
-                        </button>
-                      </div>
-                    </div>
+                    <SortableRow
+                      key={tk.id}
+                      task={tk}
+                      rank={idx + 1}
+                      canMoveUp={idx > 0}
+                      canMoveDown={idx < orderedTasks.length - 1}
+                      onMoveUp={() => move(tk.id, -1)}
+                      onMoveDown={() => move(tk.id, 1)}
+                      moveUpLabel={t('customize.moveUp')}
+                      moveDownLabel={t('customize.moveDown')}
+                    />
                   ))}
                 </div>
               </SortableContext>
