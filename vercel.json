@@ -1,10 +1,42 @@
 {
 
+  "redirects": [
+
+    {
+
+      "source": "/:path*",
+
+      "has": [{ "type": "host", "value": "mooncrew.com" }],
+
+      "missing": [{ "type": "path", "value": "/.well-known/security.txt" }],
+
+      "destination": "https://novat.app/:path*",
+
+      "permanent": true
+
+    },
+
+    {
+
+      "source": "/:path*",
+
+      "has": [{ "type": "host", "value": "www.mooncrew.com" }],
+
+      "missing": [{ "type": "path", "value": "/.well-known/security.txt" }],
+
+      "destination": "https://novat.app/:path*",
+
+      "permanent": true
+
+    }
+
+  ],
+
   "rewrites": [
 
     {
 
-      "source": "/((?!assets/|icons/|favicon|icon\\.svg|logo|manifest\\.webmanifest|sw\\.js|workbox-|robots\\.txt|sitemap\\.xml|\\.well-known/).*)",
+      "source": "/((?!assets/|icons/|favicon|icon\\.svg|logo|manifest\\.webmanifest|sw\\.js|workbox-|robots\\.txt|sitemap\\.xml|api/|\\.well-known/).*)",
 
       "destination": "/index.html"
 
@@ -98,7 +130,7 @@
 
           "key": "Content-Security-Policy",
 
-          "value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://nova-server-rpbi.onrender.com https://nominatim.openstreetmap.org https://api.open-meteo.com https://graph.facebook.com; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+          "value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://nominatim.openstreetmap.org https://api.open-meteo.com https://graph.facebook.com; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
 
         }
 

@@ -1,21 +1,48 @@
-Contact: mailto:security@novat.app
-Contact: https://novat.app/impressum
-Expires: 2027-07-21T00:00:00.000Z
-Preferred-Languages: de, en
-Canonical: https://novat.app/.well-known/security.txt
-Policy: https://novat.app/datenschutz
-Acknowledgments: https://novat.app/security
-
-# NOVAT (https://novat.app) — legitimate business productivity SaaS
-# Category: Business / Web-based Applications / Information Technology
-# Operator: Janis Nelke, Germany — https://novat.app/impressum
-#
-# Corporate firewall allowlist (FortiClient, FortiGate, Zscaler, etc.):
-#   novat.app
-#   *.novat.app
-#   *.supabase.co
-#   *.vercel.app
-#
-# FortiGate: Web Filter → static URL filter → novat.app → Wildcard → Exempt
-# FortiGuard recategorization: https://www.fortiguard.com/faq/wfratingsubmit
-# IT documentation: https://novat.app/security
+Contact: mailto:security@novat.app
+
+Contact: https://novat.app/impressum
+
+Expires: 2027-07-21T00:00:00.000Z
+
+Preferred-Languages: de, en
+
+Canonical: https://novat.app/.well-known/security.txt
+
+Policy: https://novat.app/datenschutz
+
+Acknowledgments: https://novat.app/security
+
+
+
+# NOVAT (https://novat.app) — legitimate business productivity SaaS
+
+# Formerly marketed as Mooncrew; mooncrew.com is a legacy alias for the same product.
+
+# Category: Business / Web-based Applications / Information Technology
+
+# Operator: Janis Nelke, Germany — https://novat.app/impressum
+
+#
+
+# Corporate firewall allowlist (FortiClient, FortiGate, Zscaler, etc.):
+
+#   novat.app
+
+#   *.novat.app
+
+#   mooncrew.com (legacy brand domain — redirects to novat.app)
+
+#   www.mooncrew.com
+
+#   *.supabase.co
+
+#   *.vercel.app
+
+#
+
+# FortiGate: Web Filter → static URL filter → novat.app → Wildcard → Exempt
+
+# FortiGuard recategorization: https://www.fortiguard.com/faq/wfratingsubmit
+
+# IT documentation: https://novat.app/security
+

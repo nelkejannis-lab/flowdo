@@ -1,7 +1,7 @@
 {
   "name": "workorganizer",
   "private": true,
-  "version": "1.2.11",
+  "version": "1.2.12",
   "description": "NOVAT Work Organizer (formerly Mooncrew)",
   "author": "NOVAT",
   "type": "module",
