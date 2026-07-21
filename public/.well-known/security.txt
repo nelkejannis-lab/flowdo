@@ -18,7 +18,8 @@ Acknowledgments: https://novat.app/security
 
 # Formerly marketed as Mooncrew; mooncrew.com is a legacy alias for the same product.
 
-# Category: Business / Web-based Applications / Information Technology
+# FortiGuard status (2026-07-21): novat.app = Newly Registered Domain; mooncrew.com = Job Search (legacy miscategorization)
+# Recategorization to Business / Web-based Applications submitted via fortiguard.com/faq/wfratingsubmit
 
 # Operator: Janis Nelke, Germany — https://novat.app/impressum
 

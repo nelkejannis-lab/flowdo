@@ -114,7 +114,7 @@
       "Policy speichern und an betroffene Endgeräte pushen; ggf. FortiGuard-Cache aktualisieren (<code>diagnose test application urlfilter 99</code> auf FortiGate)."
     ],
     "fortiguardHeading": "FortiGuard-Kategorisierung",
-    "fortiguardBody": "NOVAT beantragt die Kategorie „Business“ bzw. „Web-based Applications“ bei FortiGuard Labs für novat.app und die Legacy-Domain mooncrew.com. IT-Teams können den Status prüfen unter fortiguard.com/webfilter. Eigene Anträge: {{link}} (URLs: https://novat.app und https://mooncrew.com, vorgeschlagene Kategorie: Business oder Information Technology).",
+    "fortiguardBody": "Stand FortiGuard Web Filter Lookup (Juli 2026): <strong>novat.app</strong> ist aktuell als „Newly Registered Domain“ (Gruppe Security Risk) eingestuft; <strong>mooncrew.com</strong> fälschlich als „Job Search“ (früher zeitweise „Pornography“). Beides ist ein Miscategorization-False-Positive — NOVAT ist legale Business-SaaS (Aufgaben/Projekte/Teams), HTTPS, Impressum und Security-Seite vorhanden, kein Malware/Phishing/Proxy. Recategorization auf „Business“ bzw. „Web-based Applications“ wurde bei FortiGuard Labs beantragt (Bearbeitung typisch 1–3 Werktage). IT kann den Status prüfen unter fortiguard.com/webfilter. Eigene Anträge: {{link}}.",
     "postureHeading": "Technische Sicherheit",
     "postureItems": [
       "TLS 1.2+ mit gültigem Zertifikat (Vercel / Let's Encrypt)",
