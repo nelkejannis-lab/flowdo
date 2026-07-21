@@ -38,6 +38,8 @@ Acknowledgments: https://novat.app/security
 
 #   *.vercel.app
 
+# WhatsApp integrations: proxied via novat.app/api/nova (same-origin; no PaaS host in browser)
+
 #
 
 # FortiGate: Web Filter → static URL filter → novat.app → Wildcard → Exempt

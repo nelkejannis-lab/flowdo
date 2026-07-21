@@ -181,7 +181,7 @@ export async function apiGetWhatsAppConnectInfo(force = false): Promise<WhatsApp
     return cachedConnectInfo
   }
   try {
-    const res = await fetch(`${NOVA_PUBLIC.serverUrl}/api/whatsapp/connect-info`, {
+    const res = await fetch(`${NOVA_PUBLIC.serverUrl}/whatsapp/connect-info`, {
       method: 'GET',
       headers: { Accept: 'application/json' },
     })
@@ -323,7 +323,7 @@ export async function apiStartWhatsAppPhoneLink(
   try {
     const token = await getAccessToken()
     if (!token) return { error: 'Bitte melde dich an.' }
-    const res = await fetch(`${NOVA_PUBLIC.serverUrl}/api/whatsapp/link/start`, {
+    const res = await fetch(`${NOVA_PUBLIC.serverUrl}/whatsapp/link/start`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -364,7 +364,7 @@ export async function apiVerifyWhatsAppPhoneLink(
   try {
     const token = await getAccessToken()
     if (!token) return { error: 'Bitte melde dich an.' }
-    const res = await fetch(`${NOVA_PUBLIC.serverUrl}/api/whatsapp/link/verify`, {
+    const res = await fetch(`${NOVA_PUBLIC.serverUrl}/whatsapp/link/verify`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -389,7 +389,7 @@ export async function apiSetSandboxJoinCode(
   try {
     const token = await getAccessToken()
     if (!token) return { error: 'Bitte melde dich an.' }
-    const res = await fetch(`${NOVA_PUBLIC.serverUrl}/api/whatsapp/sandbox-join`, {
+    const res = await fetch(`${NOVA_PUBLIC.serverUrl}/whatsapp/sandbox-join`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,

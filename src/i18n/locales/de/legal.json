@@ -122,7 +122,8 @@
       "Content-Security-Policy, X-Frame-Options, X-Content-Type-Options",
       "Authentifizierung über Supabase (OAuth 2.0 / E-Mail)",
       "Row Level Security in der Datenbank",
-      "Keine ausführbaren Downloads von der Startseite; Desktop-App separat signiert"
+      "Keine ausführbaren Downloads von der Startseite; Desktop-App separat signiert",
+      "WhatsApp-Integrationen laufen über novat.app/api/nova (same-origin, kein onrender.com im Browser)"
     ],
     "contactHeading": "Kontakt für IT / Security",
     "contactBody": "E-Mail: <a href=\"mailto:security@novat.app\" class=\"text-accent hover:underline\">security@novat.app</a><br />Betreiber: Janis Nelke — siehe <a href=\"/impressum\" class=\"text-accent hover:underline\">Impressum</a>",

@@ -122,7 +122,8 @@
       "Content-Security-Policy, X-Frame-Options, X-Content-Type-Options",
       "Authentication via Supabase (OAuth 2.0 / email)",
       "Row-level security in the database",
-      "No executable downloads from the landing page; desktop app is separately signed"
+      "No executable downloads from the landing page; desktop app is separately signed",
+      "WhatsApp integrations use novat.app/api/nova (same-origin; no onrender.com in the browser)"
     ],
     "contactHeading": "Contact for IT / security",
     "contactBody": "Email: <a href=\"mailto:security@novat.app\" class=\"text-accent hover:underline\">security@novat.app</a><br />Operator: Janis Nelke — see <a href=\"/impressum\" class=\"text-accent hover:underline\">Imprint</a>",

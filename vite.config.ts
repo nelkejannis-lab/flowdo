@@ -16,6 +16,13 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
   server: {
+    proxy: {
+      '/api/nova': {
+        target: 'https://nova-server-rpbi.onrender.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/nova/, '/api'),
+      },
+    },
     watch: {
       ignored: ['**/dist-electron-app/**', '**/release/**'],
     },
