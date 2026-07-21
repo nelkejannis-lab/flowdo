@@ -40,7 +40,7 @@
 
     {
 
-      "source": "/((?!assets/|icons/|favicon|icon\\.svg|logo|manifest\\.webmanifest|sw\\.js|workbox-|robots\\.txt|sitemap\\.xml|api/|\\.well-known/).*)",
+      "source": "/((?!assets/|icons/|favicon|icon\\.svg|logo|manifest\\.webmanifest|sw\\.js|workbox-|robots\\.txt|sitemap\\.xml|business/|api/|\\.well-known/).*)",
 
       "destination": "/index.html"
 

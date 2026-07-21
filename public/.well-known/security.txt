@@ -47,5 +47,7 @@ Acknowledgments: https://novat.app/security
 
 # FortiGuard recategorization: https://www.fortiguard.com/faq/wfratingsubmit
 
+# Business categorization page (static HTML for FortiGuard crawlers): https://novat.app/business/
+
 # IT documentation: https://novat.app/security
 
