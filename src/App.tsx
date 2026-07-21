@@ -45,6 +45,7 @@ const JoinOrgPage = lazy(() => import('./pages/JoinOrgPage'))
 const MemoryPage = lazy(() => import('./pages/MemoryPage'))
 const DatenschutzPage = lazy(() => import('./pages/legal/DatenschutzPage'))
 const ImpressumPage = lazy(() => import('./pages/legal/ImpressumPage'))
+const SecurityPage = lazy(() => import('./pages/legal/SecurityPage'))
 const InstagramCallbackPage = lazy(() => import('./pages/InstagramCallbackPage'))
 
 function PageLoader() {
@@ -142,6 +143,13 @@ export default function App() {
       </Suspense>
     )
   }
+  if (location.pathname === '/security') {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <SecurityPage />
+      </Suspense>
+    )
+  }
 
   if (location.pathname.startsWith('/join/')) {
     return (
@@ -190,6 +198,7 @@ export default function App() {
     <Routes>
       <Route path="/datenschutz" element={<DatenschutzPage />} />
       <Route path="/impressum" element={<ImpressumPage />} />
+      <Route path="/security" element={<SecurityPage />} />
       <Route path="/join/:token" element={<JoinOrgPage />} />
       <Route element={<Layout />}>
         <Route path="/" element={<Dashboard />} />

@@ -82,5 +82,49 @@
       "body": "Die Übertragung erfolgt verschlüsselt über TLS/HTTPS. Der Zugriff auf Ihre Daten in der Datenbank ist durch Zeilenebenen-Sicherheit (Row Level Security) so eingeschränkt, dass Nutzer grundsätzlich nur auf eigene bzw. ausdrücklich geteilte Daten zugreifen können."
     },
     "lastUpdated": "Stand: [Datum einsetzen]"
+  },
+  "security": {
+    "title": "IT-Sicherheit & Firewall-Freigabe",
+    "subtitle": "Informationen für Unternehmens-IT und FortiClient/FortiGate-Administratoren",
+    "overviewHeading": "Was ist NOVAT?",
+    "overviewBody": "NOVAT (novat.app) ist eine legale Business-SaaS-Anwendung für Aufgaben-, Projekt- und Team-Management (Aufgaben, Kalender, Zeiterfassung, Chat). Die Anwendung wird in Deutschland betrieben, nutzt ausschließlich HTTPS und verarbeitet keine Schadsoftware, kein Proxy-Bypass und keine unerlaubten Remote-Zugriffe.",
+    "whyBlockedHeading": "Warum blockiert FortiClient novat.app?",
+    "whyBlockedBody": "FortiClient und FortiGate prüfen jede Website über die FortiGuard-Kategorisierung. Neue oder selten besuchte Domains werden oft als „Unrated“ (nicht bewertet) oder „Newly Observed Domain“ eingestuft. Viele Unternehmensrichtlinien blockieren genau diese Kategorien — nicht weil die Seite unsicher ist, sondern weil noch keine Kategorie hinterlegt ist. Das ist ein typisches False Positive bei SaaS-Produkten.",
+    "allowlistHeading": "Domains für die Allowlist",
+    "allowlistIntro": "Bitte erlauben Sie folgende Hosts in Web Filter / SSL Inspection / DNS-Filter (Wildcard wo angegeben). Aktion: „Exempt“ oder „Allow“ (FortiGate: statischer URL-Filter mit Exempt umgeht alle Kategorien).",
+    "allowlistHost": "Host",
+    "allowlistPurpose": "Zweck",
+    "allowlist": [
+      { "host": "novat.app", "purpose": "Haupt-Web-App (PWA & Login)" },
+      { "host": "*.novat.app", "purpose": "Subdomains" },
+      { "host": "*.supabase.co", "purpose": "Authentifizierung, Datenbank, Realtime, Storage" },
+      { "host": "*.vercel.app", "purpose": "CDN / Vercel-Assets (nur falls direkt aufgerufen)" }
+    ],
+    "copyAllowlist": "Hosts kopieren",
+    "copied": "Kopiert",
+    "forticlientHeading": "FortiClient / FortiGate — Freigabe einrichten",
+    "forticlientIntro": "Kurzanleitung für IT-Administratoren:",
+    "forticlientSteps": [
+      "In FortiClient EMS oder FortiGate: <strong>Web Filter</strong> → <strong>Exclusion List</strong> (bzw. statischer URL-Filter).",
+      "Eintrag hinzufügen: <code>novat.app</code>, Typ <strong>Wildcard</strong>, Aktion <strong>Exempt</strong> (empfohlen) oder Allow.",
+      "Falls „Unrated“ global blockiert ist: dieselbe Exemption für <code>*.supabase.co</code> setzen.",
+      "Bei SSL-Inspection-Zertifikatswarnungen: novat.app von Deep Inspection ausnehmen (Zertifikat ist gültig, SNI = novat.app).",
+      "Policy speichern und an betroffene Endgeräte pushen; ggf. FortiGuard-Cache aktualisieren (<code>diagnose test application urlfilter 99</code> auf FortiGate)."
+    ],
+    "fortiguardHeading": "FortiGuard-Kategorisierung",
+    "fortiguardBody": "NOVAT beantragt die Kategorie „Business“ bzw. „Web-based Applications“ bei FortiGuard Labs. IT-Teams können den Status prüfen unter fortiguard.com/webfilter. Eigene Anträge: {{link}} (URL: https://novat.app, vorgeschlagene Kategorie: Business oder Information Technology).",
+    "postureHeading": "Technische Sicherheit",
+    "postureItems": [
+      "TLS 1.2+ mit gültigem Zertifikat (Vercel / Let's Encrypt)",
+      "Strict-Transport-Security (HSTS) mit includeSubDomains",
+      "Content-Security-Policy, X-Frame-Options, X-Content-Type-Options",
+      "Authentifizierung über Supabase (OAuth 2.0 / E-Mail)",
+      "Row Level Security in der Datenbank",
+      "Keine ausführbaren Downloads von der Startseite; Desktop-App separat signiert"
+    ],
+    "contactHeading": "Kontakt für IT / Security",
+    "contactBody": "E-Mail: <a href=\"mailto:security@novat.app\" class=\"text-accent hover:underline\">security@novat.app</a><br />Betreiber: Janis Nelke — siehe <a href=\"/impressum\" class=\"text-accent hover:underline\">Impressum</a>",
+    "imprintLink": "Impressum",
+    "privacyLink": "Datenschutz"
   }
 }

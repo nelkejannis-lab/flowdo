@@ -4,7 +4,7 @@
 
     {
 
-      "source": "/((?!assets/|icons/|favicon|icon\\.svg|logo|manifest\\.webmanifest|sw\\.js|workbox-|\\.well-known/).*)",
+      "source": "/((?!assets/|icons/|favicon|icon\\.svg|logo|manifest\\.webmanifest|sw\\.js|workbox-|robots\\.txt|sitemap\\.xml|\\.well-known/).*)",
 
       "destination": "/index.html"
 

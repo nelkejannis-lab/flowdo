@@ -398,6 +398,7 @@
     "appInfoVersion": "NOVAT · Version {{version}}",
     "privacyPolicyLink": "Datenschutzerklärung",
     "imprintLink": "Impressum",
+    "securityLink": "IT-Sicherheit (Firewall)",
     "deleteTitle": "Account löschen",
     "deleteDescription": "Dies löscht dein Konto und alle damit verknüpften Daten unwiderruflich (Art. 17 DSGVO – Recht auf Löschung). Diese Aktion kann nicht rückgängig gemacht werden.",
     "deleteConfirmLabel": "Gib zum Bestätigen %WORD% ein",

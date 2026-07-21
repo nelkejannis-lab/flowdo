@@ -398,6 +398,7 @@
     "appInfoVersion": "NOVAT · Version {{version}}",
     "privacyPolicyLink": "Privacy Policy",
     "imprintLink": "Imprint",
+    "securityLink": "IT security (firewall)",
     "deleteTitle": "Delete account",
     "deleteDescription": "This permanently deletes your account and all associated data (Art. 17 GDPR – right to erasure). This action cannot be undone.",
     "deleteConfirmLabel": "Type %WORD% to confirm",

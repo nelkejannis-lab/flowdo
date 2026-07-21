@@ -329,6 +329,7 @@ export default function LoginPage() {
             <motion.div variants={itemVariants} className="mt-14 flex items-center gap-6 text-[12px] font-medium text-white/30">
               <Link to="/datenschutz" className="hover:text-white transition-colors">{t('footer.privacy')}</Link>
               <Link to="/impressum"   className="hover:text-white transition-colors">{t('footer.imprint')}</Link>
+              <Link to="/security"    className="hover:text-white transition-colors">{t('footer.security')}</Link>
               <span>v{__APP_VERSION__}</span>
             </motion.div>
           </motion.div>
@@ -426,6 +427,7 @@ export default function LoginPage() {
                   <div className="flex items-center justify-center gap-6 pt-4 text-[12px] font-medium text-white/30">
                     <Link to="/datenschutz" className="hover:text-white transition-colors">{t('footer.privacy')}</Link>
                     <Link to="/impressum"   className="hover:text-white transition-colors">{t('footer.imprint')}</Link>
+                    <Link to="/security"    className="hover:text-white transition-colors">{t('footer.security')}</Link>
                     <span>v{__APP_VERSION__}</span>
                   </div>
                 </motion.div>

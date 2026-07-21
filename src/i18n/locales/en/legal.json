@@ -82,5 +82,49 @@
       "body": "Transmission is encrypted via TLS/HTTPS. Access to your data in the database is restricted by row-level security so that users can generally only access their own data or data explicitly shared with them."
     },
     "lastUpdated": "Last updated: [insert date]"
+  },
+  "security": {
+    "title": "IT security & firewall allowlisting",
+    "subtitle": "Information for corporate IT and FortiClient/FortiGate administrators",
+    "overviewHeading": "What is NOVAT?",
+    "overviewBody": "NOVAT (novat.app) is a legitimate business SaaS application for task, project, and team management (tasks, calendar, time tracking, chat). It is operated from Germany, uses HTTPS only, and does not distribute malware, proxy circumvention, or unauthorized remote access.",
+    "whyBlockedHeading": "Why does FortiClient block novat.app?",
+    "whyBlockedBody": "FortiClient and FortiGate classify every website via FortiGuard. New or rarely visited domains are often rated as \"Unrated\" or \"Newly Observed Domain\". Many corporate policies block these categories — not because the site is unsafe, but because no category has been assigned yet. This is a common false positive for SaaS products.",
+    "allowlistHeading": "Domains for the allowlist",
+    "allowlistIntro": "Please allow the following hosts in Web Filter / SSL inspection / DNS filter (wildcard where noted). Action: \"Exempt\" or \"Allow\" (FortiGate: static URL filter with Exempt bypasses all category checks).",
+    "allowlistHost": "Host",
+    "allowlistPurpose": "Purpose",
+    "allowlist": [
+      { "host": "novat.app", "purpose": "Main web app (PWA & login)" },
+      { "host": "*.novat.app", "purpose": "Subdomains" },
+      { "host": "*.supabase.co", "purpose": "Authentication, database, realtime, storage" },
+      { "host": "*.vercel.app", "purpose": "CDN / Vercel assets (if accessed directly)" }
+    ],
+    "copyAllowlist": "Copy hosts",
+    "copied": "Copied",
+    "forticlientHeading": "FortiClient / FortiGate — allow access",
+    "forticlientIntro": "Quick guide for IT administrators:",
+    "forticlientSteps": [
+      "In FortiClient EMS or FortiGate: <strong>Web Filter</strong> → <strong>Exclusion List</strong> (or static URL filter).",
+      "Add entry: <code>novat.app</code>, type <strong>Wildcard</strong>, action <strong>Exempt</strong> (recommended) or Allow.",
+      "If \"Unrated\" is blocked globally: apply the same exemption for <code>*.supabase.co</code>.",
+      "For SSL inspection certificate warnings: exempt novat.app from deep inspection (valid cert, SNI = novat.app).",
+      "Save policy, push to endpoints, and refresh FortiGuard cache if needed (<code>diagnose test application urlfilter 99</code> on FortiGate)."
+    ],
+    "fortiguardHeading": "FortiGuard categorization",
+    "fortiguardBody": "NOVAT requests categorization as \"Business\" or \"Web-based Applications\" with FortiGuard Labs. IT teams can check status at fortiguard.com/webfilter. Submit requests via {{link}} (URL: https://novat.app, suggested category: Business or Information Technology).",
+    "postureHeading": "Technical security",
+    "postureItems": [
+      "TLS 1.2+ with valid certificate (Vercel / Let's Encrypt)",
+      "Strict-Transport-Security (HSTS) with includeSubDomains",
+      "Content-Security-Policy, X-Frame-Options, X-Content-Type-Options",
+      "Authentication via Supabase (OAuth 2.0 / email)",
+      "Row-level security in the database",
+      "No executable downloads from the landing page; desktop app is separately signed"
+    ],
+    "contactHeading": "Contact for IT / security",
+    "contactBody": "Email: <a href=\"mailto:security@novat.app\" class=\"text-accent hover:underline\">security@novat.app</a><br />Operator: Janis Nelke — see <a href=\"/impressum\" class=\"text-accent hover:underline\">Imprint</a>",
+    "imprintLink": "Imprint",
+    "privacyLink": "Privacy policy"
   }
 }

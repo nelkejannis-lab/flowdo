@@ -51,7 +51,8 @@
     },
     "legal": {
       "privacy": "Datenschutz",
-      "imprint": "Impressum"
+      "imprint": "Impressum",
+      "security": "IT-Sicherheit"
     }
   },
   "topbar": {

@@ -51,7 +51,8 @@
     },
     "legal": {
       "privacy": "Privacy Policy",
-      "imprint": "Legal Notice"
+      "imprint": "Legal Notice",
+      "security": "IT security"
     }
   },
   "topbar": {

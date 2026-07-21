@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Allow: /security
+Allow: /impressum
+Allow: /datenschutz
+Allow: /.well-known/security.txt
+
+Sitemap: https://novat.app/sitemap.xml

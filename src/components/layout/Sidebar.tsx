@@ -600,6 +600,7 @@ export default function Sidebar({ isOpen, onClose, docked = false }: SidebarProp
         <div className="mt-2 flex justify-center gap-3 px-2 text-[11px] text-gray-400">
           <Link to="/datenschutz" className="hover:underline">{t('sidebar.legal.privacy')}</Link>
           <Link to="/impressum" className="hover:underline">{t('sidebar.legal.imprint')}</Link>
+          <Link to="/security" className="hover:underline">{t('sidebar.legal.security')}</Link>
         </div>
         <p className="mt-1 text-center text-[10px] text-gray-300 dark:text-racing-600">v{__APP_VERSION__}</p>
       </div>

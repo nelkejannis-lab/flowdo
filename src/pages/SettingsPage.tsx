@@ -1019,6 +1019,7 @@ export default function SettingsPage() {
             <div className="flex flex-col gap-1 text-xs">
               <Link to="/datenschutz" className="text-accent hover:underline">{t('privacy.privacyPolicyLink')}</Link>
               <Link to="/impressum" className="text-accent hover:underline">{t('privacy.imprintLink')}</Link>
+              <Link to="/security" className="text-accent hover:underline">{t('privacy.securityLink')}</Link>
             </div>
           </div>
 
