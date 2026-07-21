@@ -32,6 +32,14 @@
 
     {
 
+      "source": "/api/nova/:path*",
+
+      "destination": "/api/nova-proxy?path=:path*"
+
+    },
+
+    {
+
       "source": "/((?!assets/|icons/|favicon|icon\\.svg|logo|manifest\\.webmanifest|sw\\.js|workbox-|robots\\.txt|sitemap\\.xml|api/|\\.well-known/).*)",
 
       "destination": "/index.html"

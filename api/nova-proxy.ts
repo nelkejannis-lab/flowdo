@@ -1,13 +1,45 @@
 /** Proxies WhatsApp/integration API via novat.app (avoids direct onrender.com in browser/CSP). */
 const UPSTREAM = 'https://nova-server-rpbi.onrender.com'
 
-export default async function handler(
-  req: { method?: string; query: Record<string, string | string[] | undefined>; headers: Record<string, string | string[] | undefined>; body?: unknown },
-  res: { status: (code: number) => { setHeader: (k: string, v: string) => void; send: (body: string) => void; json: (body: unknown) => void } }
-) {
-  const pathParts = req.query.path
-  const segments = Array.isArray(pathParts) ? pathParts : pathParts ? [pathParts] : []
-  const upstreamUrl = new URL(`/api/${segments.join('/')}`, UPSTREAM)
+type Req = {
+  method?: string
+  query: Record<string, string | string[] | undefined>
+  headers: Record<string, string | string[] | undefined>
+  body?: unknown
+  url?: string
+}
+
+type Res = {
+  status: (code: number) => {
+    setHeader: (k: string, v: string) => void
+    send: (body: string) => void
+    json: (body: unknown) => void
+  }
+}
+
+function pathFromQuery(query: Req['query'], url?: string): string {
+  const raw = query.path
+  if (Array.isArray(raw)) return raw.join('/')
+  if (typeof raw === 'string' && raw.length > 0) return raw
+
+  if (url) {
+    const parsed = new URL(url, 'https://novat.app')
+    const prefix = '/api/nova/'
+    if (parsed.pathname.startsWith(prefix)) {
+      return parsed.pathname.slice(prefix.length)
+    }
+  }
+  return ''
+}
+
+export default async function handler(req: Req, res: Res) {
+  const segments = pathFromQuery(req.query, req.url)
+  if (!segments) {
+    res.status(400).json({ error: 'Missing API path' })
+    return
+  }
+
+  const upstreamUrl = new URL(`/api/${segments}`, UPSTREAM)
 
   for (const [key, value] of Object.entries(req.query)) {
     if (key === 'path' || value == null) continue
