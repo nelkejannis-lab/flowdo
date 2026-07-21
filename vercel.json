@@ -8,8 +8,6 @@
 
       "has": [{ "type": "host", "value": "mooncrew.com" }],
 
-      "missing": [{ "type": "path", "value": "/.well-known/security.txt" }],
-
       "destination": "https://novat.app/:path*",
 
       "permanent": true
@@ -21,8 +19,6 @@
       "source": "/:path*",
 
       "has": [{ "type": "host", "value": "www.mooncrew.com" }],
-
-      "missing": [{ "type": "path", "value": "/.well-known/security.txt" }],
 
       "destination": "https://novat.app/:path*",
 
