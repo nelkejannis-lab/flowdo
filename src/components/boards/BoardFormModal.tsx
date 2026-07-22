@@ -7,6 +7,8 @@ import { useFriendsStore } from '../../store/friendsStore'
 import { useAuthStore } from '../../store/authStore'
 import type { Attachment, Board } from '../../types'
 import { BOARD_TEMPLATES } from '../../lib/boardTemplates'
+import type { LifeArea } from '../../lib/lifeArea'
+import LifeAreaToggle from '../shared/LifeAreaToggle'
 
 interface BoardFormModalProps {
   board?: Board
@@ -37,6 +39,7 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
   const [folderId, setFolderId] = useState(board?.folderId ?? '')
   const [responsibleUserId, setResponsibleUserId] = useState(board?.responsibleUserId ?? '')
   const [timeBudgetHours, setTimeBudgetHours] = useState(board?.timeBudgetMinutes ? String(Math.round(board.timeBudgetMinutes / 60)) : '')
+  const [lifeArea, setLifeArea] = useState<LifeArea>(board?.lifeArea ?? 'work')
   const [error, setError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [attachments, setAttachments] = useState<Attachment[]>(board?.attachments ?? [])
@@ -57,6 +60,7 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
         folderId: folderId || null,
         responsibleUserId: responsibleUserId || null,
         timeBudgetMinutes: timeBudgetHours ? Number(timeBudgetHours) * 60 : null,
+        lifeArea,
       })
     } else if (templateId) {
       await createFromTemplate(templateId, title.trim())
@@ -70,6 +74,7 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
         externalLaunch: externalLaunch || undefined,
         folderId: folderId || null,
         responsibleUserId: responsibleUserId || null,
+        lifeArea,
       })
     }
     onClose()
@@ -78,6 +83,7 @@ export default function BoardFormModal({ board, onClose }: BoardFormModalProps) 
   return (
     <Modal title={board ? t('form.editProject') : t('form.newProject')} onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <LifeAreaToggle value={lifeArea} onChange={setLifeArea} />
         <input
           autoFocus
           value={title}

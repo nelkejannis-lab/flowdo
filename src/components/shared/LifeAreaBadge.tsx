@@ -1,9 +1,13 @@
 import { useTranslation } from 'react-i18next'
 import type { LifeArea } from '../../lib/lifeArea'
+import { useSettingsStore } from '../../store/settingsStore'
 
 export default function LifeAreaBadge({ area }: { area: LifeArea }) {
   const { t } = useTranslation('common')
+  const privateAreaEnabled = useSettingsStore((s) => s.privateAreaEnabled)
   const isPrivate = area === 'private'
+
+  if (!privateAreaEnabled) return null
 
   return (
     <span

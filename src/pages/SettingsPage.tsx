@@ -266,6 +266,8 @@ export default function SettingsPage() {
   const notifyTasks = useSettingsStore((s) => s.notifyTasks)
   const hideCompletedTasks = useSettingsStore((s) => s.hideCompletedTasks)
   const toggleHideCompletedTasks = useSettingsStore((s) => s.toggleHideCompletedTasks)
+  const privateAreaEnabled = useSettingsStore((s) => s.privateAreaEnabled)
+  const setPrivateAreaEnabled = useSettingsStore((s) => s.setPrivateAreaEnabled)
   const appointmentReminderMinutes = useSettingsStore((s) => s.appointmentReminderMinutes)
   const setNotifyAppointments = useSettingsStore((s) => s.setNotifyAppointments)
   const setNotifyChat = useSettingsStore((s) => s.setNotifyChat)
@@ -643,6 +645,29 @@ export default function SettingsPage() {
           <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
             <h2 className="mb-3 text-sm font-semibold">Kalender & Projekte / Calendar & projects</h2>
             <CalendarPrivacySettings />
+          </div>
+
+          {/* Privatbereich */}
+          <div className="rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900">
+            <div className="mb-3 flex items-center gap-2">
+              <CheckSquare size={16} className="text-accent" />
+              <h2 className="text-sm font-semibold">{t('sections.privateAreaTitle')}</h2>
+            </div>
+            <div className="flex items-center gap-3 py-1">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">{t('sections.privateAreaTitle')}</p>
+                <p className="text-xs text-gray-400">{t('sections.privateAreaDesc')}</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={privateAreaEnabled}
+                onClick={() => setPrivateAreaEnabled(!privateAreaEnabled)}
+                className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${privateAreaEnabled ? 'bg-[#34c759]' : 'bg-gray-200 dark:bg-racing-700'}`}
+              >
+                <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${privateAreaEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
+            </div>
           </div>
 
           {/* Aufgaben */}

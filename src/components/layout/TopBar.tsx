@@ -20,6 +20,7 @@ import { useBoardInvitesStore } from '../../store/boardInvitesStore'
 import { useTeamInvitesStore } from '../../store/teamInvitesStore'
 import { useNotificationsStore } from '../../store/notificationsStore'
 import { isSupabaseConfigured } from '../../lib/supabase'
+import LifeAreaModeSwitch from '../shared/LifeAreaModeSwitch'
 
 const isMac =
   typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent)
@@ -87,6 +88,7 @@ export default function TopBar({ menuOpen, onToggleMenu }: TopBarProps) {
       </div>
 
       <div className="ml-auto flex items-center gap-0.5 sm:gap-1">
+        <LifeAreaModeSwitch compact className="mr-1 hidden sm:flex" />
         <button
           type="button"
           onClick={openSearch}

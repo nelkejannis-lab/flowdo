@@ -22,6 +22,12 @@
   "create": "Create",
   "lifeArea": {
     "work": "Work",
-    "private": "Private"
+    "private": "Private",
+    "modeLabel": "Life area",
+    "mode": {
+      "work": "Work",
+      "private": "Private",
+      "all": "Together"
+    }
   }
 }

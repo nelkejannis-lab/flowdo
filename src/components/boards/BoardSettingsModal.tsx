@@ -10,6 +10,7 @@ import { useBoardPresetsStore } from '../../store/boardPresetsStore'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
 import { useFriendsStore } from '../../store/friendsStore'
 import { useAuthStore } from '../../store/authStore'
+import { useSettingsStore } from '../../store/settingsStore'
 import type { Attachment, Board, LifeArea } from '../../types'
 
 type Tab = 'general' | 'time' | 'dates' | 'presets' | 'milestones'
@@ -33,6 +34,7 @@ export default function BoardSettingsModal({ board, onClose }: Props) {
   const friends = useFriendsStore((s) => s.friends)
   const fetchFriends = useFriendsStore((s) => s.fetchAll)
   const currentUser = useAuthStore((s) => s.profile)
+  const privateAreaEnabled = useSettingsStore((s) => s.privateAreaEnabled)
   const savePreset = useBoardPresetsStore((s) => s.savePreset)
   const deletePreset = useBoardPresetsStore((s) => s.deletePreset)
   const getAllPresets = useBoardPresetsStore((s) => s.getAllPresets)
@@ -140,11 +142,13 @@ export default function BoardSettingsModal({ board, onClose }: Props) {
 
         {tab === 'general' && (
           <div className="flex flex-col gap-3">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-500">{t('settings.lifeAreaLabel')}</label>
-              <LifeAreaToggle value={lifeArea} onChange={setLifeArea} />
-              <p className="mt-1 text-[11px] text-gray-400">{t('settings.lifeAreaHint')}</p>
-            </div>
+            {privateAreaEnabled && (
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500">{t('settings.lifeAreaLabel')}</label>
+                <LifeAreaToggle value={lifeArea} onChange={setLifeArea} />
+                <p className="mt-1 text-[11px] text-gray-400">{t('settings.lifeAreaHint')}</p>
+              </div>
+            )}
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('form.namePlaceholder')}
               className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium dark:border-racing-700" />
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('form.descriptionPlaceholder')} rows={3}

@@ -3,6 +3,8 @@
     "tasksTitle": "Tasks",
     "hideCompletedTitle": "Hide completed tasks",
     "hideCompletedDesc": "Applies to task lists, Eisenhower matrix, Kanban boards and project todos",
+    "privateAreaTitle": "Private area",
+    "privateAreaDesc": "NOVAT is work-first. Enable the private area to switch between Work, Private and Together.",
     "notificationsTitle": "Notifications",
     "notificationsUnsupported": "Your browser does not support notifications.",
     "departmentProfilesDesc": "Work time rules for different departments — the active profile is used for all calculations.",

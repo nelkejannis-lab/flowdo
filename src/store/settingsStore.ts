@@ -9,6 +9,7 @@ import {
   normalizeDashboardSectionOrder,
   type DashboardSectionId,
 } from '../lib/dashboardLayout'
+import type { LifeAreaMode } from '../lib/lifeArea'
 
 export type { DashboardSectionId }
 export { DEFAULT_DASHBOARD_SECTION_ORDER }
@@ -17,6 +18,7 @@ export type Mode = 'light' | 'dark'
 export type Language = 'de' | 'en'
 export type ProductRole = 'solo' | 'team' | 'social'
 export type FeatureKey = 'calendar' | 'eisenhower' | 'worktime' | 'aiScheduler' | 'chat' | 'friends' | 'social' | 'weather'
+export type { LifeAreaMode }
 
 export type NavItemKey =
   | 'dashboard'
@@ -202,7 +204,13 @@ interface SettingsState {
   ritualEveningWrapUp: boolean
   ritualMorgenTop3: boolean
   ritualJournal: boolean
+  /** Opt-in: enable private life area + Arbeit|Privat|Zusammen switch */
+  privateAreaEnabled: boolean
+  /** Active view filter when private area is enabled */
+  lifeAreaMode: LifeAreaMode
   setMode: (mode: Mode) => void
+  setPrivateAreaEnabled: (v: boolean) => void
+  setLifeAreaMode: (mode: LifeAreaMode) => void
   setWhatsappDailyDigest: (v: boolean) => void
   setWhatsappJournalPrompt: (v: boolean) => void
   setMorningBriefingTime: (v: string) => void
@@ -297,7 +305,18 @@ export const useSettingsStore = create<SettingsState>()(
       ritualEveningWrapUp: true,
       ritualMorgenTop3: true,
       ritualJournal: true,
+      privateAreaEnabled: false,
+      lifeAreaMode: 'work',
       setMode: (mode) => set({ mode }),
+      setPrivateAreaEnabled: (v) =>
+        set((s) => ({
+          privateAreaEnabled: v,
+          lifeAreaMode: v ? s.lifeAreaMode : 'work',
+        })),
+      setLifeAreaMode: (lifeAreaMode) =>
+        set((s) => ({
+          lifeAreaMode: s.privateAreaEnabled ? lifeAreaMode : 'work',
+        })),
       setWhatsappDailyDigest: (v) => set({ whatsappDailyDigest: v }),
       setWhatsappJournalPrompt: (v) => set({ whatsappJournalPrompt: v }),
       setMorningBriefingTime: (v) => set({ morningBriefingTime: v }),
@@ -463,6 +482,10 @@ export const useSettingsStore = create<SettingsState>()(
           ritualEveningWrapUp: settings.ritualEveningWrapUp ?? state.ritualEveningWrapUp,
           ritualMorgenTop3: settings.ritualMorgenTop3 ?? state.ritualMorgenTop3,
           ritualJournal: settings.ritualJournal ?? state.ritualJournal,
+          privateAreaEnabled: settings.privateAreaEnabled ?? state.privateAreaEnabled,
+          lifeAreaMode: settings.privateAreaEnabled === false
+            ? 'work'
+            : (settings.lifeAreaMode ?? state.lifeAreaMode),
         }))
       },
       resetSettings: () => {
@@ -506,6 +529,8 @@ export const useSettingsStore = create<SettingsState>()(
           ritualEveningWrapUp: true,
           ritualMorgenTop3: true,
           ritualJournal: true,
+          privateAreaEnabled: false,
+          lifeAreaMode: 'work',
         })
       },
       syncNow: () => {
@@ -528,7 +553,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'flowdo-settings',
-      version: 21,
+      version: 22,
       migrate: (persisted, version) => {
         const legacy = persisted as LegacyState & Partial<SettingsState>
         if (version < 1) {
@@ -600,6 +625,10 @@ export const useSettingsStore = create<SettingsState>()(
           ritualEveningWrapUp: (legacy as any).ritualEveningWrapUp ?? true,
           ritualMorgenTop3: (legacy as any).ritualMorgenTop3 ?? true,
           ritualJournal: (legacy as any).ritualJournal ?? true,
+          privateAreaEnabled: (legacy as any).privateAreaEnabled ?? false,
+          lifeAreaMode: (legacy as any).privateAreaEnabled
+            ? ((legacy as any).lifeAreaMode ?? 'work')
+            : 'work',
         }
       },
       onRehydrateStorage: () => (state) => {
@@ -624,6 +653,8 @@ export const useSettingsStore = create<SettingsState>()(
         if (typeof state.ritualEveningWrapUp !== 'boolean') state.ritualEveningWrapUp = true
         if (typeof state.ritualMorgenTop3 !== 'boolean') state.ritualMorgenTop3 = true
         if (typeof state.ritualJournal !== 'boolean') state.ritualJournal = true
+        if (typeof state.privateAreaEnabled !== 'boolean') state.privateAreaEnabled = false
+        if (!state.lifeAreaMode || !state.privateAreaEnabled) state.lifeAreaMode = 'work'
         if (state.language) i18n.changeLanguage(state.language)
       },
     }
@@ -671,6 +702,8 @@ export function getSettingsPayload(state: any) {
     ritualEveningWrapUp: state.ritualEveningWrapUp,
     ritualMorgenTop3: state.ritualMorgenTop3,
     ritualJournal: state.ritualJournal,
+    privateAreaEnabled: state.privateAreaEnabled,
+    lifeAreaMode: state.privateAreaEnabled ? state.lifeAreaMode : 'work',
   }
 }
 

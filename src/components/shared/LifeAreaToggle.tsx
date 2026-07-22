@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { LifeArea } from '../../lib/lifeArea'
+import { useSettingsStore } from '../../store/settingsStore'
 
 interface LifeAreaToggleProps {
   value: LifeArea
@@ -9,6 +11,13 @@ interface LifeAreaToggleProps {
 
 export default function LifeAreaToggle({ value, onChange, className = '' }: LifeAreaToggleProps) {
   const { t } = useTranslation('common')
+  const privateAreaEnabled = useSettingsStore((s) => s.privateAreaEnabled)
+
+  useEffect(() => {
+    if (!privateAreaEnabled && value !== 'work') onChange('work')
+  }, [privateAreaEnabled, value, onChange])
+
+  if (!privateAreaEnabled) return null
 
   return (
     <div className={`flex rounded-xl border border-gray-200 p-0.5 dark:border-racing-700 ${className}`}>

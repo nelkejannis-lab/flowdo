@@ -23,6 +23,7 @@ import { useQuickTaskModalStore } from '../store/quickTaskModalStore'
 import { useTaskTimeStore } from '../store/taskTimeStore'
 import { useCreativeBoardStore } from '../store/creativeBoardStore'
 import { usePriorityPlanStore, weekKey } from '../store/priorityPlanStore'
+import { useLifeAreaMode } from '../hooks/useLifeAreaMode'
 
 const titleKeys: Record<string, string> = {
   today: 'page.titles.today',
@@ -43,6 +44,7 @@ export default function TasksPage() {
   const fetchMyProjectTasks = useProjectTasksStore((s) => s.fetchMyTasks)
   const fetchBoards = useBoardsStore((s) => s.fetchBoards)
   const boards = useBoardsStore((s) => s.boards)
+  const { filterTasks, filterEntries } = useLifeAreaMode()
   const [showForm, setShowForm] = useState(false)
   const incoming = useTaskSharesStore((s) => s.incoming)
   const fetchIncoming = useTaskSharesStore((s) => s.fetchIncoming)
@@ -64,7 +66,7 @@ export default function TasksPage() {
   const fetchNotifications = useNotificationsStore((s) => s.fetch)
   const markRead = useNotificationsStore((s) => s.markRead)
   const markAllRead = useNotificationsStore((s) => s.markAllRead)
-  const calendarEntries = useCalendarEntriesStore((s) => s.entries)
+  const calendarEntriesRaw = useCalendarEntriesStore((s) => s.entries)
   const fetchCalendarEntries = useCalendarEntriesStore((s) => s.fetchEntries)
   const [showEntries, setShowEntries] = useState(true)
   const navigate = useNavigate()
@@ -112,7 +114,8 @@ export default function TasksPage() {
     }
   }, [fetchBoards, fetchMyProjectTasks, fetchTasks, fetchCalendarEntries, fetchTrackedEntries])
 
-  const allTasks = [...tasks, ...myProjectTasks]
+  const allTasks = filterTasks([...tasks, ...myProjectTasks])
+  const calendarEntries = filterEntries(calendarEntriesRaw)
 
   let filtered = allTasks
   let groupByDate = false
@@ -135,7 +138,7 @@ export default function TasksPage() {
     )
     title = t(titleKeys.week)
   } else if (smartList === 'inbox') {
-    filtered = tasks.filter((t) => !t.completed && !t.boardId && !t.dueDate && !t.someday)
+    filtered = filterTasks(tasks).filter((t) => !t.completed && !t.boardId && !t.dueDate && !t.someday)
     title = t(titleKeys.inbox)
   } else if (smartList === 'completed') {
     filtered = allTasks.filter((t) => t.completed)

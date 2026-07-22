@@ -39,6 +39,7 @@ import { toISODate } from '../utils/date'
 import { mergeCalendarEntries } from '../utils/mergeEntries'
 import { expandRecurringEntries } from '../utils/recurrence'
 import type { CalendarEntry, CalendarEvent, Task } from '../types'
+import { useLifeAreaMode } from '../hooks/useLifeAreaMode'
 
 type ViewMode = 'month' | 'week' | 'day'
 type AbsenceFilter = null | 'urlaub' | 'reise'
@@ -53,7 +54,8 @@ export default function CalendarPage() {
   const fetchMyProjectTasks = useProjectTasksStore((s) => s.fetchMyTasks)
   const updateProjectTask = useProjectTasksStore((s) => s.updateTask)
   const toggleProjectTaskCompleted = useProjectTasksStore((s) => s.toggleTaskCompleted)
-  const tasks = [...personalTasks, ...myProjectTasks]
+  const { filterTasks, filterEntries } = useLifeAreaMode()
+  const tasks = filterTasks([...personalTasks, ...myProjectTasks])
   const boards = useBoardsStore((s) => s.boards)
 
   function updateTask(id: string, patch: Partial<Task>) {
@@ -69,7 +71,8 @@ export default function CalendarPage() {
   }
   const events = useEventsStore((s) => s.events)
   const fetchEvents = useEventsStore((s) => s.fetchAll)
-  const entries = useCalendarEntriesStore((s) => s.entries)
+  const entriesRaw = useCalendarEntriesStore((s) => s.entries)
+  const entries = filterEntries(entriesRaw)
   const hiddenOccurrences = useCalendarEntriesStore((s) => s.hiddenOccurrences)
   const fetchEntries = useCalendarEntriesStore((s) => s.fetchEntries)
   const toggleEntryCompleted = useCalendarEntriesStore((s) => s.toggleCompleted)

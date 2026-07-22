@@ -3,6 +3,8 @@
     "tasksTitle": "Aufgaben",
     "hideCompletedTitle": "Erledigte Aufgaben ausblenden",
     "hideCompletedDesc": "Gilt für Aufgabenlisten, Eisenhower-Matrix, Kanban-Boards und Projekt-Todos",
+    "privateAreaTitle": "Privatbereich",
+    "privateAreaDesc": "NOVAT ist arbeitszentriert. Aktiviere den Privatbereich, um zwischen Arbeit, Privat und Zusammen zu wechseln.",
     "notificationsTitle": "Benachrichtigungen",
     "notificationsUnsupported": "Dein Browser unterstützt keine Benachrichtigungen.",
     "departmentProfilesDesc": "Arbeitszeitregelungen für verschiedene Abteilungen — aktiviertes Profil wird für alle Berechnungen verwendet.",

@@ -197,6 +197,7 @@ export const useBoardsStore = create<BoardsState>()(
             externalLaunch: input.externalLaunch ?? undefined,
             folderId: input.folderId ?? undefined,
             responsibleUserId: input.responsibleUserId ?? undefined,
+            lifeArea: input.lifeArea ?? 'work',
             columns: defaultColumnTitles.map((title) => ({ id: createId(), title })),
             members: [],
             attachments: [],
@@ -222,6 +223,7 @@ export const useBoardsStore = create<BoardsState>()(
             external_launch: input.externalLaunch ?? null,
             folder_id: input.folderId ?? null,
             responsible_user_id: input.responsibleUserId ?? null,
+            life_area: input.lifeArea ?? 'work',
           })
           .select('id')
           .single()

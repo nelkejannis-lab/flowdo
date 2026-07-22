@@ -53,6 +53,7 @@ import { useQuickTaskModalStore } from '../store/quickTaskModalStore'
 import { useOfficeStore } from '../store/officeStore'
 import { dayTargetMinutes, formatHM, netMinutes } from '../utils/worktime'
 import { computeDayReadiness, computeWeeklyInsight } from '../lib/dayReadiness'
+import { useLifeAreaMode } from '../hooks/useLifeAreaMode'
 
 function isLikelyAppointment(input: string): boolean {
   const lower = input.toLowerCase()
@@ -84,7 +85,7 @@ export default function Dashboard() {
   const dateLocale = i18n.language === 'en' ? enUS : de
   const tasks = useTasksStore((s) => s.tasks)
   const fetchTasks = useTasksStore((s) => s.fetchAll)
-  const boards = useBoardsStore((s) => s.boards)
+  const boardsRaw = useBoardsStore((s) => s.boards)
   const fetchBoards = useBoardsStore((s) => s.fetchBoards)
   const myProjectTasks = useProjectTasksStore((s) => s.myTasks)
   const fetchMyProjectTasks = useProjectTasksStore((s) => s.fetchMyTasks)
@@ -102,13 +103,16 @@ export default function Dashboard() {
   const todayOffice = useOfficeStore((s) => s.todayEntry)
   const fetchOfficeToday = useOfficeStore((s) => s.fetchToday)
   const events = useEventsStore((s) => s.events)
-  const calendarEntries = useCalendarEntriesStore((s) => s.entries)
+  const calendarEntriesRaw = useCalendarEntriesStore((s) => s.entries)
   const featureVisibility = useSettingsStore((s) => s.featureVisibility)
   const dashboardVisibility = useSettingsStore((s) => s.dashboardVisibility)
   const toggleDashboardWidget = useSettingsStore((s) => s.toggleDashboardWidget)
   const onboardingPermissionsDone = useSettingsStore((s) => s.onboardingPermissionsDone)
   const onboardingTourDone = useSettingsStore((s) => s.onboardingTourDone)
   const openQuickTaskModal = useQuickTaskModalStore((s) => s.open)
+  const { filterTasks, filterEntries, filterBoards } = useLifeAreaMode()
+  const boards = filterBoards(boardsRaw)
+  const calendarEntries = filterEntries(calendarEntriesRaw)
   const [showForm, setShowForm] = useState(false)
   const [showAiDayPlanner, setShowAiDayPlanner] = useState(false)
   const [showWeekReport, setShowWeekReport] = useState(false)
@@ -223,7 +227,7 @@ export default function Dashboard() {
     return () => { clearTimeout(t); unsub?.() }
   }, [subscribeToMyProjectTasks])
 
-  const allTasks = [...tasks, ...myProjectTasks]
+  const allTasks = filterTasks([...tasks, ...myProjectTasks])
 
   function eisenhowerRank(t: { urgent: boolean; important: boolean; priority: string }): number {
     if (t.urgent && t.important) return 0

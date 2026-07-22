@@ -10,13 +10,16 @@ import { todayISO } from '../utils/date'
 import CalendarEntryFormModal from '../components/calendar/CalendarEntryFormModal'
 import CalendarEntryBoardBadge from '../components/calendar/CalendarEntryBoardBadge'
 import type { CalendarEntry } from '../types'
+import { useLifeAreaMode } from '../hooks/useLifeAreaMode'
 
 type Filter = 'upcoming' | 'past' | 'all'
 
 export default function TerminePage() {
   const { t, i18n } = useTranslation('calendar')
   const dateLocale = i18n.language === 'en' ? enUS : de
-  const entries = useCalendarEntriesStore((s) => s.entries)
+  const entriesRaw = useCalendarEntriesStore((s) => s.entries)
+  const { filterEntries } = useLifeAreaMode()
+  const entries = filterEntries(entriesRaw)
   const fetchEntries = useCalendarEntriesStore((s) => s.fetchEntries)
   const [filter, setFilter] = useState<Filter>('upcoming')
   const [showForm, setShowForm] = useState(false)

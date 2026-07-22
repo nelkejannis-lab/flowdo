@@ -70,6 +70,8 @@ import { useBoardInvitesStore } from '../../store/boardInvitesStore'
 import { useTeamInvitesStore } from '../../store/teamInvitesStore'
 import { useNotificationsStore } from '../../store/notificationsStore'
 import { isSupabaseConfigured } from '../../lib/supabase'
+import { useLifeAreaMode } from '../../hooks/useLifeAreaMode'
+import LifeAreaModeSwitch from '../shared/LifeAreaModeSwitch'
 
 const navItemClass = ({ isActive }: { isActive: boolean }) =>
   `relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
@@ -88,12 +90,14 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, onClose, docked = false }: SidebarProps) {
   const { t, i18n } = useTranslation('layout')
   const [showShortcuts, setShowShortcuts] = useState(false)
-  const boards = useBoardsStore((s) => s.boards ?? [])
+  const boardsRaw = useBoardsStore((s) => s.boards ?? [])
   const folders = useBoardsStore((s) => s.folders ?? [])
   const taskStats = useBoardsStore((s) => s.taskStats)
   const fetchBoards = useBoardsStore((s) => s.fetchBoards)
   const fetchFolders = useBoardsStore((s) => s.fetchFolders)
   const subscribeToBoards = useBoardsStore((s) => s.subscribeToBoards)
+  const { filterBoards } = useLifeAreaMode()
+  const boards = filterBoards(boardsRaw)
   const [openFolders, setOpenFolders] = useState<Set<string>>(new Set())
   const taskIncoming = useTaskSharesStore((s) => s.incoming ?? [])
   const fetchTaskIncoming = useTaskSharesStore((s) => s.fetchIncoming)
@@ -364,6 +368,8 @@ export default function Sidebar({ isOpen, onClose, docked = false }: SidebarProp
           </button>
         </div>
       </div>
+
+      <LifeAreaModeSwitch className="mb-3 w-full" />
 
       {dashboardItem && (
         <div className="mb-4 flex flex-col gap-0.5">

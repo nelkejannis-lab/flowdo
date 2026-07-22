@@ -19,6 +19,7 @@ import { isSupabaseConfigured } from '../lib/supabase'
 import type { Board, BoardFolder } from '../types'
 import BoardCard from '../components/boards/BoardCard'
 import BoardFormModal from '../components/boards/BoardFormModal'
+import { useLifeAreaMode } from '../hooks/useLifeAreaMode'
 
 // Draggable wrapper around BoardCard
 function DraggableBoardCard({ board }: { board: Board }) {
@@ -157,12 +158,14 @@ function UnfiledSection({ boards }: { boards: Board[] }) {
 
 export default function BoardsPage() {
   const { t } = useTranslation(['boards', 'common'])
-  const boards = useBoardsStore((s) => s.boards)
+  const boardsRaw = useBoardsStore((s) => s.boards)
   const folders = useBoardsStore((s) => s.folders)
   const fetchBoards = useBoardsStore((s) => s.fetchBoards)
   const fetchFolders = useBoardsStore((s) => s.fetchFolders)
   const addFolder = useBoardsStore((s) => s.addFolder)
   const moveBoardToFolder = useBoardsStore((s) => s.moveBoardToFolder)
+  const { filterBoards } = useLifeAreaMode()
+  const boards = filterBoards(boardsRaw)
   const incoming = useBoardInvitesStore((s) => s.incoming)
   const fetchIncoming = useBoardInvitesStore((s) => s.fetchIncoming)
   const acceptInvite = useBoardInvitesStore((s) => s.acceptInvite)
@@ -191,7 +194,7 @@ export default function BoardsPage() {
   }
 
   function onDragStart(event: DragStartEvent) {
-    const board = boards.find((b) => b.id === event.active.id)
+    const board = boardsRaw.find((b) => b.id === event.active.id)
     setDraggingBoard(board ?? null)
   }
 
