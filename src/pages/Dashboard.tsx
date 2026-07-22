@@ -61,6 +61,24 @@ function isLikelyAppointment(input: string): boolean {
     || /\bum\s+\d{1,2}/.test(lower)
 }
 
+/** True when timed appointment end (endTime, else start + 30 min) is before nowTime (HH:mm). All-day stays. */
+function isAppointmentEnded(
+  startTime: string | null | undefined,
+  endTime: string | null | undefined,
+  nowTime: string,
+  defaultDurationMin = 30,
+): boolean {
+  if (!startTime && !endTime) return false
+  let endT = endTime ?? null
+  if (!endT && startTime) {
+    const [h, m] = startTime.split(':').map(Number)
+    if (!Number.isFinite(h) || !Number.isFinite(m)) return false
+    const total = h * 60 + m + defaultDurationMin
+    endT = `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
+  }
+  return !!endT && endT < nowTime
+}
+
 export default function Dashboard() {
   const { t, i18n } = useTranslation('dashboard')
   const dateLocale = i18n.language === 'en' ? enUS : de
@@ -161,6 +179,13 @@ export default function Dashboard() {
     return () => clearInterval(id)
   }, [isRunning])
 
+  // Re-evaluate "Termine heute" when appointments end (even if not clocked in)
+  const [scheduleTick, setScheduleTick] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setScheduleTick((n) => n + 1), 30_000)
+    return () => clearInterval(id)
+  }, [])
+
   function isSectionVisible(id: DashboardSectionId): boolean {
     return dashboardVisibility[id] ?? true
   }
@@ -239,17 +264,15 @@ export default function Dashboard() {
     .filter((e) => e.date > today && e.date <= weekEndDate && (!e.endDate || e.endDate >= today))
     .sort((a, b) => a.date.localeCompare(b.date) || (a.startTime ?? '').localeCompare(b.startTime ?? ''))
 
-  const nowTime = new Date().toTimeString().slice(0, 5)
+  // scheduleTick keeps nowTime fresh so ended appointments drop from Termine heute
+  const nowTime = useMemo(() => new Date().toTimeString().slice(0, 5), [scheduleTick])
   const todayEntries = calendarEntries.filter((e) => {
     // Only show entries that are today or multi-day events spanning today
     const isToday = e.date === today
     const isMultiDaySpanningToday = e.date < today && e.endDate && e.endDate >= today
     if (!isToday && !isMultiDaySpanningToday) return false
-    // Hide today's entries whose end time has already passed
-    if (isToday) {
-      const endT = e.endTime ?? e.startTime
-      if (endT && endT < nowTime) return false
-    }
+    // Hide today's entries whose end time (end field or start + duration) has passed
+    if (isToday && isAppointmentEnded(e.startTime, e.endTime, nowTime)) return false
     return true
   }).sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? ''))
 
@@ -266,30 +289,24 @@ export default function Dashboard() {
     ? { id: todayEntries[0].id, title: todayEntries[0].title, startTime: todayEntries[0].startTime ?? undefined, date: todayEntries[0].date }
     : null
 
-  const todaySchedule = calendarEntries
-    .filter((e) => {
-      const isToday = e.date === today
-      const isMultiDaySpanningToday = e.date < today && e.endDate && e.endDate >= today
-      return isToday || isMultiDaySpanningToday
-    })
-    .sort((a, b) => (a.startTime ?? '99:99').localeCompare(b.startTime ?? '99:99'))
-    .map((e) => {
-      let durationMin = 0
-      if (e.startTime && e.endTime) {
-        const [sh, sm] = e.startTime.split(':').map(Number)
-        const [eh, em] = e.endTime.split(':').map(Number)
-        durationMin = Math.max(5, eh * 60 + em - (sh * 60 + sm))
-      } else if (e.startTime) {
-        durationMin = 30
-      }
-      return {
-        id: e.id,
-        title: e.title,
-        startTime: e.startTime,
-        endTime: e.endTime,
-        durationMin,
-      }
-    })
+  // Same elapsed filter as todayEntries — badge count + empty state follow remaining events
+  const todaySchedule = todayEntries.map((e) => {
+    let durationMin = 0
+    if (e.startTime && e.endTime) {
+      const [sh, sm] = e.startTime.split(':').map(Number)
+      const [eh, em] = e.endTime.split(':').map(Number)
+      durationMin = Math.max(5, eh * 60 + em - (sh * 60 + sm))
+    } else if (e.startTime) {
+      durationMin = 30
+    }
+    return {
+      id: e.id,
+      title: e.title,
+      startTime: e.startTime,
+      endTime: e.endTime,
+      durationMin,
+    }
+  })
 
   const todayWork = workEntries[today]
   const liveAnchor = isOnBreak && breakStartedAt ? new Date(breakStartedAt).getTime() : Date.now()
@@ -486,11 +503,8 @@ export default function Dashboard() {
   ).slice(0, 5)
   const meetingsHeldToday = calendarEntries.filter((e) => {
     const isToday = e.date === today
-    const isMultiDaySpanningToday = e.date < today && e.endDate && e.endDate >= today
-    if (!isToday && !isMultiDaySpanningToday) return false
     if (!isToday) return false
-    const endT = e.endTime ?? e.startTime
-    return !!endT && endT < nowTime
+    return isAppointmentEnded(e.startTime, e.endTime, nowTime)
   }).length
   const meetingsTodayCount = calendarEntries.filter((e) => {
     const isToday = e.date === today
