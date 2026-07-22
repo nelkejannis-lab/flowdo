@@ -14,24 +14,24 @@ export interface MeetingAiSettings {
 const QUALITY_PRESETS: Record<MeetingAiQuality, Omit<MeetingAiSettings, 'quality'>> = {
   economy: {
     model: 'claude-haiku-4-5-20251001',
-    maxTokens: 1024,
-    analysisIntervalMs: 120_000,
-    minNewChars: 600,
-    maxTranscriptChars: 6_000,
+    maxTokens: 768,
+    analysisIntervalMs: 150_000,
+    minNewChars: 800,
+    maxTranscriptChars: 4_500,
   },
   balanced: {
     model: 'claude-haiku-4-5-20251001',
-    maxTokens: 1536,
-    analysisIntervalMs: 90_000,
-    minNewChars: 400,
-    maxTranscriptChars: 10_000,
+    maxTokens: 1024,
+    analysisIntervalMs: 120_000,
+    minNewChars: 500,
+    maxTranscriptChars: 7_000,
   },
   quality: {
-    model: 'claude-sonnet-4-6',
-    maxTokens: 2048,
-    analysisIntervalMs: 60_000,
-    minNewChars: 250,
-    maxTranscriptChars: 16_000,
+    model: 'claude-haiku-4-5-20251001',
+    maxTokens: 1536,
+    analysisIntervalMs: 90_000,
+    minNewChars: 350,
+    maxTranscriptChars: 12_000,
   },
 }
 

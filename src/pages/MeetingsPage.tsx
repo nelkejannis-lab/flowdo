@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useMeetingsStore } from '../store/meetingsStore'
-import LiveMeetingPanel from '../components/meetings/LiveMeetingPanel'
+import { useLiveMeetingStore } from '../store/liveMeetingStore'
 import MeetingMemoryPanel from '../components/meetings/MeetingMemoryPanel'
 import { meetingShareUrl, buildMeetingInviteMailto } from '../lib/meetingShare'
 import { Mic, Plus, Trash2, Calendar, FileText, CheckSquare, Pencil, Check, X, ChevronDown, ListChecks, Search, Copy, Download, ArrowUpDown, Mail, Link2 } from 'lucide-react'
@@ -21,7 +21,10 @@ export default function MeetingsPage() {
   const dateLocale = i18n.language === 'en' ? enUS : de
   const { meetings, fetchMeetings, deleteMeeting, updateMeeting, loading } = useMeetingsStore()
   const addTask = useTasksStore(s => s.addTask)
-  const [isLiveMode, setIsLiveMode] = useState(false)
+  const startRecording = useLiveMeetingStore((s) => s.startRecording)
+  const setPanelExpanded = useLiveMeetingStore((s) => s.setPanelExpanded)
+  const isRecording = useLiveMeetingStore((s) => s.isRecording)
+  const hasLiveSession = useLiveMeetingStore((s) => s.isRecording || Boolean(s.summary || s.transcript))
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null)
   const [isTranslating, setIsTranslating] = useState(false)
   const [transferringItem, setTransferringItem] = useState<any>(null)
@@ -73,21 +76,19 @@ export default function MeetingsPage() {
     })
   }, [meetings, searchQuery, sortBy, i18n.language])
 
-  if (isLiveMode) {
+  if (hasLiveSession) {
     return (
-      <div className="flex h-full flex-col">
-        <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">{t('liveMeetingTitle')}</h1>
-          <button
-            onClick={() => setIsLiveMode(false)}
-            className="text-sm font-medium text-gray-500 hover:text-gray-900 dark:hover:text-white"
-          >
-            {t('backToOverview')}
-          </button>
-        </div>
-        <div className="flex-1 min-h-0">
-          <LiveMeetingPanel onSaveComplete={() => setIsLiveMode(false)} />
-        </div>
+      <div className="flex h-full flex-col items-center justify-center gap-4 p-8 text-center">
+        <Mic size={40} className="text-red-500 animate-pulse" />
+        <h1 className="text-xl font-semibold">{t('liveMeetingTitle')}</h1>
+        <p className="text-sm text-gray-500 max-w-md">{t('live.sessionActiveHint')}</p>
+        <button
+          type="button"
+          onClick={() => setPanelExpanded(true)}
+          className="rounded-xl bg-accent px-5 py-2.5 text-sm font-bold text-white"
+        >
+          {t('live.expand')}
+        </button>
       </div>
     )
   }
@@ -137,8 +138,12 @@ export default function MeetingsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-semibold">{t('pageTitle')}</h1>
         <button
-          onClick={() => setIsLiveMode(true)}
-          className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-accent-hover transition-all"
+          onClick={() => {
+            void startRecording()
+            setPanelExpanded(true)
+          }}
+          disabled={isRecording}
+          className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-accent-hover transition-all disabled:opacity-60"
         >
           <Mic size={16} /> {t('startLiveRecording')}
         </button>

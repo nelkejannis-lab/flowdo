@@ -1,4 +1,5 @@
 export type Priority = 'low' | 'medium' | 'high'
+export type LifeArea = 'work' | 'private'
 
 export interface Subtask {
   id: string
@@ -51,6 +52,7 @@ export interface Task {
   statusNote?: string // free-text status / progress note
   snoozedUntil?: string
   reminderAt?: string
+  lifeArea?: LifeArea
 }
 
 export type EisenhowerQuadrant = 'do' | 'decide' | 'delegate' | 'delete'
@@ -105,6 +107,7 @@ export interface Board {
   attachments: Attachment[]
   createdAt: string
   timeBudgetMinutes?: number
+  lifeArea?: LifeArea
 }
 
 export interface SocialAccount {
@@ -319,4 +322,5 @@ export interface CalendarEntry {
   visibility?: 'public' | 'department' | 'private'
   externalId?: string
   cancelled?: boolean
+  lifeArea?: LifeArea
 }

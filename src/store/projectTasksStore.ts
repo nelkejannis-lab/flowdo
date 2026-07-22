@@ -4,7 +4,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { deleteAttachment, uploadAttachment } from '../lib/attachments'
 import { useBoardsStore } from './boardsStore'
 import { createId } from '../utils/id'
-import type { Attachment, Priority, Subtask, Task } from '../types'
+import type { Attachment, Priority, Subtask, Task, LifeArea } from '../types'
 
 interface NewProjectTaskInput {
   title: string
@@ -22,6 +22,7 @@ interface NewProjectTaskInput {
   startTime?: string
   estimatedMinutes?: number
   statusNote?: string
+  lifeArea?: LifeArea
 }
 
 interface ProjectTaskRow {
@@ -47,6 +48,7 @@ interface ProjectTaskRow {
   start_time: string | null
   estimated_minutes: number | null
   status_note: string | null
+  life_area: LifeArea | null
 }
 
 function single<T>(value: T | T[]): T {
@@ -80,6 +82,7 @@ function toTask(row: ProjectTaskRow, dependsOn?: string[], assigneeIds?: string[
     startTime: row.start_time ?? undefined,
     estimatedMinutes: row.estimated_minutes ?? undefined,
     statusNote: row.status_note ?? undefined,
+    lifeArea: row.life_area ?? undefined,
   }
 }
 
@@ -231,6 +234,7 @@ export const useProjectTasksStore = create<ProjectTasksState>()(
             startTime: input.startTime,
             estimatedMinutes: input.estimatedMinutes,
             statusNote: input.statusNote,
+            lifeArea: input.lifeArea ?? useBoardsStore.getState().boards.find((b) => b.id === input.boardId)?.lifeArea ?? 'work',
           }
           set((state) => ({
             tasks: [newTask, ...state.tasks],
@@ -261,6 +265,7 @@ export const useProjectTasksStore = create<ProjectTasksState>()(
             start_time: input.startTime ?? null,
             estimated_minutes: input.estimatedMinutes ?? null,
             status_note: input.statusNote ?? null,
+            life_area: input.lifeArea ?? useBoardsStore.getState().boards.find((b) => b.id === input.boardId)?.lifeArea ?? 'work',
           })
           .select('id')
           .single()
@@ -301,6 +306,7 @@ export const useProjectTasksStore = create<ProjectTasksState>()(
         if (updates.startTime !== undefined) payload.start_time = updates.startTime ?? null
         if (updates.estimatedMinutes !== undefined) payload.estimated_minutes = updates.estimatedMinutes ?? null
         if (updates.statusNote !== undefined) payload.status_note = updates.statusNote ?? null
+        if (updates.lifeArea !== undefined) payload.life_area = updates.lifeArea
         if (updates.subtasks !== undefined) payload.subtasks = updates.subtasks
         if (updates.attachments !== undefined) payload.attachments = updates.attachments
 

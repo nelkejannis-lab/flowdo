@@ -94,5 +94,11 @@
   },
   "sparkline": {
     "notEnoughData": "Noch nicht genug Daten"
+  },
+  "postInsight": {
+    "strengthsTitle": "Was gut war",
+    "improvementsTitle": "Was besser sein könnte",
+    "performanceTipsTitle": "So hätte der Post besser performen können",
+    "summaryTitle": "Zusammenfassung"
   }
 }

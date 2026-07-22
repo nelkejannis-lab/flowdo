@@ -10,6 +10,9 @@ import { useNotificationsStore } from '../../store/notificationsStore'
 import { formatFriendlyDate, isOverdue } from '../../utils/date'
 import BoardBadge from '../boards/BoardBadge'
 import PriorityBadge from './PriorityBadge'
+import LifeAreaBadge from '../shared/LifeAreaBadge'
+import { resolveTaskLifeArea } from '../../lib/lifeArea'
+import { useBoardsStore } from '../../store/boardsStore'
 import CommentSection from '../shared/CommentSection'
 import TaskTimer from './TaskTimer'
 import { isSupabaseConfigured } from '../../lib/supabase'
@@ -50,6 +53,8 @@ export default function TaskItem({ task, onClick, showBoard = true, priorityRank
   const [askDone, setAskDone] = useState(false)
   const askRef = useRef<HTMLDivElement>(null)
   const commentCount = useCommentsStore((s) => (s.comments[task.id] ?? []).length)
+  const boards = useBoardsStore((s) => s.boards)
+  const lifeArea = resolveTaskLifeArea(task, boards)
   const overdue = isOverdue(task.dueDate) && !task.completed
   const hasSubtasks = task.subtasks.length > 0
   const subtaskDone = task.subtasks.filter((s) => s.completed).length
@@ -92,6 +97,9 @@ export default function TaskItem({ task, onClick, showBoard = true, priorityRank
           <p className={`break-words text-base sm:text-sm font-medium leading-snug ${task.completed ? 'text-gray-400 line-through' : ''}`}>
             {task.title}
           </p>
+          <div className="mt-1 flex">
+            <LifeAreaBadge area={lifeArea} />
+          </div>
           
           <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-gray-400">
             {task.dueDate && (

@@ -19,5 +19,9 @@
     "uploading": "Lädt hoch…",
     "attachFile": "Datei anhängen"
   },
-  "create": "Erstellen"
+  "create": "Erstellen",
+  "lifeArea": {
+    "work": "Arbeit",
+    "private": "Privat"
+  }
 }

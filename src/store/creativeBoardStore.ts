@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { createId } from '../utils/id'
+import { uploadAttachment } from '../lib/attachments'
 
 export type CreativeInviteRole = 'owner' | 'editor' | 'viewer'
 export type MoodboardItemType = 'note' | 'image' | 'link' | 'video' | 'social' | 'website'
@@ -47,6 +48,7 @@ interface CreativeBoardState {
   addMoodItem: (input: Omit<MoodboardItem, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>) => Promise<void>
   updateMoodItem: (id: string, updates: Partial<MoodboardItem>) => Promise<void>
   deleteMoodItem: (id: string) => Promise<void>
+  uploadMoodImage: (file: File) => Promise<{ url?: string; error?: string }>
   searchProfiles: (query: string) => Promise<Array<{ id: string; display_name: string; username: string; avatar_color: string }>>
   inviteToCreativeBoard: (toUserId: string, role: CreativeInviteRole) => Promise<string | null>
   fetchIncomingInvites: () => Promise<void>
@@ -151,6 +153,12 @@ export const useCreativeBoardStore = create<CreativeBoardState>()((set, get) => 
   deleteMoodItem: async (id) => {
     set((s) => ({ moodItems: s.moodItems.filter((i) => i.id !== id) }))
     await supabase.from('creative_moodboard_items').delete().eq('id', id)
+  },
+
+  uploadMoodImage: async (file) => {
+    const result = await uploadAttachment('moodboard', file)
+    if (result.error) return { error: result.error }
+    return { url: result.attachment?.url }
   },
 
   searchProfiles: async (query) => {

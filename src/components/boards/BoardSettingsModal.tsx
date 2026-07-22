@@ -3,13 +3,14 @@ import { useTranslation } from 'react-i18next'
 import { Bookmark, Calendar, Clock, LayoutTemplate, Settings, Trash2 } from 'lucide-react'
 import Modal from '../layout/Modal'
 import AttachmentsField from '../shared/AttachmentsField'
+import LifeAreaToggle from '../shared/LifeAreaToggle'
 import BoardMilestones from './BoardMilestones'
 import { useBoardsStore, BOARD_COLORS } from '../../store/boardsStore'
 import { useBoardPresetsStore } from '../../store/boardPresetsStore'
 import { useProjectTasksStore } from '../../store/projectTasksStore'
 import { useFriendsStore } from '../../store/friendsStore'
 import { useAuthStore } from '../../store/authStore'
-import type { Attachment, Board } from '../../types'
+import type { Attachment, Board, LifeArea } from '../../types'
 
 type Tab = 'general' | 'time' | 'dates' | 'presets' | 'milestones'
 
@@ -54,6 +55,7 @@ export default function BoardSettingsModal({ board, onClose }: Props) {
   const [presetName, setPresetName] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [lifeArea, setLifeArea] = useState<LifeArea>(board.lifeArea ?? 'work')
 
   useEffect(() => { if (friends.length === 0) fetchFriends() }, [fetchFriends, friends.length])
 
@@ -79,6 +81,7 @@ export default function BoardSettingsModal({ board, onClose }: Props) {
       folderId: folderId || null,
       responsibleUserId: responsibleUserId || null,
       timeBudgetMinutes: timeBudgetHours ? Number(timeBudgetHours) * 60 : null,
+      lifeArea,
     })
     setLogDefault(board.id, defaultLogMinutes)
     setSaving(false)
@@ -137,6 +140,11 @@ export default function BoardSettingsModal({ board, onClose }: Props) {
 
         {tab === 'general' && (
           <div className="flex flex-col gap-3">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-500">{t('settings.lifeAreaLabel')}</label>
+              <LifeAreaToggle value={lifeArea} onChange={setLifeArea} />
+              <p className="mt-1 text-[11px] text-gray-400">{t('settings.lifeAreaHint')}</p>
+            </div>
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('form.namePlaceholder')}
               className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium dark:border-racing-700" />
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('form.descriptionPlaceholder')} rows={3}

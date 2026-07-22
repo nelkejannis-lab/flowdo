@@ -183,6 +183,8 @@
     "todayTodosEmpty": "Keine offenen To-dos für heute",
     "todayTodosEmptyHint": "Alles klar — oder füge oben schnell eine Aufgabe hinzu.",
     "todayTodosMore": "+{{count}} weitere anzeigen",
+    "workSection": "Arbeit",
+    "privateSection": "Privat",
     "completeTodo": "Als erledigt markieren",
     "doneStats": {
       "title": "Heute im Blick",

@@ -402,6 +402,8 @@ export default function AiChatPanel() {
           systemPrompt: buildSystemPrompt(friendsList, useTasksStore.getState().tasks, i18n.language),
           imageBase64: imgToSend?.base64 ?? null,
           imageMimeType: imgToSend?.mimeType ?? null,
+          model: 'claude-haiku-4-5-20251001',
+          maxTokens: 2048,
         },
       })
       if (error) throw new Error(error.message)

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Attachment, Task, Priority, Subtask } from '../types'
+import type { Attachment, Task, Priority, Subtask, LifeArea } from '../types'
 import { createId } from '../utils/id'
 import { todayISO, toISODate } from '../utils/date'
 import { deleteAttachment, uploadAttachment } from '../lib/attachments'
@@ -23,6 +23,7 @@ interface NewTaskInput {
   startTime?: string
   estimatedMinutes?: number
   statusNote?: string
+  lifeArea?: LifeArea
 }
 
 interface TaskRow {
@@ -50,6 +51,7 @@ interface TaskRow {
   status_note: string | null
   snoozed_until: string | null
   reminder_at: string | null
+  life_area: LifeArea | null
 }
 
 function toTask(row: TaskRow): Task {
@@ -79,6 +81,7 @@ function toTask(row: TaskRow): Task {
     statusNote: row.status_note ?? undefined,
     snoozedUntil: row.snoozed_until ?? undefined,
     reminderAt: row.reminder_at ?? undefined,
+    lifeArea: row.life_area ?? undefined,
   }
 }
 
@@ -115,6 +118,7 @@ async function syncTask(task: Task, userId: string) {
     status_note: task.statusNote ?? null,
     snoozed_until: task.snoozedUntil ?? null,
     reminder_at: task.reminderAt ?? null,
+    life_area: task.lifeArea ?? 'work',
   })
 }
 
@@ -215,6 +219,7 @@ export const useTasksStore = create<TasksState>()(
           startTime: input.startTime,
           estimatedMinutes: input.estimatedMinutes,
           statusNote: input.statusNote,
+          lifeArea: input.lifeArea ?? 'work',
         }
         set((state) => ({ tasks: [task, ...state.tasks] }))
         void getUserId().then((userId) => {

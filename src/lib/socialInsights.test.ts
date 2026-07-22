@@ -104,6 +104,8 @@ describe('socialInsights', () => {
     expect(insight.takeaway.length).toBeGreaterThan(10)
     expect(insight.analysis.length).toBeGreaterThan(10)
     expect(insight.strengths.length).toBeGreaterThan(0)
+    expect(insight.improvements.length).toBeGreaterThanOrEqual(0)
+    expect(insight.performanceTips.length).toBeGreaterThan(0)
     expect(insight.score).not.toBeNull()
     expect(insight.score!).toBeGreaterThanOrEqual(1)
     expect(insight.score!).toBeLessThanOrEqual(10)

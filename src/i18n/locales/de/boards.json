@@ -149,7 +149,9 @@
       "dates": "Termine",
       "presets": "Vorlagen",
       "milestones": "Meilensteine"
-    }
+    },
+    "lifeAreaLabel": "Bereich",
+    "lifeAreaHint": "Private Projekte werden getrennt von Arbeitsprojekten geführt."
   },
   "todos": {
     "calendarHint": "Klicke auf einen Tag, um eine neue Aufgabe für diesen Tag hinzuzufügen.",

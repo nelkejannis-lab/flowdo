@@ -105,7 +105,10 @@
     "sending": "Sende…",
     "send": "Senden",
     "add": "Hinzufügen",
-    "estimateRequired": "Bitte geschätzte Dauer (Min.) angeben."
+    "estimateRequired": "Bitte geschätzte Dauer (Min.) angeben.",
+    "threeMinuteTitle": "Sofort erledigen — keine Aufgabe nötig",
+    "threeMinuteHint": "Aufgaben mit 3 Minuten oder weniger gehören nicht auf die Liste. Erledige das jetzt direkt, statt eine Aufgabe anzulegen.",
+    "threeMinuteDismiss": "Verstanden — Fenster schließen"
   },
   "toast": {
     "taskDeleted": "Aufgabe gelöscht",

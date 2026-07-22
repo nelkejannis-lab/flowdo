@@ -99,6 +99,10 @@ export interface PostInsight {
   reachRate: number | null
   interactions: number
   strengths: string[]
+  /** Concrete improvement areas (what could be better). */
+  improvements: string[]
+  /** Actionable tips for how the post could have performed better. */
+  performanceTips: string[]
   /** Short analytical takeaway (German). */
   takeaway: string
   /** Alias of takeaway — 1–2 aussagekräftige Sätze. */
@@ -572,20 +576,73 @@ export function buildPostInsight(
   const { score, vsPeriodPct } = scorePostAgainstBenchmarks(post, followers, bench)
 
   const strengths: string[] = []
-  if (score != null) strengths.push(`Score ${score.toFixed(1)}`)
-  if (vsPeriodPct != null && Math.abs(vsPeriodPct) >= 5) {
-    const signed = vsPeriodPct >= 0 ? `+${Math.round(vsPeriodPct)}%` : `${Math.round(vsPeriodPct)}%`
-    strengths.push(`${signed} vs. Ø`)
+  const improvements: string[] = []
+  const performanceTips: string[] = []
+
+  if (score != null && score >= 7) {
+    strengths.push(`Starke Gesamtwertung (${score.toFixed(1)}/10)`)
+  }
+  if (vsPeriodPct != null && vsPeriodPct >= 15) {
+    strengths.push(`${Math.round(vsPeriodPct)}% über dem Perioden-Durchschnitt`)
+  } else if (vsPeriodPct != null && vsPeriodPct >= 5) {
+    strengths.push('Leicht über dem Durchschnitt der letzten Posts')
   }
   if (saves > 0 && (followers <= 0 || saves / Math.max(followers, 1) >= 0.005 || saves >= 10)) {
-    strengths.push(`${fmtCompact(saves)} Saves`)
+    strengths.push(`Hoher Save-Wert (${fmtCompact(saves)} Saves — Content wird gespeichert)`)
   }
-  if (shares > 0) strengths.push(`${fmtCompact(shares)} Shares`)
+  if (shares > 0) strengths.push(`${fmtCompact(shares)} Shares — organische Weiterempfehlung`)
   if (comments > 0 && likes > 0 && comments / likes >= 0.05) {
-    strengths.push('Starker Dialog')
+    strengths.push('Starker Dialog in den Kommentaren')
   }
-  if (post.reach != null && post.reach > 0) strengths.push(`${fmtCompact(post.reach)} Reach`)
-  if (eng != null && eng >= 3) strengths.push(`${fmtPct(eng)} Engagement`)
+  if (post.reach != null && post.reach > 0 && followers > 0 && post.reach / followers >= 0.2) {
+    strengths.push(`Gute Reichweite (${fmtCompact(post.reach)} Accounts erreicht)`)
+  }
+  if (eng != null && eng >= 3) strengths.push(`Überdurchschnittliches Engagement (${fmtPct(eng)})`)
+
+  if (saves === 0 && likes >= 20) {
+    improvements.push('Keine Saves trotz Likes — der Nutzen für die Zielgruppe ist nicht klar genug')
+  }
+  if (comments === 0 && likes >= 15) {
+    improvements.push('Wenig Kommentare — Caption stellt keine Frage und lädt nicht zum Dialog ein')
+  }
+  if (vsPeriodPct != null && vsPeriodPct < -15) {
+    improvements.push('Deutlich unter dem Perioden-Durchschnitt — Hook oder Format passt nicht zum Publikum')
+  } else if (vsPeriodPct != null && vsPeriodPct < -5) {
+    improvements.push('Leicht unter Durchschnitt — Timing oder visueller Einstieg optimieren')
+  }
+  if (eng != null && eng < 1.5 && followers > 500) {
+    improvements.push('Niedrige Engagement-Rate — stärkerer Call-to-Action nötig')
+  }
+  if (shares === 0 && saves < 3 && likes >= 30) {
+    improvements.push('Wenig Shares/Saves — Content ist unterhaltsam, aber nicht teilenswert genug')
+  }
+
+  const fmt = formatLabel(post.mediaType)
+  if (fmt === 'Reel / Video') {
+    performanceTips.push('Erste 3 Sekunden mit stärkerem Hook — Zuschauer halten sich sonst nicht')
+    performanceTips.push('In den ersten 60 Minuten aktiv auf Kommentare antworten (Algorithmus-Signal)')
+  } else if (fmt === 'Karussell') {
+    performanceTips.push('Slide 1 als klares Versprechen formulieren — Swipe-Rate steigt messbar')
+    performanceTips.push('Letzte Slide mit konkretem CTA (Speichern, Kommentieren, Link)')
+  } else {
+    performanceTips.push('Caption mit einer offenen Frage enden — Kommentarrate typisch +20–40%')
+  }
+  if (post.postedAt) {
+    const d = new Date(post.postedAt)
+    if (!Number.isNaN(d.getTime()) && (d.getDay() === 0 || d.getDay() === 6)) {
+      performanceTips.push('Am Wochenende oft weniger Reichweite — gleichen Content unter der Woche testen')
+    }
+  }
+  if (score != null && score < 5) {
+    performanceTips.push('Ähnliches Thema als Reel oder Karussell gegentesten — oft 2–3× mehr Reach')
+  }
+  if (saves < 5 && likes >= 20) {
+    performanceTips.push('Checkliste, Vorlage oder Tipp als „Speichern für später“-Angebot in die Caption')
+  }
+
+  if (strengths.length === 0 && score != null) {
+    strengths.push(`Score ${score.toFixed(1)}/10`)
+  }
 
   const { takeaway, tone } = buildAnalyticalTakeaway({
     formatLabel: formatLabel(post.mediaType),
@@ -607,6 +664,8 @@ export function buildPostInsight(
     reachRate,
     interactions,
     strengths: strengths.slice(0, 4),
+    improvements: improvements.slice(0, 4),
+    performanceTips: performanceTips.slice(0, 4),
     takeaway,
     analysis: takeaway,
     score,

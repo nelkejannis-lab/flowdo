@@ -105,7 +105,10 @@
     "sending": "Sending…",
     "send": "Send",
     "add": "Add",
-    "estimateRequired": "Please enter an estimated duration (minutes)."
+    "estimateRequired": "Please enter an estimated duration (minutes).",
+    "threeMinuteTitle": "Do it now — no task needed",
+    "threeMinuteHint": "Tasks of 3 minutes or less don't belong on your list. Do it right away instead of creating a task.",
+    "threeMinuteDismiss": "Got it — close"
   },
   "toast": {
     "taskDeleted": "Task deleted",

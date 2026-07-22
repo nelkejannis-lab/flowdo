@@ -18,6 +18,9 @@ import type { DayReadinessResult } from '../../lib/dayReadiness'
 import { useWorkTimeStore } from '../../store/workTimeStore'
 import { isOverdue } from '../../utils/date'
 import TaskTimer from '../tasks/TaskTimer'
+import { useBoardsStore } from '../../store/boardsStore'
+import { resolveTaskLifeArea } from '../../lib/lifeArea'
+import LifeAreaBadge from '../shared/LifeAreaBadge'
 
 interface TodayTodo {
   id: string
@@ -29,6 +32,7 @@ interface TodayTodo {
   startTime?: string
   boardId?: string
   completed: boolean
+  lifeArea?: 'work' | 'private'
 }
 
 interface PriorityTask {
@@ -105,6 +109,7 @@ export default function TodayHero({
   onOpenTodo,
 }: Props) {
   const { t } = useTranslation('dashboard')
+  const boards = useBoardsStore((s) => s.boards)
 
   const capped = Math.min(100, Math.max(0, capacityPercent))
   const free = Math.max(0, 100 - capped)
@@ -140,7 +145,8 @@ export default function TodayHero({
   const breakTimerLabel = formatBreakElapsed(breakElapsedSec)
 
   const openTodos = todayTodos.filter((tk) => !tk.completed)
-  const visibleTodos = openTodos.slice(0, 8)
+  const workTodos = openTodos.filter((tk) => resolveTaskLifeArea(tk, boards) === 'work')
+  const privateTodos = openTodos.filter((tk) => resolveTaskLifeArea(tk, boards) === 'private')
 
   const meetingsLabelKey = 'readiness.doneStats.meetingsHeld'
 
@@ -255,7 +261,7 @@ export default function TodayHero({
           </p>
         </div>
 
-        {/* Today's to-dos */}
+        {/* Today's to-dos — split Arbeit / Privat */}
         <div className="flex min-h-0 flex-col lg:col-span-5">
           <div className="mb-2 flex items-baseline justify-between gap-2">
             <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
@@ -269,53 +275,39 @@ export default function TodayHero({
             )}
           </div>
 
-          {visibleTodos.length === 0 ? (
+          {openTodos.length === 0 ? (
             <DelightEmpty />
           ) : (
-            <ul className="flex flex-col gap-1.5">
-              {visibleTodos.map((tk) => {
-                const overdue = isOverdue(tk.dueDate)
-                return (
-                  <li key={tk.id}>
-                    <div className="group flex w-full items-center gap-2.5 rounded-2xl bg-black/[0.03] px-3 py-2.5 transition hover:bg-accent/10 dark:bg-white/[0.04]">
-                      <button
-                        type="button"
-                        onClick={() => onToggleTodo?.(tk)}
-                        className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 border-gray-300 transition hover:border-accent dark:border-racing-600"
-                        aria-label={t('readiness.completeTodo')}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => onOpenTodo?.(tk)}
-                        className="min-w-0 flex-1 text-left"
-                      >
-                        <span className="block truncate text-sm font-medium leading-snug">{tk.title}</span>
-                        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-gray-400">
-                          {tk.startTime && (
-                            <span className="font-semibold tabular-nums text-accent">{tk.startTime}</span>
-                          )}
-                          {overdue && (
-                            <span className="font-semibold text-red-500">{t('readiness.next.overdueTag')}</span>
-                          )}
-                          {tk.urgent && tk.important && (
-                            <span className="font-semibold text-amber-600 dark:text-amber-400">Q1</span>
-                          )}
-                        </span>
-                      </button>
-                      <TaskTimer taskId={tk.id} boardId={tk.boardId} title={tk.title} compact />
-                    </div>
-                  </li>
-                )
-              })}
-            </ul>
+            <div className="flex flex-col gap-4">
+              {workTodos.length > 0 && (
+                <TodoSection
+                  title={t('readiness.workSection')}
+                  todos={workTodos.slice(0, 6)}
+                  boards={boards}
+                  onToggleTodo={onToggleTodo}
+                  onOpenTodo={onOpenTodo}
+                  t={t}
+                />
+              )}
+              {privateTodos.length > 0 && (
+                <TodoSection
+                  title={t('readiness.privateSection')}
+                  todos={privateTodos.slice(0, 6)}
+                  boards={boards}
+                  onToggleTodo={onToggleTodo}
+                  onOpenTodo={onOpenTodo}
+                  t={t}
+                />
+              )}
+            </div>
           )}
 
-          {openTodos.length > visibleTodos.length && (
+          {openTodos.length > 6 && (
             <Link
               to="/tasks"
               className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-accent hover:underline"
             >
-              {t('readiness.todayTodosMore', { count: openTodos.length - visibleTodos.length })}
+              {t('readiness.todayTodosMore', { count: openTodos.length - 6 })}
               <ArrowRight size={12} />
             </Link>
           )}
@@ -481,6 +473,68 @@ export default function TodayHero({
         </Link>
       </div>
     </section>
+  )
+}
+
+function TodoSection({
+  title,
+  todos,
+  boards,
+  onToggleTodo,
+  onOpenTodo,
+  t,
+}: {
+  title: string
+  todos: TodayTodo[]
+  boards: { id: string; lifeArea?: 'work' | 'private' }[]
+  onToggleTodo?: (task: TodayTodo) => void
+  onOpenTodo?: (task: TodayTodo) => void
+  t: (key: string, opts?: Record<string, unknown>) => string
+}) {
+  return (
+    <div>
+      <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">{title}</p>
+      <ul className="flex flex-col gap-1.5">
+        {todos.map((tk) => {
+          const overdue = isOverdue(tk.dueDate)
+          const area = resolveTaskLifeArea(tk, boards)
+          return (
+            <li key={tk.id}>
+              <div className="group flex w-full items-center gap-2.5 rounded-2xl bg-black/[0.03] px-3 py-2.5 transition hover:bg-accent/10 dark:bg-white/[0.04]">
+                <button
+                  type="button"
+                  onClick={() => onToggleTodo?.(tk)}
+                  className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 border-gray-300 transition hover:border-accent dark:border-racing-600"
+                  aria-label={t('readiness.completeTodo')}
+                />
+                <button
+                  type="button"
+                  onClick={() => onOpenTodo?.(tk)}
+                  className="min-w-0 flex-1 text-left"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <span className="block truncate text-sm font-medium leading-snug">{tk.title}</span>
+                    <LifeAreaBadge area={area} />
+                  </span>
+                  <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-gray-400">
+                    {tk.startTime && (
+                      <span className="font-semibold tabular-nums text-accent">{tk.startTime}</span>
+                    )}
+                    {overdue && (
+                      <span className="font-semibold text-red-500">{t('readiness.next.overdueTag')}</span>
+                    )}
+                    {tk.urgent && tk.important && (
+                      <span className="font-semibold text-amber-600 dark:text-amber-400">Q1</span>
+                    )}
+                  </span>
+                </button>
+                <TaskTimer taskId={tk.id} boardId={tk.boardId} title={tk.title} compact />
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
   )
 }
 

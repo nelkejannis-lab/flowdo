@@ -149,7 +149,9 @@
       "dates": "Dates",
       "presets": "Presets",
       "milestones": "Milestones"
-    }
+    },
+    "lifeAreaLabel": "Area",
+    "lifeAreaHint": "Private projects are kept separate from work projects."
   },
   "todos": {
     "calendarHint": "Click a day to add a new task for that day.",

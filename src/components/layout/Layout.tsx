@@ -11,6 +11,7 @@ import AiChatPanel from '../ai/AiChatPanel'
 import ErrorBoundary from './ErrorBoundary'
 import AppUpdater from './AppUpdater'
 import PriorityPlanModalHost from '../dashboard/PriorityPlanModalHost'
+import LiveMeetingHost from '../meetings/LiveMeetingHost'
 import PageTransition from '../motion/PageTransition'
 import { ShellChrome, ShellMain } from '../motion/ShellEntrance'
 import { useSettingsStore } from '../../store/settingsStore'
@@ -96,6 +97,7 @@ export default function Layout() {
       </motion.div>
       <ToastContainer />
       <PriorityPlanModalHost />
+      <LiveMeetingHost />
       <AiChatPanel />
     </ErrorBoundary>
   )

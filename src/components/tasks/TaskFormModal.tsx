@@ -14,12 +14,13 @@ import { useProjectTasksStore } from '../../store/projectTasksStore'
 import { isSupabaseConfigured } from '../../lib/supabase'
 import { eachEntryDate } from '../../utils/events'
 import { todayISO, parseNaturalDate } from '../../utils/date'
-import type { Attachment, Priority, Task } from '../../types'
+import type { Attachment, Priority, Task, LifeArea } from '../../types'
 import { createId } from '../../utils/id'
 import { useTaskTrayStore } from '../../store/taskTrayStore'
-import { useSettingsStore } from '../../store/settingsStore'
 import { useAiSchedulerStore } from '../../store/aiSchedulerStore'
 import TaskTimer from './TaskTimer'
+import LifeAreaToggle from '../shared/LifeAreaToggle'
+import { THREE_MINUTE_RULE_THRESHOLD } from '../../lib/aiConfig'
 
 const quadrants: { urgent: boolean; important: boolean; labelKey: string; activeClass: string }[] = [
   { urgent: true, important: true, labelKey: 'form.quadrants.urgentImportant', activeClass: 'border-red-400 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
@@ -76,7 +77,6 @@ export default function TaskFormModal({
   const removeAttachment = useTasksStore((s) => s.removeAttachment)
   const addProjectAttachment = useProjectTasksStore((s) => s.addAttachment)
   const removeProjectAttachment = useProjectTasksStore((s) => s.removeAttachment)
-  const requireTaskEstimate = useSettingsStore((s) => s.requireTaskEstimate)
   const tasks = useTasksStore((s) => s.tasks)
   const projectTasks = useProjectTasksStore((s) => s.myTasks)
 
@@ -107,6 +107,9 @@ export default function TaskFormModal({
   const [recurrence, setRecurrence] = useState<Task['recurrence']>(task?.recurrence)
   const [startTime, setStartTime] = useState(task?.startTime ?? '')
   const [estimatedMinutes, setEstimatedMinutes] = useState(task?.estimatedMinutes?.toString() ?? '')
+  const [lifeArea, setLifeArea] = useState<LifeArea>(task?.lifeArea ?? 'work')
+  const [estimateError, setEstimateError] = useState(false)
+  const [threeMinuteHint, setThreeMinuteHint] = useState(false)
   const [statusNote, setStatusNote] = useState(task?.statusNote ?? '')
   const [localSubtasks, setLocalSubtasks] = useState<string[]>([])
   const [assigneeId, setAssigneeId] = useState('')
@@ -198,9 +201,13 @@ export default function TaskFormModal({
     if (!title.trim()) return
 
     const parsedEstimatedMinutes = estimatedMinutes.trim() ? Number(estimatedMinutes) : undefined
-    const needsEstimate = requireTaskEstimate && (projectId || task?.boardId)
-    if (needsEstimate && (!parsedEstimatedMinutes || parsedEstimatedMinutes <= 0)) {
+    if (!parsedEstimatedMinutes || parsedEstimatedMinutes <= 0) {
+      setEstimateError(true)
       setSendError(t('form.estimateRequired'))
+      return
+    }
+    if (!task && parsedEstimatedMinutes <= THREE_MINUTE_RULE_THRESHOLD) {
+      setThreeMinuteHint(true)
       return
     }
 
@@ -222,6 +229,7 @@ export default function TaskFormModal({
         startTime: startTime || undefined,
         estimatedMinutes: parsedEstimatedMinutes,
         statusNote: statusNote.trim() || undefined,
+        lifeArea,
       })
       setSending(false)
       if (result.error) {
@@ -265,6 +273,7 @@ export default function TaskFormModal({
         startTime: startTime || undefined,
         estimatedMinutes: parsedEstimatedMinutes,
         statusNote: statusNote.trim() || undefined,
+        lifeArea,
       })
       onSave?.()
     } else if (projectId) {
@@ -285,6 +294,7 @@ export default function TaskFormModal({
         startTime: startTime || undefined,
         estimatedMinutes: parsedEstimatedMinutes,
         statusNote: statusNote.trim() || undefined,
+        lifeArea,
       })
       setSending(false)
       if (result.error) {
@@ -332,6 +342,7 @@ export default function TaskFormModal({
         startTime: startTime || undefined,
         estimatedMinutes: parsedEstimatedMinutes,
         statusNote: statusNote.trim() || undefined,
+        lifeArea,
       })
       localSubtasks.forEach((s) => addSubtask(created.id, s))
       onSave?.()
@@ -576,6 +587,22 @@ export default function TaskFormModal({
       onMinimize={handleMinimize}
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <LifeAreaToggle value={lifeArea} onChange={setLifeArea} />
+
+        {threeMinuteHint && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800 dark:border-amber-800/50 dark:bg-amber-950/30 dark:text-amber-200">
+            <p className="font-semibold">{t('form.threeMinuteTitle')}</p>
+            <p className="mt-1 text-xs">{t('form.threeMinuteHint')}</p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="mt-2 text-xs font-semibold text-accent hover:underline"
+            >
+              {t('form.threeMinuteDismiss')}
+            </button>
+          </div>
+        )}
+
         <div className="relative">
           <input
             autoFocus
@@ -644,9 +671,18 @@ export default function TaskFormModal({
               step={5}
               placeholder={t('form.estimatedMinutesPlaceholder')}
               value={estimatedMinutes}
-              onChange={(e) => setEstimatedMinutes(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700"
+              onChange={(e) => {
+                setEstimatedMinutes(e.target.value)
+                setEstimateError(false)
+                setThreeMinuteHint(false)
+              }}
+              className={`w-full rounded-lg border bg-transparent px-3 py-2 text-sm focus:border-accent focus:outline-none dark:border-racing-700 ${
+                estimateError ? 'border-red-500 ring-1 ring-red-500/30' : 'border-gray-200'
+              }`}
             />
+            {estimateError && (
+              <p className="mt-1 text-xs text-red-500">{t('form.estimateRequired')}</p>
+            )}
           </div>
         </div>
 

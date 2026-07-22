@@ -13,11 +13,12 @@ import { useTeamsStore } from '../../store/teamsStore'
 import { useBoardsStore } from '../../store/boardsStore'
 import { useOrganizationStore } from '../../store/organizationStore'
 import { isSupabaseConfigured } from '../../lib/supabase'
-import type { CalendarEntry, CalendarEntryType, CalendarEvent } from '../../types'
+import type { CalendarEntry, CalendarEntryType, CalendarEvent, LifeArea } from '../../types'
 import { parseCalendarEntryId, seriesTag } from '../../utils/calendarEntry'
 import { createId } from '../../utils/id'
 import { todayISO } from '../../utils/date'
 import { exportCalendarEntryAsPdf } from '../../utils/pdfExport'
+import LifeAreaToggle from '../shared/LifeAreaToggle'
 
 type Kind = 'event' | CalendarEntryType
 
@@ -118,6 +119,7 @@ export default function CalendarEntryFormModal({
   const [colleagueResults, setColleagueResults] = useState<{ id: string; display_name: string; avatar_color: string }[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [lifeArea, setLifeArea] = useState<LifeArea>(entry?.lifeArea ?? 'work')
 
   useEffect(() => {
     if (isSupabaseConfigured) {
@@ -211,6 +213,7 @@ export default function CalendarEntryFormModal({
       boardId: boardId || undefined,
       recurrence: entryRecurrence,
       meetingLink: meetingLink.trim() || undefined,
+      lifeArea,
     }
 
     if (entry) {
@@ -295,6 +298,7 @@ export default function CalendarEntryFormModal({
   return (
     <Modal title={editing ? t('form.titleEdit') : t('form.titleAdd')} onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <LifeAreaToggle value={lifeArea} onChange={setLifeArea} />
         {!editing && (
           <div className="grid grid-cols-4 gap-2">
             {typeOptions.map((opt) => {

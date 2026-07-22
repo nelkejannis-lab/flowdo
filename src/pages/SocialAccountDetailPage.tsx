@@ -17,6 +17,7 @@ import {
   scoreTone,
   type PeriodBenchmarks,
 } from '../lib/socialInsights'
+import PostInsightAnalysis from '../components/social/PostInsightAnalysis'
 
 function ScoreBadge({ score, size = 'sm' }: { score: number | null; size?: 'sm' | 'lg' }) {
   const tone = scoreTone(score)
@@ -237,33 +238,7 @@ function PostModal({
             </div>
           </div>
 
-          {insight.strengths.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {insight.strengths.map((s) => (
-                <span key={s} className="rounded-md bg-accent/10 px-2 py-0.5 text-[11px] font-medium text-accent">
-                  {s}
-                </span>
-              ))}
-            </div>
-          )}
-
-          <div className="flex gap-2.5">
-            <span
-              className={`mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full ${
-                insight.tone === 'action'
-                  ? 'bg-amber-500'
-                  : insight.tone === 'positive'
-                    ? 'bg-emerald-500'
-                    : 'bg-accent/60'
-              }`}
-            />
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Analyse</p>
-              <p className="mt-0.5 text-sm leading-relaxed text-gray-600 dark:text-racing-200">
-                {insight.analysis}
-              </p>
-            </div>
-          </div>
+          <PostInsightAnalysis insight={insight} />
 
           {post.permalink && (
             <a
@@ -276,7 +251,6 @@ function PostModal({
             </a>
           )}
 
-          <p className="text-[10px] leading-relaxed text-gray-400">{insight.formulaNote}</p>
         </div>
       </div>
     </div>

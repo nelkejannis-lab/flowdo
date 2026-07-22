@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { deleteAttachment, uploadAttachment } from '../lib/attachments'
 import { createId } from '../utils/id'
-import type { Attachment, Board, BoardColumn, BoardFolder, ProjectMember } from '../types'
+import type { Attachment, Board, BoardColumn, BoardFolder, ProjectMember, LifeArea } from '../types'
 import { BOARD_TEMPLATES } from '../lib/boardTemplates'
 
 interface NewBoardInput {
@@ -16,6 +16,7 @@ interface NewBoardInput {
   folderId?: string | null
   responsibleUserId?: string | null
   timeBudgetMinutes?: number | null
+  lifeArea?: LifeArea
 }
 
 interface BoardFolderRow {
@@ -54,6 +55,7 @@ interface BoardRow {
   folder_id: string | null
   responsible_user_id: string | null
   time_budget_minutes: number | null
+  life_area: LifeArea | null
   responsible: { id: string; display_name: string; avatar_color: string } | { id: string; display_name: string; avatar_color: string }[] | null
 }
 
@@ -95,6 +97,7 @@ function toBoard(row: BoardRow): Board {
     attachments: row.attachments ?? [],
     createdAt: row.created_at,
     timeBudgetMinutes: row.time_budget_minutes ?? undefined,
+    lifeArea: row.life_area ?? 'work',
   }
 }
 
@@ -249,6 +252,7 @@ export const useBoardsStore = create<BoardsState>()(
                     folderId: updates.folderId !== undefined ? (updates.folderId || undefined) : b.folderId,
                     responsibleUserId: updates.responsibleUserId !== undefined ? (updates.responsibleUserId || undefined) : b.responsibleUserId,
                     timeBudgetMinutes: updates.timeBudgetMinutes !== undefined ? (updates.timeBudgetMinutes || undefined) : b.timeBudgetMinutes,
+                    lifeArea: updates.lifeArea !== undefined ? updates.lifeArea : b.lifeArea,
                   }
                 : b
             ),
@@ -268,6 +272,7 @@ export const useBoardsStore = create<BoardsState>()(
             ...(updates.folderId !== undefined ? { folder_id: updates.folderId || null } : {}),
             ...(updates.responsibleUserId !== undefined ? { responsible_user_id: updates.responsibleUserId || null } : {}),
             ...(updates.timeBudgetMinutes !== undefined ? { time_budget_minutes: updates.timeBudgetMinutes ?? null } : {}),
+            ...(updates.lifeArea !== undefined ? { life_area: updates.lifeArea } : {}),
           })
           .eq('id', id)
 

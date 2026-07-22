@@ -1,8 +1,8 @@
 import Anthropic from 'npm:@anthropic-ai/sdk@0.24.3'
 import { corsHeaders, jsonResponse, optionsResponse, requireUser } from '../_shared/auth.ts'
 
-const DEFAULT_MODEL = 'claude-sonnet-4-6'
-const DEFAULT_MAX_TOKENS = 4096
+const DEFAULT_MODEL = 'claude-haiku-4-5-20251001'
+const DEFAULT_MAX_TOKENS = 1536
 
 const ALLOWED_MODELS = new Set([
   'claude-sonnet-4-6',

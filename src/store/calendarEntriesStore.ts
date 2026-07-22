@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { supabase } from '../lib/supabase'
-import type { CalendarEntry, CalendarEntryBoard, CalendarEntryInvitee, CalendarEntryType } from '../types'
+import type { CalendarEntry, CalendarEntryBoard, CalendarEntryInvitee, CalendarEntryType, LifeArea } from '../types'
 import { extractSeriesId, occurrenceKey, parseCalendarEntryId } from '../utils/calendarEntry'
 import { useCalendarConnectionsStore } from './calendarConnectionsStore'
 
@@ -25,6 +25,7 @@ interface CalendarEntryRow {
   owner: CalendarEntryInvitee | CalendarEntryInvitee[] | null
   board: CalendarEntryBoard | CalendarEntryBoard[] | null
   calendar_entry_invites: { user: CalendarEntryInvitee | CalendarEntryInvitee[] }[] | null
+  life_area: LifeArea | null
 }
 
 export interface NewCalendarEntryInput {
@@ -40,6 +41,7 @@ export interface NewCalendarEntryInput {
   boardId?: string
   recurrence?: CalendarEntry['recurrence']
   meetingLink?: string
+  lifeArea?: LifeArea
 }
 
 interface CalendarEntriesState {
@@ -85,6 +87,7 @@ function toEntry(row: CalendarEntryRow & { recurrence?: string | null }): Calend
     completed: row.completed ?? false,
     meetingLink: row.meeting_link ?? undefined,
     externalId: row.external_id ?? undefined,
+    lifeArea: row.life_area ?? 'work',
   }
 }
 
@@ -231,6 +234,7 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()(
             recurrence: input.recurrence ?? null,
             meeting_link: input.meetingLink ?? null,
             board_id: input.boardId ?? null,
+            life_area: input.lifeArea ?? 'work',
           })
           .select('id')
           .single()
@@ -277,6 +281,7 @@ export const useCalendarEntriesStore = create<CalendarEntriesState>()(
             recurrence: input.recurrence ?? null,
             meeting_link: input.meetingLink ?? null,
             board_id: input.boardId ?? null,
+            life_area: input.lifeArea ?? 'work',
           })
           .eq('id', dbId)
 

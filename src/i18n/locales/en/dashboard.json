@@ -182,6 +182,8 @@
     "todayTodosEmpty": "No open to-dos for today",
     "todayTodosEmptyHint": "You're clear — or quickly add a task above.",
     "todayTodosMore": "Show {{count}} more",
+    "workSection": "Work",
+    "privateSection": "Private",
     "completeTodo": "Mark as done",
     "doneStats": {
       "title": "Today at a glance",

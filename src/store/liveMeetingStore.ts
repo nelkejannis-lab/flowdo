@@ -25,12 +25,14 @@ interface LiveMeetingState {
   workerReady: boolean
   recordingStartedAt: number | null
   audioLevel: number
+  panelExpanded: boolean
 
   startRecording: () => Promise<void>
   stopRecording: () => void
   triggerAnalysis: (isFinal?: boolean) => Promise<void>
   setTranscript: (text: string) => void
   setAiQuality: (quality: MeetingAiQuality) => void
+  setPanelExpanded: (expanded: boolean) => void
   reset: () => void
 }
 
@@ -79,6 +81,9 @@ export const useLiveMeetingStore = create<LiveMeetingState>((set, get) => ({
   workerReady: false,
   recordingStartedAt: null,
   audioLevel: 0,
+  panelExpanded: false,
+
+  setPanelExpanded: (expanded) => set({ panelExpanded: expanded }),
 
   setAiQuality: (quality) => {
     setMeetingAiQuality(quality)
@@ -121,6 +126,7 @@ export const useLiveMeetingStore = create<LiveMeetingState>((set, get) => ({
         aiQuality: getMeetingAiQuality(),
         recordingStartedAt: Date.now(),
         audioLevel: 0,
+        panelExpanded: true,
       })
     } catch (err: unknown) {
       set({ error: err instanceof Error ? err.message : 'Aufnahme fehlgeschlagen' })
@@ -142,17 +148,18 @@ export const useLiveMeetingStore = create<LiveMeetingState>((set, get) => ({
       state
 
     if (isSummarizing) return
-    if (transcript.length < 50) return
+    if (transcript.length < 80) return
 
     const newChars = transcript.length - lastAnalyzedTextLength
     const settings = getMeetingAiSettings(aiQuality)
     if (!isFinal && newChars < settings.minNewChars) return
 
+    const newChunk =
+      lastAnalyzedTextLength > 0 ? transcript.slice(lastAnalyzedTextLength).trim() : undefined
+    if (!isFinal && newChunk && newChunk.replace(/\s+/g, ' ').trim().length < 30) return
+
     set({ isSummarizing: true })
     try {
-      const newChunk =
-        lastAnalyzedTextLength > 0 ? transcript.slice(lastAnalyzedTextLength).trim() : undefined
-
       const result = await generateMeetingSummary({
         fullTranscript: transcript,
         previousSummary: summary || undefined,
@@ -200,6 +207,7 @@ export const useLiveMeetingStore = create<LiveMeetingState>((set, get) => ({
       recordingStartedAt: null,
       audioLevel: 0,
       aiQuality: getMeetingAiQuality(),
+      panelExpanded: false,
     })
   },
 }))

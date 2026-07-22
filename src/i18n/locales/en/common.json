@@ -19,5 +19,9 @@
     "uploading": "Uploading…",
     "attachFile": "Attach file"
   },
-  "create": "Create"
+  "create": "Create",
+  "lifeArea": {
+    "work": "Work",
+    "private": "Private"
+  }
 }

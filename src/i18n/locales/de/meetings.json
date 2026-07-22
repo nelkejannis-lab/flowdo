@@ -62,6 +62,9 @@
     "updatingSummary": "Aktualisiere…",
     "analysisCount": "{{count}} KI-Updates",
     "estimatedCost": "ca. {{cost}}",
-    "audioLevel": "Audio"
+    "audioLevel": "Audio",
+    "minimize": "Minimieren",
+    "expand": "Meeting öffnen",
+    "sessionActiveHint": "Die Aufnahme läuft weiter — auch wenn du zu anderen Seiten wechselst."
   }
 }

@@ -62,6 +62,9 @@
     "updatingSummary": "Updating…",
     "analysisCount": "{{count}} AI updates",
     "estimatedCost": "est. {{cost}}",
-    "audioLevel": "Audio"
+    "audioLevel": "Audio",
+    "minimize": "Minimize",
+    "expand": "Open meeting",
+    "sessionActiveHint": "Recording continues even when you navigate to other pages."
   }
 }

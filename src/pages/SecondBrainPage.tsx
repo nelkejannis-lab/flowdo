@@ -86,6 +86,7 @@ export default function SecondBrainPage() {
   const fetchMoodItems = useCreativeBoardStore((s) => s.fetchMoodItems)
   const addMoodItem = useCreativeBoardStore((s) => s.addMoodItem)
   const deleteMoodItem = useCreativeBoardStore((s) => s.deleteMoodItem)
+  const uploadMoodImage = useCreativeBoardStore((s) => s.uploadMoodImage)
   const searchProfiles = useCreativeBoardStore((s) => s.searchProfiles)
   const inviteToCreativeBoard = useCreativeBoardStore((s) => s.inviteToCreativeBoard)
   const incomingInvites = useCreativeBoardStore((s) => s.incomingInvites)
@@ -119,6 +120,7 @@ export default function SecondBrainPage() {
   const [editingColTitle, setEditingColTitle] = useState('')
   const [justSaved, setJustSaved] = useState(false)
   const [moodError, setMoodError] = useState<string | null>(null)
+  const [moodUploading, setMoodUploading] = useState(false)
   const [inviteOpen, setInviteOpen] = useState(false)
   const [editorMetaOpen, setEditorMetaOpen] = useState(false)
 
@@ -351,6 +353,8 @@ ${textToSummarize}`
           ],
           systemPrompt:
             'Du bist ein nützlicher KI-Assistent für ein Notizbuch. Formatiere den übergebenen Text in ein sauberes, professionelles deutsches Protokoll/Zusammenfassung mit Markdown (Überschriften, Stichpunkte). Antworte ausschließlich mit der formatierten Zusammenfassung ohne Einleitung oder Erklärung.',
+          model: 'claude-haiku-4-5-20251001',
+          maxTokens: 1024,
         },
       })
 
@@ -1215,7 +1219,39 @@ ${textToSummarize}`
               <option value="social">{t('moodboardSocial')}</option>
               <option value="website">{t('moodboardWebsite')}</option>
             </select>
-            {moodType === 'note' ? (
+            {moodType === 'image' ? (
+              <div className="flex flex-col gap-2">
+                <input
+                  value={moodValue}
+                  onChange={(e) => setMoodValue(e.target.value)}
+                  placeholder={t('moodboardImageUrl')}
+                  className="w-full min-h-12 rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-base dark:border-racing-700"
+                />
+                <label className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 px-4 py-3 text-sm font-semibold text-gray-500 hover:border-accent hover:text-accent dark:border-racing-700">
+                  <Upload size={16} />
+                  {moodUploading ? t('moodboardUploading') : t('moodboardUploadImage')}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      setMoodUploading(true)
+                      setMoodError(null)
+                      const { url, error } = await uploadMoodImage(file)
+                      setMoodUploading(false)
+                      if (error) {
+                        setMoodError(error)
+                        return
+                      }
+                      if (url) setMoodValue(url)
+                      if (!moodTitle.trim()) setMoodTitle(file.name.replace(/\.[^.]+$/, ''))
+                    }}
+                  />
+                </label>
+              </div>
+            ) : moodType === 'note' ? (
               <textarea
                 value={moodValue}
                 onChange={(e) => setMoodValue(e.target.value)}
@@ -1239,7 +1275,7 @@ ${textToSummarize}`
                         ? t('moodboardSocial')
                         : t('moodboardWebsite')
               }
-              className={`w-full min-h-12 rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-base dark:border-racing-700 ${moodType === 'note' ? 'hidden md:block' : ''}`}
+              className={`w-full min-h-12 rounded-xl border border-gray-200 bg-transparent px-4 py-3 text-base dark:border-racing-700 ${moodType === 'note' ? 'hidden md:block' : moodType === 'image' ? 'hidden' : ''}`}
               autoComplete="off"
               autoCapitalize="off"
               autoCorrect="off"
@@ -1253,11 +1289,11 @@ ${textToSummarize}`
             </button>
           </div>
           {moodError && <p className="mb-3 text-sm font-semibold text-red-500">{moodError}</p>}
-          <div className="flex flex-col gap-4 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-3">
+          <div className="columns-2 gap-3 md:columns-3 lg:columns-4 [column-fill:balance]">
             {moodItems.map((item) => (
               <div
                 key={item.id}
-                className="rounded-xl border border-gray-100 bg-white p-4 max-md:p-5 dark:border-racing-800 dark:bg-racing-900 overflow-hidden"
+                className="mb-3 break-inside-avoid rounded-xl border border-gray-100 bg-white p-4 dark:border-racing-800 dark:bg-racing-900 overflow-hidden shadow-sm"
               >
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <h4 className="text-sm max-md:text-base font-semibold break-words min-w-0 flex-1">{item.title}</h4>
@@ -1303,7 +1339,7 @@ ${textToSummarize}`
                   <img
                     src={item.imageUrl}
                     alt={item.title}
-                    className="max-h-48 max-md:min-h-52 max-md:max-h-80 w-full rounded-lg object-cover"
+                    className="mb-2 w-full rounded-lg object-cover"
                     loading="lazy"
                   />
                 )}
